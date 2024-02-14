@@ -1,0 +1,3 @@
+[submodule "FluSight-forecast-hub"]
+	path = FluSight-forecast-hub
+	url = https://github.com/cdcepi/FluSight-forecast-hub.git
