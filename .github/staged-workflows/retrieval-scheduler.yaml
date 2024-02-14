@@ -1,0 +1,12 @@
+name: Scheduler & Dispatcher for Data Retrieval Workflows
+
+run-name: scheduled time met, dispatching to other workflow...
+
+on:
+  # Schedule a workflow to run at specific UTC times using POSIX cron syntax
+  # Run the workflow every Wednesday at
+  workflow_dispatch:
+
+  schedule:
+    - cron: '30 12-18/3 * * WED'
+  jobs:
