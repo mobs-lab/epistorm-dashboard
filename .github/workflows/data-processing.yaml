@@ -1,6 +1,7 @@
 name: Process Newly Acquired Model Output Data
 
 on:
+  workflow_dispatch:
   repository_dispatch:
     types: [ data-processing-event ]
 
