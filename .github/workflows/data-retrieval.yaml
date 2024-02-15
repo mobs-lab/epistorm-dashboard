@@ -5,60 +5,61 @@ on:
 
   repository_dispatch:
     types: [ data-retrieval-event ]
-    jobs:
-      sync-and-dispatch:
-        runs-on: ubuntu-latest
-        shell: bash
-        steps:
-          - name: Checkout repository
-            uses: actions/checkout@v4
-            with:
-              submodules: 'true' # This checks out submodules
 
-          - name: Check and Copy New Files
-            id: check-copy
-            run: |
-              # Run a bash script to check and maybe copy files to super repo:
-              # 1. Compare files in data source path with the super repo's data target path
-              # 2. Copy new files if found
-              # 3. Echo an output variable if new files are copied, to determine if dispatch is needed
-              
-              # The 4 teams we want data of:
-              team_names = ("MOBS-GLEAM_FLUH" "MIGHTE-Nsemble" "NU_UCSD-GLEAM_AI_FLUH" "CEPH-Rtrend_fluH")
-              
-              NEW_FILES_COPIED=false
-              
-              DATA_SOURCE_LOCATION_PATH='FluSight-forecast-hub/model-output/'
-              DATA_TARGET_LOCATION_PATH='data/unprocessed/'
-              
-              for team in "${team_names[@]}"; do
-                echo "Checking for new files from $team..."
-              
-                # Make sure team subdirectory exists from proceeding
-                if [ -d "$DATA_SOURCE_LOCATION_PATH/$team" ]; then
-                  mkdir -p "$DATA_TARGET_LOCATION_PATH/$team"
-              
-                  for file in "$DATA_SOURCE_LOCATION_PATH/$team"/*; do
-                    filename=$(basename "$file")
-              
-                    if [ ! -f "$DATA_TARGET_LOCATION_PATH/$team/$filename" ]; then
-                      cp "$file" "$DATA_TARGET_LOCATION_PATH/$team/"
-                      echo "Copied $filename to $DATA_TARGET_LOCATION_PATH/$team/"
-                      NEW_FILES_COPIED=true
-                    fi
-                  done
-                else
-                  echo "Error: team subdirectory do not exist."
+jobs:
+  sync-and-dispatch:
+    runs-on: ubuntu-latest
+    shell: bash
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: 'true' # This checks out submodules
+
+      - name: Check and Copy New Files
+        id: check-copy
+        run: |
+          # Run a bash script to check and maybe copy files to super repo:
+          # 1. Compare files in data source path with the super repo's data target path
+          # 2. Copy new files if found
+          # 3. Echo an output variable if new files are copied, to determine if dispatch is needed
+          
+          # The 4 teams we want data of:
+          team_names = ("MOBS-GLEAM_FLUH" "MIGHTE-Nsemble" "NU_UCSD-GLEAM_AI_FLUH" "CEPH-Rtrend_fluH")
+          
+          NEW_FILES_COPIED=false
+          
+          DATA_SOURCE_LOCATION_PATH='FluSight-forecast-hub/model-output/'
+          DATA_TARGET_LOCATION_PATH='data/unprocessed/'
+          
+          for team in "${team_names[@]}"; do
+            echo "Checking for new files from $team..."
+          
+            # Make sure team subdirectory exists from proceeding
+            if [ -d "$DATA_SOURCE_LOCATION_PATH/$team" ]; then
+              mkdir -p "$DATA_TARGET_LOCATION_PATH/$team"
+          
+              for file in "$DATA_SOURCE_LOCATION_PATH/$team"/*; do
+                filename=$(basename "$file")
+          
+                if [ ! -f "$DATA_TARGET_LOCATION_PATH/$team/$filename" ]; then
+                  cp "$file" "$DATA_TARGET_LOCATION_PATH/$team/"
+                  echo "Copied $filename to $DATA_TARGET_LOCATION_PATH/$team/"
+                  NEW_FILES_COPIED=true
                 fi
               done
-              echo "Script done!"
-              echo "NEW_FILES_COPIED=$NEW_FILES_COPIED" >> $GITHUB_ENV
+            else
+              echo "Error: team subdirectory do not exist."
+            fi
+          done
+          echo "Script done!"
+          echo "NEW_FILES_COPIED=$NEW_FILES_COPIED" >> $GITHUB_ENV
 
-          - name: Dispatch to Data Processing Workflow If New Files Are Copied
-            if: env.NEW_FILES_COPIED == 'true'
-            uses: peter-evans/repository-dispatch@v3
-            with:
-              token: ${{ secrets.GITHUB_TOKEN }}
-              event-type: data-processing-event
-              # Optional: Pass information about the copied files in client-payload
-    #          client-payload: '{"ref":"main", "files_copied": "true"}'
+      - name: Dispatch to Data Processing Workflow If New Files Are Copied
+        if: env.NEW_FILES_COPIED == 'true'
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          event-type: data-processing-event
+          # Optional: Pass information about the copied files in client-payload
+#          client-payload: '{"ref":"main", "files_copied": "true"}'
