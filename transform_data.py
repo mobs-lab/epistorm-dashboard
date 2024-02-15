@@ -1,4 +1,5 @@
 # Retrieved from Remy's repo: https://github.com/mobs-lab/flu-dashboard/blob/main/transform_data.py
+# Only minor modifications were made to the original code: the file paths were changed to match this project's directory structure.
 
 import numpy as np
 import pandas as pd
@@ -6,9 +7,7 @@ import glob
 
 ### PREDICTIONS
 # Load all CSV files in forecasts folder into a single data frame. Ignore horizon column.
-predictions = pd.concat((pd.read_csv(f, usecols=['reference_date','target','target_end_date','location','output_type','output_type_id','value'], parse_dates=True)
-                         for f in glob.glob('./data/unprocessed/*MOBS-GLEAM_FLUH.csv')),
-                        ignore_index=True).replace(' ', '_', regex=True)
+predictions = pd.concat((pd.read_csv(f, usecols=['reference_date','target','target_end_date','location','output_type','output_type_id','value'], parse_dates=True) for f in glob.glob('./data/unprocessed/MOBS-GLEAM_FLUH/*MOBS-GLEAM_FLUH.csv')), ignore_index=True).replace(' ', '_', regex=True)
 
 # Retain only predictions for weekly incidence of flu hospitalization.
 predictions.drop(predictions[predictions.target != 'wk_inc_flu_hosp'].index, inplace=True)
@@ -26,13 +25,13 @@ predictions.drop(columns=['target', 'output_type'], inplace=True)
 predictions = predictions.pivot_table(values='value',index=['reference_date','target_end_date','location'],columns=['output_type_id']).reset_index()
 
 # Export file.
-predictions.to_csv('./data/processed/predictions.csv', header=True, index=False, mode='w')
+predictions.to_csv('./data/processed/MOBS-GLEAM_FLUH/predictions.csv', header=True, index=False, mode='w')
 
 del predictions
 
 ### POSTERIORS
 # Load all posteriors, insert dates.
-fnames = glob.glob('./data/unprocessed/*posterior-distributions.csv')
+fnames = glob.glob('./data/unprocessed/MOBS-GLEAM_FLUH/*posterior-distributions.csv')
 dates = [fname.split('_')[0].split('/')[-1] for fname in fnames]
 
 posteriors = pd.concat((pd.read_csv(f, usecols=['location','posterior','bin','count'], dtype={'location': object}).assign(date=d)
@@ -51,6 +50,6 @@ RI.drop(columns='posterior', inplace=True)
 SSD.drop(columns='posterior', inplace=True)
 
 # Export files.
-Rt.to_csv('./data/processed/posteriors_rt.csv', header=True, index=False, mode='w')
-RI.to_csv('./data/processed/posteriors_ri.csv', header=True, index=False, mode='w')
-SSD.to_csv('./data/processed/posteriors_ssd.csv', header=True, index=False, mode='w')
+Rt.to_csv('./data/processed/MOBS-GLEAM_FLUH/posteriors_rt.csv', header=True, index=False, mode='w')
+RI.to_csv('./data/processed/MOBS-GLEAM_FLUH/posteriors_ri.csv', header=True, index=False, mode='w')
+SSD.to_csv('./data/processed/MOBS-GLEAM_FLUH/posteriors_ssd.csv', header=True, index=False, mode='w')
