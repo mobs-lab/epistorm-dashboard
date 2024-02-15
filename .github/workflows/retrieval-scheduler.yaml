@@ -6,9 +6,10 @@ on:
   workflow_dispatch:
 
   # Schedule a workflow to run at specific UTC times using POSIX cron syntax
-  # Run the workflow every Wednesday at 12:30, 15:30, 18:30 UTC
+  # Run the workflow every Wednesday
+  # starting from 12:00PM until midnight, every 3 hours
   schedule:
-    - cron: '30 12-18/3 * * 3'
+    - cron: '0 12-21/3 * * 3'
   jobs:
     dispatch:
       runs-on: ubuntu-latest
