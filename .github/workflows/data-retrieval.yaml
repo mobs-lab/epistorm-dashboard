@@ -24,7 +24,7 @@ jobs:
           # 3. Echo an output variable if new files are copied, to determine if dispatch is needed
           
           # The 4 teams we want data of:
-          team_names = ("MOBS-GLEAM_FLUH" "MIGHTE-Nsemble" "NU_UCSD-GLEAM_AI_FLUH" "CEPH-Rtrend_fluH")
+          team_names=("MOBS-GLEAM_FLUH" "MIGHTE-Nsemble" "NU_UCSD-GLEAM_AI_FLUH" "CEPH-Rtrend_fluH")
           
           NEW_FILES_COPIED=false
           
