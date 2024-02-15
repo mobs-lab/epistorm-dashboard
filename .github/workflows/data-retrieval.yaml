@@ -1,6 +1,8 @@
 name: Retrieve Newly Pushed Data from FluSight-forecast-hub submodule
 
 on:
+  workflow_dispatch:
+
   repository_dispatch:
     types: [ data-retrieval-event ]
 

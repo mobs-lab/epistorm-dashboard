@@ -1,0 +1,37 @@
+name: Process Newly Acquired Model Output Data
+
+on:
+  repository_dispatch:
+    types: [ data-processing-event ]
+
+# set concurrency group, cancels any other job already in progress from the
+# same concurrency group
+concurrency:
+  group: update
+  cancel-in-progress: true
+
+jobs:
+  transform-data:
+    runs-on: ubuntu-latest
+    steps:
+      # access repo and set up python
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v4
+        with:
+          python-version: 3.11
+      - name: install dependencies
+        run: |
+          pip install numpy
+          pip install pandas
+          pip install glob2
+
+      # transform data and push to repo
+      - name: execute transformation
+        # Run Remy's python script to transform the data
+        run: |
+          python transform_data.py
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git add data/processed/*
+          git commit -m "transform data via github actions"
+          git push
