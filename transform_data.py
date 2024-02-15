@@ -30,13 +30,14 @@ predictions.to_csv('./data/processed/MOBS-GLEAM_FLUH/predictions.csv', header=Tr
 del predictions
 
 ### POSTERIORS
+# No posteriors from CDC repo, so we'll skip this part for now.
 # Load all posteriors, insert dates.
+"""
 fnames = glob.glob('./data/unprocessed/MOBS-GLEAM_FLUH/*posterior-distributions.csv')
+print(fnames) #DEBUG: check if the file paths are correct
 dates = [fname.split('_')[0].split('/')[-1] for fname in fnames]
 
-posteriors = pd.concat((pd.read_csv(f, usecols=['location','posterior','bin','count'], dtype={'location': object}).assign(date=d)
-                        for f, d in zip(fnames, dates)),
-                       ignore_index=True)
+posteriors = pd.concat((pd.read_csv(f, usecols=['location','posterior','bin','count'], dtype={'location': object}).assign(date=d) for f, d in zip(fnames, dates)), ignore_index=True)
 
 # Separate posterior types.
 Rt = posteriors.drop(posteriors[posteriors.posterior !='Rt'].index)
@@ -53,3 +54,4 @@ SSD.drop(columns='posterior', inplace=True)
 Rt.to_csv('./data/processed/MOBS-GLEAM_FLUH/posteriors_rt.csv', header=True, index=False, mode='w')
 RI.to_csv('./data/processed/MOBS-GLEAM_FLUH/posteriors_ri.csv', header=True, index=False, mode='w')
 SSD.to_csv('./data/processed/MOBS-GLEAM_FLUH/posteriors_ssd.csv', header=True, index=False, mode='w')
+"""
