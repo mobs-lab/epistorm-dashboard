@@ -37,9 +37,9 @@ jobs:
           mkdir -p data/processed/NU_UCSD-GLEAM_AI_FLUH
           mkdir -p data/processed/CEPH-Rtrend_fluH
 
-      # transform data and push to repo
+      # Run Remy's python script to transform the data and push to repo
       - name: execute transformation
-        # Run Remy's python script to transform the data
+        #TODO After setting up branch protection, refactor this so it creates a new branch and PR instead of pushing to main
         run: |
           python transform_data.py
           git config user.name github-actions

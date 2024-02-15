@@ -56,6 +56,7 @@ jobs:
           echo "Script done!"
           echo "NEW_FILES_COPIED=$NEW_FILES_COPIED" >> $GITHUB_ENV
 
+      #TODO After setting up branch protection, refactor this so it creates a new branch and PR instead of pushing to main
       - name: Add and Commit New Files
         if: env.NEW_FILES_COPIED == 'true'
         run: |
