@@ -9,7 +9,7 @@ on:
   # Run the workflow every Wednesday
   # starting from 12:00PM until midnight, every 3 hours
   schedule:
-    - cron: '0 12-21/3 * * 3'
+    - cron: '30 6-21/3 * * 4'
 jobs:
   dispatch:
     runs-on: ubuntu-latest
