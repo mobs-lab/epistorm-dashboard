@@ -1,6 +1,8 @@
 import React from "react";
 import {Metadata} from "next";
-import Header from '../components/Header'
+import Header from './components/Header'
+import Footer from './components/Footer'
+
 
 export const metadata: Metadata = {
     //TODO: metadata
@@ -19,9 +21,15 @@ export default function RootLayout({
         // Footer should always be the same as well
         // The main content are dynamic, depending on the route
         <html lang="en">
-        
+        <head>
+
+
+        </head>
+        <body>
         <Header/>
-        <body>{children}</body>
+        {children}
+        <Footer/>
+        </body>
         </html>
     )
 }

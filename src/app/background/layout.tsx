@@ -7,10 +7,9 @@ export default function BackgroundPageLayout({
 }) {
     return (
         <section>
-            {children} // For nesting inside the top-level layout
+            <div>
+                {children}
+            </div>
         </section>
-        // <html lang="en">
-        // <body>{children}</body>
-        // </html>
     )
 }
