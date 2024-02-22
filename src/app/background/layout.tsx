@@ -1,13 +1,16 @@
 import React from "react";
 
-export default function RootLayout({
-                                       children,
-                                   }: {
+export default function BackgroundPageLayout({
+                                                 children,
+                                             }: {
     children: React.ReactNode
 }) {
     return (
-        <html lang="en">
-        <body>{children}</body>
-        </html>
+        <section>
+            {children} // For nesting inside the top-level layout
+        </section>
+        // <html lang="en">
+        // <body>{children}</body>
+        // </html>
     )
 }
