@@ -1,4 +1,12 @@
 import React from "react";
+import {Metadata} from "next";
+import Header from '../components/Header'
+
+export const metadata: Metadata = {
+    //TODO: metadata
+    title: 'Epistorm Dashboard',
+    description: 'Dashboard for visualization of _______ data',
+}
 
 export default function RootLayout({
                                        children,
@@ -11,10 +19,8 @@ export default function RootLayout({
         // Footer should always be the same as well
         // The main content are dynamic, depending on the route
         <html lang="en">
-        <header>
-
-
-        </header>
+        
+        <Header/>
         <body>{children}</body>
         </html>
     )
