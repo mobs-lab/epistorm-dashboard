@@ -7,7 +7,9 @@ export default function BackgroundPageLayout({
 }) {
     return (
         <section>
-            {children}
+            <div>
+                {children}
+            </div>
         </section>
     )
 }
