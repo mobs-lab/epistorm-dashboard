@@ -1,9 +1,14 @@
-// Filepath: root/src/app/pages/page.tsx
-// Description: This should export the component for displaying background information (mostly text) written by us
+import {InfoPage} from "../components/InfoPage";
 
 export default function Page() {
 
     return (
-        <h1> Background Information goes here in the future...</h1>
+        <div>
+            <h1> Background </h1>
+            <hr/>
+            <div>
+                <InfoPage/>
+            </div>
+        </div>
     )
 }
