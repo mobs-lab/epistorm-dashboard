@@ -21,14 +21,13 @@ export default function RootLayout({
         // Footer should always be the same as well
         // The main content are dynamic, depending on the route
         <html lang="en">
-        <head>
 
-
-        </head>
         <body>
+
         <Header/>
         {children}
         <Footer/>
+
         </body>
         </html>
     )

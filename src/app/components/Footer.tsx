@@ -6,7 +6,7 @@ interface FooterProps {
 
 const Footer: React.FC<FooterProps> = () => {
     return (
-        <footer>
+        <footer className={"footer"}>
             <ul>
                 <li>
                     <p> Phone Number: </p>
