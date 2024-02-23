@@ -14,7 +14,7 @@ const FiltersPane: React.FC<FiltersPaneProps> = () => {
     return (
         <>
             <h1 className={"bg-blue-700"}> Filters to modify what displays on the chart goes here in the future... </h1>
-            <Image src="/public/Routes.png" width={500} height={500}
+            <Image src="/Routes.png" width={1600} height={1050}
                    alt={"picture of directory structure of src folder"}/>
         </>
     )

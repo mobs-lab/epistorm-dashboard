@@ -5,7 +5,7 @@ import SettingsPane from '../Components/dashboard/SettingsPane';
 
 export default function Page() {
 
-    return (<div className={"flex flex-row px-2 flex-nowrap"}>
+    return (<div className={"flex flex-row px-2 flex-nowrap gap-5"}>
         <div className={"flex-none basis-1/5"}>
             <FiltersPane/>
         </div>
