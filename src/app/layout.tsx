@@ -23,7 +23,7 @@ export default function RootLayout({
         // The main content are dynamic, depending on the route
         <html lang="en">
 
-        <body className={"container bg-gray-100 font-serif"}>
+        <body className={"flex flex-col mx-auto px-4 bg-gray-100 font-serif aspect-auto overscroll-contain"}>
         <Header/>
         {children}
         <Footer/>

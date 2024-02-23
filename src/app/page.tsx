@@ -4,7 +4,7 @@ export default function Page() {
     return (
         <main>
             <div className={"flex"}>
-                <h1 className={"flex-1"}> Development Mode... This might look very ugly </h1>
+                <h1 className={"flex-auto"}> Development Mode... This might look very ugly </h1>
             </div>
 
 
