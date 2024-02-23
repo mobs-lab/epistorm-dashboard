@@ -3,8 +3,6 @@
 
 import React from "react";
 import Image from 'next/image'
-import {Rubik_Lines} from "next/dist/compiled/@next/font/dist/google";
-import {bgBlack} from "next/dist/lib/picocolors";
 
 interface FiltersPaneProps {
 
