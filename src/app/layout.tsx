@@ -1,7 +1,8 @@
 import React from "react";
+import './CSS/globals.css'
 import {Metadata} from "next";
-import Header from './components/Header'
-import Footer from './components/Footer'
+import Header from './Components/Header'
+import Footer from './Components/Footer'
 
 
 export const metadata: Metadata = {
@@ -22,8 +23,7 @@ export default function RootLayout({
         // The main content are dynamic, depending on the route
         <html lang="en">
 
-        <body>
-
+        <body className={"container bg-gray-100 font-serif"}>
         <Header/>
         {children}
         <Footer/>

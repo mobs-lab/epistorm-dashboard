@@ -3,7 +3,8 @@
 * Use Prop to pass in different information
 * */
 
-// Use import to use existing components
+// Use import to use existing Components
+
 
 interface InfoPageProp {
     // Add props if needed in the future
