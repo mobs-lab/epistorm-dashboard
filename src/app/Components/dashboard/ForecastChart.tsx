@@ -2,6 +2,7 @@
 //  Note to myself: view width should dynamically adjust, bc right side "settings" is collapsed by default
 
 import React from "react";
+import * as d3 from 'd3';
 
 interface ForecastChartProps {
 
