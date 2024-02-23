@@ -4,7 +4,6 @@
 import React from "react";
 import Image from 'next/image'
 
-
 interface FiltersPaneProps {
 
 }
@@ -14,6 +13,7 @@ const FiltersPane: React.FC<FiltersPaneProps> = () => {
         <>
             <h1 className={"bg-blue-700"}> Filters to modify what displays on the chart goes here in the future... </h1>
             <Image src="/Routes.png" width={1600} height={1050}
+
                    alt={"picture of directory structure of src folder"}/>
         </>
     )
