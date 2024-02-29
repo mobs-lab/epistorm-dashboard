@@ -16,7 +16,9 @@ jobs:
 
       - name: Update Submodule
         run: |
-          git submodule update --remote --merge
+          git submodule init
+          git submodule update
+          git submodule foreach git pull origin main
 
       - name: Check and Copy New Files
         shell: bash
@@ -67,7 +69,7 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions@github.com"
           git add .
-          git commit -m "Add new files from FluSight-forecast-hub"
+          git commit -m "Retrieved updates from FluSight-forecast-hub"
           git push
 
       - name: Dispatch to Data Processing Workflow If New Files Are Copied
