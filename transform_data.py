@@ -5,6 +5,59 @@ import numpy as np
 import pandas as pd
 import glob
 
+
+def data_transformation(team_name):
+    """
+    Function to transform the data from the different teams into their own separate single file.
+
+    Args:
+    team_name: str, name of the team
+
+    Returns:
+    df: pd.DataFrame, transformed data
+    """
+
+    team_data_source_location = "./data/unprocessed/" + team_name + "/*" + team_name + ".csv"
+    team_data_target_location = "./data/processed/" + team_name + "/" + "predictions.csv"
+
+    print(team_data_source_location)
+    print(team_data_target_location)
+    ### PREDICTIONS
+    # Load all CSV files in forecasts folder into a single data frame. Ignore horizon column.
+    predictions = pd.concat((pd.read_csv(f, usecols=['reference_date', 'target', 'target_end_date', 'location',
+                                                     'output_type', 'output_type_id', 'value'], parse_dates=True) for f
+                             in glob.glob(team_data_source_location)), ignore_index=True).replace(' ', '_', regex=True)
+
+    # Retain only predictions for weekly incidence of flu hospitalization.
+    predictions.drop(predictions[predictions.target != 'wk_inc_flu_hosp'].index, inplace=True)
+
+    # Retain only quantile outputs.
+    predictions.drop(predictions[predictions.output_type != 'quantile'].index, inplace=True)
+
+    # Filter for predictions at the desired quantiles.
+    predictions.drop(predictions[~predictions.output_type_id.isin(['0.025', '0.25', '0.5', '0.75', '0.975'])].index,
+                     inplace=True)
+
+    # Remove unneeded columns.
+    predictions.drop(columns=['target', 'output_type'], inplace=True)
+
+    # Turn quantiles into columns.
+    predictions = predictions.pivot_table(values='value', index=['reference_date', 'target_end_date', 'location'],
+                                          columns=['output_type_id']).reset_index()
+
+    # Export file.
+    predictions.to_csv(team_data_target_location, header=True, index=False, mode='w')
+
+    del predictions
+
+
+# Now we use data_transformation function on all the teams
+teams_list = ["MOBS-GLEAM_FLUH", "MIGHTE-Nsemble", "NU_UCSD-GLEAM_AI_FLUH", "CEPH-Rtrend_fluH"]
+
+for team in teams_list:
+    data_transformation(team)
+
+"""
 ### PREDICTIONS
 # Load all CSV files in forecasts folder into a single data frame. Ignore horizon column.
 predictions = pd.concat((pd.read_csv(f, usecols=['reference_date','target','target_end_date','location','output_type','output_type_id','value'], parse_dates=True) for f in glob.glob('./data/unprocessed/MOBS-GLEAM_FLUH/*MOBS-GLEAM_FLUH.csv')), ignore_index=True).replace(' ', '_', regex=True)
@@ -28,6 +81,7 @@ predictions = predictions.pivot_table(values='value',index=['reference_date','ta
 predictions.to_csv('./data/processed/MOBS-GLEAM_FLUH/predictions.csv', header=True, index=False, mode='w')
 
 del predictions
+"""
 
 ### POSTERIORS
 # No posteriors from CDC repo, so we'll skip this part for now.

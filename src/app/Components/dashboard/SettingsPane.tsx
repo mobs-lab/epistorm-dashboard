@@ -10,7 +10,10 @@ interface SettingsPaneProps {
 
 const SettingsPane: React.FC<SettingsPaneProps> = () => {
     return (
-        <h2> Chart goes here in the future... </h2>
+        <>
+
+
+        </>
     )
 
 }
