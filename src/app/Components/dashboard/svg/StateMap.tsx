@@ -4,10 +4,10 @@ import {useEffect, useRef} from "react"
 
 import * as d3 from "d3"
 
-import usStateData from "../../../../../public/gz_2010_us_040_00_20m.json"
-import {GeoJSON} from "geojson";
+const usStateData = "/gz_2010_us_040_00_20m.json"
 
-const stateData: GeoJSON.FeatureCollection = usStateData as unknown as GeoJSON.FeatureCollection;
+import {FeatureCollection, GeoJSON} from "geojson";
+import * as t from 'topojson'
 
 const StateMap = () => {
     const svgRef = useRef(null);
@@ -43,36 +43,26 @@ const StateMap = () => {
             .style('height', `${height}px`);
 
         // Creating projection
-        const projection = d3.geoMercator()
+        const projection = d3.geoAlbers()
             .translate([width / 2, height / 2])
-            .scale(width);
+            .scale(1000);
 
         // Creating path generator fromt the projecttion created above.
         const pathGenerator = d3.geoPath()
             .projection(projection);
 
-        // Creating the container
-        const g = d3.select(svgRef.current).append("g")
-            .attr('class', 'center-container center-items us-state')
-            .attr('transform', `translate(${margin.left}, ${margin.top})`)
-            .attr('width', `${width + margin.left + margin.right}px`)
-            .attr('height', `${height + margin.top + margin.bottom}px`);
+        const svgContainer = d3.select(svgRef.current);
 
-
-        // Creating States projections
-        g.append("g")
-            .attr("id", "states")
-            .selectAll("path")
-            .data(usStateData.features)
-            .enter()
-            .append("path")
-            .attr("id", feature =>
-                feature.properties.NAME
-            )
-            .attr("d", (feature) => pathGenerator(feature))
-            .attr("class", "state")
-            // Here's an example of what I was saying in my previous comment.
-            .attr("fill", colorGenerator)
+        // @ts-ignore
+        d3.json(usStateData).then(function (us: FeatureCollection) {
+            svgContainer.selectAll("path")
+                .data(us.features)
+                .enter().append("path")
+                .attr("d", pathGenerator)
+                .style("fill", "steelblue")
+                .style("stroke", "white")
+                .style("stroke-width", "1");
+        });
 
 
     }, [colorScale]);
