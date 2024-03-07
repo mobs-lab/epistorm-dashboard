@@ -5,7 +5,7 @@
 
 
 import React from "react";
-import StateMap from "./svg/us-state-map";
+import StateMap from "./svg/StateMap";
 
 interface ForecastChartProps {
 
