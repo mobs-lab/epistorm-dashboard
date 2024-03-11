@@ -1,5 +1,3 @@
-import Link from 'next/link';
-
 interface FooterProps {
     // Add props if needed in the future
 }

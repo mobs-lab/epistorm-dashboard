@@ -15,18 +15,13 @@ export default function RootLayout({
                                    }: {
     children: React.ReactNode
 }) {
-    return (//TODO: Define how the whole top-level layout should look like.
-        // Using Holy Grail layout, header should always be the navigation bar
-        // Footer should always be the same as well
-        // The main content are dynamic, depending on the route
-        <html lang="en" className={"h-full"}>
-
-        <body className={"grid grid-rows-[auto_1fr] min-h-screen bg-gray-100"}>
-        <Header/>
-        <main className={"p-4"}>
-            {children}
-        </main>
-        <Footer/>
-        </body>
-        </html>)
+    return (<html lang="en" className={"h-full"}>
+    <body className={"grid grid-rows-[auto_1fr] min-h-screen bg-gray-100"}>
+    <Header/>
+    <main className={"p-4"}>
+        {children}
+    </main>
+    <Footer/>
+    </body>
+    </html>)
 }

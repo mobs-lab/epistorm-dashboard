@@ -3,11 +3,9 @@
 import {useEffect, useRef} from "react"
 
 import * as d3 from "d3"
+import {FeatureCollection} from "geojson";
 
 const usStateData = "/gz_2010_us_040_00_20m.json"
-
-import {FeatureCollection, GeoJSON} from "geojson";
-import * as t from 'topojson'
 
 const StateMap = () => {
     const svgRef = useRef(null);
