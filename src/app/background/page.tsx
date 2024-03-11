@@ -6,9 +6,7 @@ export default function Page() {
         <div>
             <h1> Background </h1>
             <hr/>
-            <div>
-                <InfoPage/>
-            </div>
+            <InfoPage/>
         </div>
     )
 }

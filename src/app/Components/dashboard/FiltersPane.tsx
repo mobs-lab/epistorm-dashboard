@@ -1,22 +1,21 @@
-//TODO: The panel with options to filter/change what data to display according to a variety of criteria or Map Selection
-// User's selection on this panel should persist even when user decides to browser different forecasts (using tabs on the top of the main dashboard body, below the top navigation bar)
+// components/StateMapWithFilters.tsx
 
-import React from "react";
-import StateMap from "./svg/StateMap";
+import StateMap from './svg/StateMap'; // Import your map component
 
-interface FiltersPaneProps {
+type StateMapWithFiltersProps = {
+    // Props for the map and filters
+};
 
-}
-
-const FiltersPane: React.FC<FiltersPaneProps> = () => {
+const StateMapWithFilters: React.FC<StateMapWithFiltersProps> = ({ /* props */}) => {
     return (
-        <div className={"bg-blue-700 flex flex-auto flex-col justify-around align-middle w-full h-full"}>
+        <div className="flex flex-col">
             <StateMap/>
+            {/* Add filters here */}
+            <div className="filters-container space-y-4 mt-4">
+                {/* Assuming you have components for each filter, you would include them here */}
+            </div>
         </div>
+    );
+};
 
-
-    )
-
-}
-
-export default FiltersPane;
+export default StateMapWithFilters;

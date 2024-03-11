@@ -9,7 +9,7 @@ const Header: React.FC<HeaderProps> = () => {
     return (
         <>
             <header>
-                <div className={"p-4 flex columns-2 space-x-4 justify-between"}>
+                <div className={"p-4 flex columns-2 space-x-4 justify-between bg-blue-600"}>
                     <a href={'..'}><h1 className={"flex-1 flex-nowrap "}> Flu Forecast </h1></a>
                     <nav className={"flex sm; justify-center "}>
                         {[["Home", '..'], ['Forecasts', '../forecasts'], ['Evaluations', '../evaluations'], ['Contact', '../contact'], ['Background', '../background'],].map(([title, url]) => (

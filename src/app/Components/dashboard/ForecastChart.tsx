@@ -1,23 +1,19 @@
-`use client`
-
-//TODO: The main dashboard display, using d3.js
-//  Note to myself: view width should dynamically adjust, bc right side "settings" is collapsed by default
-
+// components/ForecastChart.tsx
 
 import React from "react";
-import StateMap from "./svg/StateMap";
 
-interface ForecastChartProps {
+type LineChartProps = {
+    // Props for your data
+};
 
-}
-
-const ForecastChart: React.FC<ForecastChartProps> = () => {
+const LineChart: React.FC<LineChartProps> = ({ /* data props here */}) => {
     return (
-        <>
-            <StateMap/>
-        </>
-    )
+        <div className="chart-container bg-gray-800 text-white p-4 rounded">
+            <h3 className="text-lg font-semibold mb-3">Massachusetts Weekly Hospital Admissions</h3>
+            {/* Chart rendering goes here */}
+            <div id="line-chart" className="h-64"></div>
+        </div>
+    );
+};
 
-}
-
-export default ForecastChart;
+export default LineChart;
