@@ -1,3 +1,17 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+
+@layer utilities {
+    #dashboard-grid-layout {
+        display: grid;
+        column-gap: 10px;
+        row-gap: 10px;
+        grid-template:
+            [row1-left]"state gauge settings" [row1-right]
+            [row2-left]"graph graph settings" [row2-right]
+            / auto auto auto;
+    }
+
+}
