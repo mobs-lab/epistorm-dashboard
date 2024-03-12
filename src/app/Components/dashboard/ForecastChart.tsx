@@ -1,19 +1,22 @@
 // components/ForecastChart.tsx
+"use client"
 
-import React from "react";
+import React, {useRef} from "react";
+import * as d3 from "d3";
+
+const mobs_gleam_data = "/data/processed/";
 
 type LineChartProps = {
     // Props for your data
 };
 
-const LineChart: React.FC<LineChartProps> = ({ /* data props here */}) => {
-    return (
-        <div className="chart-container bg-gray-800 text-white p-4 rounded">
-            <h3 className="text-lg font-semibold mb-3">Massachusetts Weekly Hospital Admissions</h3>
-            {/* Chart rendering goes here */}
-            <div id="line-chart" className="h-64"></div>
-        </div>
-    );
+const predictionData = await d3.csv(",", );
+
+const LineChart: React.FC<LineChartProps> = () => {
+    const svgRef = useRef(null);
+    const lineChart = d3.select(svgRef.current).append("svg").attr("width", 960).attr("height", 720);
+
+    return (<svg ref={svgRef}></svg>);
 };
 
 export default LineChart;
