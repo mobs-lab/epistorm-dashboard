@@ -12,7 +12,10 @@ const RiskLevelGauge: React.FC<RiskLevelGaugeProps> = ({riskLevel}) => {
             <h3 className="text-lg font-semibold mb-3">Risk level</h3>
             {/* D3.js to render the gauge here */}
             {/* Placeholder div for gauge */}
-            <div id="gauge" className="h-24"></div>
+            <div id="gauge" className="h-24">
+
+
+            </div>
         </div>
     );
 };
