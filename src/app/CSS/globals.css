@@ -4,14 +4,30 @@
 
 
 @layer utilities {
-    #dashboard-grid-layout {
+    .dashboard-grid-layout {
         display: grid;
         column-gap: 10px;
-        row-gap: 10px;
-        grid-template:
-            [row1-left]"state gauge settings" [row1-right]
-            [row2-left]"graph graph settings" [row2-right]
-            / auto auto auto;
+        row-gap: 20px;
+        grid:
+            [row1-left]"state gauge settings" minmax(200px, auto) [row1-right]
+            [row2-left]"graph graph settings" minmax(200px, auto) [row2-right]
+            / minmax(150px, auto) minmax(150px, auto) minmax(150px, auto);
+    }
+
+    .forecast-state {
+        grid-area: state;
+    }
+
+    .forecast-gauge {
+        grid-area: gauge;
+    }
+
+    .forecast-graph {
+        grid-area: graph;
+    }
+
+    .forecast-settings {
+        grid-area: settings;
     }
 
 }

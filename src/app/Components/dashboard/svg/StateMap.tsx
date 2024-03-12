@@ -3,7 +3,7 @@
 import {useEffect, useRef} from "react"
 
 import * as d3 from "d3"
-import {FeatureCollection} from "geojson";
+import {FeatureCollection, GeoJSON} from "geojson";
 
 const usStateData = "/gz_2010_us_040_00_20m.json"
 
@@ -14,7 +14,7 @@ const StateMap = () => {
     const margin = {
         top: 10, bottom: 10, left: 10, right: 10
     }
-    const mapRatio = 0.5
+    const mapRatio = 0.4
 
 // TODO: discuss in meeting what colors to use
 //  Right now, randomly generated
@@ -41,7 +41,7 @@ const StateMap = () => {
             .style('height', `${height}px`);
 
         // Creating projection
-        const projection = d3.geoAlbers()
+        const projection = d3.geoAlbersUsa()
             .translate([width / 2, height / 2])
             .scale(1000);
 
@@ -51,7 +51,6 @@ const StateMap = () => {
 
         const svgContainer = d3.select(svgRef.current);
 
-        // @ts-ignore
         d3.json(usStateData).then(function (us: FeatureCollection) {
             svgContainer.selectAll("path")
                 .data(us.features)
