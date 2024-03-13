@@ -16,6 +16,7 @@ const StateMap = () => {
     }
     const mapRatio = 0.4
 
+
 // TODO: discuss in meeting what colors to use
 //  Right now, randomly generated
     const colorScale: any[] = ["#9e5078", "#549688", "#0a3b84", "#282ba8"]
