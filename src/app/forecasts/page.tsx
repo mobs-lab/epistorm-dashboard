@@ -21,12 +21,10 @@ export default function Page() {
                 <div className={"forecast-graph"}>
                     <h1> Graph </h1>
                     <LineChart/>
-
                 </div>
                 <div className={"forecast-settings"}>
                     <h1> Settings Pane</h1>
                     <StateMapWithFilters/>
-
                 </div>
             </div>
         </div>

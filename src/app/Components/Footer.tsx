@@ -4,18 +4,7 @@ interface FooterProps {
 
 const Footer: React.FC<FooterProps> = () => {
     return (
-        <footer className={"flex-col justify-end align-middle"}>
-            <ul>
-                <li>
-                    <p> Phone Number: </p>
-                </li>
-                <li>
-                    <p> Address: </p>
-                </li>
-                <li>
-                    <p> Email: </p>
-                </li>
-            </ul>
+        <footer className={"flex flex-row justify-end align-middle"}>
         </footer>
     );
 };
