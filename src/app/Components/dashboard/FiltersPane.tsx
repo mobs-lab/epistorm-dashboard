@@ -1,16 +1,22 @@
 // components/FiltersPane.tsx
 "use client"
-
 import React, {useState} from 'react';
+import {FeatureCollection} from "geojson";
+import * as d3 from 'd3';
+
 import StateMap from './svg/StateMap';
-import usStates from '/'
+
+const usStateJSONPath = 'gz_2010_us_040_00_500k.json';
+
+
+
 
 
 type FiltersPaneProps = {
     // Props for the map and filters
 };
 
-const FiltersPane: React.FC<FiltersPaneProps> = ({ /* props */}) => {
+const FiltersPane: React.FC<FiltersPaneProps> = () => {
     // States for form elements
     const [selectedState, setSelectedState] = useState(null);
     const [selectedModel, setSelectedModel] = useState('');
@@ -24,18 +30,7 @@ const FiltersPane: React.FC<FiltersPaneProps> = ({ /* props */}) => {
         setSelectedState(stateName);
     }
 
-    const DropdownMenu = ({states, selectedState, onStateSelect}) => {
-        return (
-            <select
-                value={selectedState}
-                onChange={(e) => onStateSelect(e.target.value)}
-            >
-                {states.map(state => (
-                    <option key={state} value={state}>{state}</option>
-                ))}
-            </select>
-        );
-    };
+    const usStatesJSON = d3.json(usStateJSONPath).then(data => console.log(data));
 
     return (
         <div className="flex flex-col bg-blue-200">
@@ -46,7 +41,7 @@ const FiltersPane: React.FC<FiltersPaneProps> = ({ /* props */}) => {
             {/* Dropdown for State selection */}
             <label htmlFor="state-select" className="my-4">State</label>
             <DropdownMenu
-                states={usStates}
+                usStates={usStatesJSON}
                 selectedState={selectedState}
                 onStateSelect={handleStateSelect}
             />

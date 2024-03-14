@@ -60,11 +60,7 @@ const StateMap = ({onStateSelect}) => {
                 .style("fill", "steelblue")
                 .style("stroke", "white")
                 .style("stroke-width", "1");
-
-            states.on('click', (event, feature)=>{
-                onStateSelect(feature.properties.NAME);
-            })
-
+            return states;
         });
 
 
