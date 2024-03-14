@@ -1,14 +1,14 @@
-// components/StateMapWithFilters.tsx
+// components/FiltersPane.tsx
 "use client"
 
 import React, {useState} from 'react';
 import StateMap from './svg/StateMap';
 
-type StateMapWithFiltersProps = {
+type FiltersPaneProps = {
     // Props for the map and filters
 };
 
-const StateMapWithFilters: React.FC<StateMapWithFiltersProps> = ({ /* props */}) => {
+const FiltersPane: React.FC<FiltersPaneProps> = ({ /* props */}) => {
     // States for form elements
     const [selectedState, setSelectedState] = useState('');
     const [selectedModel, setSelectedModel] = useState('');
@@ -139,4 +139,4 @@ const StateMapWithFilters: React.FC<StateMapWithFiltersProps> = ({ /* props */})
         </div>);
 };
 
-export default StateMapWithFilters;
+export default FiltersPane;
