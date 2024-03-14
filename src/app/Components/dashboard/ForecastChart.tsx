@@ -5,20 +5,13 @@ import React, {useRef} from "react";
 import * as d3 from "d3";
 import {csvParse} from "d3";
 
-const mobs_gleam_data = "../../../../data/processed/MIGHTE-Nsemble/predictions.csv";
+const mobs_gleam_data = "data/processed/MOBS-GLEAM_FLUH/predictions.csv";
 
 type LineChartProps = {
     // Props for your data
 };
 
-// TODO Read the predictions data into a const
 
-function retrievePredictions = () => {
-    const predictionData = d3.csv(mobs_gleam_data).then(function(entry) {
-        reference_date : d3.timeParse("")
-    } )
-    return predictionData;
-    }
 
 
 // TODO Construct a chart, configure it;
@@ -42,5 +35,12 @@ const LineChart: React.FC<LineChartProps> = () => {
     // Return the SVG object using reference
     return (<svg ref={svgRef}></svg>);
 };
+
+// TODO Read the predictions data into a const
+
+function retrievePredictions() {
+    d3.csv(mobs_gleam_data).then(result => console.log(result));
+    return null;
+}
 
 export default LineChart;
