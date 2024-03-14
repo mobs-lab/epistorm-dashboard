@@ -40,11 +40,15 @@ const FiltersPane: React.FC<FiltersPaneProps> = () => {
             </div>
             {/* Dropdown for State selection */}
             <label htmlFor="state-select" className="my-4">State</label>
-            <DropdownMenu
-                usStates={usStatesJSON}
-                selectedState={selectedState}
-                onStateSelect={handleStateSelect}
-            />
+
+            <select
+                id="state-select"
+                className="bg-blue-300 mb-4 p-2 rounded"
+                value={selectedState}
+                onChange={(e) => setSelectedState(e.target.value)}
+            >
+                {/* Render state options here */}
+            </select>
 
             {/* Dropdown for Model selection */}
             <label htmlFor="model-select" className="my-4">Model</label>
