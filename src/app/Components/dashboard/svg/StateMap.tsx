@@ -5,7 +5,7 @@ import * as d3 from "d3"
 
 const usStateData = "/gz_2010_us_040_00_20m.json"
 
-const StateMap = () => {
+const StateMap = ({onStateSelect}) => {
     const svgRef = useRef(null);
 
     // Inside the SVG container, leave some space for the map
@@ -29,6 +29,9 @@ const StateMap = () => {
         const colorGenerator = () => {
             return colorScale[Math.floor(Math.random() * 4)]
         }
+        // const handleStateSelect = (event: any, feature: { properties: { NAME: any; }; })=>{
+        //     onStateSelect(feature.properties.NAME);
+        // }
 
         let width = parseInt(d3.select(svgRef.current).style('width'), 10);
         let height = width * mapRatio
@@ -49,14 +52,19 @@ const StateMap = () => {
 
         const svgContainer = d3.select(svgRef.current);
 
-        d3.json(usStateData).then((us: FeatureCollection) => {
-            svgContainer.selectAll("path")
+        d3.json(usStateData).then((us:FeatureCollection) => {
+            const states = svgContainer.selectAll("path")
                 .data(us.features)
                 .enter().append("path")
                 .attr("d", pathGenerator)
                 .style("fill", "steelblue")
                 .style("stroke", "white")
                 .style("stroke-width", "1");
+
+            states.on('click', (event, feature)=>{
+                onStateSelect(feature.properties.NAME);
+            })
+
         });
 
 

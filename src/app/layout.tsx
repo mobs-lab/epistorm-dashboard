@@ -17,7 +17,7 @@ export default function RootLayout({
     return (<html lang="en" className={"h-full"}>
     <body className={"grid grid-rows-[auto_1fr] min-h-screen bg-gray-100"}>
     <Header/>
-    <main className={"p-4"}>
+    <main className={"p-1"}>
         {children}
     </main>
     {/*<Footer/>*/}

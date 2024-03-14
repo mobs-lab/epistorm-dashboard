@@ -30,4 +30,25 @@
         grid-area: settings;
     }
 
+    .evaluations-grid-layout{
+        display: grid;
+        column-gap: 20px;
+        row-gap: 10px;
+        grid:
+            [row1-left]"title title settings" minmax(50px, auto) [row1-right]
+            [row2-left]"graph score settings" minmax(600px, auto) [row2-right]
+            / minmax(300px, auto) minmax(300px, auto) minmax(150px, auto);
+    }
+    .evaluations-title{
+        grid-area:title;
+    }
+    .evaluations-forecast{
+        grid-area:graph;
+    }
+    .evaluations-score{
+        grid-area:score;
+    }
+    .evaluations-settings{
+        grid-area: settings;
+    }
 }

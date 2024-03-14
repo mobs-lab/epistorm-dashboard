@@ -3,6 +3,8 @@
 
 import React, {useState} from 'react';
 import StateMap from './svg/StateMap';
+import usStates from '/'
+
 
 type FiltersPaneProps = {
     // Props for the map and filters
@@ -10,35 +12,50 @@ type FiltersPaneProps = {
 
 const FiltersPane: React.FC<FiltersPaneProps> = ({ /* props */}) => {
     // States for form elements
-    const [selectedState, setSelectedState] = useState('');
+    const [selectedState, setSelectedState] = useState(null);
     const [selectedModel, setSelectedModel] = useState('');
     const [selectedDate, setSelectedDate] = useState('');
     const [yAxisScale, setYAxisScale] = useState('linear');
     const [confidenceInterval, setConfidenceInterval] = useState('none');
     const [displayMode, setDisplayMode] = useState('byDate');
 
+    // Function to handle selecting of States
+    const handleStateSelect = (stateName: React.SetStateAction<string>) => {
+        setSelectedState(stateName);
+    }
+
+    const DropdownMenu = ({states, selectedState, onStateSelect}) => {
+        return (
+            <select
+                value={selectedState}
+                onChange={(e) => onStateSelect(e.target.value)}
+            >
+                {states.map(state => (
+                    <option key={state} value={state}>{state}</option>
+                ))}
+            </select>
+        );
+    };
+
     return (
         <div className="flex flex-col bg-blue-200">
             <h2 className="text-lg font-bold mb-6">Select a location</h2>
             <div className={"flex mx-auto justify-stretch align-super w-full h-full flex-grow"}>
-                <StateMap/>
+                <StateMap onStateSelect={handleStateSelect}/>
             </div>
             {/* Dropdown for State selection */}
             <label htmlFor="state-select" className="my-4">State</label>
-            <select
-                id="state-select"
-                className="bg-blue-800 mb-4 p-2 rounded"
-                value={selectedState}
-                onChange={(e) => setSelectedState(e.target.value)}
-            >
-                {/* Render state options here */}
-            </select>
+            <DropdownMenu
+                states={usStates}
+                selectedState={selectedState}
+                onStateSelect={handleStateSelect}
+            />
 
             {/* Dropdown for Model selection */}
             <label htmlFor="model-select" className="my-4">Model</label>
             <select
                 id="model-select"
-                className="bg-blue-800 mb-4 p-2 rounded"
+                className="bg-blue-300 mb-4 p-2 rounded"
                 value={selectedModel}
                 onChange={(e) => setSelectedModel(e.target.value)}
             >
@@ -49,7 +66,7 @@ const FiltersPane: React.FC<FiltersPaneProps> = ({ /* props */}) => {
             <label htmlFor="date-select" className="my-4">Dates</label>
             <select
                 id="date-select"
-                className="bg-blue-800 mb-4 p-2 rounded"
+                className="bg-blue-300 mb-4 p-2 rounded"
                 value={selectedDate}
                 onChange={(e) => setSelectedDate(e.target.value)}
             >
