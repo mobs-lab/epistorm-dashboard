@@ -17,8 +17,8 @@ def data_transformation(team_name):
     df: pd.DataFrame, transformed data
     """
 
-    team_data_source_location = "./data/unprocessed/" + team_name + "/*" + team_name + ".csv"
-    team_data_target_location = "./data/processed/" + team_name + "/" + "predictions.csv"
+    team_data_source_location = "./public/data/unprocessed/" + team_name + "/*" + team_name + ".csv"
+    team_data_target_location = "./public/data/processed/" + team_name + "/" + "predictions.csv"
 
     print(team_data_source_location)
     print(team_data_target_location)

@@ -35,7 +35,7 @@ jobs:
           NEW_FILES_COPIED=false
           
           DATA_SOURCE_LOCATION_PATH='FluSight-forecast-hub/model-output'
-          DATA_TARGET_LOCATION_PATH='data/unprocessed'
+          DATA_TARGET_LOCATION_PATH='public/data/unprocessed'
           
           for team in "${team_names[@]}"; do
             echo "Checking for new files from $team..."
