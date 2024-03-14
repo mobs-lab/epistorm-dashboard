@@ -27,7 +27,7 @@ const FiltersPane: React.FC<FiltersPaneProps> = ({ /* props */}) => {
             <label htmlFor="state-select" className="my-4">State</label>
             <select
                 id="state-select"
-                className="bg-blue-800 mb-4 p-2 rounded"
+                className="bg-blue-300 mb-4 p-2 rounded"
                 value={selectedState}
                 onChange={(e) => setSelectedState(e.target.value)}
             >
@@ -38,7 +38,7 @@ const FiltersPane: React.FC<FiltersPaneProps> = ({ /* props */}) => {
             <label htmlFor="model-select" className="my-4">Model</label>
             <select
                 id="model-select"
-                className="bg-blue-800 mb-4 p-2 rounded"
+                className="bg-blue-300 mb-4 p-2 rounded"
                 value={selectedModel}
                 onChange={(e) => setSelectedModel(e.target.value)}
             >
@@ -49,7 +49,7 @@ const FiltersPane: React.FC<FiltersPaneProps> = ({ /* props */}) => {
             <label htmlFor="date-select" className="my-4">Dates</label>
             <select
                 id="date-select"
-                className="bg-blue-800 mb-4 p-2 rounded"
+                className="bg-blue-300 mb-4 p-2 rounded"
                 value={selectedDate}
                 onChange={(e) => setSelectedDate(e.target.value)}
             >
