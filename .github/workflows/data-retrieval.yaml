@@ -37,6 +37,9 @@ jobs:
           DATA_SOURCE_LOCATION_PATH='FluSight-forecast-hub/model-output'
           DATA_TARGET_LOCATION_PATH='public/data/unprocessed'
           
+          GROUND_TRUTH_SOURCE_LOCATION_PATH='FluSight-forecast-hub/target-data/target-hospital-admissions.csv'
+          GROUND_TRUTH_TARGET_LOCATION_PATH='public/data/ground-truth/target-hospital-admissions.csv'
+          
           for team in "${team_names[@]}"; do
             echo "Checking for new files from $team..."
           
@@ -58,6 +61,24 @@ jobs:
             fi
             echo
           done
+          
+          # Check if directory path exist for ground truth data, if not, mkdir
+          if [ ! -d "$GROUND_TRUTH_TARGET_LOCATION_PATH" ]; then
+              mkdir -p "$GROUND_TRUTH_TARGET_LOCATION_PATH"
+          fi
+          
+          # Check if ground truth file exists and copy if not, then also check if source and target copy are the same, if not, sync source to target
+          if [ ! -f "$GROUND_TRUTH_TARGET_LOCATION_PATH/target-hospital-admissions.csv" ]; then
+            cp "$GROUND_TRUTH_SOURCE_LOCATION_PATH" "$GROUND_TRUTH_TARGET_LOCATION_PATH"
+            echo "Copied target-hospital-admissions.csv to $GROUND_TRUTH_TARGET_LOCATION_PATH"
+            NEW_FILES_COPIED=true
+            else
+                if ! cmp -s "$GROUND_TRUTH_SOURCE_LOCATION_PATH" "$GROUND_TRUTH_TARGET_LOCATION_PATH"; then
+                    cp "$GROUND_TRUTH_SOURCE_LOCATION_PATH" "$GROUND_TRUTH_TARGET_LOCATION_PATH"
+                    echo "Synced target-hospital-admissions.csv to $GROUND_TRUTH_TARGET_LOCATION_PATH"
+                    NEW_FILES_COPIED=true
+                fi
+          fi
           echo "\n"
           echo "Script done!"
           echo "NEW_FILES_COPIED=$NEW_FILES_COPIED" >> $GITHUB_ENV
