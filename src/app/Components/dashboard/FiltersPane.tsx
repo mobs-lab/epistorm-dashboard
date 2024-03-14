@@ -20,7 +20,7 @@ const FiltersPane: React.FC<FiltersPaneProps> = ({ /* props */}) => {
     return (
         <div className="flex flex-col bg-blue-200">
             <h2 className="text-lg font-bold mb-6">Select a location</h2>
-            <div className={"mx-auto w-full h-full flex-grow"}>
+            <div className={"flex mx-auto justify-stretch align-super w-full h-full flex-grow"}>
                 <StateMap/>
             </div>
             {/* Dropdown for State selection */}

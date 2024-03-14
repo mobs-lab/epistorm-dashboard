@@ -10,9 +10,9 @@ const StateMap = () => {
 
     // Inside the SVG container, leave some space for the map
     const margin = {
-        top: 5, bottom: 5, left: 5, right: 5
+        top: 0, bottom: 0, left: 0, right: 0
     }
-    const mapRatio = 0.8
+    const mapRatio = 0.5
 
 
 // TODO: discuss in meeting what colors to use
@@ -41,7 +41,7 @@ const StateMap = () => {
         // Creating projection
         const projection = d3.geoAlbersUsa()
             .translate([width / 2, height / 2])
-            .scale(400);
+            .scale(450);
 
         // Creating path generator fromt the projecttion created above.
         const pathGenerator = d3.geoPath()
@@ -62,7 +62,7 @@ const StateMap = () => {
 
     }, [colorScale]);
 
-    return <svg className={"w-auto h-auto min-h-[] "} ref={svgRef}/>
+    return <svg className={"w-full h-full mx-auto "} ref={svgRef}/>
 }
 
 

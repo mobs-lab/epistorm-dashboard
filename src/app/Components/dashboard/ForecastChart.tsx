@@ -5,13 +5,11 @@ import React, {useRef} from "react";
 import * as d3 from "d3";
 import {csvParse} from "d3";
 
-const mobs_gleam_data = "data/processed/MOBS-GLEAM_FLUH/predictions.csv";
+const mobs_gleam_data = "/data/processed/MOBS-GLEAM_FLUH/predictions.csv";
 
 type LineChartProps = {
     // Props for your data
 };
-
-
 
 
 // TODO Construct a chart, configure it;
