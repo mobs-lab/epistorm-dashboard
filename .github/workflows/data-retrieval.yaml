@@ -37,8 +37,9 @@ jobs:
           DATA_SOURCE_LOCATION_PATH='FluSight-forecast-hub/model-output'
           DATA_TARGET_LOCATION_PATH='public/data/unprocessed'
           
-          GROUND_TRUTH_SOURCE_LOCATION_PATH='FluSight-forecast-hub/target-data/target-hospital-admissions.csv'
-          GROUND_TRUTH_TARGET_LOCATION_PATH='public/data/ground-truth/target-hospital-admissions.csv'
+          GROUND_TRUTH_SOURCE='FluSight-forecast-hub/target-data'
+          GROUND_TRUTH_TARGET='public/data/ground-truth'
+          GROUND_TRUTH_FILE_NAME='target-hospital-admissions.csv'
           
           for team in "${team_names[@]}"; do
             echo "Checking for new files from $team..."
@@ -63,19 +64,19 @@ jobs:
           done
           
           # Check if directory path exist for ground truth data, if not, mkdir
-          if [ ! -d "$GROUND_TRUTH_TARGET_LOCATION_PATH" ]; then
-              mkdir -p "$GROUND_TRUTH_TARGET_LOCATION_PATH"
+          if [ ! -d "$GROUND_TRUTH_TARGET" ]; then
+              mkdir -p "$GROUND_TRUTH_TARGET"
           fi
           
           # Check if ground truth file exists and copy if not, then also check if source and target copy are the same, if not, sync source to target
-          if [ ! -f "$GROUND_TRUTH_TARGET_LOCATION_PATH/target-hospital-admissions.csv" ]; then
-            cp "$GROUND_TRUTH_SOURCE_LOCATION_PATH" "$GROUND_TRUTH_TARGET_LOCATION_PATH"
-            echo "Copied target-hospital-admissions.csv to $GROUND_TRUTH_TARGET_LOCATION_PATH"
+          if [ ! -f "$GROUND_TRUTH_TARGET/target-hospital-admissions.csv" ]; then
+            cp "$GROUND_TRUTH_SOURCE/$GROUND_TRUTH_FILE_NAME" "$GROUND_TRUTH_TARGET/$GROUND_TRUTH_FILE_NAME"
+            echo "Copied target-hospital-admissions.csv to $GROUND_TRUTH_TARGET"
             NEW_FILES_COPIED=true
             else
-                if ! cmp -s "$GROUND_TRUTH_SOURCE_LOCATION_PATH" "$GROUND_TRUTH_TARGET_LOCATION_PATH"; then
-                    cp "$GROUND_TRUTH_SOURCE_LOCATION_PATH" "$GROUND_TRUTH_TARGET_LOCATION_PATH"
-                    echo "Synced target-hospital-admissions.csv to $GROUND_TRUTH_TARGET_LOCATION_PATH"
+                if ! cmp -s "$GROUND_TRUTH_SOURCE/$GROUND_TRUTH_FILE_NAME" "$GROUND_TRUTH_TARGET/$GROUND_TRUTH_FILE_NAME"; then
+                    cp "$GROUND_TRUTH_SOURCE/$GROUND_TRUTH_FILE_NAME" "$GROUND_TRUTH_TARGET/$GROUND_TRUTH_FILE_NAME"
+                    echo "Synced target-hospital-admissions.csv to $GROUND_TRUTH_TARGET"
                     NEW_FILES_COPIED=true
                 fi
           fi
