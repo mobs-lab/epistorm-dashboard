@@ -69,14 +69,16 @@ jobs:
           fi
           
           # Check if ground truth file exists and copy if not, then also check if source and target copy are the same, if not, sync source to target
-          if [ ! -f "$GROUND_TRUTH_TARGET/target-hospital-admissions.csv" ]; then
+          if [ ! -f "$GROUND_TRUTH_TARGET/$GROUND_TRUTH_FILE_NAME" ]; then
             cp "$GROUND_TRUTH_SOURCE/$GROUND_TRUTH_FILE_NAME" "$GROUND_TRUTH_TARGET/$GROUND_TRUTH_FILE_NAME"
             echo "Copied target-hospital-admissions.csv to $GROUND_TRUTH_TARGET"
             NEW_FILES_COPIED=true
             else
                 if ! cmp -s "$GROUND_TRUTH_SOURCE/$GROUND_TRUTH_FILE_NAME" "$GROUND_TRUTH_TARGET/$GROUND_TRUTH_FILE_NAME"; then
+                    echo "Detected new version of $GROUND_TRUTH_FILE_NAME in source, deleting stale one..."
+                    rm "$GROUND_TRUTH_TARGET/$GROUND_TRUTH_FILE_NAME"
                     cp "$GROUND_TRUTH_SOURCE/$GROUND_TRUTH_FILE_NAME" "$GROUND_TRUTH_TARGET/$GROUND_TRUTH_FILE_NAME"
-                    echo "Synced target-hospital-admissions.csv to $GROUND_TRUTH_TARGET"
+                    echo "Copied new $GROUND_TRUTH_FILE_NAME to $GROUND_TRUTH_TARGET"
                     NEW_FILES_COPIED=true
                 fi
           fi
