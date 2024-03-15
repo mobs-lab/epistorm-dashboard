@@ -20,7 +20,7 @@ export default function RootLayout({
     <main className={"p-4"}>
         {children}
     </main>
-    {/*<Footer/>*/}
+
     </body>
     </html>)
 }
