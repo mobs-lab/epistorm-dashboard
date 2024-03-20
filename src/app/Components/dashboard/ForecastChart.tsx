@@ -3,12 +3,20 @@
 
 import React, {useRef} from "react";
 import * as d3 from "d3";
-import {csvParse} from "d3";
 
 const mobs_gleam_data = "/data/processed/MOBS-GLEAM_FLUH/predictions.csv";
+const ceph_rtrend_fluh_data = "/data/processed/CEPH-Rtrend_fluH/predications.csv";
+const mighte_nsemble_data = "/data/processed/MIGHTe-Ensemble/predictions.csv";
+const nu_ucsd_gleam_ai_fluh_data = "/data/processed/NU-UCSD-GLEAM_AI_FLUH/predictions.csv";
+const ground_truth_data = "/data/ground-truth/target-hospital-admissions.csv";
 
 type LineChartProps = {
-    // Props for your data
+    selectedUSState: string;
+    selectedForecastModel: string[];
+    selectedDates: string;
+    yAxisScale: string;
+    confidenceInterval: string;
+    displayMode: string;
 };
 
 
@@ -16,7 +24,7 @@ type LineChartProps = {
 const LineChart: React.FC<LineChartProps> = () => {
     // reference to svg object
     const svgRef = useRef(null);
-    const data = retrievePredictions();
+
     // Set up size and margins
     const width = 928;
     const height = 500;
@@ -25,6 +33,7 @@ const LineChart: React.FC<LineChartProps> = () => {
     const marginBottom = 20;
     const marginLeft = 20;
     const marginRight = 20;
+
 
     // Build X-Axis, which is based on dates
 
@@ -35,10 +44,5 @@ const LineChart: React.FC<LineChartProps> = () => {
 };
 
 // TODO Read the predictions data into a const
-
-function retrievePredictions() {
-    d3.csv(mobs_gleam_data).then(result => console.log(result));
-    return null;
-}
 
 export default LineChart;
