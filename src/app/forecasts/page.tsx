@@ -1,15 +1,14 @@
 'use client'
 
-import React, {useState, useEffect} from "react";
-import StateDetail from "../Components/dashboard/SingleState";
-import RiskLevelGauge from "../Components/dashboard/RiskLevelGauge";
+import React, {useEffect, useState} from "react";
 import LineChart from "../Components/dashboard/ForecastChart";
 import FiltersPane from "../Components/dashboard/FiltersPane";
+import * as d3 from "d3";
 
 interface DataPoint {
-    date: string;
+    date: Date;
     stateNum: string;
-    state: string;
+    stateName: string;
     admissions: number;
 }
 
@@ -24,8 +23,14 @@ interface PredictionDataPoint {
     confidence975: number;
 }
 
+interface LocationData {
+    stateNum: string;
+    state: string;
+    stateName: string;
+}
 
-function Page() {
+
+const Page: React.FC = () => {
 
     // Note: the ground truth data gets loaded here and is passed into chart component
     const [groundTruthData, setGroundTruthData] = useState<DataPoint[]>([]);
@@ -33,8 +38,7 @@ function Page() {
     // Note: predictions data gets loaded here (several models each within 2nd level array) and is passed into chart component
     const [predictionsData, setPredictionsData] = useState<PredictionDataPoint[][]>([]);
 
-    // Note:
-    const [stateMapping, setStateMapping] = useState<Map<string, string>>(new Map<string, string>());
+    const [locationData, setLocationData] = useState<LocationData[]>([]);
 
     // NOTE: selectedUSState manages the selected state from map or from dropdown menu in filtersPane, defaults to "US" to show total
     const [USState, setUSState] = useState("US");
@@ -77,8 +81,33 @@ function Page() {
         setDisplayMode(selectedDisplayMode);
     }
 
-    return (
-        <div className={"container mx-auto"}>
+    useEffect(() => {
+        // Load ground truth data
+        d3.csv("/data/ground-truth/target-hospital-admissions.csv").then((data) => {
+            const dataPoints:DataPoint[] = data.map((d) => {
+                return {
+                    date: new Date(d.date), stateNum: d.location, stateName: d.location_name, admissions: +d.value,
+                }
+            })
+            console.log(dataPoints);
+            setGroundTruthData(dataPoints);
+        });
+
+
+        // Load predictions data
+        d3.csv("/data/processed/MOBS-GLEAM_FLUH/predictions.csv").then((data) => {
+            // console.log(data)
+            // setPredictionsData([[data]]);
+        });
+
+        d3.csv("/data/locations.csv").then((data) => {
+            // console.log(data)
+            // setLocationData(data);
+        });
+
+    }, []);
+
+    return (<div className={"container mx-auto"}>
             <div className={"dashboard-grid-layout"}>
                 <div className={"forecast-state"}>
                     <h1> State </h1>
@@ -92,6 +121,9 @@ function Page() {
                 <div className={"forecast-graph"}>
                     <h1> Graph </h1>
                     <LineChart
+                        groundTruthData={groundTruthData}
+                        predictionsData={[[]]}
+                        locationData={[]}
                         selectedUSState={USState}
                         selectedForecastModel={forecastModel}
                         selectedDates={dates}

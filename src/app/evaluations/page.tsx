@@ -17,7 +17,7 @@ export default function Page() {
                     <h1>
                         Model Graph
                     </h1>
-                    <LineChart/>
+                    {/*<LineChart/>*/}
                 </div>
                 {/* Line chart below */}
                 <div className={"bg-amber-900 evaluations-score"}>
