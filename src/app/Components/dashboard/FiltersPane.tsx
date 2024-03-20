@@ -2,141 +2,90 @@
 "use client"
 
 import React, {useState} from 'react';
-import StateMap from './svg/StateMap';
+import StateMap from "./svg/StateMap";
 
 type FiltersPaneProps = {
-    // Props for the map and filters
+    handleStateSelectionChange: (selections: string) => void;
+    handleModelSelectionChange: (selections: string[]) => void;
+    handleDatesSelectionChange: (selections: string) => void;
+    handleYAxisScaleChange: (selections: string) => void;
+    handleConfidenceIntervalChange: (selections: string) => void;
+    handleDisplayModeChange: (selections: string) => void;
 };
 
-const FiltersPane: React.FC<FiltersPaneProps> = ({ /* props */}) => {
-    // States for form elements
-    const [selectedState, setSelectedState] = useState('');
-    const [selectedModel, setSelectedModel] = useState('');
-    const [selectedDate, setSelectedDate] = useState('');
-    const [yAxisScale, setYAxisScale] = useState('linear');
-    const [confidenceInterval, setConfidenceInterval] = useState('none');
-    const [displayMode, setDisplayMode] = useState('byDate');
+const FiltersPane: React.FC<FiltersPaneProps> = ({
+                                                     handleStateSelectionChange,
+                                                     handleModelSelectionChange,
+                                                     handleDatesSelectionChange,
+                                                     handleYAxisScaleChange,
+                                                     handleConfidenceIntervalChange,
+                                                     handleDisplayModeChange
+                                                 }) => {
+    const [selectedUSState, setSelectedUSState] = useState("US");
+    const [selectedModel, setSelectedModel] = useState(["MOBS-GLEAM_FLUH"]);
+    const [selectedDates, setSelectedDates] = useState("");
+    const [yAxisScale, setYAxisScale] = useState("");
+    const [confidenceInterval, setConfidenceInterval] = useState("");
+    const [displayMode, setDisplayMode] = useState("");
 
-    return (
-        <div className="flex flex-col bg-blue-200">
-            <h2 className="text-lg font-bold mb-6">Select a location</h2>
-            <div className={"flex mx-auto justify-stretch align-super w-full h-full flex-grow"}>
+    const onStateSelectionChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+        const selection = event.target.value;
+        setSelectedUSState(selection);
+        handleStateSelectionChange(selection);
+    }
+
+    const onModelSelectionChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+        const selections = Array.from(event.target.selectedOptions, option => option.value);
+        setSelectedModel(selections);
+        handleModelSelectionChange(selections);
+    }
+
+    const onDatesSelectionChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+        const selection = event.target.value;
+        setSelectedDates(selection);
+        handleDatesSelectionChange(selection);
+    }
+
+    const onYAxisScaleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const selection = event.target.value;
+        setYAxisScale(selection);
+        handleYAxisScaleChange(selection);
+    }
+
+    const onConfidenceIntervalChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const selection = event.target.value;
+        setConfidenceInterval(selection);
+        handleConfidenceIntervalChange(selection);
+    }
+
+    const onDisplayModeChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const selection = event.target.value;
+        setDisplayMode(selection);
+        handleDisplayModeChange(selection);
+    }
+
+    return (<>
+            {/* TODO: Map of US State*/}
+            <div>
+                <h1>Map of US States</h1>
                 <StateMap/>
             </div>
-            {/* Dropdown for State selection */}
-            <label htmlFor="state-select" className="my-4">State</label>
-            <select
-                id="state-select"
-                className="bg-blue-300 mb-4 p-2 rounded"
-                value={selectedState}
-                onChange={(e) => setSelectedState(e.target.value)}
-            >
-                {/* Render state options here */}
-            </select>
+            {/* TODO: The three drop-down menus, for state selection, model selection (multiple), and dates selection (leave hard-coded for now)*/}
+            <div><h1>Drop down Menus</h1>
+                <div>
 
-            {/* Dropdown for Model selection */}
-            <label htmlFor="model-select" className="my-4">Model</label>
-            <select
-                id="model-select"
-                className="bg-blue-300 mb-4 p-2 rounded"
-                value={selectedModel}
-                onChange={(e) => setSelectedModel(e.target.value)}
-            >
-                {/* Render model options here */}
-            </select>
+                </div>
 
-            {/* Dropdown for Dates selection */}
-            <label htmlFor="date-select" className="my-4">Dates</label>
-            <select
-                id="date-select"
-                className="bg-blue-300 mb-4 p-2 rounded"
-                value={selectedDate}
-                onChange={(e) => setSelectedDate(e.target.value)}
-            >
-                {/* Render date options here */}
-            </select>
-
-            {/* Y-axis scale radio buttons */}
-            <fieldset className="my-4">
-                <legend className="mb-2">Y-axis scale</legend>
-                <label htmlFor="linear" className="inline-flex items-center mr-4">
-                    <input
-                        type="radio"
-                        id="linear"
-                        name="yAxisScale"
-                        value="linear"
-                        checked={yAxisScale === 'linear'}
-                        onChange={(e) => setYAxisScale(e.target.value)}
-                        className="mr-2"
-                    />
-                    Linear
-                </label>
-                <label htmlFor="logarithmic" className="inline-flex items-center">
-                    <input
-                        type="radio"
-                        id="logarithmic"
-                        name="yAxisScale"
-                        value="logarithmic"
-                        checked={yAxisScale === 'logarithmic'}
-                        onChange={(e) => setYAxisScale(e.target.value)}
-                        className="mr-2"/>
-                    Logarithmic
-                </label>
-            </fieldset>
-            {/* Confidence interval radio buttons */}
-            <fieldset className="my-4">
-                <legend className="mb-2">Confidence interval</legend>
-                <label htmlFor="none" className="inline-flex items-center mr-4">
-                    <input
-                        type="radio"
-                        id="none"
-                        name="confidenceInterval"
-                        value="none"
-                        checked={confidenceInterval === 'none'}
-                        onChange={(e) => setConfidenceInterval(e.target.value)}
-                        className="mr-2"
-                    />
-                    None
-                </label>
-
-                {/* Additional radio buttons for 50%, 90%, 95% */}
-                {/* ... */}
-            </fieldset>
-
-            {/* Display mode radio buttons */}
-            <fieldset className="my-4">
-                <legend className="mb-2">Display mode</legend>
-                <label htmlFor="byDate" className="inline-flex items-center mr-4">
-                    <input
-                        type="radio"
-                        id="byDate"
-                        name="displayMode"
-                        value="byDate"
-                        checked={displayMode === 'byDate'}
-                        onChange={(e) => setDisplayMode(e.target.value)}
-                        className="mr-2"
-                    />
-                    By date
-                </label>
-                <label htmlFor="byHorizon" className="inline-flex items-center">
-                    <input
-                        type="radio"
-                        id="byHorizon"
-                        name="displayMode"
-                        value="byHorizon"
-                        checked={displayMode === 'byHorizon'}
-                        onChange={(e) => setDisplayMode(e.target.value)}
-                        className="mr-2"
-                    />
-                    By horizon
-                </label>
-            </fieldset>
-
-            {/* Footer with logo */}
-            <div className="mt-auto">
-                <img src="/placeholder_logo.png" alt="Epistorm" className="h-12 mx-auto"/>
             </div>
-        </div>);
-};
+            {/* TODO: Y-axis scale selection, radio buttons*/}
+            <div><h1>Y-Axis Options</h1></div>
+            {/* TODO: Confidence Interval Selection, radio buttons*/}
+        <div> <h1>Confidence Intervals</h1> </div>
+            {/* TODO: Display mode selection, buttons side by side*/}
+        <div> <h1>Display mode</h1> </div>
+        </>
+    )
+
+}
 
 export default FiltersPane;
