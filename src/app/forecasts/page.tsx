@@ -24,9 +24,9 @@ interface PredictionDataPoint {
 }
 
 interface LocationData {
-    stateNum: string;
-    state: string;
-    stateName: string;
+    stateNum: string; // state numbers
+    state: string; // state abbreviations
+    stateName: string; // state full names
 }
 
 
@@ -46,6 +46,8 @@ const Page: React.FC = () => {
     // NOTE: selectedForecastModel manages the selected forecast model from dropdown menu in filtersPane, defaults to "MOBS-GLEAM_FLUH"
     //  User can select multiple models, so this will be an array of strings; add to it when multiple are selected
     const [forecastModel, setForecastModel] = useState(["MOBS-GLEAM_FLUH"]);
+
+    const [numOfWeeksAhead, setNumOfWeeksAhead] = useState(1);
 
     // TODO: change this in the future so that it's a date range (using a date picker) (means also change the filters pane's child component)
     const [dates, setDates] = useState("2023-2024");
@@ -104,8 +106,15 @@ const Page: React.FC = () => {
         });
 
         d3.csv("/data/locations.csv").then((data) => {
-            // console.log(data)
-            // setLocationData(data);
+            const locationData: LocationData[] = data.map((d) => {
+                return {
+                    stateNum: d.location,
+                    state: d.abbreviation,
+                    stateName: d.location_name
+                }
+            });
+            console.log(locationData);
+            setLocationData(locationData);
         });
 
     }, []);
@@ -126,7 +135,6 @@ const Page: React.FC = () => {
                     <LineChart
                         groundTruthData={groundTruthData}
                         predictionsData={[[]]}
-                        locationData={[]}
                         selectedUSState={USState}
                         selectedForecastModel={forecastModel}
                         selectedDates={dates}
@@ -138,6 +146,7 @@ const Page: React.FC = () => {
                 <div className={"forecast-settings"}>
                     <h1> Settings Pane</h1>
                     <FiltersPane
+                        locationData={locationData}
                         handleStateSelectionChange={updateState}
                         handleModelSelectionChange={updateModel}
                         handleDatesSelectionChange={updateDates}

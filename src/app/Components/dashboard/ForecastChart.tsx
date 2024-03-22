@@ -37,13 +37,11 @@ type LineChartProps = {
     displayMode: string,
     groundTruthData: DataPoint[],
     predictionsData: PredictionDataPoint[][],
-    locationData: LocationData[]
 };
 
 const LineChart: React.FC<LineChartProps> = ({
                                                  groundTruthData,
                                                  predictionsData,
-                                                 locationData,
                                                  selectedUSState,
                                                  selectedForecastModel,
                                                  selectedDates,
