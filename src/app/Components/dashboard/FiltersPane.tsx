@@ -1,8 +1,14 @@
 // components/FiltersPane.tsx
 "use client"
 
-import React, {useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import StateMap from "./svg/StateMap";
+
+interface LocationData {
+    stateNum: string;
+    state: string;
+    stateName: string;
+}
 
 type FiltersPaneProps = {
     handleStateSelectionChange: (selections: string) => void;
@@ -11,6 +17,8 @@ type FiltersPaneProps = {
     handleYAxisScaleChange: (selections: string) => void;
     handleConfidenceIntervalChange: (selections: string) => void;
     handleDisplayModeChange: (selections: string) => void;
+
+    locationData: LocationData[];
 };
 
 const FiltersPane: React.FC<FiltersPaneProps> = ({
@@ -19,7 +27,8 @@ const FiltersPane: React.FC<FiltersPaneProps> = ({
                                                      handleDatesSelectionChange,
                                                      handleYAxisScaleChange,
                                                      handleConfidenceIntervalChange,
-                                                     handleDisplayModeChange
+                                                     handleDisplayModeChange,
+                                                     locationData
                                                  }) => {
     const [selectedUSState, setSelectedUSState] = useState("US");
     const [selectedModel, setSelectedModel] = useState(["MOBS-GLEAM_FLUH"]);
@@ -64,25 +73,40 @@ const FiltersPane: React.FC<FiltersPaneProps> = ({
         handleDisplayModeChange(selection);
     }
 
-    return (<>
-            {/* TODO: Map of US State*/}
+    useEffect(() => {
+
+    }, []);
+
+    return (
+        <>
             <div>
                 <h1>Map of US States</h1>
                 <StateMap/>
             </div>
             {/* TODO: The three drop-down menus, for state selection, model selection (multiple), and dates selection (leave hard-coded for now)*/}
-            <div><h1>Drop down Menus</h1>
-                <div>
+            <div>
+                <h1>Drop down Menus</h1>
+                <select value={selectedUSState} onChange={onStateSelectionChange}>
+                    {/*<option value={"US"}>US</option>*/}
+                    {locationData.map((state) => {
+                        return <option key={state.state} value={state.stateNum}>{state.stateName}</option>
+                    })}
+                </select>
 
-                </div>
 
             </div>
             {/* TODO: Y-axis scale selection, radio buttons*/}
-            <div><h1>Y-Axis Options</h1></div>
+            <div>
+                <h1>Y-Axis Options</h1>
+            </div>
             {/* TODO: Confidence Interval Selection, radio buttons*/}
-        <div> <h1>Confidence Intervals</h1> </div>
+            <div>
+                <h1>Confidence Intervals</h1>
+            </div>
             {/* TODO: Display mode selection, buttons side by side*/}
-        <div> <h1>Display mode</h1> </div>
+            <div>
+                <h1>Display mode</h1>
+            </div>
         </>
     )
 
