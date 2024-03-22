@@ -84,9 +84,12 @@ const Page: React.FC = () => {
     useEffect(() => {
         // Load ground truth data
         d3.csv("/data/ground-truth/target-hospital-admissions.csv").then((data) => {
-            const dataPoints:DataPoint[] = data.map((d) => {
+            const dataPoints: DataPoint[] = data.map((d) => {
                 return {
-                    date: new Date(d.date), stateNum: d.location, stateName: d.location_name, admissions: +d.value,
+                    date: new Date(d.date),
+                    stateNum: d.location,
+                    stateName: d.location_name,
+                    admissions: +d.value,
                 }
             })
             console.log(dataPoints);
