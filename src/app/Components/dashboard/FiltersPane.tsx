@@ -13,6 +13,7 @@ interface LocationData {
 type FiltersPaneProps = {
     handleStateSelectionChange: (selections: string) => void;
     handleModelSelectionChange: (selections: string[]) => void;
+    handleNumOfWeeksAheadChange: (selections: number) => void;
     handleDatesSelectionChange: (selections: string) => void;
     handleYAxisScaleChange: (selections: string) => void;
     handleConfidenceIntervalChange: (selections: string) => void;
@@ -24,6 +25,7 @@ type FiltersPaneProps = {
 const FiltersPane: React.FC<FiltersPaneProps> = ({
                                                      handleStateSelectionChange,
                                                      handleModelSelectionChange,
+                                                     handleNumOfWeeksAheadChange,
                                                      handleDatesSelectionChange,
                                                      handleYAxisScaleChange,
                                                      handleConfidenceIntervalChange,
@@ -32,6 +34,7 @@ const FiltersPane: React.FC<FiltersPaneProps> = ({
                                                  }) => {
     const [selectedUSState, setSelectedUSState] = useState("US");
     const [selectedModel, setSelectedModel] = useState(["MOBS-GLEAM_FLUH"]);
+    const [selectedNumOfWeeksAhead, setSelectedNumOfWeeksAhead] = useState(1);
     const [selectedDates, setSelectedDates] = useState("");
     const [yAxisScale, setYAxisScale] = useState("");
     const [confidenceInterval, setConfidenceInterval] = useState("");
@@ -45,8 +48,15 @@ const FiltersPane: React.FC<FiltersPaneProps> = ({
 
     const onModelSelectionChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
         const selections = Array.from(event.target.selectedOptions, option => option.value);
+        console.log(selections);
         setSelectedModel(selections);
         handleModelSelectionChange(selections);
+    }
+
+    const onNumOfWeeksAheadChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const selection = Number(event.target.value);
+        setSelectedNumOfWeeksAhead(selection);
+        handleNumOfWeeksAheadChange(selection);
     }
 
     const onDatesSelectionChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
@@ -73,10 +83,6 @@ const FiltersPane: React.FC<FiltersPaneProps> = ({
         handleDisplayModeChange(selection);
     }
 
-    useEffect(() => {
-
-    }, []);
-
     return (
         <>
             <div>
@@ -92,9 +98,29 @@ const FiltersPane: React.FC<FiltersPaneProps> = ({
                         return <option key={state.state} value={state.stateNum}>{state.stateName}</option>
                     })}
                 </select>
-
-
+                <select value={selectedModel} onChange={onModelSelectionChange} multiple>
+                    <option value={"MOBS-GLEAM_FLUH"}>MOBS-GLEAM_FLUH</option>
+                    <option value={"CEPH-Rtrend_fluH"}>CEPH-Rtrend_fluH</option>
+                    <option value={"MIGHTE-Nsemble"}>MIGHTE-Nsemble</option>
+                    <option value={"NU_UCSD-GLEAM_AI_FLUH"}>NU_UCSD-GLEAM_AI_FLUH</option>
+                </select>
+                <select value={selectedDates} onChange={onDatesSelectionChange}>
+                    <option value={"2023-2024"}> 2023–2024 </option>
+                </select>
             </div>
+            {/* TODO: 4 buttons from left to right, to determine number of weeks ahead of predictions to display */}
+            <div>
+                <h1>Number of Weeks Ahead</h1>
+                <input type="radio" id="1" name="weeksAhead" value="1" onChange={onNumOfWeeksAheadChange}/>
+                <label htmlFor="1">1</label>
+                <input type="radio" id="2" name="weeksAhead" value="2" onChange={onNumOfWeeksAheadChange}/>
+                <label htmlFor="2">2</label>
+                <input type="radio" id="3" name="weeksAhead" value="3" onChange={onNumOfWeeksAheadChange}/>
+                <label htmlFor="3">3</label>
+                <input type="radio" id="4" name="weeksAhead" value="4" onChange={onNumOfWeeksAheadChange}/>
+                <label htmlFor="4">4</label>
+            </div>
+
             {/* TODO: Y-axis scale selection, radio buttons*/}
             <div>
                 <h1>Y-Axis Options</h1>

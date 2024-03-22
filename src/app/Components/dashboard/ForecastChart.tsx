@@ -29,8 +29,9 @@ interface LocationData {
 }
 
 type LineChartProps = {
-    selectedUSState: string,
+    selectedUSStateNum: string,
     selectedForecastModel: string[],
+    weeksAhead: number,
     selectedDates: string,
     yAxisScale: string,
     confidenceInterval: string,
@@ -42,8 +43,9 @@ type LineChartProps = {
 const LineChart: React.FC<LineChartProps> = ({
                                                  groundTruthData,
                                                  predictionsData,
-                                                 selectedUSState,
+                                                 selectedUSStateNum,
                                                  selectedForecastModel,
+                                                 weeksAhead,
                                                  selectedDates,
                                                  yAxisScale,
                                                  confidenceInterval,
@@ -75,8 +77,8 @@ const LineChart: React.FC<LineChartProps> = ({
             // Clear previous chart elements
             svg.selectAll("*").remove();
 
-            const filteredDataByState = groundTruthData.filter((d) => d.stateNum === selectedUSState);
-            console.log(filteredDataByState);
+            const filteredDataByState = groundTruthData.filter((d) => d.stateNum === selectedUSStateNum);
+            console.log("Chart: Respective Selected State's Ground Truth Data:", filteredDataByState);
 
             // Create x-axis scale
             const xScale = d3.scaleTime()
@@ -114,13 +116,53 @@ const LineChart: React.FC<LineChartProps> = ({
                 .attr("stroke-width", 1.5)
                 .attr("d", line)
                 .attr("transform", `translate(${marginLeft}, ${marginTop})`);
+
+            //================================================================================================
+            // Add tooltip and vertical line
+
+            const tooltipLine = svg.append("line")
+                .attr("class", "tooltip-line")
+                .attr("stroke", "black")
+                .attr("stroke-width", 1)
+                .attr("opacity", 0)
+                .attr("y1", marginTop)
+                .attr("y2", height - marginBottom);
+
+            const tooltip = svg.append("text")
+                .attr("class", "tooltip")
+                .attr("opacity", 0);
+
+            svg.append("rect")
+                .attr("width", chartWidth)
+                .attr("height", chartHeight)
+                .attr("fill", "none")
+                .attr("pointer-events", "all")
+                .attr("transform", `translate(${marginLeft}, ${marginTop})`)
+                .on("mouseover", () => {
+                    tooltipLine.attr("opacity", 1);
+                    tooltip.attr("opacity", 1);
+                })
+                .on("mouseout", () => {
+                    tooltipLine.attr("opacity", 0);
+                    tooltip.attr("opacity", 0);
+                })
+                .on("mousemove", (event) => {
+                    const mouseX = d3.pointer(event)[0];
+                    const date = xScale.invert(mouseX - marginLeft);
+                    const closestData = filteredDataByState.reduce((a, b) =>
+                        Math.abs(a.date - date) < Math.abs(b.date - date) ? a : b
+                    );
+
+                    tooltipLine.attr("transform", `translate(${xScale(closestData.date)}, 0)`);
+                    tooltip.attr("transform", `translate(${xScale(closestData.date) + 10}, ${yScale(closestData.admissions)})`)
+                        .text(`Date: ${closestData.date.toLocaleDateString()}, Admissions: ${closestData.admissions}`);
+                });
+
         }
-    }, [groundTruthData, selectedUSState]);
+    }, [groundTruthData, selectedUSStateNum, selectedForecastModel, weeksAhead, selectedDates, yAxisScale, confidenceInterval, displayMode]);
 
     // Return the SVG object using reference
     return (<svg ref={svgRef} width={width} height={height}></svg>);
 };
-
-// TODO Read the predictions data into a const
 
 export default LineChart;
