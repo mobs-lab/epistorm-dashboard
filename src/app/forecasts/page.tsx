@@ -40,8 +40,7 @@ const Page: React.FC = () => {
 
     const [locationData, setLocationData] = useState<LocationData[]>([]);
 
-    // NOTE: selectedUSState manages the selected state from map or from dropdown menu in filtersPane, defaults to "US" to show total
-    const [USState, setUSState] = useState("US");
+    const [USStateNum, setUSStateNum] = useState("US");
 
     // NOTE: selectedForecastModel manages the selected forecast model from dropdown menu in filtersPane, defaults to "MOBS-GLEAM_FLUH"
     //  User can select multiple models, so this will be an array of strings; add to it when multiple are selected
@@ -59,12 +58,16 @@ const Page: React.FC = () => {
     const [displayMode, setDisplayMode] = useState("By Date");
 
     //Function to update global state variables; need to pass them into filters pane
-    const updateState = (selectedState: string) => {
-        setUSState(selectedState);
+    const updateState = (selectedStateNum: string) => {
+        setUSStateNum(selectedStateNum);
     }
 
     const updateModel = (selectedModel: string[]) => {
         setForecastModel(selectedModel);
+    }
+
+    const updateNumOfWeeksAhead = (selectedNumOfWeeksAhead: number) => {
+        setNumOfWeeksAhead(selectedNumOfWeeksAhead);
     }
 
     const updateDates = (selectedDates: string) => {
@@ -94,17 +97,37 @@ const Page: React.FC = () => {
                     admissions: +d.value,
                 }
             })
-            console.log(dataPoints);
+            console.log("Ground Truth Data Loaded: ", dataPoints);
             setGroundTruthData(dataPoints);
         });
 
 
-        // Load predictions data
-        d3.csv("/data/processed/MOBS-GLEAM_FLUH/predictions.csv").then((data) => {
-            // console.log(data)
-            // setPredictionsData([[data]]);
+        // Each promise fetch each team's model's prediction data
+        // NOTE: Load all available models' data here; filtering out what is needed is done inside ForecastChart
+        const predictionDataPromises = ["MOBS-GLEAM_FLUH", "CEPH-Rtrend_fluH", "MIGHTE-Nsemble", "NU_UCSD-GLEAM_AI_FLUH"].map((team_model) => {
+            d3.csv(`/data/processed/${team_model}/predictions.csv`).then((data) => {
+                const predictionData: PredictionDataPoint[] = data.map((d) => {
+                    return {
+                        referenceDate: d.reference_date,
+                        targetEndDate: d.target_end_date,
+                        stateNum: d.location,
+                        confidence025: +d["0.025"],
+                        confidence250: +d["0.25"],
+                        confidence500: +d["0.5"],
+                        confidence750: +d["0.75"],
+                        confidence975: +d["0.975"],
+                    }
+                });
+            })
         });
 
+        // Load all selected teams's prediction data
+        Promise.all(predictionDataPromises).then((allPredictionsData: PredictionDataPoint[][]) => {
+            console.log("All Predictions Data Loaded: ", allPredictionsData.length)
+            setPredictionsData(allPredictionsData);
+        });
+
+        // Load location data (just once)
         d3.csv("/data/locations.csv").then((data) => {
             const locationData: LocationData[] = data.map((d) => {
                 return {
@@ -113,7 +136,7 @@ const Page: React.FC = () => {
                     stateName: d.location_name
                 }
             });
-            console.log(locationData);
+            console.log("Location Data Loaded: ", locationData);
             setLocationData(locationData);
         });
 
@@ -134,9 +157,10 @@ const Page: React.FC = () => {
                     <h1> Graph </h1>
                     <LineChart
                         groundTruthData={groundTruthData}
-                        predictionsData={[[]]}
-                        selectedUSState={USState}
+                        predictionsData={predictionsData}
+                        selectedUSStateNum={USStateNum}
                         selectedForecastModel={forecastModel}
+                        weeksAhead={numOfWeeksAhead}
                         selectedDates={dates}
                         yAxisScale={yScale}
                         confidenceInterval={confidenceInterval}
@@ -149,6 +173,7 @@ const Page: React.FC = () => {
                         locationData={locationData}
                         handleStateSelectionChange={updateState}
                         handleModelSelectionChange={updateModel}
+                        handleNumOfWeeksAheadChange={updateNumOfWeeksAhead}
                         handleDatesSelectionChange={updateDates}
                         handleYAxisScaleChange={updateYScale}
                         handleConfidenceIntervalChange={updateConfidenceInterval}
