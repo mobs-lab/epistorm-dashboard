@@ -6,6 +6,7 @@ export interface DataPoint {
 }
 
 export interface PredictionDataPoint {
+    modelName: string;
     referenceDate: string;
     targetEndDate: string;
     stateNum: string;

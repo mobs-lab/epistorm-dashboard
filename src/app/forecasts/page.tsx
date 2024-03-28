@@ -87,6 +87,7 @@ const Page: React.FC = () => {
             d3.csv(`/data/processed/${team_model}/predictions.csv`).then((data) => {
                 const predictionData: PredictionDataPoint[] = data.map((d) => {
                     return {
+                        modelName: team_model,
                         referenceDate: d.reference_date,
                         targetEndDate: d.target_end_date,
                         stateNum: d.location,
@@ -97,12 +98,15 @@ const Page: React.FC = () => {
                         confidence975: +d["0.975"],
                     }
                 });
+                console.log("Prediction Data Loaded for team: ", team_model, "  ", predictionData);
+                return predictionData;
             })
         });
 
         // Load all selected teams's prediction data
         Promise.all(predictionDataPromises).then((allPredictionsData: PredictionDataPoint[][]) => {
-            console.log("All Predictions Data Loaded: ", allPredictionsData.length)
+            // console.log("All Predictions Data Loaded: ", allPredictionsData.length);
+            // console.log("The first one inside allPredictionData: ", allPredictionsData[0]);
             setPredictionsData(allPredictionsData);
         });
 
