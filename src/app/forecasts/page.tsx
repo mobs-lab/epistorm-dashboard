@@ -3,31 +3,10 @@
 import React, {useEffect, useState} from "react";
 import LineChart from "../Components/dashboard/ForecastChart";
 import FiltersPane from "../Components/dashboard/FiltersPane";
+
 import * as d3 from "d3";
 
-interface DataPoint {
-    date: Date;
-    stateNum: string;
-    stateName: string;
-    admissions: number;
-}
-
-interface PredictionDataPoint {
-    referenceDate: string;
-    targetEndDate: string;
-    stateNum: string;
-    confidence025: number;
-    confidence250: number;
-    confidence500: number;
-    confidence750: number;
-    confidence975: number;
-}
-
-interface LocationData {
-    stateNum: string; // state numbers
-    state: string; // state abbreviations
-    stateName: string; // state full names
-}
+import {DataPoint, LocationData, PredictionDataPoint} from "../Interfaces/forecast-interfaces";
 
 
 const Page: React.FC = () => {

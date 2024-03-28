@@ -4,11 +4,7 @@
 import React, {useEffect, useState} from 'react';
 import StateMap from "./svg/StateMap";
 
-interface LocationData {
-    stateNum: string;
-    state: string;
-    stateName: string;
-}
+import {LocationData} from "../../Interfaces/forecast-interfaces";
 
 type FiltersPaneProps = {
     handleStateSelectionChange: (selections: string) => void;
