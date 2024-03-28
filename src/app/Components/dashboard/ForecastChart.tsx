@@ -4,29 +4,8 @@
 import React, {useRef, useEffect} from "react";
 import * as d3 from "d3";
 
-interface DataPoint {
-    date: Date;
-    stateNum: string;
-    stateName: string;
-    admissions: number;
-}
+import { DataPoint, PredictionDataPoint } from "../../Interfaces/forecast-interfaces";
 
-interface PredictionDataPoint {
-    referenceDate: string;
-    targetEndDate: string;
-    stateNum: string;
-    confidence025: number;
-    confidence250: number;
-    confidence500: number;
-    confidence750: number;
-    confidence975: number;
-}
-
-interface LocationData {
-    stateNum: string;
-    state: string;
-    stateName: string;
-}
 
 type LineChartProps = {
     selectedUSStateNum: string,
