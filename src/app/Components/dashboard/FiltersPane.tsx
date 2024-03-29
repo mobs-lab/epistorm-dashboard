@@ -89,9 +89,9 @@ const FiltersPane: React.FC<FiltersPaneProps> = ({
             <div>
                 <h1>Drop down Menus</h1>
                 <select value={selectedUSState} onChange={onStateSelectionChange}>
-                    {/*<option value={"US"}>US</option>*/}
                     {locationData.map((state) => {
-                        return <option key={state.state} value={state.stateNum}>{state.stateNum} :{state.stateName}</option>
+                        return <option key={state.state}
+                                       value={state.stateNum}>{state.stateNum} :{state.stateName}</option>
                     })}
                 </select>
                 <select multiple value={selectedModel} onChange={onModelSelectionChange}>

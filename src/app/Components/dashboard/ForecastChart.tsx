@@ -56,7 +56,7 @@ const LineChart: React.FC<LineChartProps> = ({
     }
 
     // Function to extract needed predictions data
-    function processPredictionData(allPredictions: ModelPrediction[], selectedModels: string[], state: string, selectedWeek, weeksAhead: number, confidenceInterval: string, displayMode: string) {
+    function processPredictionData(allPredictions: ModelPrediction[], selectedModels: string[], state: string, selectedWeek: any, weeksAhead: number, confidenceInterval: string, displayMode: string) {
         //First, determine the logic based on displayMode
         if (displayMode === "By Date") {
             // First filter out the selected models from all predictions

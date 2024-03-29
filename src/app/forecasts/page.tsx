@@ -100,7 +100,7 @@ const Page: React.FC = () => {
                     }
                 });
                 console.log("Prediction Data Loaded for team: ", team_model, "  ", predictionData);
-                return { modelName: team_model, predictionData };
+                return {modelName: team_model, predictionData};
             });
         });
 
@@ -131,8 +131,7 @@ const Page: React.FC = () => {
             <div className={"dashboard-grid-layout"}>
                 <div className={"forecast-state"}>
                     <h1> State </h1>
-                    <SingleStateMap/>
-
+                    <SingleStateMap stateNum={USStateNum}/>
                 </div>
                 <div className={"forecast-gauge"}>
                     <h1> Gauge </h1>
