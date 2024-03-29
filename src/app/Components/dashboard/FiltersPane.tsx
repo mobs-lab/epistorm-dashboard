@@ -101,7 +101,11 @@ const FiltersPane: React.FC<FiltersPaneProps> = ({
                     <option value={"NU_UCSD-GLEAM_AI_FLUH"}>NU_UCSD-GLEAM_AI_FLUH</option>
                 </select>
                 <select value={selectedDates} onChange={onDatesSelectionChange}>
+                    <option value={"2021-2022"}> 2021–2022</option>
+                    <option value={"2022-2023"}> 2022–2023</option>
                     <option value={"2023-2024"}> 2023–2024</option>
+                    {/*<option value={"2024-2025"}> 2024–2025</option>*/}
+                    {/*<option value={"2025-2026"}> 2025–2026</option>*/}
                 </select>
             </div>
             {/* TODO: 4 buttons from left to right, to determine number of weeks ahead of predictions to display */}

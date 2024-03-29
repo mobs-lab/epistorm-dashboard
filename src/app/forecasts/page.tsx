@@ -93,9 +93,11 @@ const Page: React.FC = () => {
                         targetEndDate: d.target_end_date,
                         stateNum: d.location,
                         confidence025: +d["0.025"],
+                        confidence050: +d["0.05"],
                         confidence250: +d["0.25"],
                         confidence500: +d["0.5"],
                         confidence750: +d["0.75"],
+                        confidence950: +d["0.95"],
                         confidence975: +d["0.975"],
                     }
                 });

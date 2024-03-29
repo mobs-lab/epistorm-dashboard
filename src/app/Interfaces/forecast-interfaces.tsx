@@ -10,9 +10,11 @@ export interface PredictionDataPoint {
     targetEndDate: string;
     stateNum: string;
     confidence025: number;
+    confidence050: number;
     confidence250: number;
     confidence500: number;
     confidence750: number;
+    confidence950: number;
     confidence975: number;
 }
 
