@@ -49,7 +49,7 @@ const StateMap = () => {
 
         const svgContainer = d3.select(svgRef.current);
 
-        d3.json(usStateData).then((us: FeatureCollection) => {
+        d3.json(usStateData).then((us:FeatureCollection ) => {
             svgContainer.selectAll("path")
                 .data(us.features)
                 .enter().append("path")

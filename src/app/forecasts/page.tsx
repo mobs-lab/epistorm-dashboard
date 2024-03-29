@@ -3,10 +3,11 @@
 import React, {useEffect, useState} from "react";
 import LineChart from "../Components/dashboard/ForecastChart";
 import FiltersPane from "../Components/dashboard/FiltersPane";
+import SingleStateMap from "../Components/dashboard/SingleStateMap";
 
 import * as d3 from "d3";
 
-import {DataPoint, LocationData, PredictionDataPoint} from "../Interfaces/forecast-interfaces";
+import {DataPoint, LocationData, PredictionDataPoint, ModelPrediction} from "../Interfaces/forecast-interfaces";
 
 
 const Page: React.FC = () => {
@@ -15,7 +16,7 @@ const Page: React.FC = () => {
     const [groundTruthData, setGroundTruthData] = useState<DataPoint[]>([]);
 
     // Note: predictions data gets loaded here (several models each within 2nd level array) and is passed into chart component
-    const [predictionsData, setPredictionsData] = useState<PredictionDataPoint[][]>([]);
+    const [predictionsData, setPredictionsData] = useState<ModelPrediction[]>([]);
 
     const [locationData, setLocationData] = useState<LocationData[]>([]);
 
@@ -83,11 +84,11 @@ const Page: React.FC = () => {
 
         // Each promise fetch each team's model's prediction data
         // NOTE: Load all available models' data here; filtering out what is needed is done inside ForecastChart
+        // Each promise fetch each team's model's prediction data
         const predictionDataPromises = ["MOBS-GLEAM_FLUH", "CEPH-Rtrend_fluH", "MIGHTE-Nsemble", "NU_UCSD-GLEAM_AI_FLUH"].map((team_model) => {
-            d3.csv(`/data/processed/${team_model}/predictions.csv`).then((data) => {
+            return d3.csv(`/data/processed/${team_model}/predictions.csv`).then((data) => {
                 const predictionData: PredictionDataPoint[] = data.map((d) => {
                     return {
-                        modelName: team_model,
                         referenceDate: d.reference_date,
                         targetEndDate: d.target_end_date,
                         stateNum: d.location,
@@ -99,14 +100,14 @@ const Page: React.FC = () => {
                     }
                 });
                 console.log("Prediction Data Loaded for team: ", team_model, "  ", predictionData);
-                return predictionData;
-            })
+                return { modelName: team_model, predictionData };
+            });
         });
 
-        // Load all selected teams's prediction data
-        Promise.all(predictionDataPromises).then((allPredictionsData: PredictionDataPoint[][]) => {
-            // console.log("All Predictions Data Loaded: ", allPredictionsData.length);
-            // console.log("The first one inside allPredictionData: ", allPredictionsData[0]);
+// Load all selected teams's prediction data
+        Promise.all(predictionDataPromises).then((allPredictionsData: ModelPrediction[]) => {
+            console.log("All Predictions Data Loaded: ", allPredictionsData.length);
+            console.log("The first one inside allPredictionData: ", allPredictionsData[0]);
             setPredictionsData(allPredictionsData);
         });
 
@@ -125,11 +126,13 @@ const Page: React.FC = () => {
 
     }, []);
 
-    return (<div className={"container mx-auto"}>
+    return (
+        <div className={"container mx-auto"}>
             <div className={"dashboard-grid-layout"}>
                 <div className={"forecast-state"}>
                     <h1> State </h1>
-                    {/*<StateDetail/>*/}
+                    <SingleStateMap/>
+
                 </div>
                 <div className={"forecast-gauge"}>
                     <h1> Gauge </h1>

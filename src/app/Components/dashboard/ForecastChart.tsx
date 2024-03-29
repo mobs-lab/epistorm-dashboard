@@ -1,10 +1,11 @@
 // components/ForecastChart.tsx
 "use client"
 
-import React, {useRef, useEffect} from "react";
+import React, {useRef, useEffect, useState} from "react";
 import * as d3 from "d3";
 
-import { DataPoint, PredictionDataPoint } from "../../Interfaces/forecast-interfaces";
+import {DataPoint, PredictionDataPoint, ModelPrediction} from "../../Interfaces/forecast-interfaces";
+import {Axis, NumberValue, ScaleLinear, ScaleTime} from "d3";
 
 
 type LineChartProps = {
@@ -16,7 +17,7 @@ type LineChartProps = {
     confidenceInterval: string,
     displayMode: string,
     groundTruthData: DataPoint[],
-    predictionsData: PredictionDataPoint[][],
+    predictionsData: ModelPrediction[],
 };
 
 const LineChart: React.FC<LineChartProps> = ({
@@ -45,9 +46,123 @@ const LineChart: React.FC<LineChartProps> = ({
     const chartWidth = width - marginLeft - marginRight;
     const chartHeight = height - marginTop - marginBottom;
 
-    // Build X-Axis, which is based on dates
+    const [userSelectedWeek, setUserSelectedWeek] = useState(new Date());
 
-    // Build Y-Axis, which is based on highest
+    // Function to filter ground truth data by selected state and dates
+    function filterGroundTruthData(data: DataPoint[], state: string, dates: string) {
+        var filteredGroundTruthDataByState = data.filter((d) => d.stateNum === state);
+        console.log("Chart: Respective Selected State's Ground Truth Data:", filteredGroundTruthDataByState);
+        return filteredGroundTruthDataByState;
+    }
+
+    // Function to extract needed predictions data
+    function processPredictionData(allPredictions: ModelPrediction[], selectedModels: string[], state: string, selectedWeek, weeksAhead: number, confidenceInterval: string, displayMode: string) {
+        //First, determine the logic based on displayMode
+        if (displayMode === "By Date") {
+            // First filter out the selected models from all predictions
+            var models = allPredictions.filter((model) => selectedModels.includes(model.modelName));
+
+            // Then filter out the selected state's data from the selected models
+            var matchingState = models.map((model) => model.predictionData.filter((d) => d.stateNum === state));
+
+            // now use userSelectedWeek and weeksAhead to determine what prediction data to extract from matchingState:
+            // 1. Find the referenceDate that matches userSelectedWeek
+            // 2. Find data entries with targetEndDate that is up to weeksAhead from the referenceDate (need to do date calculation here); this means that matching data entries might not be just one, but multiple.
+            // 3. Calculate the confidence interval of all matching data entries based on confidenceInterval
+            //   None: do not calculate anything
+            //   50%: calculate using 25th and 75th percentile
+            //   90%: calculate using 5th and 95th percentile NOTE: ask if this is correct since we do not have 5th
+            //   95%: calculate using 2.5th and 97.5th percentile
+
+
+        } else if (displayMode === "By Horizon") {
+            //TODO: instead of rendering all models, calculate the confidence interval that should overlay on top of the userSelectedWeek.
+        }
+
+
+    }
+
+    function createScalesAndAxes(filteredGroundTruthData: DataPoint[], chartWidth: number, chartHeight: number, yAxisScale: string) {
+        const xScale = d3.scaleTime()
+            .domain(d3.extent(filteredGroundTruthData, d => d.date) as [Date, Date])
+            .range([0, chartWidth]);
+
+        const yScale = yAxisScale === "linear"
+            ? d3.scaleLinear().domain([0, d3.max(filteredGroundTruthData, d => d.admissions) as number]).range([chartHeight, 0])
+            : d3.scaleLog().domain([1, d3.max(filteredGroundTruthData, d => d.admissions) as number]).range([chartHeight, 0]);
+
+        const xAxis = d3.axisBottom(xScale);
+        const yAxis = d3.axisLeft(yScale).tickFormat(d3.format("d"));
+
+        return {xScale, yScale, xAxis, yAxis};
+    }
+
+    function renderGroundTruthData(svg: d3.Selection<d3.BaseType, unknown, HTMLElement, any>, filteredGroundTruthData: DataPoint[], xScale: ScaleTime<number, number, never>, yScale: ScaleLinear<number, number, never>, marginLeft: number, marginTop: number) {
+        const line = d3.line<DataPoint>()
+            .x(d => xScale(d.date))
+            .y(d => yScale(d.admissions));
+
+        svg.append("path")
+            .datum(filteredGroundTruthData)
+            .attr("fill", "none")
+            .attr("stroke", "steelblue")
+            .attr("stroke-width", 1.5)
+            .attr("d", line)
+            .attr("transform", `translate(${marginLeft}, ${marginTop})`);
+    }
+
+    // TODO: Implement this function
+    // function renderPredictionData(svg: Selection<null, unknown, null, undefined>, processedPredictionData: void, xScale: any, yScale: any, marginLeft: number, marginTop: number, confidenceInterval: string) {}
+
+    function renderVerticalLineAndTooltips(svg: d3.Selection<d3.BaseType, unknown, HTMLElement, any>, filteredGroundTruthData: DataPoint[], xScale: ScaleTime<number, number, never>, yScale: ScaleLinear<number, number, never>, marginLeft: number, marginTop: number, chartWidth: number, chartHeight: number) {
+        const tooltipLine = svg.append("line")
+            .attr("class", "tooltip-line")
+            .attr("stroke", "black")
+            .attr("stroke-width", 1)
+            .attr("opacity", 0)
+            .attr("y1", marginTop)
+            .attr("y2", height - marginBottom);
+
+        const tooltip = svg.append("text")
+            .attr("class", "tooltip")
+            .attr("opacity", 0);
+
+        svg.append("rect")
+            .attr("width", chartWidth)
+            .attr("height", chartHeight)
+            .attr("fill", "none")
+            .attr("pointer-events", "all")
+            .attr("transform", `translate(${marginLeft}, ${marginTop})`)
+            .on("mouseover", () => {
+                tooltipLine.attr("opacity", 1);
+                tooltip.attr("opacity", 1);
+            })
+            .on("mouseout", () => {
+                tooltipLine.attr("opacity", 0);
+                tooltip.attr("opacity", 0);
+            })
+            .on("mousemove", (event) => {
+                const mouseX = d3.pointer(event)[0];
+                const date = xScale.invert(mouseX - marginLeft);
+                const closestData = filteredGroundTruthData.reduce((a, b) =>
+                    Math.abs(a.date.getTime() - date.getTime()) < Math.abs(b.date.getTime() - date.getTime()) ? a : b
+                );
+
+                tooltipLine.attr("transform", `translate(${xScale(closestData.date)}, 0)`);
+                tooltip.attr("transform", `translate(${xScale(closestData.date) + 10}, ${yScale(closestData.admissions)})`)
+                    .text(`Date: ${closestData.date.toLocaleDateString()}, Admissions: ${closestData.admissions}`);
+            });
+    }
+
+    function appendAxes(svg: d3.Selection<d3.BaseType, unknown, HTMLElement, any>, xAxis: Axis<NumberValue>, yAxis: Axis<NumberValue>, marginLeft: number, marginTop: number, chartWidth: number, chartHeight: number) {
+        svg.append("g")
+            .attr("transform", `translate(${marginLeft}, ${height - marginBottom})`)
+            .call(xAxis);
+
+        svg.append("g")
+            .attr("transform", `translate(${marginLeft}, ${marginTop})`)
+            .call(yAxis);
+    }
 
     useEffect(() => {
         if (svgRef.current && groundTruthData.length > 0) {
@@ -56,86 +171,31 @@ const LineChart: React.FC<LineChartProps> = ({
             // Clear previous chart elements
             svg.selectAll("*").remove();
 
-            const filteredDataByState = groundTruthData.filter((d) => d.stateNum === selectedUSStateNum);
-            console.log("Chart: Respective Selected State's Ground Truth Data:", filteredDataByState);
+            // Filter and prepare ground truth data
+            const filteredGroundTruthData = filterGroundTruthData(groundTruthData, selectedUSStateNum, selectedDates);
 
-            // Create x-axis scale
-            const xScale = d3.scaleTime()
-                .domain(d3.extent(filteredDataByState, d => d.date) as [Date, Date])
-                .range([0, chartWidth]);
+            // Process prediction data
+            // const processedPredictionData = processPredictionData(predictionsData, selectedForecastModel, selectedUSStateNum, weeksAhead, confidenceInterval, displayMode);
 
-            const yScale = d3.scaleLinear().domain([0, d3.max(filteredDataByState, d => d.admissions) as number]).range([chartHeight, 0]);
+            // Create scales and axes
+            const {
+                xScale,
+                yScale,
+                xAxis,
+                yAxis
+            } = createScalesAndAxes(filteredGroundTruthData, chartWidth, chartHeight, yAxisScale);
 
-            // Create x-axis
-            const xAxis = d3.axisBottom(xScale);
+            // Render ground truth data line and points
+            renderGroundTruthData(svg, filteredGroundTruthData, xScale, yScale, marginLeft, marginTop);
 
-            // Create y-axis
-            const yAxis = d3.axisLeft(yScale).tickFormat(d3.format("d"));
+            // Render prediction data lines and confidence intervals
+            // renderPredictionData(svg, processedPredictionData, xScale, yScale, marginLeft, marginTop, confidenceInterval);
 
-            // Append x-axis to the chart
-            svg.append("g")
-                .attr("transform", `translate(${marginLeft}, ${height - marginBottom})`)
-                .call(xAxis);
+            // Render draggable vertical line and tooltips
+            renderVerticalLineAndTooltips(svg, filteredGroundTruthData, xScale, yScale, marginLeft, marginTop, chartWidth, chartHeight);
 
-            // Append y-axis to the chart
-            svg.append("g")
-                .attr("transform", `translate(${marginLeft}, ${marginTop})`)
-                .call(yAxis);
-
-            // Line generator
-            const line = d3.line<DataPoint>()
-                .x(d => xScale(d.date))
-                .y(d => yScale(d.admissions));
-
-            // Append path to the chart
-            svg.append("path")
-                .datum(filteredDataByState)
-                .attr("fill", "none")
-                .attr("stroke", "steelblue")
-                .attr("stroke-width", 1.5)
-                .attr("d", line)
-                .attr("transform", `translate(${marginLeft}, ${marginTop})`);
-
-            //================================================================================================
-            // Add tooltip and vertical line
-
-            const tooltipLine = svg.append("line")
-                .attr("class", "tooltip-line")
-                .attr("stroke", "black")
-                .attr("stroke-width", 1)
-                .attr("opacity", 0)
-                .attr("y1", marginTop)
-                .attr("y2", height - marginBottom);
-
-            const tooltip = svg.append("text")
-                .attr("class", "tooltip")
-                .attr("opacity", 0);
-
-            svg.append("rect")
-                .attr("width", chartWidth)
-                .attr("height", chartHeight)
-                .attr("fill", "none")
-                .attr("pointer-events", "all")
-                .attr("transform", `translate(${marginLeft}, ${marginTop})`)
-                .on("mouseover", () => {
-                    tooltipLine.attr("opacity", 1);
-                    tooltip.attr("opacity", 1);
-                })
-                .on("mouseout", () => {
-                    tooltipLine.attr("opacity", 0);
-                    tooltip.attr("opacity", 0);
-                })
-                .on("mousemove", (event) => {
-                    const mouseX = d3.pointer(event)[0];
-                    const date = xScale.invert(mouseX - marginLeft);
-                    const closestData = filteredDataByState.reduce((a, b) =>
-                        Math.abs(a.date - date) < Math.abs(b.date - date) ? a : b
-                    );
-
-                    tooltipLine.attr("transform", `translate(${xScale(closestData.date)}, 0)`);
-                    tooltip.attr("transform", `translate(${xScale(closestData.date) + 10}, ${yScale(closestData.admissions)})`)
-                        .text(`Date: ${closestData.date.toLocaleDateString()}, Admissions: ${closestData.admissions}`);
-                });
+            // Append axes to the chart
+            appendAxes(svg, xAxis, yAxis, marginLeft, marginTop, chartWidth, chartHeight);
 
         }
     }, [groundTruthData, selectedUSStateNum, selectedForecastModel, weeksAhead, selectedDates, yAxisScale, confidenceInterval, displayMode]);
