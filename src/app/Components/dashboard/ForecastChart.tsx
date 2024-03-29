@@ -55,24 +55,40 @@ const LineChart: React.FC<LineChartProps> = ({
         return filteredGroundTruthDataByState;
     }
 
-    // Function to extract needed predictions data
+    // TODO: Function to extract needed predictions data
     function processPredictionData(allPredictions: ModelPrediction[], selectedModels: string[], state: string, selectedWeek: any, weeksAhead: number, confidenceInterval: string, displayMode: string) {
-        //First, determine the logic based on displayMode
+
+        // First filter out the selected models from all predictions
+        var models = allPredictions.filter((model) => selectedModels.includes(model.modelName));
+        console.log("Chart: Selected Models' Predictions Data:", models);
+
+        // Then filter out the selected state's data from the selected models
+        var matchingState = models.map((model) => model.predictionData.filter((d) => d.stateNum === state));
+        console.log("Chart: Selected State's Predictions Data:", matchingState);
+
+        // now use userSelectedWeek and weeksAhead to determine what prediction data to extract from matchingState:
+        // 1. Find the referenceDate that matches userSelectedWeek
+        // 2. Find data entries with targetEndDate that is up to weeksAhead from the referenceDate (need to do date calculation here); this means that matching data entries might not be just one, but multiple.
+        // 3. Calculate the confidence interval of all matching data entries based on confidenceInterval
+        //   None: do not calculate anything
+        //   50%: calculate using 25th and 75th percentile
+        //   90%: calculate using 5th and 95th percentile NOTE: ask if this is correct since we do not have 5th
+        //   95%: calculate using 2.5th and 97.5th percentile
         if (displayMode === "By Date") {
-            // First filter out the selected models from all predictions
-            var models = allPredictions.filter((model) => selectedModels.includes(model.modelName));
+            // First extract the entries with referenceDate that matches userSelectedWeek, but referenceDate is in string format
+            var filteredPredictionsByReferenceDate = matchingState.map((model) => model.filter((d) => d.referenceDate === selectedWeek.toISOString().split('T')[0]));
+            console.log("Chart: Prediction Data of the selected week:", filteredPredictionsByReferenceDate);
 
-            // Then filter out the selected state's data from the selected models
-            var matchingState = models.map((model) => model.predictionData.filter((d) => d.stateNum === state));
-
-            // now use userSelectedWeek and weeksAhead to determine what prediction data to extract from matchingState:
-            // 1. Find the referenceDate that matches userSelectedWeek
-            // 2. Find data entries with targetEndDate that is up to weeksAhead from the referenceDate (need to do date calculation here); this means that matching data entries might not be just one, but multiple.
-            // 3. Calculate the confidence interval of all matching data entries based on confidenceInterval
-            //   None: do not calculate anything
-            //   50%: calculate using 25th and 75th percentile
-            //   90%: calculate using 5th and 95th percentile NOTE: ask if this is correct since we do not have 5th
-            //   95%: calculate using 2.5th and 97.5th percentile
+            // Then extract the entries with targetEndDate that is up to weeksAhead from the referenceDate
+            var filteredPredictionsByTargetEndDate = filteredPredictionsByReferenceDate.map((model) => model.filter((d) => {
+                var referenceDate = new Date(d.referenceDate);
+                var targetEndDate = new Date(d.targetEndDate);
+                var targetWeek = new Date(selectedWeek);
+                targetWeek.setDate(targetWeek.getDate() + weeksAhead * 7);
+                return targetEndDate >= referenceDate && targetEndDate <= targetWeek;
+            })
+        );
+            console.log("Chart: Filtered Predictions Data:", filteredPredictionsByTargetEndDate);
 
 
         } else if (displayMode === "By Horizon") {
@@ -137,10 +153,10 @@ const LineChart: React.FC<LineChartProps> = ({
                 tooltipLine.attr("opacity", 1);
                 tooltip.attr("opacity", 1);
             })
-            .on("mouseout", () => {
-                tooltipLine.attr("opacity", 0);
-                tooltip.attr("opacity", 0);
-            })
+            // .on("mouseout", () => {
+            //     tooltipLine.attr("opacity", 0);
+            //     tooltip.attr("opacity", 0);
+            // })
             .on("mousemove", (event) => {
                 const mouseX = d3.pointer(event)[0];
                 const date = xScale.invert(mouseX - marginLeft);
@@ -151,6 +167,15 @@ const LineChart: React.FC<LineChartProps> = ({
                 tooltipLine.attr("transform", `translate(${xScale(closestData.date)}, 0)`);
                 tooltip.attr("transform", `translate(${xScale(closestData.date) + 10}, ${yScale(closestData.admissions)})`)
                     .text(`Date: ${closestData.date.toLocaleDateString()}, Admissions: ${closestData.admissions}`);
+            })
+            .on("click", (event) => {
+                const mouseX = d3.pointer(event)[0];
+                const date = xScale.invert(mouseX - marginLeft);
+                const closestData = filteredGroundTruthData.reduce((a, b) =>
+                    Math.abs(a.date.getTime() - date.getTime()) < Math.abs(b.date.getTime() - date.getTime()) ? a : b
+                );
+                console.log("User selected week:", closestData.date);
+                setUserSelectedWeek(closestData.date);
             });
     }
 
@@ -175,7 +200,7 @@ const LineChart: React.FC<LineChartProps> = ({
             const filteredGroundTruthData = filterGroundTruthData(groundTruthData, selectedUSStateNum, selectedDates);
 
             // Process prediction data
-            // const processedPredictionData = processPredictionData(predictionsData, selectedForecastModel, selectedUSStateNum, weeksAhead, confidenceInterval, displayMode);
+            const processedPredictionData = processPredictionData(predictionsData, selectedForecastModel, selectedUSStateNum, userSelectedWeek, weeksAhead, confidenceInterval, displayMode);
 
             // Create scales and axes
             const {
@@ -198,7 +223,7 @@ const LineChart: React.FC<LineChartProps> = ({
             appendAxes(svg, xAxis, yAxis, marginLeft, marginTop, chartWidth, chartHeight);
 
         }
-    }, [groundTruthData, selectedUSStateNum, selectedForecastModel, weeksAhead, selectedDates, yAxisScale, confidenceInterval, displayMode]);
+    }, [groundTruthData, selectedUSStateNum, selectedForecastModel, weeksAhead, selectedDates, yAxisScale, confidenceInterval, displayMode, userSelectedWeek]);
 
     // Return the SVG object using reference
     return (<svg ref={svgRef} width={width} height={height}></svg>);
