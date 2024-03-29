@@ -50,9 +50,14 @@ const LineChart: React.FC<LineChartProps> = ({
 
         // Function to filter ground truth data by selected state and dates
         // TODO: after changing dates to a range, need to update this function so it only shows data that falls within that range
-        function filterGroundTruthData(data: DataPoint[], state: string, dates: string) {
+        function filterGroundTruthData(data: DataPoint[], state: string, dateRangeBegin: Date, dateRangeEnd: Date) {
             var filteredGroundTruthDataByState = data.filter((d) => d.stateNum === state);
-            console.log("Chart: Respective Selected State's Ground Truth Data:", filteredGroundTruthDataByState);
+
+            // Filter data by extracting those entries that fall within the selected date range
+            filteredGroundTruthDataByState = filteredGroundTruthDataByState.filter((d) => d.date >= dateRangeBegin && d.date <= dateRangeEnd);
+
+            console.log("Chart: Respective Selected State's Ground Truth Data, that falls within date range:", filteredGroundTruthDataByState);
+
             return filteredGroundTruthDataByState;
         }
 
@@ -107,15 +112,17 @@ const LineChart: React.FC<LineChartProps> = ({
                             confidence_high: d.confidence750
                         }));
                     } else if (confidenceInterval === "90") {
-                        // TODO: change it after clarification
-                        return model;
+                        return model.map((d) => ({
+                            ...d,
+                            confidence_low: d.confidence050,
+                            confidence_high: d.confidence950
+                        }))
                     } else if (confidenceInterval === "95") {
-                        return model.filter((d) => d.confidence025 <= d.confidence500 && d.confidence500 <= d.confidence975)
-                            .map((d) => ({
-                                ...d,
-                                confidence_low: d.confidence025,
-                                confidence_high: d.confidence975
-                            }));
+                        return model.map((d) => ({
+                            ...d,
+                            confidence_low: d.confidence025,
+                            confidence_high: d.confidence975
+                        }));
                     }
                 });
 
