@@ -135,6 +135,7 @@ const LineChart: React.FC<LineChartProps> = ({
                 .domain(d3.extent(filteredGroundTruthData, d => d.date) as [Date, Date])
                 .range([0, chartWidth]);
 
+            // NOTE: Find if there is a semiLog scale in d3 or pseudoLog scale and which works better
             const yScale = yAxisScale === "linear" ? d3.scaleLinear().domain([0, d3.max(filteredGroundTruthData, d => d.admissions) as number]).range([chartHeight, 0]) : d3.scaleLog().domain([1, d3.max(filteredGroundTruthData, d => d.admissions) as number]).range([chartHeight, 0]);
 
             const xAxis = d3.axisBottom(xScale);

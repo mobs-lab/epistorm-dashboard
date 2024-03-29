@@ -35,7 +35,7 @@ def data_transformation(team_name):
     predictions.drop(predictions[predictions.output_type != 'quantile'].index, inplace=True)
 
     # Filter for predictions at the desired quantiles.
-    predictions.drop(predictions[~predictions.output_type_id.isin(['0.025', '0.25', '0.5', '0.75', '0.975'])].index,
+    predictions.drop(predictions[~predictions.output_type_id.isin(['0.025', '0.05', '0.25', '0.5', '0.75', '0.95','0.975'])].index,
                      inplace=True)
 
     # Remove unneeded columns.
