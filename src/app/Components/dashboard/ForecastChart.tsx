@@ -54,7 +54,7 @@ const LineChart: React.FC<LineChartProps> = ({
             var filteredGroundTruthDataByState = data.filter((d) => d.stateNum === state);
 
             // Filter data by extracting those entries that fall within the selected date range
-            filteredGroundTruthDataByState = filteredGroundTruthDataByState.filter((d) => d.date >= dateRangeBegin && d.date <= dateRangeEnd);
+            // filteredGroundTruthDataByState = filteredGroundTruthDataByState.filter((d) => d.date >= dateRangeBegin && d.date <= dateRangeEnd);
 
             console.log("Chart: Respective Selected State's Ground Truth Data, that falls within date range:", filteredGroundTruthDataByState);
 
