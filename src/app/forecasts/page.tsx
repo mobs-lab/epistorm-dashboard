@@ -35,7 +35,7 @@ const Page: React.FC = () => {
 
     const [confidenceInterval, setConfidenceInterval] = useState("90");
 
-    const [displayMode, setDisplayMode] = useState("By Date");
+    const [displayMode, setDisplayMode] = useState("byDate");
 
     //Function to update global state variables; need to pass them into filters pane
     const updateState = (selectedStateNum: string) => {

@@ -146,6 +146,10 @@ const FiltersPane: React.FC<FiltersPaneProps> = ({
             {/* TODO: Display mode selection, buttons side by side*/}
             <div>
                 <h1>Display mode</h1>
+                <input type="radio" id="ByDate" name="displayMode" value="byDate" onChange={onDisplayModeChange}/>
+                <label htmlFor="ByDate">By Date</label>
+                <input type="radio" id="ByState" name="displayMode" value="byHorizon" onChange={onDisplayModeChange}/>
+                <label htmlFor="ByState">By Horizon</label>
             </div>
         </>
     )
