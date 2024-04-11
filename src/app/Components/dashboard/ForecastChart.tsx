@@ -77,7 +77,7 @@ const LineChart: React.FC<LineChartProps> = ({
             // 2. Find data entries with targetEndDate that is up to weeksAhead from the referenceDate (need to do date calculation here); this means that matching data entries might not be just one, but multiple.
             // 3. Calculate the confidence interval of all matching data entries based on confidenceInterval and filter into final version of data to be rendered.
 
-            if (displayMode === "By Date") {
+            if (displayMode === "byDate") {
                 // First extract the entries with referenceDate that matches userSelectedWeek, but referenceDate is in string format
                 var filteredPredictionsByReferenceDate = matchingState.map((model) => model.filter((d) => d.referenceDate === selectedWeek.toISOString().split('T')[0]));
 
@@ -129,8 +129,9 @@ const LineChart: React.FC<LineChartProps> = ({
                 console.log("Chart: Filtered Predictions Data by Confidence Interval:", filteredPredictionsByConfidenceInterval);
 
                 return filteredPredictionsByConfidenceInterval;
-            } else if (displayMode === "By Horizon") {
+            } else if (displayMode === "byHorizon") {
                 //TODO: instead of rendering all models, calculate the confidence interval that should overlay on top of the userSelectedWeek
+                return [];
             }
 
 
