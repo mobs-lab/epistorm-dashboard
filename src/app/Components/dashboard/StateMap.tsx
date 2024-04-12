@@ -1,11 +1,16 @@
 'use client'
 import {useEffect, useRef} from "react"
-import {FeatureCollection} from "geojson";
+import {Feature, FeatureCollection, GeoJSON, GeoJsonProperties, Geometry} from "geojson";
 import * as d3 from "d3"
 
 const usStateData = "/gz_2010_us_040_00_20m.json"
 
-const StateMap = () => {
+interface StateMapProps {
+    selectedState: string;
+    setSelectedState: (state: string) => void;
+}
+
+const StateMap: React.FC<StateMapProps> = ({selectedState, setSelectedState}) => {
     const svgRef = useRef(null);
 
     // Inside the SVG container, leave some space for the map
@@ -18,9 +23,6 @@ const StateMap = () => {
 // TODO: discuss in meeting what colors to use
 //  Right now, randomly generated
     const colorScale: any[] = ["#9e5078", "#549688", "#0a3b84", "#282ba8"]
-
-
-// Draw a US map with state boundaries
 
 
     useEffect(() => {
@@ -49,18 +51,41 @@ const StateMap = () => {
 
         const svgContainer = d3.select(svgRef.current);
 
-        d3.json(usStateData).then((us:FeatureCollection ) => {
-            svgContainer.selectAll("path")
-                .data(us.features)
-                .enter().append("path")
-                .attr("d", pathGenerator)
-                .style("fill", "steelblue")
-                .style("stroke", "white")
-                .style("stroke-width", "1");
-        });
+        const fetchData = async () => {
+            try {
+                const us: FeatureCollection<Geometry, GeoJsonProperties> | undefined = await d3.json(usStateData);
+                console.log("US State Data: ", us);
 
+                const svgContainer = d3.select(svgRef.current);
 
-    }, [colorScale]);
+                svgContainer.selectAll("path")
+                    .data(us.features)
+                    .enter().append("path")
+                    .attr("d", pathGenerator)
+                    .style("fill", d => {
+                        if (d && d.properties && d.properties.STATE) {
+                            return d.properties.STATE === selectedState ? "orange" : "steelblue";
+                        }
+                        return "steelblue";
+                    })
+                    .style("stroke", "white")
+                    .style("stroke-width", "1")
+                    .on("click", (event, d) => {
+                        console.log("Clicked element data: ", d);
+                        if (d && d.properties && d.properties.STATE) {
+                            setSelectedState(d.properties.STATE);
+                        } else {
+                            console.warn("Clicked element does not have the expected data structure.");
+                        }
+                    });
+            } catch (error) {
+                console.error("Error loading US state data: ", error);
+            }
+        };
+
+        fetchData();
+
+    }, [colorScale, selectedState]);
 
     return <svg className={"w-full h-full mx-auto "} ref={svgRef}/>
 }

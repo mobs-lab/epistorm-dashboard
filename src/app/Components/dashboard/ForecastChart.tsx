@@ -46,7 +46,7 @@ const LineChart: React.FC<LineChartProps> = ({
         const chartWidth = width - marginLeft - marginRight;
         const chartHeight = height - marginTop - marginBottom;
 
-        const [userSelectedWeek, setUserSelectedWeek] = useState(null);
+        const [userSelectedWeek, setUserSelectedWeek] = useState(new Date());
 
         // Function to filter ground truth data by selected state and dates
         function filterGroundTruthData(data: DataPoint[], state: string, dateRange: [Date, Date]) {
@@ -143,7 +143,7 @@ const LineChart: React.FC<LineChartProps> = ({
                 .range([0, chartWidth]);
 
             // NOTE: Find if there is a semiLog scale in d3 or pseudoLog scale and which works better
-            const yScale = yAxisScale === "linear" ? d3.scaleLinear().domain([0, d3.max(filteredGroundTruthData, d => d.admissions) as number]).range([chartHeight - 20, 0]) : d3.scaleLog().domain([1, d3.max(filteredGroundTruthData, d => d.admissions) as number]).range([chartHeight, 0]);
+            const yScale = yAxisScale === "linear" ? d3.scaleLinear().domain([0, d3.max(filteredGroundTruthData, d => d.admissions) as number]).range([chartHeight, 0]) : d3.scaleLog().domain([1, d3.max(filteredGroundTruthData, d => d.admissions) as number]).range([chartHeight, 0]);
 
             const xAxis = d3.axisBottom(xScale);
             const yAxis = d3.axisLeft(yScale).tickFormat(d3.format("d"));
@@ -219,49 +219,7 @@ const LineChart: React.FC<LineChartProps> = ({
             });
         }
 
-        function renderVerticalIndicator(
-            svg: d3.Selection<d3.BaseType, unknown, HTMLElement, any>,
-            filteredGroundTruthData: DataPoint[],
-            xScale: ScaleTime<number, number, never>,
-            marginLeft: number,
-            marginTop: number
-        ) {
-            const verticalIndicator = svg.append("line")
-                .attr("class", "vertical-indicator")
-                .attr("stroke", "blue")
-                .attr("stroke-width", 2)
-                .attr("y1", marginTop)
-                .attr("y2", height - marginBottom)
-                .attr("opacity", 0);
-
-            function updateVerticalIndicator(date: Date) {
-                verticalIndicator.attr("transform", `translate(${xScale(date) + marginLeft}, 0)`)
-                    .attr("opacity", 1);
-            }
-
-            function draggableVerticalIndicator(event: any) {
-                const [mouseX] = d3.pointer(event);
-                const date = xScale.invert(mouseX);
-                const closestData = filteredGroundTruthData.reduce((a, b) => Math.abs(a.date.getTime() - date.getTime()) < Math.abs(b.date.getTime() - date.getTime()) ? a : b);
-                updateVerticalIndicator(closestData.date);
-                setUserSelectedWeek(closestData.date);
-            }
-
-            svg.append("rect")
-                .attr("class", "vertical-indicator-hitbox")
-                .attr("width", chartWidth)
-                .attr("height", chartHeight)
-                .attr("fill", "none")
-                .attr("pointer-events", "all")
-                .attr("transform", `translate(${marginLeft}, ${marginTop})`)
-                .on("click", draggableVerticalIndicator)
-                .call(d3.drag<any, any>()
-                    .on("drag", draggableVerticalIndicator)
-                    .on("end", draggableVerticalIndicator)
-                );
-        }
-
-        function renderTooltip(
+        function renderChartComponents(
             svg: d3.Selection<d3.BaseType, unknown, HTMLElement, any>,
             filteredGroundTruthData: DataPoint[],
             xScale: ScaleTime<number, number, never>,
@@ -271,50 +229,91 @@ const LineChart: React.FC<LineChartProps> = ({
             chartWidth: number,
             chartHeight: number
         ) {
+            // Append a line for the tooltip
             const tooltipLine = svg.append("line")
                 .attr("class", "tooltip-line")
                 .attr("stroke", "black")
                 .attr("stroke-width", 1)
+                .attr("stroke-dasharray", "5,5")
                 .attr("opacity", 0)
                 .attr("y1", marginTop)
-                .attr("y2", height - marginBottom)
-                .attr("stroke-dasharray", "5,5");
+                .attr("y2", chartHeight - marginTop);
 
-            const tooltip = svg.append("text")
-                .attr("class", "tooltip")
+            // Append a text for the tooltip
+            const tooltipText = svg.append("text")
+                .attr("class", "tooltip-text")
+                .attr("fill", "black")
+                .attr("font-size", 12)
                 .attr("opacity", 0);
 
-            function updateTooltipLine(date: Date) {
-                tooltipLine.attr("transform", `translate(${xScale(date) + marginLeft}, 0)`)
-                    .attr("opacity", 1);
-            }
 
+            // Append a line for the vertical indicator
+            const verticalIndicator = svg.append("line")
+                .attr("class", "vertical-indicator")
+                .attr("stroke", "blue")
+                .attr("stroke-width", 2)
+                .attr("y1", marginTop)
+                .attr("y2", chartHeight - marginTop)
+                .attr("opacity", 0);
+
+            // Function to update the tooltip line and its associated text
             function updateTooltip(date: Date, admissions: number) {
-                tooltip.attr("transform", `translate(${xScale(date) + marginLeft + 10}, ${yScale(admissions) + marginTop})`)
+                const xPosition = xScale(date) + marginLeft;
+                tooltipLine
+                    .attr("transform", `translate(${xPosition}, 0)`)
+                    .attr("opacity", 1);
+                // Assuming you have a tooltip text element to update
+                tooltipText
+                    .attr("transform", `translate(${xPosition + 10}, ${marginTop + 20})`)
                     .text(`Date: ${date.toLocaleDateString()}, Admissions: ${admissions}`)
                     .attr("opacity", 1);
             }
 
-            function mousemoveHandler(event: any) {
-                const [mouseX] = d3.pointer(event);
-                const date = xScale.invert(mouseX);
-                const closestData = filteredGroundTruthData.reduce((a, b) => Math.abs(a.date.getTime() - date.getTime()) < Math.abs(b.date.getTime() - date.getTime()) ? a : b);
-                updateTooltipLine(closestData.date);
-                updateTooltip(closestData.date, closestData.admissions);
+            // Function to update the position of the vertical indicator
+            function updateVerticalIndicator(date: Date) {
+                const xPosition = xScale(date) + marginLeft;
+                verticalIndicator
+                    .attr("transform", `translate(${xPosition}, 0)`)
+                    .attr("opacity", 1);
             }
 
-            svg.append("rect")
-                .attr("class", "tooltip-hitbox")
+            // Unified event overlay for handling mouse events
+            const eventOverlay = svg.append("rect")
                 .attr("width", chartWidth)
                 .attr("height", chartHeight)
                 .attr("fill", "none")
                 .attr("pointer-events", "all")
-                .attr("transform", `translate(${marginLeft}, ${marginTop})`)
-                .on("mousemove", mousemoveHandler)
-                .on("mouseout", () => {
-                    tooltipLine.attr("opacity", 0);
-                    tooltip.attr("opacity", 0);
-                }).on("click", mousemoveHandler);
+                .attr("transform", `translate(${marginLeft}, ${marginTop})`);
+
+            // Function to handle the end of dragging or clicking
+            function onDragEnd(event: any) {
+                const mouseX = d3.pointer(event, this)[0]; // 'this' refers to the context of the overlay rectangle
+                const date = xScale.invert(mouseX);
+                const closestData = findNearestDataPoint(filteredGroundTruthData, date);
+                updateVerticalIndicator(closestData.date);
+                // Set the state variable for userSelectedWeek
+                setUserSelectedWeek(closestData.date);
+            }
+
+            // Function to handle mouse movement
+            function onMouseMove(event: any) {
+                const mouseX = d3.pointer(event, this)[0]; // 'this' refers to the context of the overlay rectangle
+                const date = xScale.invert(mouseX);
+                const closestData = findNearestDataPoint(filteredGroundTruthData, date);
+                updateTooltip(closestData.date, closestData.admissions);
+            }
+
+            // Attach the mousemove, drag and click event handlers to the eventOverlay
+            eventOverlay
+                .on("mousemove", onMouseMove)
+                .on("click", onDragEnd)
+                .call(d3.drag().on("end", onDragEnd));
+
+            // Helper function to find the nearest data point
+            function findNearestDataPoint(data: DataPoint[], targetDate: Date): DataPoint {
+                return data.reduce((prev, curr) =>
+                    Math.abs(curr.date - targetDate) < Math.abs(prev.date - targetDate) ? curr : prev);
+            }
         }
 
 
@@ -338,15 +337,7 @@ const LineChart: React.FC<LineChartProps> = ({
 
                 // Filter and prepare ground truth data
                 const filteredGroundTruthData = filterGroundTruthData(groundTruthData, selectedUSStateNum, selectedDateRange);
-                if (filteredGroundTruthData.length > 0) {
-                    try{
-                    setUserSelectedWeek(filteredGroundTruthData[filterGroundTruthData.length-1].date);}
-                    catch(e){
-                        console.log("Error in setting userSelectedWeek");
-                    }
-                } else {
-                    setUserSelectedWeek(new Date());
-                }
+
 
                 // Process prediction data
                 const processedPredictionData = processPredictionData(predictionsData, selectedForecastModel, selectedUSStateNum, userSelectedWeek, weeksAhead, confidenceInterval, displayMode);
@@ -365,11 +356,7 @@ const LineChart: React.FC<LineChartProps> = ({
                 // Append axes to the chart
                 appendAxes(svg, xAxis, yAxis, marginLeft, marginTop, chartWidth, chartHeight);
 
-                // Render vertical indicator
-                renderVerticalIndicator(svg, filteredGroundTruthData, xScale, marginLeft, marginTop);
-
-                // Render tooltip
-                renderTooltip(svg, filteredGroundTruthData, xScale, yScale, marginLeft, marginTop, chartWidth, chartHeight);
+                renderChartComponents(svg, filteredGroundTruthData, xScale, yScale, marginLeft, marginTop, chartWidth, chartHeight);
 
             }
         }, [groundTruthData, selectedUSStateNum, selectedForecastModel, weeksAhead, selectedDateRange, yAxisScale, confidenceInterval, displayMode, userSelectedWeek]);

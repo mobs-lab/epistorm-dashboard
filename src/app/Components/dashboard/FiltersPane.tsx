@@ -26,7 +26,7 @@ const dateRangeMapping = {
     "2022-2023": [new Date("2022-06-01"), new Date("2023-06-01")],
     // TODO change the dates mapping later to reflect current date
     "2023-2024": [new Date("2023-06-01"), new Date("2024-04-06")],
-    "2024-2025": [new Date("2024-04-06"), new Date("2025-06-01")],
+    "2024-2025": [new Date("2024-06-01"), new Date("2025-06-01")],
 }
 
 
@@ -113,7 +113,7 @@ const FiltersPane: React.FC<FiltersPaneProps> = ({
         <>
             <div>
                 <h1>Map of US States</h1>
-                <StateMap/>
+                <StateMap selectedState={selectedUSState} setSelectedState={handleStateSelectionChange}/>
             </div>
             {/* TODO: The three drop-down menus, for state selection, model selection (multiple), and dates selection (leave hard-coded for now)*/}
             <div>
@@ -124,18 +124,24 @@ const FiltersPane: React.FC<FiltersPaneProps> = ({
                                        value={state.stateNum}>{state.stateNum} :{state.stateName}</option>
                     })}
                 </select>
+            </div>
+            <div>
                 <select multiple value={selectedModel} onChange={onModelSelectionChange}>
                     <option value={"MOBS-GLEAM_FLUH"}>MOBS-GLEAM_FLUH</option>
                     <option value={"CEPH-Rtrend_fluH"}>CEPH-Rtrend_fluH</option>
                     <option value={"MIGHTE-Nsemble"}>MIGHTE-Nsemble</option>
                     <option value={"NU_UCSD-GLEAM_AI_FLUH"}>NU_UCSD-GLEAM_AI_FLUH</option>
                 </select>
+            </div>
+            <div>
                 <select value={selectedDateRange} onChange={onDateRangeSelectionChange}>
                     <option value={"2021-2022"}> 2021–2022</option>
                     <option value={"2022-2023"}> 2022–2023</option>
                     <option value={"2023-2024"}> 2023–2024</option>
                     <option value={"2024-2025"}> 2024–2025</option>
                 </select>
+            </div>
+            <div>
                 {/*    Date Picker for starting date */}
                 <DatePicker onChange={handleDateStartSelectionChange}
                             selected={selectedDateStart}
@@ -150,6 +156,7 @@ const FiltersPane: React.FC<FiltersPaneProps> = ({
                             dateFormat={"P"}
                 />
             </div>
+
             {/* TODO: 4 buttons from left to right, to determine number of weeks ahead of predictions to display */}
             <div>
                 <h1>Number of Weeks Ahead</h1>
