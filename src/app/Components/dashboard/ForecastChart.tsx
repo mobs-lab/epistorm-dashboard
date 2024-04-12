@@ -12,7 +12,7 @@ type LineChartProps = {
     selectedUSStateNum: string,
     selectedForecastModel: string[],
     weeksAhead: number,
-    selectedDates: string,
+    selectedDateRange: [Date, Date],
     yAxisScale: string,
     confidenceInterval: string,
     displayMode: string,
@@ -26,7 +26,7 @@ const LineChart: React.FC<LineChartProps> = ({
                                                  selectedUSStateNum,
                                                  selectedForecastModel,
                                                  weeksAhead,
-                                                 selectedDates,
+                                                 selectedDateRange,
                                                  yAxisScale,
                                                  confidenceInterval,
                                                  displayMode
@@ -46,15 +46,14 @@ const LineChart: React.FC<LineChartProps> = ({
         const chartWidth = width - marginLeft - marginRight;
         const chartHeight = height - marginTop - marginBottom;
 
-        const [userSelectedWeek, setUserSelectedWeek] = useState(new Date());
+        const [userSelectedWeek, setUserSelectedWeek] = useState(null);
 
         // Function to filter ground truth data by selected state and dates
-        // TODO: after changing dates to a range, need to update this function so it only shows data that falls within that range
-        function filterGroundTruthData(data: DataPoint[], state: string, dateRangeBegin: Date, dateRangeEnd: Date) {
+        function filterGroundTruthData(data: DataPoint[], state: string, dateRange: [Date, Date]) {
             var filteredGroundTruthDataByState = data.filter((d) => d.stateNum === state);
 
             // Filter data by extracting those entries that fall within the selected date range
-            // filteredGroundTruthDataByState = filteredGroundTruthDataByState.filter((d) => d.date >= dateRangeBegin && d.date <= dateRangeEnd);
+            filteredGroundTruthDataByState = filteredGroundTruthDataByState.filter((d) => d.date >= dateRange[0] && d.date <= dateRange[1]);
 
             console.log("Chart: Respective Selected State's Ground Truth Data, that falls within date range:", filteredGroundTruthDataByState);
 
@@ -144,7 +143,7 @@ const LineChart: React.FC<LineChartProps> = ({
                 .range([0, chartWidth]);
 
             // NOTE: Find if there is a semiLog scale in d3 or pseudoLog scale and which works better
-            const yScale = yAxisScale === "linear" ? d3.scaleLinear().domain([0, d3.max(filteredGroundTruthData, d => d.admissions) as number]).range([chartHeight, 0]) : d3.scaleLog().domain([1, d3.max(filteredGroundTruthData, d => d.admissions) as number]).range([chartHeight, 0]);
+            const yScale = yAxisScale === "linear" ? d3.scaleLinear().domain([0, d3.max(filteredGroundTruthData, d => d.admissions) as number]).range([chartHeight - 20, 0]) : d3.scaleLog().domain([1, d3.max(filteredGroundTruthData, d => d.admissions) as number]).range([chartHeight, 0]);
 
             const xAxis = d3.axisBottom(xScale);
             const yAxis = d3.axisLeft(yScale).tickFormat(d3.format("d"));
@@ -164,14 +163,25 @@ const LineChart: React.FC<LineChartProps> = ({
                 .attr("stroke-width", 1.5)
                 .attr("d", line)
                 .attr("transform", `translate(${marginLeft}, ${marginTop})`);
+
+            // Add circles for ground truth data points
+            svg.selectAll(".ground-truth-dot")
+                .data(filteredGroundTruthData)
+                .enter()
+                .append("circle")
+                .attr("class", "ground-truth-dot")
+                .attr("cx", d => xScale(d.date))
+                .attr("cy", d => yScale(d.admissions))
+                .attr("r", 3)
+                .attr("fill", "steelblue")
+                .attr("transform", `translate(${marginLeft}, ${marginTop})`);
         }
 
-// TODO: Implement this function
         function renderPredictionData(svg: d3.Selection<d3.BaseType, unknown, HTMLElement, any>, processedPredictionData: any[][], xScale: ScaleTime<number, number, never>, yScale: ScaleLinear<number, number, never>, marginLeft: number, marginTop: number, confidenceInterval: string) {
             processedPredictionData.forEach((predictions, index) => {
                 const line = d3.line<any>()
                     .x(d => xScale(new Date(d.targetEndDate)))
-                    .y(d => yScale(d.confidence500)); // TODO: Ask if it is correct to use confidence 50 percentile as the plotted value for predictions
+                    .y(d => yScale(d.confidence500));
 
                 const area = d3.area<any>()
                     .x(d => xScale(new Date(d.targetEndDate)))
@@ -181,7 +191,7 @@ const LineChart: React.FC<LineChartProps> = ({
                 svg.append("path")
                     .datum(predictions)
                     .attr("fill", "none")
-                    .attr("stroke", `hsl(${index * 60}, 100%, 50%)`) //TODO: Change the color to match model's color (needs implementation as well)
+                    .attr("stroke", `hsl(${index * 60}, 100%, 50%)`)
                     .attr("stroke-width", 1.5)
                     .attr("d", line)
                     .attr("transform", `translate(${marginLeft}, ${marginTop})`);
@@ -193,10 +203,74 @@ const LineChart: React.FC<LineChartProps> = ({
                         .attr("d", area)
                         .attr("transform", `translate(${marginLeft}, ${marginTop})`);
                 }
+                ;
+
+                // Add circles for prediction data points
+                svg.selectAll(`.prediction-dot-${index}`)
+                    .data(predictions)
+                    .enter()
+                    .append("circle")
+                    .attr("class", `prediction-dot-${index}`)
+                    .attr("cx", d => xScale(new Date(d.targetEndDate)))
+                    .attr("cy", d => yScale(d.confidence500))
+                    .attr("r", 3)
+                    .attr("fill", `hsl(${index * 60}, 100%, 50%)`)
+                    .attr("transform", `translate(${marginLeft}, ${marginTop})`);
             });
         }
 
-        function renderVerticalLineAndTooltips(svg: d3.Selection<d3.BaseType, unknown, HTMLElement, any>, filteredGroundTruthData: DataPoint[], xScale: ScaleTime<number, number, never>, yScale: ScaleLinear<number, number, never>, marginLeft: number, marginTop: number, chartWidth: number, chartHeight: number) {
+        function renderVerticalIndicator(
+            svg: d3.Selection<d3.BaseType, unknown, HTMLElement, any>,
+            filteredGroundTruthData: DataPoint[],
+            xScale: ScaleTime<number, number, never>,
+            marginLeft: number,
+            marginTop: number
+        ) {
+            const verticalIndicator = svg.append("line")
+                .attr("class", "vertical-indicator")
+                .attr("stroke", "blue")
+                .attr("stroke-width", 2)
+                .attr("y1", marginTop)
+                .attr("y2", height - marginBottom)
+                .attr("opacity", 0);
+
+            function updateVerticalIndicator(date: Date) {
+                verticalIndicator.attr("transform", `translate(${xScale(date) + marginLeft}, 0)`)
+                    .attr("opacity", 1);
+            }
+
+            function draggableVerticalIndicator(event: any) {
+                const [mouseX] = d3.pointer(event);
+                const date = xScale.invert(mouseX);
+                const closestData = filteredGroundTruthData.reduce((a, b) => Math.abs(a.date.getTime() - date.getTime()) < Math.abs(b.date.getTime() - date.getTime()) ? a : b);
+                updateVerticalIndicator(closestData.date);
+                setUserSelectedWeek(closestData.date);
+            }
+
+            svg.append("rect")
+                .attr("class", "vertical-indicator-hitbox")
+                .attr("width", chartWidth)
+                .attr("height", chartHeight)
+                .attr("fill", "none")
+                .attr("pointer-events", "all")
+                .attr("transform", `translate(${marginLeft}, ${marginTop})`)
+                .on("click", draggableVerticalIndicator)
+                .call(d3.drag<any, any>()
+                    .on("drag", draggableVerticalIndicator)
+                    .on("end", draggableVerticalIndicator)
+                );
+        }
+
+        function renderTooltip(
+            svg: d3.Selection<d3.BaseType, unknown, HTMLElement, any>,
+            filteredGroundTruthData: DataPoint[],
+            xScale: ScaleTime<number, number, never>,
+            yScale: ScaleLinear<number, number, never>,
+            marginLeft: number,
+            marginTop: number,
+            chartWidth: number,
+            chartHeight: number
+        ) {
             const tooltipLine = svg.append("line")
                 .attr("class", "tooltip-line")
                 .attr("stroke", "black")
@@ -204,51 +278,45 @@ const LineChart: React.FC<LineChartProps> = ({
                 .attr("opacity", 0)
                 .attr("y1", marginTop)
                 .attr("y2", height - marginBottom)
-                .attr("stroke-dasharray", "5,5"); // Add this line to make the line dotted
+                .attr("stroke-dasharray", "5,5");
 
             const tooltip = svg.append("text")
                 .attr("class", "tooltip")
                 .attr("opacity", 0);
 
-            const verticalLine = svg.append("line")
-                .attr("class", "vertical-line")
-                .attr("stroke", "blue")
-                .attr("stroke-width", 2)
-                .attr("y1", marginTop)
-                .attr("y2", height - marginBottom);
+            function updateTooltipLine(date: Date) {
+                tooltipLine.attr("transform", `translate(${xScale(date) + marginLeft}, 0)`)
+                    .attr("opacity", 1);
+            }
+
+            function updateTooltip(date: Date, admissions: number) {
+                tooltip.attr("transform", `translate(${xScale(date) + marginLeft + 10}, ${yScale(admissions) + marginTop})`)
+                    .text(`Date: ${date.toLocaleDateString()}, Admissions: ${admissions}`)
+                    .attr("opacity", 1);
+            }
+
+            function mousemoveHandler(event: any) {
+                const [mouseX] = d3.pointer(event);
+                const date = xScale.invert(mouseX);
+                const closestData = filteredGroundTruthData.reduce((a, b) => Math.abs(a.date.getTime() - date.getTime()) < Math.abs(b.date.getTime() - date.getTime()) ? a : b);
+                updateTooltipLine(closestData.date);
+                updateTooltip(closestData.date, closestData.admissions);
+            }
 
             svg.append("rect")
+                .attr("class", "tooltip-hitbox")
                 .attr("width", chartWidth)
                 .attr("height", chartHeight)
                 .attr("fill", "none")
                 .attr("pointer-events", "all")
                 .attr("transform", `translate(${marginLeft}, ${marginTop})`)
-                .on("mouseover", () => {
-                    tooltipLine.attr("opacity", 1);
-                    tooltip.attr("opacity", 1);
-                })
+                .on("mousemove", mousemoveHandler)
                 .on("mouseout", () => {
                     tooltipLine.attr("opacity", 0);
                     tooltip.attr("opacity", 0);
-                })
-                .on("mousemove", (event) => {
-                    const mouseX = d3.pointer(event)[0];
-                    const date = xScale.invert(mouseX - marginLeft);
-                    const closestData = filteredGroundTruthData.reduce((a, b) => Math.abs(a.date.getTime() - date.getTime()) < Math.abs(b.date.getTime() - date.getTime()) ? a : b);
-
-                    tooltipLine.attr("transform", `translate(${xScale(closestData.date)}, 0)`);
-                    tooltip.attr("transform", `translate(${xScale(closestData.date) + 10}, ${yScale(closestData.admissions)})`)
-                        .text(`Date: ${closestData.date.toLocaleDateString()}, Admissions: ${closestData.admissions}`);
-                })
-                .on("click", (event) => {
-                    const mouseX = d3.pointer(event)[0];
-                    const date = xScale.invert(mouseX - marginLeft);
-                    const closestData = filteredGroundTruthData.reduce((a, b) => Math.abs(a.date.getTime() - date.getTime()) < Math.abs(b.date.getTime() - date.getTime()) ? a : b);
-                    console.log("User selected week:", closestData.date);
-                    setUserSelectedWeek(closestData.date);
-                    verticalLine.attr("transform", `translate(${xScale(closestData.date)}, 0)`);
-                });
+                }).on("click", mousemoveHandler);
         }
+
 
         function appendAxes(svg: d3.Selection<d3.BaseType, unknown, HTMLElement, any>, xAxis: Axis<NumberValue>, yAxis: Axis<NumberValue>, marginLeft: number, marginTop: number, chartWidth: number, chartHeight: number) {
             svg.append("g")
@@ -264,11 +332,21 @@ const LineChart: React.FC<LineChartProps> = ({
             if (svgRef.current && groundTruthData.length > 0) {
                 const svg = d3.select(svgRef.current);
 
+
                 // Clear previous chart elements
                 svg.selectAll("*").remove();
 
                 // Filter and prepare ground truth data
-                const filteredGroundTruthData = filterGroundTruthData(groundTruthData, selectedUSStateNum, selectedDates);
+                const filteredGroundTruthData = filterGroundTruthData(groundTruthData, selectedUSStateNum, selectedDateRange);
+                if (filteredGroundTruthData.length > 0) {
+                    try{
+                    setUserSelectedWeek(filteredGroundTruthData[filterGroundTruthData.length-1].date);}
+                    catch(e){
+                        console.log("Error in setting userSelectedWeek");
+                    }
+                } else {
+                    setUserSelectedWeek(new Date());
+                }
 
                 // Process prediction data
                 const processedPredictionData = processPredictionData(predictionsData, selectedForecastModel, selectedUSStateNum, userSelectedWeek, weeksAhead, confidenceInterval, displayMode);
@@ -284,14 +362,17 @@ const LineChart: React.FC<LineChartProps> = ({
                 // Render prediction data lines and confidence intervals
                 renderPredictionData(svg, processedPredictionData, xScale, yScale, marginLeft, marginTop, confidenceInterval);
 
-                // Render draggable vertical line and tooltips
-                renderVerticalLineAndTooltips(svg, filteredGroundTruthData, xScale, yScale, marginLeft, marginTop, chartWidth, chartHeight);
-
                 // Append axes to the chart
                 appendAxes(svg, xAxis, yAxis, marginLeft, marginTop, chartWidth, chartHeight);
 
+                // Render vertical indicator
+                renderVerticalIndicator(svg, filteredGroundTruthData, xScale, marginLeft, marginTop);
+
+                // Render tooltip
+                renderTooltip(svg, filteredGroundTruthData, xScale, yScale, marginLeft, marginTop, chartWidth, chartHeight);
+
             }
-        }, [groundTruthData, selectedUSStateNum, selectedForecastModel, weeksAhead, selectedDates, yAxisScale, confidenceInterval, displayMode, userSelectedWeek]);
+        }, [groundTruthData, selectedUSStateNum, selectedForecastModel, weeksAhead, selectedDateRange, yAxisScale, confidenceInterval, displayMode, userSelectedWeek]);
 
 // Return the SVG object using reference
         return (<svg ref={svgRef} width={width} height={height}></svg>);

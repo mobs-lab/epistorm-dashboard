@@ -28,8 +28,11 @@ const Page: React.FC = () => {
 
     const [numOfWeeksAhead, setNumOfWeeksAhead] = useState(1);
 
-    // TODO: change this in the future so that it's a date range (using a date picker) (means also change the filters pane's child component)
-    const [dates, setDates] = useState("2023-2024");
+    // Date Range consists of starting and ending date
+    const [dateStart, setDateStart] = useState(new Date("2023-06-01"));
+
+    const [dateEnd, setDateEnd] = useState(new Date("2024-06-01"));
+
 
     const [yScale, setYScale] = useState("linear");
 
@@ -50,8 +53,11 @@ const Page: React.FC = () => {
         setNumOfWeeksAhead(selectedNumOfWeeksAhead);
     }
 
-    const updateDates = (selectedDates: string) => {
-        setDates(selectedDates);
+    const updateDateStart = (selectedDateStart: Date) => {
+        setDateStart(selectedDateStart);
+    }
+    const updateDateEnd = (selectedDateEnd: Date) => {
+        setDateEnd(selectedDateEnd);
     }
 
     const updateYScale = (selectedYScale: string) => {
@@ -82,12 +88,11 @@ const Page: React.FC = () => {
         });
 
 
-        // Each promise fetch each team's model's prediction data
-        // NOTE: Load all available models' data here; filtering out what is needed is done inside ForecastChart
-        // Each promise fetch each team's model's prediction data
+        // Load Prediction Data for Each Model
         const predictionDataPromises = ["MOBS-GLEAM_FLUH", "CEPH-Rtrend_fluH", "MIGHTE-Nsemble", "NU_UCSD-GLEAM_AI_FLUH"].map((team_model) => {
             return d3.csv(`/data/processed/${team_model}/predictions.csv`).then((data) => {
                 const predictionData: PredictionDataPoint[] = data.map((d) => {
+                    // Adapt prediction data to match my interface
                     return {
                         referenceDate: d.reference_date,
                         targetEndDate: d.target_end_date,
@@ -106,7 +111,7 @@ const Page: React.FC = () => {
             });
         });
 
-// Load all selected teams's prediction data
+        // Load all selected teams's prediction data
         Promise.all(predictionDataPromises).then((allPredictionsData: ModelPrediction[]) => {
             console.log("All Predictions Data Loaded: ", allPredictionsData.length);
             console.log("The first one inside allPredictionData: ", allPredictionsData[0]);
@@ -148,7 +153,7 @@ const Page: React.FC = () => {
                         selectedUSStateNum={USStateNum}
                         selectedForecastModel={forecastModel}
                         weeksAhead={numOfWeeksAhead}
-                        selectedDates={dates}
+                        selectedDateRange={[dateStart, dateEnd]}
                         yAxisScale={yScale}
                         confidenceInterval={confidenceInterval}
                         displayMode={displayMode}
@@ -161,7 +166,8 @@ const Page: React.FC = () => {
                         handleStateSelectionChange={updateState}
                         handleModelSelectionChange={updateModel}
                         handleNumOfWeeksAheadChange={updateNumOfWeeksAhead}
-                        handleDatesSelectionChange={updateDates}
+                        handleDateStartSelectionChange={updateDateStart}
+                        handleDateEndSelectionChange={updateDateEnd}
                         handleYAxisScaleChange={updateYScale}
                         handleConfidenceIntervalChange={updateConfidenceInterval}
                         handleDisplayModeChange={updateDisplayMode}

@@ -3,6 +3,7 @@
 
 import React, {useEffect, useState} from 'react';
 import StateMap from "./StateMap";
+import DatePicker from "react-datepicker";
 
 import {LocationData} from "../../Interfaces/forecast-interfaces";
 
@@ -10,7 +11,8 @@ type FiltersPaneProps = {
     handleStateSelectionChange: (selections: string) => void;
     handleModelSelectionChange: (selections: string[]) => void;
     handleNumOfWeeksAheadChange: (selections: number) => void;
-    handleDatesSelectionChange: (selections: string) => void;
+    handleDateStartSelectionChange: (selections: Date) => void;
+    handleDateEndSelectionChange: (selections: Date) => void;
     handleYAxisScaleChange: (selections: string) => void;
     handleConfidenceIntervalChange: (selections: string) => void;
     handleDisplayModeChange: (selections: string) => void;
@@ -18,11 +20,22 @@ type FiltersPaneProps = {
     locationData: LocationData[];
 };
 
+// Date Range Mapping from season selection to actual date range
+const dateRangeMapping = {
+    "2021-2022": [new Date("2021-06-01"), new Date("2022-06-01")],
+    "2022-2023": [new Date("2022-06-01"), new Date("2023-06-01")],
+    // TODO change the dates mapping later to reflect current date
+    "2023-2024": [new Date("2023-06-01"), new Date("2024-04-06")],
+    "2024-2025": [new Date("2024-04-06"), new Date("2025-06-01")],
+}
+
+
 const FiltersPane: React.FC<FiltersPaneProps> = ({
                                                      handleStateSelectionChange,
                                                      handleModelSelectionChange,
                                                      handleNumOfWeeksAheadChange,
-                                                     handleDatesSelectionChange,
+                                                     handleDateStartSelectionChange,
+                                                     handleDateEndSelectionChange,
                                                      handleYAxisScaleChange,
                                                      handleConfidenceIntervalChange,
                                                      handleDisplayModeChange,
@@ -31,7 +44,9 @@ const FiltersPane: React.FC<FiltersPaneProps> = ({
     const [selectedUSState, setSelectedUSState] = useState("US");
     const [selectedModel, setSelectedModel] = useState(["MOBS-GLEAM_FLUH"]);
     const [selectedNumOfWeeksAhead, setSelectedNumOfWeeksAhead] = useState(1);
-    const [selectedDates, setSelectedDates] = useState("");
+    const [selectedDateStart, setSelectedDateStart] = useState(new Date("2023-06-01"));
+    const [selectedDateEnd, setSelectedDateEnd] = useState(new Date("2024-04-06"));
+    const [selectedDateRange, setSelectedDateRange] = useState("2023-2024"); // Default to 2023-2024
     const [yAxisScale, setYAxisScale] = useState("");
     const [confidenceInterval, setConfidenceInterval] = useState("");
     const [displayMode, setDisplayMode] = useState("");
@@ -55,11 +70,26 @@ const FiltersPane: React.FC<FiltersPaneProps> = ({
         handleNumOfWeeksAheadChange(selection);
     }
 
-    const onDatesSelectionChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-        const selection = event.target.value;
-        setSelectedDates(selection);
-        handleDatesSelectionChange(selection);
+    const onDateStartSelectionChange = (date: Date) => {
+        setSelectedDateStart(date);
+        handleDateStartSelectionChange(date);
     }
+
+    const onDateEndSelectionChange = (date: Date) => {
+        setSelectedDateEnd(date);
+        handleDateEndSelectionChange(date);
+    }
+
+    const onDateRangeSelectionChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+        const selection = event.target.value;
+        setSelectedDateRange(selection);
+        // @ts-ignore
+        const dateRange = dateRangeMapping[selection];
+        setSelectedDateStart(dateRange[0]);
+        setSelectedDateEnd(dateRange[1]);
+        handleDateStartSelectionChange(dateRange[0]);
+        handleDateEndSelectionChange(dateRange[1]);
+    };
 
     const onYAxisScaleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const selection = event.target.value;
@@ -100,13 +130,25 @@ const FiltersPane: React.FC<FiltersPaneProps> = ({
                     <option value={"MIGHTE-Nsemble"}>MIGHTE-Nsemble</option>
                     <option value={"NU_UCSD-GLEAM_AI_FLUH"}>NU_UCSD-GLEAM_AI_FLUH</option>
                 </select>
-                <select value={selectedDates} onChange={onDatesSelectionChange}>
+                <select value={selectedDateRange} onChange={onDateRangeSelectionChange}>
                     <option value={"2021-2022"}> 2021–2022</option>
                     <option value={"2022-2023"}> 2022–2023</option>
                     <option value={"2023-2024"}> 2023–2024</option>
-                    {/*<option value={"2024-2025"}> 2024–2025</option>*/}
-                    {/*<option value={"2025-2026"}> 2025–2026</option>*/}
+                    <option value={"2024-2025"}> 2024–2025</option>
                 </select>
+                {/*    Date Picker for starting date */}
+                <DatePicker onChange={handleDateStartSelectionChange}
+                            selected={selectedDateStart}
+                            showTimeSelect
+                            dateFormat={"P"}
+                />
+
+                {/*    Date Picker for ending date */}
+                <DatePicker onChange={handleDateEndSelectionChange}
+                            selected={selectedDateEnd}
+                            showTimeSelect
+                            dateFormat={"P"}
+                />
             </div>
             {/* TODO: 4 buttons from left to right, to determine number of weeks ahead of predictions to display */}
             <div>
