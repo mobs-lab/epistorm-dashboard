@@ -12,6 +12,7 @@
   "author": "MOBs-Lab",
   "license": "MIT",
   "dependencies": {
+    "@material-tailwind/react": "^2.1.9",
     "d3": "^7.8.5",
     "geojson": "^0.5.0",
     "lodash": "^4.17.21",

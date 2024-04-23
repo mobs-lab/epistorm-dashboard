@@ -38,10 +38,10 @@ const LineChart: React.FC<LineChartProps> = ({
         const width = 928;
         const height = 500;
 
-        const marginTop = 20;
-        const marginBottom = 20;
-        const marginLeft = 20;
-        const marginRight = 20;
+        const marginTop = 60;
+        const marginBottom = 50;
+        const marginLeft = 50;
+        const marginRight = 50;
 
         const chartWidth = width - marginLeft - marginRight;
         const chartHeight = height - marginTop - marginBottom;
