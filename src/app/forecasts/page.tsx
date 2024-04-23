@@ -106,7 +106,6 @@ const Page: React.FC = () => {
                         confidence975: +d["0.975"],
                     }
                 });
-                console.log("Prediction Data Loaded for team: ", team_model, "  ", predictionData);
                 return {modelName: team_model, predictionData};
             });
         });
@@ -114,7 +113,6 @@ const Page: React.FC = () => {
         // Load all selected teams's prediction data
         Promise.all(predictionDataPromises).then((allPredictionsData: ModelPrediction[]) => {
             console.log("All Predictions Data Loaded: ", allPredictionsData.length);
-            console.log("The first one inside allPredictionData: ", allPredictionsData[0]);
             setPredictionsData(allPredictionsData);
         });
 
