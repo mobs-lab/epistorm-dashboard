@@ -3,7 +3,29 @@
 
 import React, {useEffect, useState} from 'react';
 import StateMap from "./StateMap";
-import DatePicker from "react-datepicker";
+import {format} from "date-fns";
+import {
+    Select,
+    Option,
+    Radio,
+    Typography,
+    Card,
+    CardBody,
+    CardHeader,
+    Input,
+    Popover,
+    PopoverHandler,
+    PopoverContent,
+    Menu,
+    MenuHandler,
+    MenuItem,
+    Checkbox,
+    MenuList,
+    Button,
+    ChevronLeftIcon,
+    ChevronRightIcon
+} from "../../CSS/material-tailwind-wrapper";
+import {DayPicker} from "react-day-picker";
 
 import {LocationData} from "../../Interfaces/forecast-interfaces";
 
@@ -110,99 +132,240 @@ const FiltersPane: React.FC<FiltersPaneProps> = ({
     }
 
     return (
-        <>
-            <div>
-                <h1>Map of US States</h1>
-                <StateMap selectedState={selectedUSState} setSelectedState={handleStateSelectionChange}/>
-            </div>
-            {/* TODO: The three drop-down menus, for state selection, model selection (multiple), and dates selection (leave hard-coded for now)*/}
-            <div>
-                <h1>Drop down Menus</h1>
-                <select value={selectedUSState} onChange={onStateSelectionChange}>
-                    {locationData.map((state) => {
-                        return <option key={state.state}
-                                       value={state.stateNum}>{state.stateNum} :{state.stateName}</option>
-                    })}
-                </select>
-            </div>
-            <div>
-                <select multiple value={selectedModel} onChange={onModelSelectionChange}>
-                    <option value={"MOBS-GLEAM_FLUH"}>MOBS-GLEAM_FLUH</option>
-                    <option value={"CEPH-Rtrend_fluH"}>CEPH-Rtrend_fluH</option>
-                    <option value={"MIGHTE-Nsemble"}>MIGHTE-Nsemble</option>
-                    <option value={"NU_UCSD-GLEAM_AI_FLUH"}>NU_UCSD-GLEAM_AI_FLUH</option>
-                </select>
-            </div>
-            <div>
-                <select value={selectedDateRange} onChange={onDateRangeSelectionChange}>
-                    <option value={"2021-2022"}> 2021–2022</option>
-                    <option value={"2022-2023"}> 2022–2023</option>
-                    <option value={"2023-2024"}> 2023–2024</option>
-                    <option value={"2024-2025"}> 2024–2025</option>
-                </select>
-            </div>
-            <div>
-                {/*    Date Picker for starting date */}
-                <DatePicker onChange={handleDateStartSelectionChange}
-                            selected={selectedDateStart}
-                            showTimeSelect
-                            dateFormat={"P"}
-                />
+        <Card>
+            <CardHeader color="blue" className="p-4">
+                <Typography variant="h6" color="white">
+                    Select a location
+                </Typography>
+            </CardHeader>
+            <CardBody>
+                <div className="mb-4">
+                    <StateMap selectedState={selectedUSState} setSelectedState={handleStateSelectionChange}/>
+                </div>
+                <div className="mb-4">
+                    <Typography variant="h6">State</Typography>
+                    <Select value={selectedUSState} onChange={() => onStateSelectionChange}>
+                        {locationData.map((state) => (
+                            <Option key={state.state} value={state.stateNum}>
+                                {state.stateNum} : {state.stateName}
+                            </Option>
+                        ))}
+                    </Select>
+                </div>
+                <div className="mb-4 w-full mx-auto">
+                    <Typography variant="h6">Model</Typography>
+                    <Menu
+                        dismiss={{
+                            itemPress: false,
+                        }}
+                    >
+                        <MenuHandler>
+                            <Select><Typography variant="h6">Model Selection</Typography></Select>
+                        </MenuHandler>
+                        <MenuList>
+                            <MenuItem className="p-0">
+                                <label
+                                    htmlFor="MOBS-GLEAM_FLUH"
+                                    className="flex cursor-pointer items-center gap-2 p-2"
+                                >
+                                    <Checkbox
+                                        ripple={false}
+                                        id="MOBS-GLEAM_FLUH"
+                                        containerProps={{className: "p-0"}}
+                                        className="hover:before:content-none"
+                                        checked={selectedModel.includes("MOBS-GLEAM_FLUH")}
+                                        onChange={() => onModelSelectionChange}
+                                    />
+                                    MOBS-GLEAM_FLUH
+                                </label>
+                            </MenuItem>
+                            <MenuItem className="p-0">
+                                <label
+                                    htmlFor="CEPH-Rtrend_fluH"
+                                    className="flex cursor-pointer items-center gap-2 p-2"
+                                >
+                                    <Checkbox
+                                        ripple={false}
+                                        id="CEPH-Rtrend_fluH"
+                                        containerProps={{className: "p-0"}}
+                                        className="hover:before:content-none"
+                                        checked={selectedModel.includes("CEPH-Rtrend_fluH")}
+                                        onChange={() => onModelSelectionChange}
+                                        crossOrigin={undefined}/>
+                                    CEPH-Rtrend_fluH
+                                </label>
+                            </MenuItem>
+                            <MenuItem className="p-0">
+                                <label
+                                    htmlFor="MIGHTE-Nsemble"
+                                    className="flex cursor-pointer items-center gap-2 p-2"
+                                >
+                                    <Checkbox
+                                        ripple={false}
+                                        id="MIGHTE-Nsemble"
+                                        containerProps={{className: "p-0"}}
+                                        className="hover:before:content-none"
+                                        checked={selectedModel.includes("MIGHTE-Nsemble")}
+                                        onChange={() => onModelSelectionChange}
+                                    />
+                                    MIGHTE-Nsemble
+                                </label>
+                            </MenuItem>
+                            <MenuItem className="p-0">
+                                <label
+                                    htmlFor="NU_UCSD-GLEAM_AI_FLUH"
+                                    className="flex cursor-pointer items-center gap-2 p-2"
+                                >
+                                    <Checkbox
+                                        ripple={false}
+                                        id="NU_UCSD-GLEAM_AI_FLUH"
+                                        containerProps={{className: "p-0"}}
+                                        className="hover:before:content-none"
+                                        checked={selectedModel.includes("NU_UCSD-GLEAM_AI_FLUH")}
+                                        onChange={() => onModelSelectionChange}
+                                    />
+                                    NU_UCSD-GLEAM_AI_FLUH
+                                </label>
+                            </MenuItem>
+                        </MenuList>
+                    </Menu>
+                </div>
+                <div className="mb-4">
+                    <Typography variant="h6">Dates</Typography>
+                    <Select value={selectedDateRange} onChange={() => onDateRangeSelectionChange}>
+                        <Option value="2021-2022">2021–2022</Option>
+                        <Option value="2022-2023">2022–2023</Option>
+                        <Option value="2023-2024">2023–2024</Option>
+                        <Option value="2024-2025">2024–2025</Option>
+                    </Select>
+                    <div className="mt-2">
+                        <Popover placement={"bottom"}>
+                            <PopoverHandler>
+                                <Input label={"Select Start Date"}
+                                       value={selectedDateStart ? format(selectedDateStart, "PPP") : ""}
+                                       onChange={() => onDateStartSelectionChange}/>
+                            </PopoverHandler>
+                            <PopoverContent>
+                                <DayPicker
+                                    mode="single"
+                                    selected={selectedDateStart}
+                                    onSelect={() => onDateStartSelectionChange}
+                                    showOutsideDays
+                                    className="border-0"
+                                    classNames={{
+                                        caption: "flex justify-center py-2 mb-4 relative items-center",
+                                        caption_label: "text-sm font-medium text-gray-900",
+                                        nav: "flex items-center",
+                                        nav_button:
+                                            "h-6 w-6 bg-transparent hover:bg-blue-gray-50 p-1 rounded-md transition-colors duration-300",
+                                        nav_button_previous: "absolute left-1.5",
+                                        nav_button_next: "absolute right-1.5",
+                                        table: "w-full border-collapse",
+                                        head_row: "flex font-medium text-gray-900",
+                                        head_cell: "m-0.5 w-9 font-normal text-sm",
+                                        row: "flex w-full mt-2",
+                                        cell: "text-gray-600 rounded-md h-9 w-9 text-center text-sm p-0 m-0.5 relative [&:has([aria-selected].day-range-end)]:rounded-r-md [&:has([aria-selected].day-outside)]:bg-gray-900/20 [&:has([aria-selected].day-outside)]:text-white [&:has([aria-selected])]:bg-gray-900/50 first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20",
+                                        day: "h-9 w-9 p-0 font-normal",
+                                        day_range_end: "day-range-end",
+                                        day_selected:
+                                            "rounded-md bg-gray-900 text-white hover:bg-gray-900 hover:text-white focus:bg-gray-900 focus:text-white",
+                                        day_today: "rounded-md bg-gray-200 text-gray-900",
+                                        day_outside:
+                                            "day-outside text-gray-500 opacity-50 aria-selected:bg-gray-500 aria-selected:text-gray-900 aria-selected:bg-opacity-10",
+                                        day_disabled: "text-gray-500 opacity-50",
+                                        day_hidden: "invisible",
+                                    }}
+                                    components={{
+                                        IconLeft: ({...props}) => (
+                                            <ChevronLeftIcon {...props} className="h-4 w-4 stroke-2"/>
+                                        ),
+                                        IconRight: ({...props}) => (
+                                            <ChevronRightIcon {...props} className="h-4 w-4 stroke-2"/>
+                                        ),
+                                    }}
+                                />
 
-                {/*    Date Picker for ending date */}
-                <DatePicker onChange={handleDateEndSelectionChange}
-                            selected={selectedDateEnd}
-                            showTimeSelect
-                            dateFormat={"P"}
-                />
-            </div>
+                            </PopoverContent>
+                        </Popover>
+                    </div>
+                    <div>
+                        <Popover placement={"bottom"}>
+                            <PopoverHandler>
+                                <Input label={"Select End Date"}
+                                       value={selectedDateEnd ? format(selectedDateEnd, "PPP") : ""}
+                                       onChange={() => onDateEndSelectionChange}/>
+                            </PopoverHandler>
+                            <PopoverContent>
+                                <DayPicker
+                                    mode="single"
+                                    selected={selectedDateEnd}
+                                    onSelect={() => onDateEndSelectionChange}
+                                    showOutsideDays
+                                    className="border-0"
+                                    classNames={{
+                                        caption: "flex justify-center py-2 mb-4 relative items-center",
+                                        caption_label: "text-sm font-medium text-gray-900",
+                                        nav: "flex items-center",
+                                        nav_button:
+                                            "h-6 w-6 bg-transparent hover:bg-blue-gray-50 p-1 rounded-md transition-colors duration-300",
+                                        nav_button_previous: "absolute left-1.5",
+                                        nav_button_next: "absolute right-1.5",
+                                        table: "w-full border-collapse",
+                                        head_row: "flex font-medium text-gray-900",
+                                        head_cell: "m-0.5 w-9 font-normal text-sm",
+                                        row: "flex w-full mt-2",
+                                        cell: "text-gray-600 rounded-md h-9 w-9 text-center text-sm p-0 m-0.5 relative [&:has([aria-selected].day-range-end)]:rounded-r-md [&:has([aria-selected].day-outside)]:bg-gray-900/20 [&:has([aria-selected].day-outside)]:text-white [&:has([aria-selected])]:bg-gray-900/50 first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20",
+                                        day: "h-9 w-9 p-0 font-normal",
+                                        day_range_end: "day-range-end",
+                                        day_selected:
+                                            "rounded-md bg-gray-900 text-white hover:bg-gray-900 hover:text-white focus:bg-gray-900 focus:text-white",
+                                        day_today: "rounded-md bg-gray-200 text-gray-900",
+                                        day_outside:
+                                            "day-outside text-gray-500 opacity-50 aria-selected:bg-gray-500 aria-selected:text-gray-900 aria-selected:bg-opacity-10",
+                                        day_disabled: "text-gray-500 opacity-50",
+                                        day_hidden: "invisible",
+                                    }}
+                                    components={{
+                                        IconLeft: ({...props}) => (
+                                            <ChevronLeftIcon {...props} className="h-4 w-4 stroke-2"/>
+                                        ),
+                                        IconRight: ({...props}) => (
+                                            <ChevronRightIcon {...props} className="h-4 w-4 stroke-2"/>
+                                        ),
+                                    }}
+                                />
 
-            {/* TODO: 4 buttons from left to right, to determine number of weeks ahead of predictions to display */}
-            <div>
-                <h1>Number of Weeks Ahead</h1>
-                <input type="radio" id="1" name="weeksAhead" value="1" onChange={onNumOfWeeksAheadChange}/>
-                <label htmlFor="1">1</label>
-                <input type="radio" id="2" name="weeksAhead" value="2" onChange={onNumOfWeeksAheadChange}/>
-                <label htmlFor="2">2</label>
-                <input type="radio" id="3" name="weeksAhead" value="3" onChange={onNumOfWeeksAheadChange}/>
-                <label htmlFor="3">3</label>
-                <input type="radio" id="4" name="weeksAhead" value="4" onChange={onNumOfWeeksAheadChange}/>
-                <label htmlFor="4">4</label>
-            </div>
-
-            {/* TODO: Y-axis scale selection, radio buttons*/}
-            <div>
-                <h1>Y-Axis Options</h1>
-                <input type="radio" id="linear" name="yAxisScale" value="linear" onChange={onYAxisScaleChange}/>
-                <label htmlFor="linear">Linear</label>
-                <input type="radio" id="log" name="yAxisScale" value="log" onChange={onYAxisScaleChange}/>
-                <label htmlFor="log">Logarithmic</label>
-            </div>
-            {/* TODO: Confidence Interval Selection, radio buttons; Options are: None, 50%, 90%, 95%*/}
-            <div>
-                <h1>Confidence Intervals</h1>
-                <input type="radio" id="none" name="confidenceInterval" value="none"
-                       onChange={onConfidenceIntervalChange}/>
-                <label htmlFor="none">None</label>
-                <input type="radio" id="50" name="confidenceInterval" value="50" onChange={onConfidenceIntervalChange}/>
-                <label htmlFor="50">50%</label>
-                <input type="radio" id="90" name="confidenceInterval" value="90" onChange={onConfidenceIntervalChange}/>
-                <label htmlFor="90">90%</label>
-                <input type="radio" id="95" name="confidenceInterval" value="95" onChange={onConfidenceIntervalChange}/>
-                <label htmlFor="95">95%</label>
-
-            </div>
-            {/* TODO: Display mode selection, buttons side by side*/}
-            <div>
-                <h1>Display mode</h1>
-                <input type="radio" id="ByDate" name="displayMode" value="byDate" onChange={onDisplayModeChange}/>
-                <label htmlFor="ByDate">By Date</label>
-                <input type="radio" id="ByState" name="displayMode" value="byHorizon" onChange={onDisplayModeChange}/>
-                <label htmlFor="ByState">By Horizon</label>
-            </div>
-        </>
-    )
-
-}
+                            </PopoverContent>
+                        </Popover>
+                    </div>
+                </div>
+                <div className="mb-4">
+                    <Typography variant={"h6"}> Number of Weeks Ahead </Typography>
+                    <Radio name={"weeksAheadRadioBtn"} label={"1"}/>
+                    <Radio name={"weeksAheadRadioBtn"} label={"2"}/>
+                    <Radio name={"weeksAheadRadioBtn"} label={"3"}/>
+                    <Radio name={"weeksAheadRadioBtn"} label={"4"}/>
+                </div>
+                <div className="mb-4">
+                    <Typography variant="h6">Y-axis scale</Typography>
+                    <Radio name={"yAxisRadioBtn"} label="Linear"/>
+                    <Radio name={"yAxisRadioBtn"} label="Logarithmic"/>
+                </div>
+                <div className="mb-4">
+                    <Typography variant="h6">Confidence interval</Typography>
+                    <Radio name={"confidenceIntervalRadioBtn"} label="None"/>
+                    <Radio name={"confidenceIntervalRadioBtn"} label="50%"/>
+                    <Radio name={"confidenceIntervalRadioBtn"} label="90%"/>
+                    <Radio name={"confidenceIntervalRadioBtn"} label="95%"/>
+                </div>
+                <div>
+                    <Typography variant="h6">Display mode</Typography>
+                    <Radio name={"displayModeRadioBtn"} label="By Date"/>
+                    <Radio name={"displayModeRadioBtn"} label="By Horizon"/>
+                </div>
+            </CardBody>
+        </Card>
+    );
+};
 
 export default FiltersPane;

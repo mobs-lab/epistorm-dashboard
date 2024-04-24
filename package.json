@@ -12,13 +12,16 @@
   "author": "MOBs-Lab",
   "license": "MIT",
   "dependencies": {
+    "@heroicons/react": "^2.1.3",
     "@material-tailwind/react": "^2.1.9",
     "d3": "^7.8.5",
+    "date-fns": "^3.6.0",
     "geojson": "^0.5.0",
     "lodash": "^4.17.21",
     "next": "^14.1.0",
     "react": "^18.2.0",
     "react-datepicker": "^6.6.0",
+    "react-day-picker": "^8.10.1",
     "react-dom": "^18.2.0"
   },
   "devDependencies": {
