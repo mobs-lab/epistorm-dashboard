@@ -22,9 +22,7 @@ const Page: React.FC = () => {
 
     const [USStateNum, setUSStateNum] = useState("US");
 
-    // NOTE: selectedForecastModel manages the selected forecast model from dropdown menu in filtersPane, defaults to "MOBS-GLEAM_FLUH"
-    //  User can select multiple models, so this will be an array of strings; add to it when multiple are selected
-    const [forecastModel, setForecastModel] = useState(["MOBS-GLEAM_FLUH"]);
+    const [forecastModel, setForecastModel] = useState([]);
 
     const [numOfWeeksAhead, setNumOfWeeksAhead] = useState(1);
 
