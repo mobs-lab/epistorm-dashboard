@@ -13,7 +13,7 @@ const SingleStateMap: React.FC<StateDetailProps> = ({stateNum}) => {
     const [stateData, setStateData] = useState<Feature<Geometry, any>>();
 
     useEffect(() => {
-        d3.json('/gz_2010_us_040_00_20m.json').then((data: any) => {
+        d3.json('/gz_2010_us_040_00_5m.json').then((data: any) => {
             const selectedStateSVG = data["features"].find((feature: Feature<Geometry, any>) => feature["properties"]["STATE"] === stateNum);
             console.log("Selected State SVG Data: ", selectedStateSVG);
             setStateData(selectedStateSVG);

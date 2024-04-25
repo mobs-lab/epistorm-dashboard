@@ -98,11 +98,11 @@ const LineChart: React.FC<LineChartProps> = ({
                 // "90":  TODO: ask what to do here since we do not have 5th nor 95th percentile data column
                 // "95": calculate using confidence025 and confidence975
                 var filteredPredictionsByConfidenceInterval = filteredPredictionsByTargetEndDate.map((model) => {
-                    if (confidenceInterval === "None") {
+                    if (confidenceInterval === "0") {
                         return model.map((d) => ({
                             ...d,
-                            confidence_low: null,
-                            confidence_high: null
+                            confidence_low: 0,
+                            confidence_high: 0
                         }));
                     } else if (confidenceInterval === "50") {
                         return model.map((d) => ({
@@ -129,13 +129,10 @@ const LineChart: React.FC<LineChartProps> = ({
 
                 return filteredPredictionsByConfidenceInterval;
             } else if (displayMode === "byHorizon") {
-                //TODO: instead of rendering all models, calculate the confidence interval that should overlay on top of the userSelectedWeek
+                //TODO: S2: instead of rendering all models, calculate the confidence interval that should overlay on top of the userSelectedWeek
                 return [];
             }
-
-
         }
-
 
         function createScalesAndAxes(filteredGroundTruthData: DataPoint[], chartWidth: number, chartHeight: number, yAxisScale: string) {
             const xScale = d3.scaleTime()
@@ -337,7 +334,6 @@ const LineChart: React.FC<LineChartProps> = ({
 
                 // Filter and prepare ground truth data
                 const filteredGroundTruthData = filterGroundTruthData(groundTruthData, selectedUSStateNum, selectedDateRange);
-
 
                 // Process prediction data
                 const processedPredictionData = processPredictionData(predictionsData, selectedForecastModel, selectedUSStateNum, userSelectedWeek, weeksAhead, confidenceInterval, displayMode);

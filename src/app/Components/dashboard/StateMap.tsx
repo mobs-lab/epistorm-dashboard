@@ -3,7 +3,7 @@ import {useEffect, useRef} from "react"
 import {Feature, FeatureCollection, GeoJSON, GeoJsonProperties, Geometry} from "geojson";
 import * as d3 from "d3"
 
-const usStateData = "/gz_2010_us_040_00_20m.json"
+const usStateData = "/gz_2010_us_040_00_5m.json"
 
 interface StateMapProps {
     selectedState: string;
