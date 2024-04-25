@@ -22,7 +22,8 @@
     "react": "^18.2.0",
     "react-datepicker": "^6.6.0",
     "react-day-picker": "^8.10.1",
-    "react-dom": "^18.2.0"
+    "react-dom": "^18.2.0",
+    "topojson-client": "^3.1.0"
   },
   "devDependencies": {
     "@types/d3": "^7.4.3",
