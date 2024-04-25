@@ -125,13 +125,38 @@ const LineChart: React.FC<LineChartProps> = ({
         }
     }
 
+    // Helper function to create a pseudo-log scale, used by `createScalesAndAxes()` function
+    function createPseudoLogScale(domain: [number, number], range: [number, number], threshold: number) {
+        const logScale = d3.scaleLog().domain([threshold, domain[1]]).range([range[0], range[1]]);
+        const linearScale = d3.scaleLinear().domain([0, threshold]).range([range[0], logScale(threshold)]);
+
+        return (value: number) => {
+            return value < threshold ? linearScale(value) : logScale(value);
+        };
+    }
+
     function createScalesAndAxes(filteredGroundTruthData: DataPoint[], chartWidth: number, chartHeight: number, yAxisScale: string) {
         const xScale = d3.scaleTime()
             .domain(d3.extent(filteredGroundTruthData, d => d.date) as [Date, Date])
             .range([0, chartWidth]);
 
-        // NOTE: Find if there is a semiLog scale in d3 or pseudoLog scale and which works better
-        const yScale = yAxisScale === "linear" ? d3.scaleLinear().domain([0, d3.max(filteredGroundTruthData, d => d.admissions) as number]).range([chartHeight, 0]) : d3.scaleLog().domain([1, d3.max(filteredGroundTruthData, d => d.admissions) as number]).range([chartHeight, 0]);
+        let yScale;
+        if (yAxisScale === "linear") {
+            yScale = d3.scaleLinear()
+                .domain([0, d3.max(filteredGroundTruthData, d => d.admissions) as number])
+                .range([chartHeight, 0]);
+        } else if (yAxisScale === "log") {
+            yScale = d3.scaleLog()
+                .domain([1, d3.max(filteredGroundTruthData, d => d.admissions) as number])
+                .range([chartHeight, 0]).nice();
+        }
+        /*else if (yAxisScale === "pseudolog") {
+            const threshold = 100; // Adjust the threshold value as needed
+            yScale = createPseudoLogScale(
+                [0, d3.max(filteredGroundTruthData, d => d.admissions) as number],
+                [chartHeight, 0],
+                threshold
+            );*/
 
         const xAxis = d3.axisBottom(xScale);
         const yAxis = d3.axisLeft(yScale).tickFormat(d3.format("d"));
@@ -194,7 +219,8 @@ const LineChart: React.FC<LineChartProps> = ({
                     .attr("class", "prediction-path")
                     .attr("fill", `hsla(${index * 60}, 100%, 50%, 0.2)`)
                     .attr("d", area)
-                    .attr("transform", `translate(${marginLeft}, ${marginTop})`);
+                    .attr("transform", `translate(${marginLeft}, ${marginTop})`)
+                    .attr("pointer-events", "none");
             }
 
             // Add circles for prediction data points
@@ -357,7 +383,12 @@ const LineChart: React.FC<LineChartProps> = ({
         if (svgRef.current) {
             const svg = d3.select(svgRef.current);
             const filteredGroundTruthData = filterGroundTruthData(groundTruthData, selectedUSStateNum, selectedDateRange);
-            const {xScale, yScale, xAxis, yAxis} = createScalesAndAxes(filteredGroundTruthData, chartWidth, chartHeight, yAxisScale);
+            const {
+                xScale,
+                yScale,
+                xAxis,
+                yAxis
+            } = createScalesAndAxes(filteredGroundTruthData, chartWidth, chartHeight, yAxisScale);
             const verticalIndicator = svg.select(".vertical-indicator");
             if (!verticalIndicator.empty()) {
                 updateVerticalIndicator(userSelectedWeek, xScale, marginLeft, verticalIndicator);
@@ -373,7 +404,7 @@ const LineChart: React.FC<LineChartProps> = ({
             const svg = d3.select(svgRef.current);
 
             // Clear previous chart elements
-            svg.selectAll("*").remove();
+            svg.selectAll("*").remove();ß
 
             // Filter and prepare ground truth data
             const filteredGroundTruthData = filterGroundTruthData(groundTruthData, selectedUSStateNum, selectedDateRange);
