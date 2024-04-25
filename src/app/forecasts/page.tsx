@@ -20,9 +20,11 @@ const Page: React.FC = () => {
 
     const [locationData, setLocationData] = useState<LocationData[]>([]);
 
+    const [selectedStateName, setSelectedStateName] = useState("US");
+
     const [USStateNum, setUSStateNum] = useState("US");
 
-    const [forecastModel, setForecastModel] = useState([]);
+    const [forecastModel, setForecastModel] = useState(["MOBS-GLEAM_FLUH"]);
 
     const [numOfWeeksAhead, setNumOfWeeksAhead] = useState(1);
 
@@ -41,7 +43,11 @@ const Page: React.FC = () => {
     //Function to update global state variables; need to pass them into filters pane
     const updateState = (selectedStateNum: string) => {
         setUSStateNum(selectedStateNum);
-    }
+        const selectedState = locationData.find((state) => state.stateNum === selectedStateNum);
+        if (selectedState) {
+            setSelectedStateName(selectedState.stateName);
+        }
+    };
 
     const updateModel = (selectedModel: string[]) => {
         setForecastModel(selectedModel);

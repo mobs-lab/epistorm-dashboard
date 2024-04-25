@@ -2,6 +2,7 @@
 import {useEffect, useRef} from "react"
 import {Feature, FeatureCollection, GeoJSON, GeoJsonProperties, Geometry} from "geojson";
 import * as d3 from "d3"
+import {zoom, zoomIdentity} from "d3-zoom";
 
 const usStateData = "/gz_2010_us_040_00_5m.json"
 
@@ -51,6 +52,16 @@ const StateMap: React.FC<StateMapProps> = ({selectedState, setSelectedState}) =>
 
         const svgContainer = d3.select(svgRef.current);
 
+        const zoomBehavior = zoom()
+            .scaleExtent([1, 8])
+            .on("zoom", zoomed);
+
+        svgContainer.call(zoomBehavior);
+
+        function zoomed(event: any) {
+            svgContainer.selectAll("path").attr("transform", event.transform);
+        }
+
         const fetchData = async () => {
             try {
                 const us: FeatureCollection<Geometry, GeoJsonProperties> | undefined = await d3.json(usStateData);
@@ -73,6 +84,17 @@ const StateMap: React.FC<StateMapProps> = ({selectedState, setSelectedState}) =>
                     .on("click", (event, d) => {
                         if (d && d.properties && d.properties.STATE) {
                             setSelectedState(d.properties.STATE);
+                            const path = pathGenerator(d);
+                            const bounds = path.bounds(d);
+                            const dx = bounds[1][0] - bounds[0][0];
+                            const dy = bounds[1][1] - bounds[0][1];
+                            const x = (bounds[0][0] + bounds[1][0]) / 2;
+                            const y = (bounds[0][1] + bounds[1][1]) / 2;
+                            const scale = 0.8 / Math.max(dx / width, dy / height);
+                            const translate = [width / 2 - scale * x, height / 2 - scale * y];
+                            svgContainer.transition()
+                                .duration(750)
+                                .call(zoomBehavior.transform, zoomIdentity.translate(translate[0], translate[1]).scale(scale));
                         } else {
                             console.warn("Clicked element does not have the expected data structure.");
                         }
