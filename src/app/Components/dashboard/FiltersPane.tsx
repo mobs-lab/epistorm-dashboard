@@ -305,9 +305,9 @@ const FiltersPane: React.FC<FiltersPaneProps> = ({
                     <Radio name={"confidenceIntervalRadioBtn"} value={"0"} label="None"
                            onChange={(value) => onConfidenceIntervalChange(value)}/>
                     <Radio name={"confidenceIntervalRadioBtn"} value={"50"} label="50%"
-                           onChange={(value) => onConfidenceIntervalChange(value)} defaultChecked={true}/>
-                    <Radio name={"confidenceIntervalRadioBtn"} value={"90"} label="90%"
                            onChange={(value) => onConfidenceIntervalChange(value)}/>
+                    <Radio name={"confidenceIntervalRadioBtn"} value={"90"} label="90%"
+                           onChange={(value) => onConfidenceIntervalChange(value)} defaultChecked={true}/>
                     <Radio name={"confidenceIntervalRadioBtn"} value={"95"} label="95%"
                            onChange={(value) => onConfidenceIntervalChange(value)}/>
                 </div>

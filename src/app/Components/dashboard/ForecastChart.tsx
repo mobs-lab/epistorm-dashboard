@@ -3,7 +3,7 @@
 
 import React, {useEffect, useRef, useState} from "react";
 import * as d3 from "d3";
-import {Axis, NumberValue, ScaleLinear, ScaleTime} from "d3";
+import {Axis, NumberValue, ScaleLinear, ScaleLogarithmic, ScaleTime} from "d3";
 
 import {DataPoint, ModelPrediction} from "../../Interfaces/forecast-interfaces";
 
@@ -125,15 +125,6 @@ const LineChart: React.FC<LineChartProps> = ({
         }
     }
 
-    // Helper function to create a pseudo-log scale, used by `createScalesAndAxes()` function
-    function createPseudoLogScale(domain: [number, number], range: [number, number], threshold: number) {
-        const logScale = d3.scaleLog().domain([threshold, domain[1]]).range([range[0], range[1]]);
-        const linearScale = d3.scaleLinear().domain([0, threshold]).range([range[0], logScale(threshold)]);
-
-        return (value: number) => {
-            return value < threshold ? linearScale(value) : logScale(value);
-        };
-    }
 
     function createScalesAndAxes(filteredGroundTruthData: DataPoint[], chartWidth: number, chartHeight: number, yAxisScale: string) {
         const xScale = d3.scaleTime()
@@ -146,26 +137,26 @@ const LineChart: React.FC<LineChartProps> = ({
                 .domain([0, d3.max(filteredGroundTruthData, d => d.admissions) as number])
                 .range([chartHeight, 0]);
         } else if (yAxisScale === "log") {
+            const nonZeroData = filteredGroundTruthData.filter(d => d.admissions > 0);
+            const minValue = d3.min(nonZeroData, d => d.admissions) as number;
+            const maxValue = d3.max(nonZeroData, d => d.admissions) as number;
             yScale = d3.scaleLog()
-                .domain([1, d3.max(filteredGroundTruthData, d => d.admissions) as number])
-                .range([chartHeight, 0]).nice();
+                .domain([minValue, maxValue])
+                .range([chartHeight, 0])
+                .nice();
         }
-        /*else if (yAxisScale === "pseudolog") {
-            const threshold = 100; // Adjust the threshold value as needed
-            yScale = createPseudoLogScale(
-                [0, d3.max(filteredGroundTruthData, d => d.admissions) as number],
-                [chartHeight, 0],
-                threshold
-            );*/
 
         const xAxis = d3.axisBottom(xScale);
-        const yAxis = d3.axisLeft(yScale).tickFormat(d3.format("d"));
+        const yAxis = d3.axisLeft(yScale)
+            .tickFormat(d3.format("d"))
+            .ticks(yAxisScale === "log" ? Math.min(3, yScale.ticks().length) : undefined);
 
         return {xScale, yScale, xAxis, yAxis};
     }
 
-    function renderGroundTruthData(svg: d3.Selection<d3.BaseType, unknown, HTMLElement, any>, filteredGroundTruthData: DataPoint[], xScale: ScaleTime<number, number, never>, yScale: ScaleLinear<number, number, never>, marginLeft: number, marginTop: number) {
+    function renderGroundTruthData(svg: d3.Selection<d3.BaseType, unknown, HTMLElement, any>, filteredGroundTruthData: DataPoint[], xScale: ScaleTime<number, number, never>, yScale: ScaleLogarithmic<number, number, never> | ScaleLinear<number, number, never>, marginLeft: number, marginTop: number) {
         const line = d3.line<DataPoint>()
+            .defined(d => d.admissions > 0)
             .x(d => xScale(d.date))
             .y(d => yScale(d.admissions));
 
@@ -179,7 +170,7 @@ const LineChart: React.FC<LineChartProps> = ({
 
         // Add circles for ground truth data points
         svg.selectAll(".ground-truth-dot")
-            .data(filteredGroundTruthData)
+            .data(filteredGroundTruthData.filter(d => d.admissions > 0))
             .enter()
             .append("circle")
             .attr("class", "ground-truth-dot")
@@ -364,7 +355,7 @@ const LineChart: React.FC<LineChartProps> = ({
 
             const filteredGroundTruthData = filterGroundTruthData(groundTruthData, selectedUSStateNum, selectedDateRange);
             const processedPredictionData = processPredictionData(predictionsData, selectedForecastModel, selectedUSStateNum, userSelectedWeek, weeksAhead, confidenceInterval, displayMode);
-            const {
+            var {
                 xScale, yScale, xAxis, yAxis
             } = createScalesAndAxes(filteredGroundTruthData, chartWidth, chartHeight, yAxisScale);
 
