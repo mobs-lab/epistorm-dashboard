@@ -1,7 +1,8 @@
 # epistorm-dashboard
 
 ## Update:
-- 2024-04-25: Finished line chart update and introduced **meterial-tailwind** lib for date picker in settings panel
+- 2024-04-25: Finished line chart update and introduced **material-tailwind** lib for date picker in settings panel
+  - Also merged back y-axis log scale and ticks update
 - 2024-04-08: Moving onto finish up functionalities of line chart, focusing on line interactivity and Settings panel correcly display; plus state map display update needed
 - 2024-03-21: Refactorization ongoing for page-chart-settings so they interact better, leave potential to implement state management library like redux or better
 - 2024-03-10: Added Landing Page; Placeholder Components; Fixed mysterious team name bug
