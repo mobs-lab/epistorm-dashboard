@@ -13,12 +13,22 @@ const SingleStateMap: React.FC<StateDetailProps> = ({stateNum}) => {
     const [stateData, setStateData] = useState<Feature<Geometry, any>>();
 
     useEffect(() => {
-        d3.json('/gz_2010_us_040_00_5m.json').then((data: any) => {
-            const selectedStateSVG = data["features"].find((feature: Feature<Geometry, any>) => feature["properties"]["STATE"] === stateNum);
-            console.log("Selected State SVG Data: ", selectedStateSVG);
-            setStateData(selectedStateSVG);
-        });
+        // If selected "US", just display the whole US map
+        if (stateNum === "US") {
+            d3.json('/gz_2010_us_040_00_5m.json').then((data: any) => {
+                setStateData(data);
+            });
+            return;
+        } else {
+
+            d3.json('/gz_2010_us_040_00_5m.json').then((data: any) => {
+                const selectedStateSVG = data["features"].find((feature: Feature<Geometry, any>) => feature["properties"]["STATE"] === stateNum);
+                console.log("Selected State SVG Data: ", selectedStateSVG);
+                setStateData(selectedStateSVG);
+            })
+        }
     }, [stateNum]);
+
     useEffect(() => {
         if (svgRef.current && stateData) {
             const svg = d3.select(svgRef.current);
@@ -27,7 +37,7 @@ const SingleStateMap: React.FC<StateDetailProps> = ({stateNum}) => {
             const width = 400;
             const height = 300;
 
-            const projection = d3.geoMercator().fitSize([width, height], stateData);
+            const projection = d3.geoAlbersUsa().fitSize([width, height], stateData);
             const path = d3.geoPath().projection(projection);
 
             svg.append('path')
@@ -43,7 +53,7 @@ const SingleStateMap: React.FC<StateDetailProps> = ({stateNum}) => {
             <h2 className="text-xl font-bold mb-4">Influenza Hospitalizations 2023-2024</h2>
             <div className="flex items-center">
                 <svg ref={svgRef} width={400} height={300}/>
-                <span className="text-3xl">{stateData?.properties?.NAME || ''}</span>
+                <span className="text-3xl">{stateData?.properties?.NAME || 'United States'}</span>
             </div>
         </div>
     );

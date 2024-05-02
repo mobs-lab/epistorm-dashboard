@@ -145,13 +145,13 @@ const FiltersPane: React.FC<FiltersPaneProps> = ({
 
     return (
         <Card>
-            <CardHeader color="blue" className="p-4">
+            {/*<CardHeader color="blue" className="p-4">
                 <Typography variant="h6" color="white">
                     Select a location
                 </Typography>
-            </CardHeader>
+            </CardHeader>*/}
             <CardBody>
-                <div className="mb-4">
+                <div className="mb-4 flex items-center justify-center h-full w-full">
                     <StateMap selectedState={selectedUSState} setSelectedState={handleStateSelectionChange}/>
                 </div>
                 <div className="mb-4">
