@@ -108,7 +108,9 @@ const StateMap: React.FC<StateMapProps> = ({selectedState, setSelectedState}) =>
 
     }, [colorScale, selectedState]);
 
-    return <svg className={"w-full h-full mx-auto "} ref={svgRef}/>
+    return <svg  viewBox="0 -50 300 280"
+                 preserveAspectRatio="xMidYMid meet"
+                 className="w-full h-full" ref={svgRef}/>
 }
 
 
