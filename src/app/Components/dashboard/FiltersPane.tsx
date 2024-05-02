@@ -22,7 +22,7 @@ import {
 } from "../../CSS/material-tailwind-wrapper";
 import {DayPicker} from "react-day-picker";
 
-import {LocationData} from "../../Interfaces/forecast-interfaces";
+import {DataPoint, LocationData} from "../../Interfaces/forecast-interfaces";
 
 type FiltersPaneProps = {
     handleStateSelectionChange: (selections: string) => void;
@@ -35,6 +35,7 @@ type FiltersPaneProps = {
     handleDisplayModeChange: (selections: string) => void;
 
     locationData: LocationData[];
+    groundTruthData: DataPoint[];
 };
 
 // Date Range Mapping from season selection to actual date range
@@ -55,7 +56,8 @@ const FiltersPane: React.FC<FiltersPaneProps> = ({
                                                      handleYAxisScaleChange,
                                                      handleConfidenceIntervalChange,
                                                      handleDisplayModeChange,
-                                                     locationData
+                                                     locationData,
+                                                     groundTruthData
                                                  }) => {
     const [selectedUSState, setSelectedUSState] = useState("US");
     const [selectedModel, setSelectedModel] = useState(["MOBS-GLEAM_FLUH"]);
@@ -99,14 +101,14 @@ const FiltersPane: React.FC<FiltersPaneProps> = ({
     }
 
     const onDateStartSelectionChange = (date: Date | undefined) => {
-        if (date) {
+        if (date && date < selectedDateEnd) {
             setSelectedDateStart(date);
             handleDateStartSelectionChange(date);
         }
     };
 
     const onDateEndSelectionChange = (date: Date | undefined) => {
-        if (date) {
+        if (date && date > selectedDateStart) {
             setSelectedDateEnd(date);
             handleDateEndSelectionChange(date);
         }
@@ -142,6 +144,13 @@ const FiltersPane: React.FC<FiltersPaneProps> = ({
         setDisplayMode(selection);
         handleDisplayModeChange(selection);
     }
+
+    const disabledDays = [
+        {
+            before: new Date(groundTruthData[0].date),
+            after: new Date(groundTruthData[groundTruthData.length - 1].date),
+        },
+    ];
 
     return (
         <Card>
@@ -204,6 +213,8 @@ const FiltersPane: React.FC<FiltersPaneProps> = ({
                                     selected={selectedDateStart}
                                     onSelect={(value) => onDateStartSelectionChange(value)}
                                     showOutsideDays
+                                    month={selectedDateStart}
+                                    disabled={disabledDays}
                                     className="border-0"
                                     classNames={{
                                         caption: "flex justify-center py-2 mb-4 relative items-center",
@@ -249,6 +260,8 @@ const FiltersPane: React.FC<FiltersPaneProps> = ({
                                     selected={selectedDateEnd}
                                     onSelect={(value) => onDateEndSelectionChange(value)}
                                     showOutsideDays
+                                    month={selectedDateEnd}
+                                    disabled={disabledDays}
                                     className="border-0"
                                     classNames={{
                                         caption: "flex justify-center py-2 mb-4 relative items-center",

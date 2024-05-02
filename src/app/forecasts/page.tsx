@@ -33,7 +33,6 @@ const Page: React.FC = () => {
 
     const [dateEnd, setDateEnd] = useState(new Date("2024-06-01"));
 
-
     const [yScale, setYScale] = useState("linear");
 
     const [confidenceInterval, setConfidenceInterval] = useState("90");
@@ -165,6 +164,7 @@ const Page: React.FC = () => {
                     <h1> Settings Pane</h1>
                     <FiltersPane
                         locationData={locationData}
+                        groundTruthData={groundTruthData}
                         handleStateSelectionChange={updateState}
                         handleModelSelectionChange={updateModel}
                         handleNumOfWeeksAheadChange={updateNumOfWeeksAhead}
