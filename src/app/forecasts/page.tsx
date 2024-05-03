@@ -1,9 +1,13 @@
 'use client'
 
 import React, {useEffect, useState} from "react";
-import LineChart from "../Components/dashboard/ForecastChart";
+import ForecastChart from "../Components/dashboard/ForecastChart";
 import FiltersPane from "../Components/dashboard/FiltersPane";
 import SingleStateMap from "../Components/dashboard/SingleStateMap";
+import {useAppDispatch} from '../store/hooks';
+import {setGroundTruthData} from '../store/groundTruthSlice';
+import {setPredictionsData} from '../store/predictionsSlice';
+import {setLocationData} from '../store/locationSlice';
 
 import * as d3 from "d3";
 
@@ -12,68 +16,7 @@ import {DataPoint, LocationData, PredictionDataPoint, ModelPrediction} from "../
 
 const Page: React.FC = () => {
 
-    // Note: the ground truth data gets loaded here and is passed into chart component
-    const [groundTruthData, setGroundTruthData] = useState<DataPoint[]>([]);
-
-    // Note: predictions data gets loaded here (several models each within 2nd level array) and is passed into chart component
-    const [predictionsData, setPredictionsData] = useState<ModelPrediction[]>([]);
-
-    const [locationData, setLocationData] = useState<LocationData[]>([]);
-
-    const [selectedStateName, setSelectedStateName] = useState("US");
-
-    const [USStateNum, setUSStateNum] = useState("US");
-
-    const [forecastModel, setForecastModel] = useState(["MOBS-GLEAM_FLUH"]);
-
-    const [numOfWeeksAhead, setNumOfWeeksAhead] = useState(1);
-
-    // Date Range consists of starting and ending date
-    const [dateStart, setDateStart] = useState(new Date("2023-06-01"));
-
-    const [dateEnd, setDateEnd] = useState(new Date("2024-06-01"));
-
-    const [yScale, setYScale] = useState("linear");
-
-    const [confidenceInterval, setConfidenceInterval] = useState("90");
-
-    const [displayMode, setDisplayMode] = useState("byDate");
-
-    //Function to update global state variables; need to pass them into filters pane
-    const updateState = (selectedStateNum: string) => {
-        setUSStateNum(selectedStateNum);
-        const selectedState = locationData.find((state) => state.stateNum === selectedStateNum);
-        if (selectedState) {
-            setSelectedStateName(selectedState.stateName);
-        }
-    };
-
-    const updateModel = (selectedModel: string[]) => {
-        setForecastModel(selectedModel);
-    }
-
-    const updateNumOfWeeksAhead = (selectedNumOfWeeksAhead: number) => {
-        setNumOfWeeksAhead(selectedNumOfWeeksAhead);
-    }
-
-    const updateDateStart = (selectedDateStart: Date) => {
-        setDateStart(selectedDateStart);
-    }
-    const updateDateEnd = (selectedDateEnd: Date) => {
-        setDateEnd(selectedDateEnd);
-    }
-
-    const updateYScale = (selectedYScale: string) => {
-        setYScale(selectedYScale);
-    }
-
-    const updateConfidenceInterval = (selectedConfidenceInterval: string) => {
-        setConfidenceInterval(selectedConfidenceInterval);
-    }
-
-    const updateDisplayMode = (selectedDisplayMode: string) => {
-        setDisplayMode(selectedDisplayMode);
-    }
+    const dispatch = useAppDispatch();
 
     useEffect(() => {
         // Load ground truth data
@@ -87,7 +30,8 @@ const Page: React.FC = () => {
                 }
             })
             console.log("Ground Truth Data Loaded: ", dataPoints);
-            setGroundTruthData(dataPoints);
+            dispatch(setGroundTruthData(dataPoints));
+            // setGroundTruthData(dataPoints);
         });
 
 
@@ -116,7 +60,8 @@ const Page: React.FC = () => {
         // Load all selected teams's prediction data
         Promise.all(predictionDataPromises).then((allPredictionsData: ModelPrediction[]) => {
             console.log("All Predictions Data Loaded: ", allPredictionsData.length);
-            setPredictionsData(allPredictionsData);
+            dispatch(setPredictionsData(allPredictionsData));
+            // setPredictionsData(allPredictionsData);
         });
 
         // Load location data (just once)
@@ -129,7 +74,8 @@ const Page: React.FC = () => {
                 }
             });
             console.log("Location Data Loaded: ", locationData);
-            setLocationData(locationData);
+            dispatch(setLocationData(locationData));
+            // setLocationData(locationData);
         });
 
     }, []);
@@ -139,7 +85,7 @@ const Page: React.FC = () => {
             <div className={"dashboard-grid-layout"}>
                 <div className={"forecast-state"}>
                     <h1> State </h1>
-                    <SingleStateMap stateNum={USStateNum}/>
+                    <SingleStateMap/>
                 </div>
                 <div className={"forecast-gauge"}>
                     <h1> Gauge </h1>
@@ -148,31 +94,11 @@ const Page: React.FC = () => {
                 {/* Line chart below */}
                 <div className={"forecast-graph"}>
                     <h1> Graph </h1>
-                    <LineChart
-                        groundTruthData={groundTruthData}
-                        predictionsData={predictionsData}
-                        selectedUSStateNum={USStateNum}
-                        selectedForecastModel={forecastModel}
-                        weeksAhead={numOfWeeksAhead}
-                        selectedDateRange={[dateStart, dateEnd]}
-                        yAxisScale={yScale}
-                        confidenceInterval={confidenceInterval}
-                        displayMode={displayMode}
-                    />
+                    <ForecastChart/>
                 </div>
                 <div className={"forecast-settings"}>
                     <h1> Settings Pane</h1>
                     <FiltersPane
-                        locationData={locationData}
-                        groundTruthData={groundTruthData}
-                        handleStateSelectionChange={updateState}
-                        handleModelSelectionChange={updateModel}
-                        handleNumOfWeeksAheadChange={updateNumOfWeeksAhead}
-                        handleDateStartSelectionChange={updateDateStart}
-                        handleDateEndSelectionChange={updateDateEnd}
-                        handleYAxisScaleChange={updateYScale}
-                        handleConfidenceIntervalChange={updateConfidenceInterval}
-                        handleDisplayModeChange={updateDisplayMode}
                     />
                 </div>
             </div>

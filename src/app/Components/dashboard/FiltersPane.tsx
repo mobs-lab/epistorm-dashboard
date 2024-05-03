@@ -21,147 +21,141 @@ import {
     Typography
 } from "../../CSS/material-tailwind-wrapper";
 import {DayPicker} from "react-day-picker";
+import {useAppDispatch, useAppSelector} from '../../store/hooks';
+import {
+    updateSelectedState,
+    updateForecastModel,
+    updateNumOfWeeksAhead,
+    updateDateStart,
+    updateDateEnd,
+    updateYScale,
+    updateConfidenceInterval,
+    updateDisplayMode,
+    updateDateRange
+} from '../../store/filterSlice';
 
 import {DataPoint, LocationData} from "../../Interfaces/forecast-interfaces";
+import forecastChart from "./ForecastChart";
 
-type FiltersPaneProps = {
-    handleStateSelectionChange: (selections: string) => void;
-    handleModelSelectionChange: (selections: string[]) => void;
-    handleNumOfWeeksAheadChange: (selections: number) => void;
-    handleDateStartSelectionChange: (selections: Date) => void;
-    handleDateEndSelectionChange: (selections: Date) => void;
-    handleYAxisScaleChange: (selections: string) => void;
-    handleConfidenceIntervalChange: (selections: string) => void;
-    handleDisplayModeChange: (selections: string) => void;
-
-    locationData: LocationData[];
-    groundTruthData: DataPoint[];
-};
 
 // Date Range Mapping from season selection to actual date range
 const dateRangeMapping = {
     "2021-2022": [new Date("2021-06-01"), new Date("2022-06-01")],
-    "2022-2023": [new Date("2022-06-01"), new Date("2023-06-01")], // TODO change the dates mapping later to reflect current date
+    "2022-2023": [new Date("2022-06-01"), new Date("2023-06-01")],
     "2023-2024": [new Date("2023-06-01"), new Date("2024-04-06")],
     "2024-2025": [new Date("2024-06-01"), new Date("2025-06-01")],
 }
 
 
-const FiltersPane: React.FC<FiltersPaneProps> = ({
-                                                     handleStateSelectionChange,
-                                                     handleModelSelectionChange,
-                                                     handleNumOfWeeksAheadChange,
-                                                     handleDateStartSelectionChange,
-                                                     handleDateEndSelectionChange,
-                                                     handleYAxisScaleChange,
-                                                     handleConfidenceIntervalChange,
-                                                     handleDisplayModeChange,
-                                                     locationData,
-                                                     groundTruthData
-                                                 }) => {
-    const [selectedUSState, setSelectedUSState] = useState("US");
-    const [selectedModel, setSelectedModel] = useState(["MOBS-GLEAM_FLUH"]);
-    const [selectedNumOfWeeksAhead, setSelectedNumOfWeeksAhead] = useState(1);
-    const [selectedDateStart, setSelectedDateStart] = useState(new Date("2023-06-01"));
-    const [selectedDateEnd, setSelectedDateEnd] = useState(new Date("2024-04-06"));
-    const [selectedDateRange, setSelectedDateRange] = useState("2023-2024"); // Default to 2023-2024
-    const [yAxisScale, setYAxisScale] = useState("");
-    const [confidenceInterval, setConfidenceInterval] = useState("");
-    const [displayMode, setDisplayMode] = useState("");
+const FiltersPane: React.FC = () => {
+    const dispatch = useAppDispatch();
+    const groundTruthData = useAppSelector((state) => state.groundTruth.data);
+    const locationData = useAppSelector((state) => state.location.data);
+    const {
+        selectedStateName,
+        USStateNum,
+        forecastModel,
+        numOfWeeksAhead,
+        dateStart,
+        dateEnd,
+        yAxisScale,
+        confidenceInterval,
+        displayMode,
+    } = useAppSelector((state) => state.filter);
+
 
     const onStateSelectionChange = (stateName: string) => {
-        handleStateSelectionChange(stateName);
-        setSelectedUSState(stateName);
+        const selectedState = locationData.find((state) => state.stateNum === stateName);
+        if (selectedState) {
+            dispatch(updateSelectedState({stateName: selectedState.stateName, stateNum: selectedState.stateNum}));
+        }
     };
 
     const onModelSelectionChange = (modelName: string, checked: boolean) => {
         if (checked) {
-            // If the model is checked and not in the array, add it
-            if (!selectedModel.includes(modelName)) {
-                const updatedModels = [...selectedModel, modelName];
-                setSelectedModel(updatedModels);
-                handleModelSelectionChange(updatedModels);
-            }
+            dispatch(updateForecastModel([...forecastModel, modelName]));
         } else {
-            // If the model is unchecked and in the array, remove it
-            if (selectedModel.includes(modelName)) {
-                const updatedModels = selectedModel.filter((model) => model !== modelName);
-                setSelectedModel(updatedModels);
-                handleModelSelectionChange(updatedModels);
-            }
+            dispatch(updateForecastModel(forecastModel.filter((model) => model !== modelName)));
         }
     };
 
 
     const onNumOfWeeksAheadChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-        const selection = Number(event.target.value);
-        console.log("Event: weeks ahead number is changed.")
-        setSelectedNumOfWeeksAhead(selection);
-        handleNumOfWeeksAheadChange(selection);
-    }
+        dispatch(updateNumOfWeeksAhead(Number(event.target.value)));
+    };
 
     const onDateStartSelectionChange = (date: Date | undefined) => {
-        if (date && date < selectedDateEnd) {
-            setSelectedDateStart(date);
-            handleDateStartSelectionChange(date);
+        if (date && groundTruthData.length > 0 && date <= dateEnd) {
+            dispatch(updateDateStart(date));
         }
     };
 
     const onDateEndSelectionChange = (date: Date | undefined) => {
-        if (date && date > selectedDateStart) {
-            setSelectedDateEnd(date);
-            handleDateEndSelectionChange(date);
+        if (date && groundTruthData.length > 0 && date >= dateStart) {
+            dispatch(updateDateEnd(date));
         }
     };
 
     const onDateRangeSelectionChange = (event: string | undefined) => {
-        const selection = event;
-        // @ts-ignore
-        setSelectedDateRange(selection);
-        // @ts-ignore
-        const dateRange = dateRangeMapping[selection];
-        setSelectedDateStart(dateRange[0]);
-        setSelectedDateEnd(dateRange[1]);
-        handleDateStartSelectionChange(dateRange[0]);
-        handleDateEndSelectionChange(dateRange[1]);
+        if (event && groundTruthData.length > 0) {
+            dispatch(updateDateRange(event));
+            const dateRange = dateRangeMapping[event];
+            const startDate = dateRange[0];
+            const endDate = dateRange[1];
+            if (
+                startDate >= groundTruthData[0].date &&
+                endDate <= groundTruthData[groundTruthData.length - 1].date
+            ) {
+                dispatch(updateDateStart(startDate));
+                dispatch(updateDateEnd(endDate));
+            }
+        }
     };
 
     const onYAxisScaleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-        const selection = event.target.value;
-        setYAxisScale(selection);
-        handleYAxisScaleChange(selection);
-    }
+        console.log("FiltersPane update: Y-axis scale changed to: ", event.target.value);
+        dispatch(updateYScale(event.target.value));
+    };
 
-    const onConfidenceIntervalChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-        const selection = event.target.value;
-        console.log("Event: confidence Interval is changed.")
-        setConfidenceInterval(selection);
-        handleConfidenceIntervalChange(selection);
-    }
+    const onConfidenceIntervalChange = (interval: string, checked: boolean) => {
+        // need to also get rid of the percentage sign from the input
+        interval = interval.split("%")[0];
+        if (checked) {
+            dispatch(updateConfidenceInterval([...confidenceInterval, interval]));
+        } else {
+            dispatch(updateConfidenceInterval(confidenceInterval.filter((model) => model !== interval)));
+        }
+        console.log("FiltersPane update: Confidence Interval changed to: ", confidenceInterval);
+    };
 
     const onDisplayModeChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-        const selection = event.target.value;
-        setDisplayMode(selection);
-        handleDisplayModeChange(selection);
-    }
 
-    const disabledDays = [
-        {
-            before: new Date(groundTruthData[0].date),
-            after: new Date(groundTruthData[groundTruthData.length - 1].date),
-        },
-    ];
+    };
+
+    const disabledStartDays = groundTruthData.length > 0
+        ? [
+            {
+                before: groundTruthData[groundTruthData.length - 1].date,
+                after: dateEnd,
+            },
+        ]
+        : [];
+
+    const disabledEndDays = groundTruthData.length > 0
+        ? [
+            {
+                before: dateStart,
+                after: groundTruthData[0].date,
+            },
+        ]
+        : [];
 
     return (
         <Card>
-            {/*<CardHeader color="blue" className="p-4">
-                <Typography variant="h6" color="white">
-                    Select a location
-                </Typography>
-            </CardHeader>*/}
+
             <CardBody>
                 <div className="mb-4 flex items-center justify-center h-full w-full">
-                    <StateMap selectedState={selectedUSState} setSelectedState={handleStateSelectionChange}/>
+                    <StateMap setSelectedState={onStateSelectionChange}/>
                 </div>
                 <div className="mb-4">
                     <Typography variant="h6">State</Typography>
@@ -182,7 +176,7 @@ const FiltersPane: React.FC<FiltersPaneProps> = ({
                                 <input
                                     type="checkbox"
                                     className="form-checkbox text-blue-600"
-                                    checked={selectedModel.includes(model)}
+                                    checked={forecastModel.includes(model)}
                                     onChange={(e) => onModelSelectionChange(model, e.target.checked)}
                                 />
                                 <span className="ml-2 text-gray-700">{model}</span>
@@ -193,7 +187,7 @@ const FiltersPane: React.FC<FiltersPaneProps> = ({
 
                 <div className="mb-4 mt-4">
                     <Typography variant="h6">Dates</Typography>
-                    <Select label={"Select a Season"} value={selectedDateRange}
+                    <Select label={"Select a Season"} value={"2023-2024"}
                             onChange={(value) => onDateRangeSelectionChange(value)}>
                         <Option value="2021-2022">2021–2022</Option>
                         <Option value="2022-2023">2022–2023</Option>
@@ -204,17 +198,16 @@ const FiltersPane: React.FC<FiltersPaneProps> = ({
                         <Popover placement={"bottom"}>
                             <PopoverHandler>
                                 <Input label={"Select Start Date"}
-                                       value={selectedDateStart ? format(selectedDateStart, "PPP") : ""}
+                                       value={dateStart ? format(dateStart, "PPP") : ""}
                                        onChange={() => null}/>
                             </PopoverHandler>
                             <PopoverContent>
                                 <DayPicker
                                     mode="single"
-                                    selected={selectedDateStart}
+                                    selected={dateStart}
                                     onSelect={(value) => onDateStartSelectionChange(value)}
                                     showOutsideDays
-                                    month={selectedDateStart}
-                                    disabled={disabledDays}
+                                    disabled={disabledStartDays}
                                     className="border-0"
                                     classNames={{
                                         caption: "flex justify-center py-2 mb-4 relative items-center",
@@ -251,17 +244,16 @@ const FiltersPane: React.FC<FiltersPaneProps> = ({
                         <Popover placement={"bottom"}>
                             <PopoverHandler>
                                 <Input label={"Select End Date"}
-                                       value={selectedDateEnd ? format(selectedDateEnd, "PPP") : ""}
+                                       value={dateEnd ? format(dateEnd, "PPP") : ""}
                                        onChange={() => null}/>
                             </PopoverHandler>
                             <PopoverContent>
                                 <DayPicker
                                     mode="single"
-                                    selected={selectedDateEnd}
+                                    selected={dateEnd}
                                     onSelect={(value) => onDateEndSelectionChange(value)}
                                     showOutsideDays
-                                    month={selectedDateEnd}
-                                    disabled={disabledDays}
+                                    disabled={disabledEndDays}
                                     className="border-0"
                                     classNames={{
                                         caption: "flex justify-center py-2 mb-4 relative items-center",
@@ -300,20 +292,45 @@ const FiltersPane: React.FC<FiltersPaneProps> = ({
                     <Radio name={"weeksAheadRadioBtn"} value={"0"} label={"0"}
                            onChange={(value) => onNumOfWeeksAheadChange(value)}/>
                     <Radio name={"weeksAheadRadioBtn"} value={"1"} label={"1"}
-                           onChange={(value) => onNumOfWeeksAheadChange(value)} defaultChecked={true}/>
+                           onChange={(value) => onNumOfWeeksAheadChange(value)}/>
                     <Radio name={"weeksAheadRadioBtn"} value={"2"} label={"2"}
                            onChange={(value) => onNumOfWeeksAheadChange(value)}/>
                     <Radio name={"weeksAheadRadioBtn"} value={"3"} label={"3"}
-                           onChange={(value) => onNumOfWeeksAheadChange(value)}/>
+                           onChange={(value) => onNumOfWeeksAheadChange(value)} defaultChecked={true}/>
                 </div>
                 <div className="mb-4">
                     <Typography variant="h6">Y-axis scale</Typography>
                     <Radio name={"yAxisRadioBtn"} value={"linear"} label="Linear"
-                           onChange={(value) => onYAxisScaleChange(value)} defaultChecked={true}/>
+                           onChange={(value => onYAxisScaleChange(value))}
+                           defaultChecked={true}/>
                     <Radio name={"yAxisRadioBtn"} value={"log"} label="Logarithmic"
                            onChange={(value) => onYAxisScaleChange(value)}/>
                 </div>
                 <div className="mb-4">
+                    <Typography variant="h6">Confidence Interval</Typography>
+                    <div className="flex flex-col">
+                        {["50%", "90%", "95%"].map((interval) => (
+                            <label key={interval} className="inline-flex items-center">
+                                <input
+                                    type="checkbox"
+                                    className="form-checkbox text-blue-600"
+                                    checked={confidenceInterval.includes(interval.split("%")[0])}
+                                    onChange={(e) => onConfidenceIntervalChange(interval, e.target.checked)}
+                                />
+                                <span className="ml-2 text-gray-700">{interval}</span>
+                            </label>
+                        ))}
+                    </div>
+                    <button
+                        className={`px-4 py-2 rounded ${
+                            confidenceInterval.length === 0 ? "bg-blue-500 text-white" : "bg-gray-200 text-gray-700"
+                        }`}
+                        onClick={() => dispatch(updateConfidenceInterval([]))}
+                    >
+                        None
+                    </button>
+                </div>
+                {/*<div className="mb-4">
                     <Typography variant="h6">Confidence interval</Typography>
                     <Radio name={"confidenceIntervalRadioBtn"} value={"0"} label="None"
                            onChange={(value) => onConfidenceIntervalChange(value)}/>
@@ -323,7 +340,7 @@ const FiltersPane: React.FC<FiltersPaneProps> = ({
                            onChange={(value) => onConfidenceIntervalChange(value)} defaultChecked={true}/>
                     <Radio name={"confidenceIntervalRadioBtn"} value={"95"} label="95%"
                            onChange={(value) => onConfidenceIntervalChange(value)}/>
-                </div>
+                </div>*/}
                 <div>
                     <Typography variant="h6">Display mode</Typography>
                     <Radio name={"displayModeRadioBtn"} value={"byDate"} label="By Date"
@@ -332,7 +349,8 @@ const FiltersPane: React.FC<FiltersPaneProps> = ({
                            onChange={(value) => onDisplayModeChange(value)}/>
                 </div>
             </CardBody>
-        </Card>);
+        </Card>
+    );
 }
 
 export default FiltersPane;

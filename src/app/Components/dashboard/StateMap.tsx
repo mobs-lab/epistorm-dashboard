@@ -3,15 +3,15 @@ import {useEffect, useRef} from "react"
 import {Feature, FeatureCollection, GeoJSON, GeoJsonProperties, Geometry} from "geojson";
 import * as d3 from "d3"
 import {zoom, zoomIdentity} from "d3-zoom";
+import {useAppSelector} from '../../store/hooks';
 
 const usStateData = "/gz_2010_us_040_00_5m.json"
 
 interface StateMapProps {
-    selectedState: string;
     setSelectedState: (state: string) => void;
 }
 
-const StateMap: React.FC<StateMapProps> = ({selectedState, setSelectedState}) => {
+const StateMap: React.FC<StateMapProps> = ({setSelectedState}) => {
     const svgRef = useRef(null);
 
     // Inside the SVG container, leave some space for the map
@@ -25,6 +25,7 @@ const StateMap: React.FC<StateMapProps> = ({selectedState, setSelectedState}) =>
 //  Right now, randomly generated
     const colorScale: any[] = ["#9e5078", "#549688", "#0a3b84", "#282ba8"]
 
+    const selectedState = useAppSelector((state) => state.filter.USStateNum);
 
     useEffect(() => {
         if (!svgRef.current) return;
@@ -108,9 +109,9 @@ const StateMap: React.FC<StateMapProps> = ({selectedState, setSelectedState}) =>
 
     }, [colorScale, selectedState]);
 
-    return <svg  viewBox="0 -50 300 280"
-                 preserveAspectRatio="xMidYMid meet"
-                 className="w-full h-full" ref={svgRef}/>
+    return <svg viewBox="0 -50 300 280"
+                preserveAspectRatio="xMidYMid meet"
+                className="w-full h-full" ref={svgRef}/>
 }
 
 
