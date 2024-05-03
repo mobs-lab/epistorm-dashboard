@@ -1,38 +1,25 @@
 // components/ForecastChart.tsx
-"use client"
+'use client';
 
 import React, {useEffect, useRef, useState} from "react";
 import * as d3 from "d3";
 import {Axis, NumberValue, ScaleLinear, ScaleLogarithmic, ScaleTime} from "d3";
+import {useAppSelector} from '../../store/hooks';
 
 import {DataPoint, ModelPrediction} from "../../Interfaces/forecast-interfaces";
 
 
-type LineChartProps = {
-    selectedUSStateNum: string,
-    selectedForecastModel: string[],
-    weeksAhead: number,
-    selectedDateRange: [Date, Date],
-    yAxisScale: string,
-    confidenceInterval: string,
-    displayMode: string,
-    groundTruthData: DataPoint[],
-    predictionsData: ModelPrediction[],
-};
-
-const LineChart: React.FC<LineChartProps> = ({
-                                                 groundTruthData,
-                                                 predictionsData,
-                                                 selectedUSStateNum,
-                                                 selectedForecastModel,
-                                                 weeksAhead,
-                                                 selectedDateRange,
-                                                 yAxisScale,
-                                                 confidenceInterval,
-                                                 displayMode
-                                             }) => {
+const LineChart: React.FC = () => {
     // reference to svg object
     const svgRef = useRef(null);
+
+    // Get the ground and prediction data from store
+    const groundTruthData = useAppSelector((state) => state.groundTruth.data);
+    const predictionsData = useAppSelector((state) => state.predictions.data);
+    const {
+        USStateNum, forecastModel, numOfWeeksAhead, dateStart, dateEnd, yAxisScale, confidenceInterval, displayMode,
+    } = useAppSelector((state) => state.filter);
+
 
     // Set up size and margins
     const width = 928;
@@ -46,6 +33,7 @@ const LineChart: React.FC<LineChartProps> = ({
     const chartWidth = width - marginLeft - marginRight;
     const chartHeight = height - marginTop - marginBottom;
 
+    const [initialDataLoaded, setInitialDataLoaded] = useState(false);
     const [userSelectedWeek, setUserSelectedWeek] = useState(new Date());
 
     // Function to filter ground truth data by selected state and dates
@@ -60,86 +48,98 @@ const LineChart: React.FC<LineChartProps> = ({
         return filteredGroundTruthDataByState;
     }
 
-    function processPredictionData(allPredictions: ModelPrediction[], selectedModels: string[], state: string, selectedWeek: any, weeksAhead: number, confidenceInterval: string, displayMode: string) {
+    function processPredictionData(allPredictions: ModelPrediction[], selectedModels: string[], state: string, selectedWeek: any, weeksAhead: number, confidenceIntervals: string[], displayMode: string) {
 
         // First filter out the selected models from all predictions
-        var models = allPredictions.filter((model) => selectedModels.includes(model.modelName));
-        console.log("Chart: Selected Models' Predictions Data:", models);
+        let models = allPredictions.filter((model) => selectedModels.includes(model.modelName));
 
         // Then filter out the selected state's data from the selected models
         var matchingState = models.map((model) => model.predictionData.filter((d) => d.stateNum === state));
-        console.log("Chart: Selected State's Predictions Data:", matchingState);
-
-        // now use userSelectedWeek and weeksAhead to determine what prediction data to extract from matchingState:
-        // 1. Find the referenceDate that matches userSelectedWeek
-        // 2. Find data entries with targetEndDate that is up to weeksAhead from the referenceDate (need to do date calculation here); this means that matching data entries might not be just one, but multiple.
-        // 3. Calculate the confidence interval of all matching data entries based on confidenceInterval and filter into final version of data to be rendered.
 
         if (displayMode === "byDate") {
             // First extract the entries with referenceDate that matches userSelectedWeek, but referenceDate is in string format
             var filteredPredictionsByReferenceDate = matchingState.map((model) => model.filter((d) => d.referenceDate === selectedWeek.toISOString().split('T')[0]));
 
-            console.log("Chart: Prediction Data of the selected week:", filteredPredictionsByReferenceDate);
 
             // Then extract the entries with targetEndDate that is up to weeksAhead from the referenceDate
-            var filteredPredictionsByTargetEndDate = filteredPredictionsByReferenceDate.map((model) => model.filter((d) => {
-                var referenceDate = new Date(d.referenceDate);
-                var targetEndDate = new Date(d.targetEndDate);
-                var targetWeek = new Date(selectedWeek);
+            let filteredPredictionsByTargetEndDate = filteredPredictionsByReferenceDate.map((model) => model.filter((d) => {
+                let referenceDate = new Date(d.referenceDate);
+                let targetEndDate = new Date(d.targetEndDate);
+                let targetWeek = new Date(selectedWeek);
                 targetWeek.setDate(targetWeek.getDate() + weeksAhead * 7);
                 return targetEndDate >= referenceDate && targetEndDate <= targetWeek;
             }));
-            console.log("Chart: Filtered Predictions Data up to weeksAhead:", filteredPredictionsByTargetEndDate);
+            console.log("Chart: Filtered Predictions Data matching models, state and weeksAhead:", filteredPredictionsByTargetEndDate);
 
-            // Now filter the data further using confidenceInterval:
-            // None: leave the data as is
-            // "50": calculate using confidence250 and confidence750
-            // "90": calculate using confidence050 and confidence950
-            // "95": calculate using confidence025 and confidence975
-            var filteredPredictionsByConfidenceInterval = filteredPredictionsByTargetEndDate.map((model) => {
-                if (confidenceInterval === "0") {
-                    return model.map((d) => ({
-                        ...d, confidence_low: 0, confidence_high: 0
-                    }));
-                } else if (confidenceInterval === "50") {
-                    return model.map((d) => ({
-                        ...d, confidence_low: d.confidence250, confidence_high: d.confidence750
-                    }));
-                } else if (confidenceInterval === "90") {
-                    return model.map((d) => ({
-                        ...d, confidence_low: d.confidence050, confidence_high: d.confidence950
-                    }))
-                } else if (confidenceInterval === "95") {
-                    return model.map((d) => ({
-                        ...d, confidence_low: d.confidence025, confidence_high: d.confidence975
-                    }));
-                }
+            // Create an object to store the confidence interval data for each model
+            var confidenceIntervalData = {};
+
+            // Iterate over each model's predictions
+            filteredPredictionsByTargetEndDate.forEach((modelPredictions, index) => {
+                var modelName = selectedModels[index];
+                confidenceIntervalData[modelName] = [];
+
+                // Iterate over each confidence interval
+                confidenceIntervals.forEach((interval) => {
+                    var confidenceIntervalPredictions = modelPredictions.map((d) => {
+                        var confidenceLow, confidenceHigh;
+                        if (interval === "50") {
+                            confidenceLow = d.confidence250;
+                            confidenceHigh = d.confidence750;
+                        } else if (interval === "90") {
+                            confidenceLow = d.confidence050;
+                            confidenceHigh = d.confidence950;
+                        } else if (interval === "95") {
+                            confidenceLow = d.confidence025;
+                            confidenceHigh = d.confidence975;
+                        }
+                        return {
+                            ...d, confidence_low: confidenceLow, confidence_high: confidenceHigh
+                        };
+                    });
+
+                    confidenceIntervalData[modelName].push({
+                        interval: interval, data: confidenceIntervalPredictions
+                    });
+                });
             });
 
-            console.log("Chart: Filtered Predictions Data by Confidence Interval:", filteredPredictionsByConfidenceInterval);
+            console.log("Chart: Confidence Interval with current model and interval selection:", confidenceIntervalData);
 
-            return filteredPredictionsByConfidenceInterval;
+            return confidenceIntervalData;
         } else if (displayMode === "byHorizon") {
-            //TODO: S2: instead of rendering all models, calculate the confidence interval that should overlay on top of the userSelectedWeek
-            return [];
+            // TODO: S2: instead of rendering all models, calculate the confidence interval that should overlay on top of the userSelectedWeek
+            return {};
         }
     }
 
 
-    function createScalesAndAxes(filteredGroundTruthData: DataPoint[], chartWidth: number, chartHeight: number, yAxisScale: string) {
+    function createScalesAndAxes(filteredGroundTruthData: DataPoint[], processedPredictionData: any, chartWidth: number, chartHeight: number, yAxisScale: string) {
         const xScale = d3.scaleTime()
             .domain(d3.extent(filteredGroundTruthData, d => d.date) as [Date, Date])
             .range([0, chartWidth]);
 
-        let yScale;
+        // Initialize yScale with a default linear scale
+        let yScale = d3.scaleLinear()
+            .range([chartHeight, 0]);
+
+        const maxGroundTruthValue = d3.max(filteredGroundTruthData, d => d.admissions) as number;
+        let maxPredictionValue = maxGroundTruthValue;
+
+        if (processedPredictionData && Object.keys(processedPredictionData).length > 0) {
+            maxPredictionValue = d3.max(Object.values(processedPredictionData).flat().map((d: any) => d.data.map((p: any) => p.confidence_high)).flat()) as number;
+        }
+
+        if (maxPredictionValue === undefined) {
+            maxPredictionValue = maxGroundTruthValue;
+        }
+        const maxValue = Math.max(maxGroundTruthValue, maxPredictionValue);
+
         if (yAxisScale === "linear") {
-            yScale = d3.scaleLinear()
-                .domain([0, d3.max(filteredGroundTruthData, d => d.admissions) as number])
-                .range([chartHeight, 0]);
+            yScale.domain([0, maxValue]);
         } else if (yAxisScale === "log") {
             const nonZeroData = filteredGroundTruthData.filter(d => d.admissions > 0);
             const minValue = d3.min(nonZeroData, d => d.admissions) as number;
-            const maxValue = d3.max(nonZeroData, d => d.admissions) as number;
             yScale = d3.scaleLog()
                 .domain([minValue, maxValue])
                 .range([chartHeight, 0])
@@ -154,9 +154,8 @@ const LineChart: React.FC<LineChartProps> = ({
         return {xScale, yScale, xAxis, yAxis};
     }
 
-    function renderGroundTruthData(svg: d3.Selection<d3.BaseType, unknown, HTMLElement, any>, filteredGroundTruthData: DataPoint[], xScale: ScaleTime<number, number, never>, yScale: ScaleLogarithmic<number, number, never> | ScaleLinear<number, number, never>, marginLeft: number, marginTop: number) {
+    function renderGroundTruthData(svg: d3.Selection<d3.BaseType, unknown, HTMLElement, any>, filteredGroundTruthData: DataPoint[], xScale: ScaleTime<number, number, never>, yScale: ScaleLogarithmic<number, number, never> | ScaleLinear<number, number, never>, marginLeft: number, marginTop: number, yAxisScale: string) {
         const line = d3.line<DataPoint>()
-            .defined(d => d.admissions > 0)
             .x(d => xScale(d.date))
             .y(d => yScale(d.admissions));
 
@@ -170,7 +169,7 @@ const LineChart: React.FC<LineChartProps> = ({
 
         // Add circles for ground truth data points
         svg.selectAll(".ground-truth-dot")
-            .data(filteredGroundTruthData.filter(d => d.admissions > 0))
+            .data(yAxisScale === "linear" ? filteredGroundTruthData : filteredGroundTruthData.filter(d => d.admissions > 0))
             .enter()
             .append("circle")
             .attr("class", "ground-truth-dot")
@@ -181,51 +180,58 @@ const LineChart: React.FC<LineChartProps> = ({
             .attr("transform", `translate(${marginLeft}, ${marginTop})`);
     }
 
-    function renderPredictionData(svg: d3.Selection<d3.BaseType, unknown, HTMLElement, any>, processedPredictionData: any[][], xScale: ScaleTime<number, number, never>, yScale: ScaleLinear<number, number, never>, marginLeft: number, marginTop: number, confidenceInterval: string) {
+    function renderPredictionData(svg: Selection<null, unknown, null, undefined>, processedPredictionData: {}, xScale: ScaleTime<number, number, never>, yScale: ScaleLinear<number, number, never>, marginLeft: number, marginTop: number, confidenceInterval: string[]) {
         // First, remove any existing prediction data paths and circles
-        svg.selectAll(".prediction-path, .prediction-dot").remove();
+        svg.selectAll(".prediction-path, .prediction-dot, .confidence-area").remove();
+// Check if processedPredictionData is not empty
+        if (Object.keys(processedPredictionData).length > 0) {
+            // Get an array of values from the processedPredictionData object
+            const predictionDataArray = Object.values(processedPredictionData);
+            predictionDataArray.forEach((predictions, index) => {
+                    if (predictions[0]?.data) {
+                        const line = d3.line<any>()
+                            .x(d => xScale(new Date(d.targetEndDate)))
+                            .y(d => yScale(d.confidence500));
 
-        processedPredictionData.forEach((predictions, index) => {
-            const line = d3.line<any>()
-                .x(d => xScale(new Date(d.targetEndDate)))
-                .y(d => yScale(d.confidence500));
+                        svg.append("path")
+                            .datum(predictions[0].data)
+                            .attr("class", "prediction-path")
+                            .attr("fill", "none")
+                            .attr("stroke", `hsl(${index * 60}, 100%, 50%)`)
+                            .attr("stroke-width", 1.5)
+                            .attr("d", line)
+                            .attr("transform", `translate(${marginLeft}, ${marginTop})`);
 
-            const area = d3.area<any>()
-                .x(d => xScale(new Date(d.targetEndDate)))
-                .y0(d => yScale(d.confidence_low))
-                .y1(d => yScale(d.confidence_high));
+                        predictions.forEach((confidenceIntervalData) => {
+                            const area = d3.area<any>()
+                                .x(d => xScale(new Date(d.targetEndDate)))
+                                .y0(d => yScale(d.confidence_low))
+                                .y1(d => yScale(d.confidence_high));
 
-            svg.append("path")
-                .datum(predictions)
-                .attr("class", "prediction-path")
-                .attr("fill", "none")
-                .attr("stroke", `hsl(${index * 60}, 100%, 50%)`)
-                .attr("stroke-width", 1.5)
-                .attr("d", line)
-                .attr("transform", `translate(${marginLeft}, ${marginTop})`);
+                            svg.append("path")
+                                .datum(confidenceIntervalData.data)
+                                .attr("class", "confidence-area")
+                                .attr("fill", `hsla(${index * 60}, 100%, 50%, 0.2)`)
+                                .attr("d", area)
+                                .attr("transform", `translate(${marginLeft}, ${marginTop})`)
+                                .attr("pointer-events", "none");
+                        });
 
-            if (confidenceInterval !== "None") {
-                svg.append("path")
-                    .datum(predictions)
-                    .attr("class", "prediction-path")
-                    .attr("fill", `hsla(${index * 60}, 100%, 50%, 0.2)`)
-                    .attr("d", area)
-                    .attr("transform", `translate(${marginLeft}, ${marginTop})`)
-                    .attr("pointer-events", "none");
-            }
-
-            // Add circles for prediction data points
-            svg.selectAll(`.prediction-dot-${index}`)
-                .data(predictions)
-                .enter()
-                .append("circle")
-                .attr("class", "prediction-dot")
-                .attr("cx", d => xScale(new Date(d.targetEndDate)))
-                .attr("cy", d => yScale(d.confidence500))
-                .attr("r", 3)
-                .attr("fill", `hsl(${index * 60}, 100%, 50%)`)
-                .attr("transform", `translate(${marginLeft}, ${marginTop})`);
-        });
+                        // Add circles for prediction data points
+                        svg.selectAll(`.prediction-dot-${index}`)
+                            .data(predictions[0].data)
+                            .enter()
+                            .append("circle")
+                            .attr("class", "prediction-dot")
+                            .attr("cx", d => xScale(new Date(d.targetEndDate)))
+                            .attr("cy", d => yScale(d.confidence500))
+                            .attr("r", 3)
+                            .attr("fill", `hsl(${index * 60}, 100%, 50%)`)
+                            .attr("transform", `translate(${marginLeft}, ${marginTop})`);
+                    }
+                }
+            );
+        }
     }
 
     function renderVerticalIndicator(svg: d3.Selection<d3.BaseType, unknown, HTMLElement, any>, xScale: ScaleTime<number, number, never>, marginLeft: number, marginTop: number, height: number, marginBottom: number) {
@@ -353,82 +359,30 @@ const LineChart: React.FC<LineChartProps> = ({
             const svg = d3.select(svgRef.current);
             svg.selectAll("*").remove();
 
-            const filteredGroundTruthData = filterGroundTruthData(groundTruthData, selectedUSStateNum, selectedDateRange);
-            const processedPredictionData = processPredictionData(predictionsData, selectedForecastModel, selectedUSStateNum, userSelectedWeek, weeksAhead, confidenceInterval, displayMode);
+            const filteredGroundTruthData = filterGroundTruthData(groundTruthData, USStateNum, [dateStart, dateEnd]);
+            const processedPredictionData = processPredictionData(predictionsData, forecastModel, USStateNum, userSelectedWeek, numOfWeeksAhead, confidenceInterval, displayMode);
+
             var {
                 xScale, yScale, xAxis, yAxis
-            } = createScalesAndAxes(filteredGroundTruthData, chartWidth, chartHeight, yAxisScale);
+            } = createScalesAndAxes(filteredGroundTruthData, processedPredictionData, chartWidth, chartHeight, yAxisScale);
 
             renderGroundTruthData(svg, filteredGroundTruthData, xScale, yScale, marginLeft, marginTop);
             renderPredictionData(svg, processedPredictionData, xScale, yScale, marginLeft, marginTop, confidenceInterval);
             appendAxes(svg, xAxis, yAxis, marginLeft, marginTop, chartWidth, chartHeight);
 
             const verticalIndicator = renderVerticalIndicator(svg, xScale, marginLeft, marginTop, height, marginBottom);
-            updateVerticalIndicator(userSelectedWeek, xScale, marginLeft, verticalIndicator); // Set initial position
 
-            renderChartComponents(svg, filteredGroundTruthData, xScale, yScale, marginLeft, marginTop, chartWidth, chartHeight, verticalIndicator);
-        }
-    }, [groundTruthData, selectedUSStateNum, selectedForecastModel, weeksAhead, selectedDateRange, yAxisScale, confidenceInterval, displayMode]);
-
-    useEffect(() => {
-        if (svgRef.current) {
-            const svg = d3.select(svgRef.current);
-            const filteredGroundTruthData = filterGroundTruthData(groundTruthData, selectedUSStateNum, selectedDateRange);
-            const {
-                xScale,
-                yScale,
-                xAxis,
-                yAxis
-            } = createScalesAndAxes(filteredGroundTruthData, chartWidth, chartHeight, yAxisScale);
-            const verticalIndicator = svg.select(".vertical-indicator");
-            if (!verticalIndicator.empty()) {
-                updateVerticalIndicator(userSelectedWeek, xScale, marginLeft, verticalIndicator);
-            }
-            const newPredictionData = processPredictionData(predictionsData, selectedForecastModel, selectedUSStateNum, userSelectedWeek, weeksAhead, confidenceInterval, displayMode);
-            renderPredictionData(svg, newPredictionData, xScale, yScale, marginLeft, marginTop, confidenceInterval);
-
-        }
-    }, [userSelectedWeek]);
-
-    /*useEffect(() => {
-        if (svgRef.current && groundTruthData.length > 0) {
-            const svg = d3.select(svgRef.current);
-
-            // Clear previous chart elements
-            svg.selectAll("*").remove();ß
-
-            // Filter and prepare ground truth data
-            const filteredGroundTruthData = filterGroundTruthData(groundTruthData, selectedUSStateNum, selectedDateRange);
-
-            // Process prediction data
-            const processedPredictionData = processPredictionData(predictionsData, selectedForecastModel, selectedUSStateNum, userSelectedWeek, weeksAhead, confidenceInterval, displayMode);
-
-            // Create scales and axes
-            const {
-                xScale, yScale, xAxis, yAxis
-            } = createScalesAndAxes(filteredGroundTruthData, chartWidth, chartHeight, yAxisScale);
-
-            // Render ground truth data line and points
-            renderGroundTruthData(svg, filteredGroundTruthData, xScale, yScale, marginLeft, marginTop);
-
-            // Render prediction data lines and confidence intervals
-            renderPredictionData(svg, processedPredictionData, xScale, yScale, marginLeft, marginTop, confidenceInterval);
-
-            const verticalIndicator = renderVerticalIndicator(svg, xScale, marginLeft, marginTop, height, marginBottom);
-
-            // Set the initial position of the vertical indicator
-            if (filteredGroundTruthData.length > 0) {
-                const initialDate = filteredGroundTruthData[0].date;
-                updateVerticalIndicator(initialDate, xScale, marginLeft, verticalIndicator);
-                setUserSelectedWeek(initialDate);
+            if (!initialDataLoaded) {
+                const newestDate = filteredGroundTruthData[0].date;
+                setUserSelectedWeek(newestDate);
+                setInitialDataLoaded(true);
             }
 
-            // Append axes to the chart
-            appendAxes(svg, xAxis, yAxis, marginLeft, marginTop, chartWidth, chartHeight);
-
+            updateVerticalIndicator(userSelectedWeek || filteredGroundTruthData[0].date, xScale, marginLeft, verticalIndicator);
             renderChartComponents(svg, filteredGroundTruthData, xScale, yScale, marginLeft, marginTop, chartWidth, chartHeight, verticalIndicator);
         }
-    }, [groundTruthData, selectedUSStateNum, selectedForecastModel, weeksAhead, selectedDateRange, yAxisScale, confidenceInterval, displayMode, userSelectedWeek]);*/
+    }, [groundTruthData, predictionsData, USStateNum, forecastModel, numOfWeeksAhead, dateStart, dateEnd, yAxisScale, confidenceInterval, displayMode, userSelectedWeek]);
+
 
 // Return the SVG object using reference
     return (<svg ref={svgRef} width={width} height={height}></svg>);

@@ -1,13 +1,16 @@
+'use client'
 import React from "react";
 import './CSS/globals.css'
 import {Metadata} from "next";
-import Header from './Components/Header'
+import Header from './Components/Header';
+import {Provider} from 'react-redux';
+import store from './store';
 
 
-export const metadata: Metadata = {
-    //TODO: metadata
-    title: 'Epistorm Dashboard', description: '',
-}
+// export const metadata: Metadata = {
+//     //TODO: metadata
+//     title: 'Epistorm Dashboard', description: '',
+// }
 
 export default function RootLayout({
                                        children,
@@ -18,7 +21,7 @@ export default function RootLayout({
     <body className={"grid grid-rows-[auto_1fr] min-h-screen bg-gray-100"}>
     <Header/>
     <main className={"p-4"}>
-        {children}
+        <Provider store={store}>{children}</Provider>
     </main>
 
     </body>
