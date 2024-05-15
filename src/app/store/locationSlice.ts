@@ -1,6 +1,6 @@
 // src/app/store/locationSlice.ts
-import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { LocationData } from '../Interfaces/forecast-interfaces';
+import {createSlice, PayloadAction} from '@reduxjs/toolkit';
+import {LocationData} from '../Interfaces/forecast-interfaces';
 
 interface LocationState {
     data: LocationData[];
@@ -20,6 +20,6 @@ const locationSlice = createSlice({
     },
 });
 
-export const { setLocationData } = locationSlice.actions;
+export const {setLocationData} = locationSlice.actions;
 
 export default locationSlice.reducer;
