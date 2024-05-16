@@ -2,6 +2,7 @@
 
 import React, {useEffect, useState} from "react";
 import ForecastChart from "../Components/dashboard/ForecastChart";
+import ForecastChart2 from "../Components/dashboard/ForecastChart-2";
 import FiltersPane from "../Components/dashboard/FiltersPane";
 import SingleStateMap from "../Components/dashboard/SingleStateMap";
 import {useAppDispatch} from '../store/hooks';
@@ -92,6 +93,13 @@ const Page: React.FC = () => {
                 {/* Line chart below */}
                 <div className={"forecast-graph"}>
                     <h1> Graph </h1>
+                    {/*<ForecastChart2
+                        width={928}
+                        height={500}
+                        marginTop={60}
+                        marginBottom={50}
+                        marginLeft={50}
+                        marginRight={50}/>*/}
                     <ForecastChart/>
                 </div>
                 <div className={"forecast-settings"}>

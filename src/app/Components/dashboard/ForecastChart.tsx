@@ -60,12 +60,6 @@ const LineChart: React.FC = () => {
             // First extract the entries with referenceDate that matches userSelectedWeek, but referenceDate is in string format
             var filteredPredictionsByReferenceDate = matchingState.map((model) => model.filter((d) => d.referenceDate === selectedWeek.toISOString().split('T')[0]));
 
-            // Debug output parsed selectedWeek
-            console.log("===================================================================================");
-            console.log("Debugging: the selectedWeek is:", selectedWeek.toISOString().split('T')[0]);
-            console.log("===================================================================================");
-
-
             // Then extract the entries with targetEndDate that is up to weeksAhead from the referenceDate
             let filteredPredictionsByTargetEndDate = filteredPredictionsByReferenceDate.map((model) => model.filter((d) => {
                 let referenceDate = new Date(d.referenceDate.replace(/-/g, '\/'));
