@@ -16,6 +16,7 @@ const LineChart: React.FC = () => {
     // Get the ground and prediction data from store
     const groundTruthData = useAppSelector((state) => state.groundTruth.data);
     const predictionsData = useAppSelector((state) => state.predictions.data);
+    // Get all settings variables from Redux
     const {
         USStateNum, forecastModel, numOfWeeksAhead, dateStart, dateEnd, yAxisScale, confidenceInterval, displayMode,
     } = useAppSelector((state) => state.filter);
@@ -24,15 +25,14 @@ const LineChart: React.FC = () => {
     // Set up size and margins
     const width = 928;
     const height = 500;
-
     const marginTop = 60;
     const marginBottom = 50;
     const marginLeft = 50;
     const marginRight = 50;
-
     const chartWidth = width - marginLeft - marginRight;
     const chartHeight = height - marginTop - marginBottom;
 
+    //
     const [initialDataLoaded, setInitialDataLoaded] = useState(false);
     const [userSelectedWeek, setUserSelectedWeek] = useState(new Date());
 
@@ -71,36 +71,48 @@ const LineChart: React.FC = () => {
             console.log("Chart: Filtered Predictions Data matching models, state and weeksAhead:", filteredPredictionsByTargetEndDate);
 
             // Create an object to store the confidence interval data for each model
-            var confidenceIntervalData = {};
+            let confidenceIntervalData = {};
 
             // Iterate over each model's predictions
             filteredPredictionsByTargetEndDate.forEach((modelPredictions, index) => {
                 var modelName = selectedModels[index];
                 confidenceIntervalData[modelName] = [];
 
-                // Iterate over each confidence interval
-                confidenceIntervals.forEach((interval) => {
-                    var confidenceIntervalPredictions = modelPredictions.map((d) => {
-                        var confidenceLow, confidenceHigh;
-                        if (interval === "50") {
-                            confidenceLow = d.confidence250;
-                            confidenceHigh = d.confidence750;
-                        } else if (interval === "90") {
-                            confidenceLow = d.confidence050;
-                            confidenceHigh = d.confidence950;
-                        } else if (interval === "95") {
-                            confidenceLow = d.confidence025;
-                            confidenceHigh = d.confidence975;
-                        }
-                        return {
-                            ...d, confidence_low: confidenceLow, confidence_high: confidenceHigh
-                        };
-                    });
+                // Check if any confidence intervals are selected
+                if (confidenceIntervals.length > 0) {
+                    // Iterate over each confidence interval
+                    confidenceIntervals.forEach((interval) => {
+                        var confidenceIntervalPredictions = modelPredictions.map((d) => {
+                            var confidenceLow, confidenceHigh;
+                            if (interval === "50") {
+                                confidenceLow = d.confidence250;
+                                confidenceHigh = d.confidence750;
+                            } else if (interval === "90") {
+                                confidenceLow = d.confidence050;
+                                confidenceHigh = d.confidence950;
+                            } else if (interval === "95") {
+                                confidenceLow = d.confidence025;
+                                confidenceHigh = d.confidence975;
+                            }
+                            return {
+                                ...d,
+                                confidence_low: confidenceLow,
+                                confidence_high: confidenceHigh
+                            };
+                        });
 
-                    confidenceIntervalData[modelName].push({
-                        interval: interval, data: confidenceIntervalPredictions
+                        confidenceIntervalData[modelName].push({
+                            interval: interval,
+                            data: confidenceIntervalPredictions
+                        });
                     });
-                });
+                } else {
+                    // No confidence intervals selected, use the original prediction data
+                    confidenceIntervalData[modelName].push({
+                        interval: "",
+                        data: modelPredictions
+                    });
+                }
             });
 
             console.log("Chart: Confidence Interval with current model and interval selection:", confidenceIntervalData);
@@ -119,8 +131,7 @@ const LineChart: React.FC = () => {
             .range([0, chartWidth]);
 
         // Initialize yScale with a default linear scale
-        let yScale = d3.scaleLinear()
-            .range([chartHeight, 0]);
+        let yScale: ScaleLogarithmic<number, number, never> | ScaleLinear<number, number, never>;
 
         const maxGroundTruthValue = d3.max(filteredGroundTruthData, d => d.admissions) as number;
         let maxPredictionValue = maxGroundTruthValue;
@@ -135,14 +146,19 @@ const LineChart: React.FC = () => {
         const maxValue = Math.max(maxGroundTruthValue, maxPredictionValue);
 
         if (yAxisScale === "linear") {
-            yScale.domain([0, maxValue]);
+            yScale = d3.scaleLinear()
+                .domain([0, maxValue])
+                .range([chartHeight, 0]);
         } else if (yAxisScale === "log") {
-            const nonZeroData = filteredGroundTruthData.filter(d => d.admissions > 0);
-            const minValue = d3.min(nonZeroData, d => d.admissions) as number;
-            yScale = d3.scaleLog()
-                .domain([minValue, maxValue])
+            yScale = d3.scaleSymlog()
+                .domain([0, maxValue])
                 .range([chartHeight, 0])
-                .nice();
+                .constant(1);
+
+            yScale.ticks = function () {
+                const ticks = [0, 1, 3, 5, 10, 30, 50, 100, 300, 500, 1000, 3000, 5000, 10000, 30000, 40000, 50000];
+                return ticks.filter((tick) => tick <= maxValue);
+            };
         }
 
         const xAxis = d3.axisBottom(xScale);
@@ -154,7 +170,9 @@ const LineChart: React.FC = () => {
     }
 
     function renderGroundTruthData(svg: d3.Selection<d3.BaseType, unknown, HTMLElement, any>, filteredGroundTruthData: DataPoint[], xScale: ScaleTime<number, number, never>, yScale: ScaleLogarithmic<number, number, never> | ScaleLinear<number, number, never>, marginLeft: number, marginTop: number, yAxisScale: string) {
+
         const line = d3.line<DataPoint>()
+            // .defined(d => d.admissions !== 0) // Skip zero values for the line
             .x(d => xScale(d.date))
             .y(d => yScale(d.admissions));
 
@@ -168,68 +186,71 @@ const LineChart: React.FC = () => {
 
         // Add circles for ground truth data points
         svg.selectAll(".ground-truth-dot")
-            .data(yAxisScale === "linear" ? filteredGroundTruthData : filteredGroundTruthData.filter(d => d.admissions > 0))
+            .data(filteredGroundTruthData)
             .enter()
             .append("circle")
             .attr("class", "ground-truth-dot")
             .attr("cx", d => xScale(d.date))
             .attr("cy", d => yScale(d.admissions))
-            .attr("r", 3)
+            .attr("r", d => d.admissions === 0 ? 0 : 3) // Set radius to 0 for zero values
             .attr("fill", "steelblue")
             .attr("transform", `translate(${marginLeft}, ${marginTop})`);
     }
 
     function renderPredictionData(svg: Selection<null, unknown, null, undefined>, processedPredictionData: {}, xScale: ScaleTime<number, number, never>, yScale: ScaleLinear<number, number, never>, marginLeft: number, marginTop: number, confidenceInterval: string[]) {
-        // First, remove any existing prediction data paths and circles
+        // Remove existing prediction data paths and circles
         svg.selectAll(".prediction-path, .prediction-dot, .confidence-area").remove();
-// Check if processedPredictionData is not empty
+
+        // Check if processedPredictionData is not empty
         if (Object.keys(processedPredictionData).length > 0) {
             // Get an array of values from the processedPredictionData object
             const predictionDataArray = Object.values(processedPredictionData);
+
+            // Render prediction data points
+            const line = d3.line<any>()
+                .x(d => xScale(new Date(d.targetEndDate)))
+                .y(d => yScale(d.confidence500));
+
+            svg.append("path")
+                .datum(predictionDataArray[0][0].data)
+                .attr("class", "prediction-path")
+                .attr("fill", "none")
+                .attr("stroke", "red")
+                .attr("stroke-width", 1.5)
+                .attr("d", line)
+                .attr("transform", `translate(${marginLeft}, ${marginTop})`);
+
+            // Add circles for prediction data points
+            svg.selectAll(".prediction-dot")
+                .data(predictionDataArray[0][0].data)
+                .enter()
+                .append("circle")
+                .attr("class", "prediction-dot")
+                .attr("cx", d => xScale(new Date(d.targetEndDate)))
+                .attr("cy", d => yScale(d.confidence500))
+                .attr("r", 3)
+                .attr("fill", "red")
+                .attr("transform", `translate(${marginLeft}, ${marginTop})`);
+
+            // Render confidence intervals
             predictionDataArray.forEach((predictions, index) => {
-                    if (predictions[0]?.data) {
-                        const line = d3.line<any>()
+                if (predictions[0]?.data) {
+                    predictions.forEach((confidenceIntervalData) => {
+                        const area = d3.area<any>()
                             .x(d => xScale(new Date(d.targetEndDate)))
-                            .y(d => yScale(d.confidence500));
+                            .y0(d => yScale(d.confidence_low))
+                            .y1(d => yScale(d.confidence_high));
 
                         svg.append("path")
-                            .datum(predictions[0].data)
-                            .attr("class", "prediction-path")
-                            .attr("fill", "none")
-                            .attr("stroke", `hsl(${index * 60}, 100%, 50%)`)
-                            .attr("stroke-width", 1.5)
-                            .attr("d", line)
-                            .attr("transform", `translate(${marginLeft}, ${marginTop})`);
-
-                        predictions.forEach((confidenceIntervalData) => {
-                            const area = d3.area<any>()
-                                .x(d => xScale(new Date(d.targetEndDate)))
-                                .y0(d => yScale(d.confidence_low))
-                                .y1(d => yScale(d.confidence_high));
-
-                            svg.append("path")
-                                .datum(confidenceIntervalData.data)
-                                .attr("class", "confidence-area")
-                                .attr("fill", `hsla(${index * 60}, 100%, 50%, 0.2)`)
-                                .attr("d", area)
-                                .attr("transform", `translate(${marginLeft}, ${marginTop})`)
-                                .attr("pointer-events", "none");
-                        });
-
-                        // Add circles for prediction data points
-                        svg.selectAll(`.prediction-dot-${index}`)
-                            .data(predictions[0].data)
-                            .enter()
-                            .append("circle")
-                            .attr("class", "prediction-dot")
-                            .attr("cx", d => xScale(new Date(d.targetEndDate)))
-                            .attr("cy", d => yScale(d.confidence500))
-                            .attr("r", 3)
-                            .attr("fill", `hsl(${index * 60}, 100%, 50%)`)
-                            .attr("transform", `translate(${marginLeft}, ${marginTop})`);
-                    }
+                            .datum(confidenceIntervalData.data)
+                            .attr("class", "confidence-area")
+                            .attr("fill", `hsla(${index * 60}, 100%, 50%, 0.2)`)
+                            .attr("d", area)
+                            .attr("transform", `translate(${marginLeft}, ${marginTop})`)
+                            .attr("pointer-events", "none");
+                    });
                 }
-            );
+            });
         }
     }
 
