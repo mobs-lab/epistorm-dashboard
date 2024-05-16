@@ -23,7 +23,7 @@ const Page: React.FC = () => {
         d3.csv("/data/ground-truth/target-hospital-admissions.csv").then((data) => {
             const dataPoints: DataPoint[] = data.map((d) => {
                 return {
-                    date: new Date(d.date),
+                    date: new Date(d.date.replace(/-/g, '\/')),
                     stateNum: d.location,
                     stateName: d.location_name,
                     admissions: +d.value,
@@ -61,7 +61,6 @@ const Page: React.FC = () => {
         Promise.all(predictionDataPromises).then((allPredictionsData: ModelPrediction[]) => {
             console.log("All Predictions Data Loaded: ", allPredictionsData.length);
             dispatch(setPredictionsData(allPredictionsData));
-            // setPredictionsData(allPredictionsData);
         });
 
         // Load location data (just once)
@@ -75,7 +74,6 @@ const Page: React.FC = () => {
             });
             console.log("Location Data Loaded: ", locationData);
             dispatch(setLocationData(locationData));
-            // setLocationData(locationData);
         });
 
     }, []);

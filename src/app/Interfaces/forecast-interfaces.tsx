@@ -1,3 +1,8 @@
+/* Interface: DataPoint
+*  In raw data, state number, state's full name are given as strings (even though state number is coded as numbers)
+*  Date is string, so convert to Date, NOTE: leap year issue in 2024 February is not automatically handled
+*  Admissions are cast into number from string
+* */
 export interface DataPoint {
     date: Date;
     stateNum: string;
@@ -24,7 +29,7 @@ export interface LocationData {
     stateName: string; // state full names
 }
 
-export interface ModelPrediction{
+export interface ModelPrediction {
     modelName: string;
     predictionData: PredictionDataPoint[];
 }
