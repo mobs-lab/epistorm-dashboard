@@ -1,14 +1,16 @@
 // components/FiltersPane.tsx
 "use client"
 
-import React, {useState} from 'react';
+import React from 'react';
 import StateMap from "./StateMap";
 import {format} from "date-fns";
+/*
+NOTE: Since using Next.js, these are from our own custom wrapper for required UI components
+    See import origin for detail
+    */
 import {
     Card,
     CardBody,
-    CardHeader,
-    Checkbox,
     ChevronLeftIcon,
     ChevronRightIcon,
     Input,
@@ -23,19 +25,15 @@ import {
 import {DayPicker} from "react-day-picker";
 import {useAppDispatch, useAppSelector} from '../../store/hooks';
 import {
-    updateSelectedState,
+    updateConfidenceInterval,
+    updateDateEnd,
+    updateDateRange,
+    updateDateStart,
     updateForecastModel,
     updateNumOfWeeksAhead,
-    updateDateStart,
-    updateDateEnd,
-    updateYScale,
-    updateConfidenceInterval,
-    updateDisplayMode,
-    updateDateRange
+    updateSelectedState,
+    updateYScale
 } from '../../store/filterSlice';
-
-import {DataPoint, LocationData} from "../../Interfaces/forecast-interfaces";
-import forecastChart from "./ForecastChart";
 
 
 // Date Range Mapping from season selection to actual date range
@@ -102,10 +100,7 @@ const FiltersPane: React.FC = () => {
             const dateRange = dateRangeMapping[event];
             const startDate = dateRange[0];
             const endDate = dateRange[1];
-            if (
-                startDate >= groundTruthData[0].date &&
-                endDate <= groundTruthData[groundTruthData.length - 1].date
-            ) {
+            if (startDate >= groundTruthData[0].date && endDate <= groundTruthData[groundTruthData.length - 1].date) {
                 dispatch(updateDateStart(startDate));
                 dispatch(updateDateEnd(endDate));
             }
@@ -129,30 +124,19 @@ const FiltersPane: React.FC = () => {
     };
 
     const onDisplayModeChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-
+        //TODO: This controls "By Date" or "By Horizon" display mode
     };
 
-    const disabledStartDays = groundTruthData.length > 0
-        ? [
-            {
-                before: groundTruthData[groundTruthData.length - 1].date,
-                after: dateEnd,
-            },
-        ]
-        : [];
+    const disabledStartDays = groundTruthData.length > 0 ? [{
+        before: groundTruthData[groundTruthData.length - 1].date, after: dateEnd,
+    },] : [];
 
-    const disabledEndDays = groundTruthData.length > 0
-        ? [
-            {
-                before: dateStart,
-                after: groundTruthData[0].date,
-            },
-        ]
-        : [];
+    const disabledEndDays = groundTruthData.length > 0 ? [{
+        before: dateStart, after: groundTruthData[0].date,
+    },] : [];
 
     return (
         <Card>
-
             <CardBody>
                 <div className="mb-4 flex items-center justify-center h-full w-full">
                     <StateMap setSelectedState={onStateSelectionChange}/>
@@ -180,8 +164,7 @@ const FiltersPane: React.FC = () => {
                                     onChange={(e) => onModelSelectionChange(model, e.target.checked)}
                                 />
                                 <span className="ml-2 text-gray-700">{model}</span>
-                            </label>
-                        ))}
+                            </label>))}
                     </div>
                 </div>
 
@@ -318,13 +301,10 @@ const FiltersPane: React.FC = () => {
                                     onChange={(e) => onConfidenceIntervalChange(interval, e.target.checked)}
                                 />
                                 <span className="ml-2 text-gray-700">{interval}</span>
-                            </label>
-                        ))}
+                            </label>))}
                     </div>
                     <button
-                        className={`px-4 py-2 rounded ${
-                            confidenceInterval.length === 0 ? "bg-blue-500 text-white" : "bg-gray-200 text-gray-700"
-                        }`}
+                        className={`px-4 py-2 rounded ${confidenceInterval.length === 0 ? "bg-blue-500 text-white" : "bg-gray-200 text-gray-700"}`}
                         onClick={() => dispatch(updateConfidenceInterval([]))}
                     >
                         None
@@ -349,8 +329,7 @@ const FiltersPane: React.FC = () => {
                            onChange={(value) => onDisplayModeChange(value)}/>
                 </div>
             </CardBody>
-        </Card>
-    );
+        </Card>);
 }
 
 export default FiltersPane;

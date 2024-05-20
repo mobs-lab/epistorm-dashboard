@@ -5,11 +5,15 @@ import * as d3 from "d3"
 import {zoom, zoomIdentity} from "d3-zoom";
 import {useAppSelector} from '../../store/hooks';
 
+// Path to the shapeFile containing US state data, in GEOJSON format
 const usStateData = "/gz_2010_us_040_00_5m.json"
 
+// Props for StateMap component
+// Other channel of updating state affects changes here to automatically update the map
 interface StateMapProps {
     setSelectedState: (state: string) => void;
 }
+
 
 const StateMap: React.FC<StateMapProps> = ({setSelectedState}) => {
     const svgRef = useRef(null);
