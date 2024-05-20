@@ -104,8 +104,7 @@ const Page: React.FC = () => {
                 </div>
                 <div className={"forecast-settings"}>
                     <h1> Settings Pane</h1>
-                    <FiltersPane
-                    />
+                    <FiltersPane/>
                 </div>
             </div>
         </div>
