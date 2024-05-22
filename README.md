@@ -16,6 +16,8 @@ _Note_: The `--recurse-submodules` flag is used to clone the submodule, which is
 
 3. Go to project root directory and install the dependencies:
 
+```cd epistorm-dashboard```
+
 ```npm install```
 
 4. Start the development server:

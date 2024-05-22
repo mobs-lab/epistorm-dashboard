@@ -2,7 +2,6 @@
 
 import React, {useEffect, useState} from "react";
 import ForecastChart from "../Components/dashboard/ForecastChart";
-import ForecastChart2 from "../Components/dashboard/ForecastChart-2";
 import FiltersPane from "../Components/dashboard/FiltersPane";
 import SingleStateMap from "../Components/dashboard/SingleStateMap";
 import {useAppDispatch} from '../store/hooks';
