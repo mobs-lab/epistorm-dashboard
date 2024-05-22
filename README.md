@@ -10,13 +10,13 @@
 1. Install [Node.js and npm](https://nodejs.org/en)
 2. Clone the repository to your local machine:
 
-``` git clone https://github.com/mobs-lab/epistorm-dashboard.git --recurse-submodules```
+```git clone https://github.com/mobs-lab/epistorm-dashboard.git --recurse-submodules```
 
 _Note_: The `--recurse-submodules` flag is used to clone the submodule, which is the FluSight-forecast-hub repository.
 
 3. Go to project root directory and install the dependencies:
 
-```npm install ```
+```npm install```
 
 4. Start the development server:
 
