@@ -59,8 +59,6 @@ const LineChart: React.FC = () => {
 
             // First extract the entries with referenceDate that matches userSelectedWeek, but referenceDate is in string format
             var filteredPredictionsByReferenceDate = matchingState.map((model) => model.filter((d) => d.referenceDate === selectedWeek.toISOString().split('T')[0]));
-            console.log("DEBUG: Prediction: selected week after conversion: ", selectedWeek);
-
 
             // Then extract the entries with targetEndDate that is up to weeksAhead from the referenceDate
             let filteredPredictionsByTargetEndDate = filteredPredictionsByReferenceDate.map((model) => model.filter((d) => {
@@ -145,7 +143,6 @@ const LineChart: React.FC = () => {
         const xScale = d3.scaleTime()
             .domain([d3.min(filteredGroundTruthData, d => d.date) as Date, maxDate])
             .range([0, chartWidth]);
-        console.log("X-Scale Domain:", xScale.domain());
 
 
         // Initialize yScale with a default linear scale
@@ -215,7 +212,6 @@ const LineChart: React.FC = () => {
             .append("circle")
             .attr("class", "ground-truth-dot")
             .attr("cx", d => {
-                console.log("Ground Truth X-Coordinate:", xScale(d.date));
                 return xScale(d.date);
             })
             .attr("cy", d => yScale(d.admissions))
@@ -236,34 +232,38 @@ const LineChart: React.FC = () => {
             // Get an array of values from the processedPredictionData object
             const predictionDataArray = Object.values(processedPredictionData);
 
-            // Render prediction data points
-            const line = d3.line<any>()
-                .x(d => xScale(new Date(d.targetEndDate)))
-                .y(d => yScale(d.confidence500));
+            predictionDataArray.forEach((predictions, index) => {
+                if (predictions[0]?.data) {
+                    // Render prediction data points
+                    const line = d3.line<any>()
+                        .x(d => xScale(new Date(d.targetEndDate)))
+                        .y(d => yScale(d.confidence500));
 
-            svg.append("path")
-                .datum(predictionDataArray[0][0].data)
-                .attr("class", "prediction-path")
-                .attr("fill", "none")
-                .attr("stroke", "red")
-                .attr("stroke-width", 1.5)
-                .attr("d", line)
-                .attr("transform", `translate(${marginLeft}, ${marginTop})`);
+                    svg.append("path")
+                        .datum(predictions[0].data)
+                        .attr("class", "prediction-path")
+                        .attr("fill", "none")
+                        .attr("stroke", `hsl(${index * 60}, 100%, 50%)`)
+                        .attr("stroke-width", 1.5)
+                        .attr("d", line)
+                        .attr("transform", `translate(${marginLeft}, ${marginTop})`);
 
-            // Add circles for prediction data points
-            svg.selectAll(".prediction-dot")
-                .data(predictionDataArray[0][0].data)
-                .enter()
-                .append("circle")
-                .attr("class", "prediction-dot")
-                .attr("cx", d => {
-                    console.log("Prediction X-Coordinate:", xScale(new Date(d.targetEndDate)));
-                    return xScale(new Date(d.targetEndDate));
-                })
-                .attr("cy", d => yScale(d.confidence500))
-                .attr("r", 3)
-                .attr("fill", "red")
-                .attr("transform", `translate(${marginLeft}, ${marginTop})`);
+                    // Add circles for prediction data points
+                    svg.selectAll(`.prediction-dot-${index}`)
+                        .data(predictions[0].data)
+                        .enter()
+                        .append("circle")
+                        .attr("class", `prediction-dot prediction-dot-${index}`)
+                        .attr("cx", d => {
+                            return xScale(new Date(d.targetEndDate));
+                        })
+                        .attr("cy", d => yScale(d.confidence500))
+                        .attr("r", 3)
+                        .attr("fill", `hsl(${index * 60}, 100%, 50%)`)
+                        .attr("transform", `translate(${marginLeft}, ${marginTop})`);
+                }
+            });
+
 
             // Render confidence intervals
             predictionDataArray.forEach((predictions, index) => {
