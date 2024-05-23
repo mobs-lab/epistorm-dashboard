@@ -104,17 +104,14 @@ const LineChart: React.FC = () => {
                         });
 
                         confidenceIntervalData[modelName].push({
-                            interval: interval,
-                            data: confidenceIntervalPredictions
+                            interval: interval, data: confidenceIntervalPredictions
                         });
                     });
                 } else {
                     // No confidence intervals selected, use the original prediction data
                     confidenceIntervalData[modelName].push({
-                        interval: "",
-                        data: modelPredictions.map((d) => ({
-                            ...d,
-                            referenceDate: new Date(d.referenceDate.replace(/-/g, '\/')), // Convert referenceDate to Date object
+                        interval: "", data: modelPredictions.map((d) => ({
+                            ...d, referenceDate: new Date(d.referenceDate.replace(/-/g, '\/')), // Convert referenceDate to Date object
                             targetEndDate: new Date(d.targetEndDate.replace(/-/g, '\/')) // Convert targetEndDate to Date object
                         }))
                     });
@@ -306,7 +303,30 @@ const LineChart: React.FC = () => {
     }
 
 
-    function renderChartComponents(svg: d3.Selection<d3.BaseType, unknown, HTMLElement, any>, filteredGroundTruthData: DataPoint[], xScale: ScaleTime<number, number, never>, yScale: ScaleLinear<number, number, never>, marginLeft: number, marginTop: number, chartWidth: number, chartHeight: number, verticalIndicator: d3.Selection<SVGLineElement, unknown, HTMLElement, any>) {
+    function renderChartComponents(
+        svg: d3.Selection<d3.BaseType, unknown, HTMLElement, any>,
+        filteredGroundTruthData: DataPoint[],
+        xScale: ScaleTime<number, number, never>,
+        yScale: ScaleLinear<number, number, never>,
+        marginLeft: number,
+        marginTop: number,
+        chartWidth: number,
+        chartHeight: number,
+        verticalIndicator: d3.Selection<SVGLineElement, unknown, HTMLElement, any>
+    ) {
+        /*const futurePortionRect = svg.append("rect")
+            .attr("class", "future-portion-rect")
+            .attr("fill", "rgba(30, 50, 50, 0.5)")
+            .attr("x", xScale(filteredGroundTruthData[0].date) + marginLeft)
+            .attr("y", marginTop)
+            .attr("width", 0)
+            .attr("height", chartHeight);
+
+        function updateFuturePortionRect(date: Date) {
+            const xPosition = xScale(date);
+            futurePortionRect.attr("x", xPosition)
+                .attr("width", chartWidth - xPosition);
+        }*/
 
         // Append a line for the tooltip
         const tooltipLine = svg.append("line")
@@ -328,14 +348,35 @@ const LineChart: React.FC = () => {
         // Function to update the tooltip line and its associated text
         function updateTooltip(date: Date, admissions: number) {
             const xPosition = xScale(date) + marginLeft;
-            tooltipLine
-                .attr("transform", `translate(${xPosition}, 0)`)
-                .attr("opacity", 1);
-            // Assuming you have a tooltip text element to update
-            tooltipText
-                .attr("transform", `translate(${xPosition + 10}, ${marginTop + 20})`)
-                .text(`Date: ${date.toLocaleDateString()}, Admissions: ${admissions}`)
-                .attr("opacity", 1);
+            const tooltipWidth = 10; // Adjust this value based on your tooltip's width
+
+            // Calculate the middle date of the visible date range
+            const minDate = xScale.domain()[0];
+            const maxDate = xScale.domain()[1];
+            const middleDate = new Date((minDate.getTime() + maxDate.getTime()) / 2);
+
+            // Check if the selected date is before or equal to the middle date
+            if (date <= middleDate) {
+                // Position the tooltip on the right side of the visual indicator
+                tooltipLine
+                    .attr("transform", `translate(${xPosition}, 0)`)
+                    .attr("opacity", 1);
+                tooltipText
+                    .attr("transform", `translate(${xPosition + 10}, ${height - marginBottom - 10})`)
+                    .attr("text-anchor", "start")
+                    .text(`Date: ${date.toLocaleDateString()}, Admissions: ${admissions}`)
+                    .attr("opacity", 1);
+            } else {
+                // Position the tooltip on the left side of the visual indicator
+                tooltipLine
+                    .attr("transform", `translate(${xPosition}, 0)`)
+                    .attr("opacity", 1);
+                tooltipText
+                    .attr("transform", `translate(${xPosition - tooltipWidth - 10}, ${height - marginBottom - 10})`)
+                    .attr("text-anchor", "end")
+                    .text(`Date: ${date.toLocaleDateString()}, Admissions: ${admissions}`)
+                    .attr("opacity", 1);
+            }
         }
 
         function handleDrag(event: any) {
@@ -345,6 +386,7 @@ const LineChart: React.FC = () => {
 
             updateVerticalIndicator(closestData.date, xScale, marginLeft, verticalIndicator);
             setUserSelectedWeek(closestData.date);
+
         }
 
 
