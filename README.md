@@ -7,7 +7,7 @@
 
 ## How to spin up the site locally:
 
-1. Install [Node.js and npm](https://nodejs.org/en)
+1. Install [Node.js and npm](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm)
 2. Clone the repository to your local machine:
 
 ```git clone https://github.com/mobs-lab/epistorm-dashboard.git --recurse-submodules```
