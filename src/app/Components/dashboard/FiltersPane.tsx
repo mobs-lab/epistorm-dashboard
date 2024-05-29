@@ -2,7 +2,7 @@
 "use client"
 
 import React from 'react';
-import StateMap from "./StateMap";
+import StateMap from "./StateMap"
 import {format} from "date-fns";
 /*
 NOTE: Since using Next.js, these are from our own custom wrapper for required UI components
@@ -62,8 +62,8 @@ const FiltersPane: React.FC = () => {
     } = useAppSelector((state) => state.filter);
 
 
-    const onStateSelectionChange = (stateName: string) => {
-        const selectedState = locationData.find((state) => state.stateNum === stateName);
+    const onStateSelectionChange = (stateNum: string) => {
+        const selectedState = locationData.find((state) => state.stateNum === stateNum);
         if (selectedState) {
             dispatch(updateSelectedState({stateName: selectedState.stateName, stateNum: selectedState.stateNum}));
         }
@@ -139,15 +139,20 @@ const FiltersPane: React.FC = () => {
         <Card>
             <CardBody>
                 <div className="mb-4 flex items-center justify-center h-full w-full">
-                    <StateMap setSelectedState={onStateSelectionChange}/>
+                    <StateMap/>
                 </div>
                 <div className="mb-4">
                     <Typography variant="h6">State</Typography>
-                    <Select label={"Select a State"}
-                            onChange={(value => onStateSelectionChange(value as string))}>
-                        {locationData.map((state) => (<Option key={state.state} value={state.stateNum}>
-                            {state.stateNum} : {state.stateName}
-                        </Option>))}
+                    <Select
+                        label="Select a State"
+                        value={USStateNum}
+                        onChange={(value) => onStateSelectionChange(value as string)}
+                        variant="outlined" children={undefined} placeholder={undefined}>
+                        {locationData.map((state) => (
+                            <Option key={state.state} value={state.stateNum}>
+                                {state.stateNum} : {state.stateName}
+                            </Option>
+                        ))}
                     </Select>
                 </div>
 
