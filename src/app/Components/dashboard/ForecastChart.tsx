@@ -36,6 +36,15 @@ const LineChart: React.FC = () => {
     const [initialDataLoaded, setInitialDataLoaded] = useState(false);
     const [userSelectedWeek, setUserSelectedWeek] = useState(new Date());
 
+    // Color Mapping, TODO: move this to Interface later
+    const modelColorMap: Record<string, string> = {
+        "MOBS-GLEAM_FLUH": "hsl(0, 100%, 50%)",   // Red
+        "MIGHTE-Nsemble": "hsl(120, 100%, 50%)", // Green
+        "CEPH-Rtrend_fluH": "hsl(240, 100%, 50%)", // Blue
+        "NU_UCSD-GLEAM_AI_FLUH": "hsl(60, 100%, 50%)",  // Yellow
+        // Add more models and their corresponding colors here in the future
+    };
+
     // Function to filter ground truth data by selected state and dates
     function filterGroundTruthData(data: DataPoint[], state: string, dateRange: [Date, Date]) {
         var filteredGroundTruthDataByState = data.filter((d) => d.stateNum === state);
@@ -223,14 +232,16 @@ const LineChart: React.FC = () => {
 
         // Check if processedPredictionData is not empty
         if (Object.keys(processedPredictionData).length > 0) {
-            //DEBUG:
-            console.log("Chart: DEBUG: Rendering Processed Prediction Data: ", processedPredictionData);
 
             // Get an array of values from the processedPredictionData object
             const predictionDataArray = Object.values(processedPredictionData);
 
             predictionDataArray.forEach((predictions, index) => {
                 if (predictions[0]?.data) {
+
+                    const modelName = Object.keys(processedPredictionData)[index];
+                    const modelColor = modelColorMap[modelName] || `hsl(${index * 60}, 100%, 50%)`;
+
                     // Render prediction data points
                     const line = d3.line<any>()
                         .x(d => xScale(new Date(d.targetEndDate)))
@@ -240,7 +251,7 @@ const LineChart: React.FC = () => {
                         .datum(predictions[0].data)
                         .attr("class", "prediction-path")
                         .attr("fill", "none")
-                        .attr("stroke", `hsl(${index * 60}, 100%, 50%)`)
+                        .attr("stroke", modelColor)
                         .attr("stroke-width", 1.5)
                         .attr("d", line)
                         .attr("transform", `translate(${marginLeft}, ${marginTop})`);
@@ -256,15 +267,18 @@ const LineChart: React.FC = () => {
                         })
                         .attr("cy", d => yScale(d.confidence500))
                         .attr("r", 3)
-                        .attr("fill", `hsl(${index * 60}, 100%, 50%)`)
+                        .attr("fill", modelColor)
                         .attr("transform", `translate(${marginLeft}, ${marginTop})`);
                 }
             });
 
 
-            // Render confidence intervals
+            // Render confidence intervals separately
             predictionDataArray.forEach((predictions, index) => {
                 if (predictions[0]?.data) {
+                    const modelName = Object.keys(processedPredictionData)[index];
+                    const modelColor = modelColorMap[modelName] || `hsl(${index * 60}, 100%, 50%)`;
+
                     predictions.forEach((confidenceIntervalData) => {
                         const area = d3.area<any>()
                             .x(d => xScale(new Date(d.targetEndDate)))
@@ -274,7 +288,7 @@ const LineChart: React.FC = () => {
                         svg.append("path")
                             .datum(confidenceIntervalData.data)
                             .attr("class", "confidence-area")
-                            .attr("fill", `hsla(${index * 60}, 100%, 50%, 0.2)`)
+                            .attr("fill", `${modelColor}80`)
                             .attr("d", area)
                             .attr("transform", `translate(${marginLeft}, ${marginTop})`)
                             .attr("pointer-events", "none");

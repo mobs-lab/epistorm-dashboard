@@ -16,6 +16,7 @@
     "@material-tailwind/react": "^2.1.9",
     "@reduxjs/toolkit": "^2.2.3",
     "@types/react-redux": "^7.1.33",
+    "@types/topojson-client": "^3.1.4",
     "d3": "^7.8.5",
     "date-fns": "^3.6.0",
     "geojson": "^0.5.0",

@@ -1,122 +1,141 @@
 'use client'
 import {useEffect, useRef} from "react"
-import {Feature, FeatureCollection, GeoJSON, GeoJsonProperties, Geometry} from "geojson";
+import * as topojson from "topojson-client";
 import * as d3 from "d3"
 import {zoom, zoomIdentity} from "d3-zoom";
-import {useAppSelector} from '../../store/hooks';
+import {useAppDispatch, useAppSelector} from '../../store/hooks';
+import {updateSelectedState} from '../../store/filterSlice';
 
 // Path to the shapeFile containing US state data, in GEOJSON format
-const usStateData = "/gz_2010_us_040_00_5m.json"
-
-// Props for StateMap component
-// Other channel of updating state affects changes here to automatically update the map
-interface StateMapProps {
-    setSelectedState: (state: string) => void;
-}
+const usStateData = "/states-albers-10m.json"
 
 
-const StateMap: React.FC<StateMapProps> = ({setSelectedState}) => {
+const StateMap: React.FC = () => {
     const svgRef = useRef(null);
+    const width = 975;
+    const height = 610;
 
-    // Inside the SVG container, leave some space for the map
-    const margin = {
-        top: 0, bottom: 0, left: 0, right: 0
-    }
-    const mapRatio = 0.5
+    const dispatch = useAppDispatch();
+    const {selectedStateName, USStateNum} = useAppSelector((state) => state.filter);
+    const locationData = useAppSelector((state) => state.location.data);
 
-
-// TODO: discuss in meeting what colors to use
-//  Right now, randomly generated
-    const colorScale: any[] = ["#9e5078", "#549688", "#0a3b84", "#282ba8"]
-
-    const selectedState = useAppSelector((state) => state.filter.USStateNum);
-
-    useEffect(() => {
+    const renderMap = () => {
         if (!svgRef.current) return;
 
-        const colorGenerator = () => {
-            return colorScale[Math.floor(Math.random() * 4)]
+        const svg = d3.select(svgRef.current)
+            .attr("viewBox", [0, 0, width, height])
+            .attr("width", width)
+            .attr("height", height)
+            .attr("style", "max-width: 100%; height: auto;")
+            .on("click", reset);
+
+        const path = d3.geoPath();
+
+        let g = svg.select("g");
+        if (g.empty()) {
+            g = svg.append("g");
         }
-
-        let width = parseInt(d3.select(svgRef.current).style('width'), 10);
-        let height = width * mapRatio
-        // let active = d3.select(null);
-
-        d3.select(svgRef.current)
-            .style('width', `${width}px`)
-            .style('height', `${height}px`);
-
-        // Creating projection
-        const projection = d3.geoAlbersUsa()
-            .translate([width / 2, height / 2])
-            .scale(450);
-
-        // Creating path generator fromt the projecttion created above.
-        const pathGenerator = d3.geoPath()
-            .projection(projection);
-
-        const svgContainer = d3.select(svgRef.current);
 
         const zoomBehavior = zoom()
             .scaleExtent([1, 8])
+            .translateExtent([[0, 0], [width, height]])
             .on("zoom", zoomed);
 
-        svgContainer.call(zoomBehavior);
-
-        function zoomed(event: any) {
-            svgContainer.selectAll("path").attr("transform", event.transform);
-        }
+        svg.call(zoomBehavior);
 
         const fetchData = async () => {
             try {
-                const us: FeatureCollection<Geometry, GeoJsonProperties> | undefined = await d3.json(usStateData);
-                console.log("US State Data: ", us);
+                const us: any = await d3.json(usStateData);
 
-                const svgContainer = d3.select(svgRef.current);
+                const states = g.selectAll("path")
+                    .data(topojson.feature(us, us.objects.states).features)
+                    .join("path")
+                    .attr("fill", "#444")
+                    .attr("cursor", "pointer")
+                    .on("click", clicked)
+                    .attr("d", path);
 
-                svgContainer.selectAll("path")
-                    .data(us.features)
-                    .enter().append("path")
-                    .attr("d", pathGenerator)
-                    .style("fill", d => {
-                        if (d && d.properties && d.properties.STATE) {
-                            return d.properties.STATE === selectedState ? "orange" : "steelblue";
-                        }
-                        return "steelblue";
-                    })
-                    .style("stroke", "white")
-                    .style("stroke-width", "1")
-                    .on("click", (event, d) => {
-                        if (d && d.properties && d.properties.STATE) {
-                            setSelectedState(d.properties.STATE);
-                            const path = pathGenerator(d);
-                            const bounds = path.bounds(d);
-                            const dx = bounds[1][0] - bounds[0][0];
-                            const dy = bounds[1][1] - bounds[0][1];
-                            const x = (bounds[0][0] + bounds[1][0]) / 2;
-                            const y = (bounds[0][1] + bounds[1][1]) / 2;
-                            const scale = 0.8 / Math.max(dx / width, dy / height);
-                            const translate = [width / 2 - scale * x, height / 2 - scale * y];
-                            svgContainer.transition()
-                                .duration(750)
-                                .call(zoomBehavior.transform, zoomIdentity.translate(translate[0], translate[1]).scale(scale));
-                        } else {
-                            console.warn("Clicked element does not have the expected data structure.");
-                        }
-                    });
+                svg.selectAll("path").each(function (d: any) {
+                    d.path = this;
+                });
+
+                states.append("title")
+                    .text((d: any) => d.properties.name);
+
+                g.append("path")
+                    .attr("fill", "none")
+                    .attr("stroke", "white")
+                    .attr("stroke-linejoin", "round")
+                    .attr("d", path(topojson.mesh(us, us.objects.states, (a: any, b: any) => a !== b)));
+
             } catch (error) {
                 console.error("Error loading US state data: ", error);
             }
         };
 
+        function reset() {
+            g.selectAll("path").transition().style("fill", null);
+            svg.transition().duration(750).call(zoomBehavior.transform, zoomIdentity, zoomIdentity.translate(width / 2, height / 2).scale(1));
+        }
+
+        function clicked(event: any, d: any) {
+            const [[x0, y0], [x1, y1]] = path.bounds(d);
+            event.stopPropagation();
+            g.selectAll("path").transition().style("fill", null);
+            d3.select(event.currentTarget).transition().style("fill", "red");
+            svg.transition().duration(750).call(zoomBehavior.transform, zoomIdentity
+                .translate(width / 2, height / 2)
+                .scale(Math.min(8, 0.9 / Math.max((x1 - x0) / width, (y1 - y0) / height)))
+                .translate(-(x0 + x1) / 2, -(y0 + y1) / 2), d3.pointer(event, svg.node()));
+            dispatch(updateSelectedState({stateName: d.properties.name, stateNum: d.id}));
+        }
+
+        function zoomed(event: any) {
+            const {transform} = event;
+            g.attr("transform", transform);
+            g.attr("stroke-width", 1 / transform.k);
+        }
+
+        const resetButton = svg.append("g")
+            .attr("transform", `translate(${width - 50}, 20)`)
+            .attr("cursor", "pointer")
+            .on("click", reset);
+
+        resetButton.append("rect")
+            .attr("width", 40)
+            .attr("height", 20)
+            .attr("fill", "#f0f0f0")
+            .attr("stroke", "#999");
+
+        resetButton.append("text")
+            .attr("x", 20)
+            .attr("y", 15)
+            .attr("text-anchor", "middle")
+            .text("Reset");
+
         fetchData();
+    };
 
-    }, [colorScale, selectedState]);
+    useEffect(() => {
+        if (locationData.length > 0) {
+            renderMap();
+        }
+    }, [locationData]);
 
-    return <svg viewBox="0 -50 300 280"
-                preserveAspectRatio="xMidYMid meet"
-                className="w-full h-full" ref={svgRef}/>
-}
+    useEffect(() => {
+        if (svgRef.current) {
+            const svg = d3.select(svgRef.current);
+            const paths = svg.selectAll("path");
+            svg.selectAll("path").transition().style("fill", null);
 
+            const selectedState = paths.filter((d: any) => {
+                return d && d.properties && d.properties.name === selectedStateName;
+            });
+            selectedState.transition().style("fill", "red");
+        }
+    }, [selectedStateName]);
+
+    return <svg ref={svgRef}/>;
+};
 
 export default StateMap;
