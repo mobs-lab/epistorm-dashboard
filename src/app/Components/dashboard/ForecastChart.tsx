@@ -57,35 +57,42 @@ const LineChart: React.FC = () => {
 
     function processPredictionData(allPredictions: ModelPrediction[], selectedModels: string[], state: string, selectedWeek: any, weeksAhead: number, confidenceIntervals: string[], displayMode: string) {
 
-        // First filter out the selected models from all predictions
-        let models = allPredictions.filter((model) => selectedModels.includes(model.modelName));
+        // Create an object to store the prediction data for each selected model
+        let modelData = {};
 
-        // Then filter out the selected state's data from the selected models
-        var matchingState = models.map((model) => model.predictionData.filter((d) => d.stateNum === state));
+        selectedModels.forEach(modelName => {
+            const modelPrediction = allPredictions.find(model => model.modelName === modelName);
+            if (modelPrediction) {
+                modelData[modelName] = modelPrediction.predictionData.filter(d => d.stateNum === state);
+            } else {
+                modelData[modelName] = [];
+            }
+        });
+        console.log("modelData: ", modelData); // checks value of modelData
 
         if (displayMode === "byDate") {
 
-
             // First extract the entries with referenceDate that matches userSelectedWeek, but referenceDate is in string format
-            var filteredPredictionsByReferenceDate = matchingState.map((model) => model.filter((d) => d.referenceDate === selectedWeek.toISOString().split('T')[0]));
-
-            // Then extract the entries with targetEndDate that is up to weeksAhead from the referenceDate
-            let filteredPredictionsByTargetEndDate = filteredPredictionsByReferenceDate.map((model) => model.filter((d) => {
-                let referenceDate = new Date(d.referenceDate.replace(/-/g, '\/'));
-                let targetEndDate = new Date(d.targetEndDate.replace(/-/g, '\/'));
-                let targetWeek = new Date(selectedWeek);
-                targetWeek.setDate(targetWeek.getDate() + weeksAhead * 7);
-                return targetEndDate >= referenceDate && targetEndDate <= targetWeek;
-            }));
+            // Filter the prediction data by referenceDate and targetEndDate for each model
+            let filteredModelData = {};
+            Object.entries(modelData).forEach(([modelName, predictionData]) => {
+                let filteredByReferenceDate = predictionData.filter(d => d.referenceDate === selectedWeek.toISOString().split('T')[0]);
+                let filteredByTargetEndDate = filteredByReferenceDate.filter(d => {
+                    let referenceDate = new Date(d.referenceDate.replace(/-/g, '\/'));
+                    let targetEndDate = new Date(d.targetEndDate.replace(/-/g, '\/'));
+                    let targetWeek = new Date(selectedWeek);
+                    targetWeek.setDate(targetWeek.getDate() + weeksAhead * 7);
+                    return targetEndDate >= referenceDate && targetEndDate <= targetWeek;
+                });
+                filteredModelData[modelName] = filteredByTargetEndDate;
+            });
 
             // Create an object to store the confidence interval data for each model
             let confidenceIntervalData = {};
 
             // Iterate over each model's predictions
-            filteredPredictionsByTargetEndDate.forEach((modelPredictions, index) => {
-                var modelName = selectedModels[index];
+            Object.entries(filteredModelData).forEach(([modelName, modelPredictions]) => {
                 confidenceIntervalData[modelName] = [];
-
 
                 // Check if any confidence intervals are selected
                 if (confidenceIntervals.length > 0) {
@@ -158,7 +165,6 @@ const LineChart: React.FC = () => {
         let maxPredictionValue = maxGroundTruthValue;
 
         if (processedPredictionData && Object.keys(processedPredictionData).length > 0) {
-            console.log("Chart: DEBUG: Processed Prediction Data: ", processedPredictionData);
             maxPredictionValue = d3.max(Object.values(processedPredictionData).flat().map((d: any) => d.data.map((p: any) => p.confidence_high || p.confidence500)).flat()) as number;
         }
 
@@ -191,10 +197,7 @@ const LineChart: React.FC = () => {
         return {xScale, yScale, xAxis, yAxis};
     }
 
-    function renderGroundTruthData(svg: d3.Selection<d3.BaseType, unknown, HTMLElement, any>, filteredGroundTruthData: DataPoint[], xScale: ScaleTime<number, number, never>, yScale: ScaleLogarithmic<number, number, never> | ScaleLinear<number, number, never>, marginLeft: number, marginTop: number, yAxisScale: string) {
-        // DEBUG:
-        console.log("Chart: DEBUG: Rendering Ground Truth Data: ", filteredGroundTruthData);
-
+    function renderGroundTruthData(svg: d3.Selection<d3.BaseType, unknown, HTMLElement, any>, filteredGroundTruthData: DataPoint[], xScale: ScaleTime<number, number, never>, yScale: ScaleLogarithmic<number, number, never> | ScaleLinear<number, number, never>, marginLeft: number, marginTop: number) {
         // Remove existing ground truth data paths and circles
         svg.selectAll(".ground-truth-path, .ground-truth-dot").remove();
 
@@ -239,8 +242,11 @@ const LineChart: React.FC = () => {
             predictionDataArray.forEach((predictions, index) => {
                 if (predictions[0]?.data) {
 
+                    console.log("Index before calculation: ", index); // checks value of index
                     const modelName = Object.keys(processedPredictionData)[index];
+                    console.log("modelName after calculation: ", modelName); // checks value of modelName
                     const modelColor = modelColorMap[modelName] || `hsl(${index * 60}, 100%, 50%)`;
+                    console.log("modelColor after calculation: ", modelColor); // checks value of modelColor
 
                     // Render prediction data points
                     const line = d3.line<any>()
@@ -285,10 +291,17 @@ const LineChart: React.FC = () => {
                             .y0(d => yScale(d.confidence_low))
                             .y1(d => yScale(d.confidence_high));
 
+                        const opacity = confidenceIntervalData.interval === "50" ? 0.32 :
+                            confidenceIntervalData.interval === "90" ? 0.2 :
+                                confidenceIntervalData.interval === "95" ? 0.1 : 1;
+
+                        const color = d3.color(modelColor);
+                        color.opacity = opacity;
+
                         svg.append("path")
                             .datum(confidenceIntervalData.data)
                             .attr("class", "confidence-area")
-                            .attr("fill", `${modelColor}80`)
+                            .attr("fill", color.toString())
                             .attr("d", area)
                             .attr("transform", `translate(${marginLeft}, ${marginTop})`)
                             .attr("pointer-events", "none");

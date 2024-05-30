@@ -60,6 +60,7 @@ const FiltersPane: React.FC = () => {
         confidenceInterval,
         displayMode,
     } = useAppSelector((state) => state.filter);
+    const [dateRange, setDateRange] = React.useState("2023-2024");
 
 
     const onStateSelectionChange = (stateNum: string) => {
@@ -100,7 +101,7 @@ const FiltersPane: React.FC = () => {
             const dateRange = dateRangeMapping[event];
             const startDate = dateRange[0];
             const endDate = dateRange[1];
-            if (startDate >= groundTruthData[0].date && endDate <= groundTruthData[groundTruthData.length - 1].date) {
+            if (startDate >= groundTruthData[groundTruthData.length - 1].date && endDate <= groundTruthData[0].date) {
                 dispatch(updateDateStart(startDate));
                 dispatch(updateDateEnd(endDate));
             }
@@ -128,11 +129,13 @@ const FiltersPane: React.FC = () => {
     };
 
     const disabledStartDays = groundTruthData.length > 0 ? [{
-        before: groundTruthData[groundTruthData.length - 1].date, after: dateEnd,
+        before: groundTruthData[groundTruthData.length - 1].date,
+        after: dateRangeMapping[dateRange][1],
     },] : [];
 
     const disabledEndDays = groundTruthData.length > 0 ? [{
-        before: dateStart, after: groundTruthData[0].date,
+        before: dateRangeMapping[dateRange][0],
+        after: groundTruthData[0].date,
     },] : [];
 
     return (
@@ -147,7 +150,7 @@ const FiltersPane: React.FC = () => {
                         label="Select a State"
                         value={USStateNum}
                         onChange={(value) => onStateSelectionChange(value as string)}
-                        variant="outlined" children={undefined} placeholder={undefined}>
+                        variant="outlined">
                         {locationData.map((state) => (
                             <Option key={state.state} value={state.stateNum}>
                                 {state.stateNum} : {state.stateName}
@@ -175,8 +178,11 @@ const FiltersPane: React.FC = () => {
 
                 <div className="mb-4 mt-4">
                     <Typography variant="h6">Dates</Typography>
-                    <Select label={"Select a Season"} value={"2023-2024"}
-                            onChange={(value) => onDateRangeSelectionChange(value)}>
+                    <Select label={"Select a Season"} value={dateRange}
+                            onChange={(value) => {
+                                setDateRange(value);
+                                onDateRangeSelectionChange(value);
+                            }}>
                         <Option value="2021-2022">2021–2022</Option>
                         <Option value="2022-2023">2022–2023</Option>
                         <Option value="2023-2024">2023–2024</Option>
@@ -315,17 +321,6 @@ const FiltersPane: React.FC = () => {
                         None
                     </button>
                 </div>
-                {/*<div className="mb-4">
-                    <Typography variant="h6">Confidence interval</Typography>
-                    <Radio name={"confidenceIntervalRadioBtn"} value={"0"} label="None"
-                           onChange={(value) => onConfidenceIntervalChange(value)}/>
-                    <Radio name={"confidenceIntervalRadioBtn"} value={"50"} label="50%"
-                           onChange={(value) => onConfidenceIntervalChange(value)}/>
-                    <Radio name={"confidenceIntervalRadioBtn"} value={"90"} label="90%"
-                           onChange={(value) => onConfidenceIntervalChange(value)} defaultChecked={true}/>
-                    <Radio name={"confidenceIntervalRadioBtn"} value={"95"} label="95%"
-                           onChange={(value) => onConfidenceIntervalChange(value)}/>
-                </div>*/}
                 <div>
                     <Typography variant="h6">Display mode</Typography>
                     <Radio name={"displayModeRadioBtn"} value={"byDate"} label="By Date"
