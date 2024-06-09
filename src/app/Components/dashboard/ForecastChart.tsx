@@ -3,10 +3,10 @@
 
 import React, {useEffect, useRef, useState} from "react";
 import * as d3 from "d3";
-import {Axis, NumberValue, ScaleLinear, ScaleLogarithmic, ScaleTime} from "d3";
+import {Axis, BaseType, NumberValue, ScaleLinear, ScaleLogarithmic, ScaleTime} from "d3";
 import {useAppSelector} from '../../store/hooks';
 
-import {DataPoint, ModelPrediction} from "../../Interfaces/forecast-interfaces";
+import {DataPoint, ModelPrediction, PredictionDataPoint} from "../../Interfaces/forecast-interfaces";
 
 
 const LineChart: React.FC = () => {
@@ -71,19 +71,23 @@ const LineChart: React.FC = () => {
         console.log("modelData: ", modelData); // checks value of modelData
 
         if (displayMode === "byDate") {
-
             // First extract the entries with referenceDate that matches userSelectedWeek, but referenceDate is in string format
             // Filter the prediction data by referenceDate and targetEndDate for each model
             let filteredModelData = {};
             Object.entries(modelData).forEach(([modelName, predictionData]) => {
-                let filteredByReferenceDate = predictionData.filter(d => d.referenceDate === selectedWeek.toISOString().split('T')[0]);
+
+                let filteredByReferenceDate = predictionData.filter(d =>
+                    d.referenceDate.getFullYear() === selectedWeek.getFullYear() &&
+                    d.referenceDate.getMonth() === selectedWeek.getMonth() &&
+                    d.referenceDate.getDate() === selectedWeek.getDate()
+                );
+
                 let filteredByTargetEndDate = filteredByReferenceDate.filter(d => {
-                    let referenceDate = new Date(d.referenceDate.replace(/-/g, '\/'));
-                    let targetEndDate = new Date(d.targetEndDate.replace(/-/g, '\/'));
                     let targetWeek = new Date(selectedWeek);
                     targetWeek.setDate(targetWeek.getDate() + weeksAhead * 7);
-                    return targetEndDate >= referenceDate && targetEndDate <= targetWeek;
+                    return d.targetEndDate >= d.referenceDate && d.targetEndDate <= targetWeek;
                 });
+                console.log("DEBUG: filteredByTargetEndDate: ", filteredByTargetEndDate); // checks value of filteredByTargetEndDate
                 filteredModelData[modelName] = filteredByTargetEndDate;
             });
 
@@ -114,8 +118,8 @@ const LineChart: React.FC = () => {
                                 ...d,
                                 confidence_low: confidenceLow,
                                 confidence_high: confidenceHigh,
-                                referenceDate: new Date(d.referenceDate.replace(/-/g, '\/')), // Convert referenceDate to Date object
-                                targetEndDate: new Date(d.targetEndDate.replace(/-/g, '\/')) // Convert targetEndDate to Date object
+                                referenceDate: d.referenceDate, // Convert referenceDate to Date object
+                                targetEndDate: d.targetEndDate// Convert targetEndDate to Date object
                             };
                         });
 
@@ -127,13 +131,14 @@ const LineChart: React.FC = () => {
                     // No confidence intervals selected, use the original prediction data
                     confidenceIntervalData[modelName].push({
                         interval: "", data: modelPredictions.map((d) => ({
-                            ...d, referenceDate: new Date(d.referenceDate.replace(/-/g, '\/')), // Convert referenceDate to Date object
-                            targetEndDate: new Date(d.targetEndDate.replace(/-/g, '\/')) // Convert targetEndDate to Date object
+                            ...d, referenceDate: d.referenceDate, // Convert referenceDate to Date object
+                            targetEndDate: d.targetEndDate// Convert targetEndDate to Date object
                         }))
                     });
                 }
             });
 
+            console.log("DEBUG: Processed predictions: ", confidenceIntervalData); // checks value of confidenceIntervalData
             return confidenceIntervalData;
         } else if (displayMode === "byHorizon") {
             // TODO: S2: instead of rendering all models, calculate the confidence interval that should overlay on top of the userSelectedWeek
@@ -142,30 +147,44 @@ const LineChart: React.FC = () => {
     }
 
 
-    function createScalesAndAxes(filteredGroundTruthData: DataPoint[], processedPredictionData: any, chartWidth: number, chartHeight: number, yAxisScale: string) {
-        // Find the maximum date from the ground truth data
-        const maxGroundTruthDate = d3.max(filteredGroundTruthData, d => d.date) as Date;
+    function createScalesAndAxes(ground: DataPoint[], predictions: any, chartWidth: number, chartHeight: number, yAxisScale: string) {
+        /*// Find the maximum date from the ground truth data
+        const maxGroundTruthDate = d3.max(ground, d => d.date) as Date;
 
         // Calculate the end date for the prediction data
         const predictionEndDate = new Date(userSelectedWeek);
         predictionEndDate.setDate(predictionEndDate.getDate() + numOfWeeksAhead * 7);
 
         // Determine the maximum date between the ground truth data and prediction data
-        const maxDate = d3.max([maxGroundTruthDate, predictionEndDate]) as Date;
+        const maxDate = d3.max([maxGroundTruthDate, predictionEndDate]) as Date;*/
+
+        const maxGroundTruthDate = d3.max(ground, d => d.date) as Date;
+
+        const maxPredictionDate = Object.values(predictions)
+            .flatMap((modelData: any) => modelData[0]?.data || [])
+            .reduce((maxDate: Date, dataPoint: PredictionDataPoint) => {
+                const targetEndDate = new Date(dataPoint.targetEndDate);
+                return targetEndDate > maxDate ? targetEndDate : maxDate;
+            }, new Date(0));
+        /*Debug output*/
+        console.log("maxGroundTruthDate: ", maxGroundTruthDate); // checks value of maxGroundTruthDate
+        console.log("maxPredictionDate: ", maxPredictionDate); // checks value of maxPredictionDate
+
+        const maxDate = d3.max([maxGroundTruthDate, maxPredictionDate]) as Date;
 
         const xScale = d3.scaleTime()
-            .domain([d3.min(filteredGroundTruthData, d => d.date) as Date, maxDate])
+            .domain([d3.min(ground, d => d.date) as Date, maxDate])
             .range([0, chartWidth]);
 
 
         // Initialize yScale with a default linear scale
         let yScale: ScaleLogarithmic<number, number, never> | ScaleLinear<number, number, never>;
 
-        const maxGroundTruthValue = d3.max(filteredGroundTruthData, d => d.admissions) as number;
+        const maxGroundTruthValue = d3.max(ground.filter(d => d.admissions !== -1), d => d.admissions) as number;
         let maxPredictionValue = maxGroundTruthValue;
 
-        if (processedPredictionData && Object.keys(processedPredictionData).length > 0) {
-            maxPredictionValue = d3.max(Object.values(processedPredictionData).flat().map((d: any) => d.data.map((p: any) => p.confidence_high || p.confidence500)).flat()) as number;
+        if (predictions && Object.keys(predictions).length > 0) {
+            maxPredictionValue = d3.max(Object.values(predictions).flat().map((d: any) => d.data.map((p: any) => p.confidence_high || p.confidence500)).flat()) as number;
         }
 
         if (maxPredictionValue === undefined) {
@@ -197,56 +216,53 @@ const LineChart: React.FC = () => {
         return {xScale, yScale, xAxis, yAxis};
     }
 
-    function renderGroundTruthData(svg: d3.Selection<d3.BaseType, unknown, HTMLElement, any>, filteredGroundTruthData: DataPoint[], xScale: ScaleTime<number, number, never>, yScale: ScaleLogarithmic<number, number, never> | ScaleLinear<number, number, never>, marginLeft: number, marginTop: number) {
+    function renderGroundTruthData(svg: Selection<BaseType, unknown, HTMLElement, any>, surveillanceData: (DataPoint | {
+        date: any; stateNum: string; stateName: string; admissions: null
+    })[], xScale: ScaleTime<number, number, never>, yScale: ScaleLogarithmic<number, number, never> | ScaleLinear<number, number, never>, marginLeft: number, marginTop: number) {
         // Remove existing ground truth data paths and circles
         svg.selectAll(".ground-truth-path, .ground-truth-dot").remove();
 
         const line = d3.line<DataPoint>()
-            // .defined(d => d.admissions !== 0) // Skip zero values for the line
+            .defined(d => d.admissions !== -1) // Skip placeholder values for the line
             .x(d => xScale(d.date))
             .y(d => yScale(d.admissions));
 
         svg.append("path")
-            .datum(filteredGroundTruthData)
+            .datum(surveillanceData)
             .attr("fill", "none")
-            .attr("stroke", "steelblue")
+            .attr("stroke", (d) => d.admissions === -1 ? "transparent" : "steelblue")
             .attr("stroke-width", 1.5)
             .attr("d", line)
             .attr("transform", `translate(${marginLeft}, ${marginTop})`);
 
-        // Add circles for ground truth data points
+        // Add circles for ground truth data points with non-null admissions
         svg.selectAll(".ground-truth-dot")
-            .data(filteredGroundTruthData)
+            .data(surveillanceData)
             .enter()
             .append("circle")
             .attr("class", "ground-truth-dot")
-            .attr("cx", d => {
-                return xScale(d.date);
-            })
+            .attr("cx", d => xScale(d.date))
             .attr("cy", d => yScale(d.admissions))
-            .attr("r", d => d.admissions === 0 ? 0 : 3) // Set radius to 0 for zero values
+            .attr("r", 3)
             .attr("fill", "steelblue")
             .attr("transform", `translate(${marginLeft}, ${marginTop})`);
     }
 
-    function renderPredictionData(svg: Selection<null, unknown, null, undefined>, processedPredictionData: {}, xScale: ScaleTime<number, number, never>, yScale: ScaleLinear<number, number, never>, marginLeft: number, marginTop: number, confidenceInterval: string[]) {
+    function renderPredictionData(svg: Selection<null, unknown, null, undefined>, predictionData: {}, xScale: ScaleTime<number, number, never>, yScale: ScaleLinear<number, number, never>, marginLeft: number, marginTop: number, confidenceInterval: string[]) {
         // Remove existing prediction data paths and circles
         svg.selectAll(".prediction-path, .prediction-dot, .confidence-area").remove();
 
-        // Check if processedPredictionData is not empty
-        if (Object.keys(processedPredictionData).length > 0) {
+        // Check if predictionData is not empty
+        if (Object.keys(predictionData).length > 0) {
 
-            // Get an array of values from the processedPredictionData object
-            const predictionDataArray = Object.values(processedPredictionData);
+            // Get an array of values from the predictionData object
+            const predictionDataArray = Object.values(predictionData);
 
             predictionDataArray.forEach((predictions, index) => {
                 if (predictions[0]?.data) {
 
-                    console.log("Index before calculation: ", index); // checks value of index
-                    const modelName = Object.keys(processedPredictionData)[index];
-                    console.log("modelName after calculation: ", modelName); // checks value of modelName
+                    const modelName = Object.keys(predictionData)[index];
                     const modelColor = modelColorMap[modelName] || `hsl(${index * 60}, 100%, 50%)`;
-                    console.log("modelColor after calculation: ", modelColor); // checks value of modelColor
 
                     // Render prediction data points
                     const line = d3.line<any>()
@@ -282,7 +298,7 @@ const LineChart: React.FC = () => {
             // Render confidence intervals separately
             predictionDataArray.forEach((predictions, index) => {
                 if (predictions[0]?.data) {
-                    const modelName = Object.keys(processedPredictionData)[index];
+                    const modelName = Object.keys(predictionData)[index];
                     const modelColor = modelColorMap[modelName] || `hsl(${index * 60}, 100%, 50%)`;
 
                     predictions.forEach((confidenceIntervalData) => {
@@ -291,9 +307,7 @@ const LineChart: React.FC = () => {
                             .y0(d => yScale(d.confidence_low))
                             .y1(d => yScale(d.confidence_high));
 
-                        const opacity = confidenceIntervalData.interval === "50" ? 0.32 :
-                            confidenceIntervalData.interval === "90" ? 0.2 :
-                                confidenceIntervalData.interval === "95" ? 0.1 : 1;
+                        const opacity = confidenceIntervalData.interval === "50" ? 0.32 : confidenceIntervalData.interval === "90" ? 0.2 : confidenceIntervalData.interval === "95" ? 0.1 : 1;
 
                         const color = d3.color(modelColor);
                         color.opacity = opacity;
@@ -330,17 +344,7 @@ const LineChart: React.FC = () => {
     }
 
 
-    function renderChartComponents(
-        svg: d3.Selection<d3.BaseType, unknown, HTMLElement, any>,
-        filteredGroundTruthData: DataPoint[],
-        xScale: ScaleTime<number, number, never>,
-        yScale: ScaleLinear<number, number, never>,
-        marginLeft: number,
-        marginTop: number,
-        chartWidth: number,
-        chartHeight: number,
-        verticalIndicator: d3.Selection<SVGLineElement, unknown, HTMLElement, any>
-    ) {
+    function renderChartComponents(svg: d3.Selection<d3.BaseType, unknown, HTMLElement, any>, filteredGroundTruthData: DataPoint[], xScale: ScaleTime<number, number, never>, yScale: ScaleLinear<number, number, never>, marginLeft: number, marginTop: number, chartWidth: number, chartHeight: number, verticalIndicator: d3.Selection<SVGLineElement, unknown, HTMLElement, any>) {
         /*const futurePortionRect = svg.append("rect")
             .attr("class", "future-portion-rect")
             .attr("fill", "rgba(30, 50, 50, 0.5)")
@@ -460,7 +464,7 @@ const LineChart: React.FC = () => {
 
         // Helper function to find the nearest data point
         function findNearestDataPoint(data: DataPoint[], targetDate: Date): DataPoint {
-            return data.reduce((prev, curr) => Math.abs(curr.date - targetDate) < Math.abs(prev.date - targetDate) ? curr : prev);
+            return data.reduce((prev, curr) => (Math.abs(curr.date - targetDate) < Math.abs(prev.date - targetDate)) ? curr : prev);
         }
     }
 
@@ -477,7 +481,16 @@ const LineChart: React.FC = () => {
 
 
     useEffect(() => {
+        console.log("useEffect 1 executed");
+
+        if (userSelectedWeek < dateStart) {
+            setUserSelectedWeek(dateStart);
+        } else if (userSelectedWeek > dateEnd) {
+            setUserSelectedWeek(dateEnd);
+        }
+
         if (svgRef.current && groundTruthData.length > 0) {
+
             const svg = d3.select(svgRef.current);
             svg.selectAll("*").remove();
 
@@ -495,8 +508,9 @@ const LineChart: React.FC = () => {
             const verticalIndicator = renderVerticalIndicator(svg, xScale, marginLeft, marginTop, height, marginBottom);
 
             if (!initialDataLoaded) {
-                const newestDate = filteredGroundTruthData[0].date;
-                setUserSelectedWeek(newestDate);
+                // Find the latest date from the surveillance data (ground truth + placeholder)
+                const latestDate = d3.max(filteredGroundTruthData, d => d.date) as Date;
+                setUserSelectedWeek(latestDate);
                 setInitialDataLoaded(true);
             }
 
