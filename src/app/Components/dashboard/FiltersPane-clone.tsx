@@ -1,17 +1,28 @@
-// components/FiltersPane.tsx
+// components/FiltersPane.tsx but clone file for backup
 "use client"
 
 import React from 'react';
-import {modelColorMap} from '../../Interfaces/modelColors';
-import DatePicker from 'react-date-picker';
-import 'react-date-picker/dist/DatePicker.css';
-import 'react-calendar/dist/Calendar.css';
-
+import {format} from "date-fns";
+import * as d3 from "d3";
 /*
 NOTE: Since using Next.js, these are from our own custom wrapper for required UI components
     See import origin for detail
     */
-import {Card, CardBody, Option, Radio, Select, Typography} from "../../CSS/material-tailwind-wrapper";
+import {
+    Card,
+    CardBody,
+    ChevronLeftIcon,
+    ChevronRightIcon,
+    Input,
+    Option,
+    Popover,
+    PopoverContent,
+    PopoverHandler,
+    Radio,
+    Select,
+    Typography
+} from "../../CSS/material-tailwind-wrapper";
+import {DayPicker} from "react-day-picker";
 import {useAppDispatch, useAppSelector} from '../../store/hooks';
 import {
     updateConfidenceInterval,
@@ -27,10 +38,10 @@ import {
 
 // Date Range Mapping from season selection to actual date range
 const dateRangeMapping = {
-    "2021-2022": [new Date("2021-06-01T00:00:00.000Z"), new Date("2022-06-01T00:00:00.000Z")],
-    "2022-2023": [new Date("2022-06-01T00:00:00.000Z"), new Date("2023-06-01T00:00:00.000Z")],
-    "2023-2024": [new Date("2023-06-01T00:00:00.000Z"), new Date("2024-03-30T04:00:00.000Z")],
-    "2024-2025": [new Date("2024-06-01T00:00:00.000Z"), new Date("2025-06-01T00:00:00.000Z")],
+    "2021-2022": [new Date("2021-06-01"), new Date("2022-06-01")],
+    "2022-2023": [new Date("2022-06-01"), new Date("2023-06-01")],
+    "2023-2024": [new Date("2023-06-01"), new Date("2024-04-06")],
+    "2024-2025": [new Date("2024-06-01"), new Date("2025-06-01")],
 }
 
 
@@ -118,8 +129,15 @@ const FiltersPane: React.FC = () => {
         //TODO: This controls "By Date" or "By Horizon" display mode
     };
 
-    const minDate = groundTruthData.length > 0 ? groundTruthData[groundTruthData.length - 1].date : undefined;
-    const maxDate = groundTruthData.length > 0 ? groundTruthData[0].date : undefined;
+    const disabledStartDays = groundTruthData.length > 0 ? [{
+        before: groundTruthData[groundTruthData.length - 1].date,
+        after: d3.max(Object.values(predictionsData).flatMap(model => model.predictionData), d => new Date(d.targetEndDate)) as Date,
+    },] : [];
+
+    const disabledEndDays = groundTruthData.length > 0 ? [{
+        before: dateRangeMapping[dateRange][0],
+        after: d3.max(Object.values(groundTruthData).flatMap(model => model.predictionData), d => new Date(d.targetEndDate)) as Date,
+    },] : [];
 
     return (<Card>
         <CardBody>
@@ -145,22 +163,14 @@ const FiltersPane: React.FC = () => {
                 <div className="flex flex-col">
                     {["MOBS-GLEAM_FLUH", "CEPH-Rtrend_fluH", "MIGHTE-Nsemble", "NU_UCSD-GLEAM_AI_FLUH"].map((model) => (
                         <label key={model} className="inline-flex items-center">
-                <span
-                    className="w-5 h-5 border-2 rounded-sm mr-2"
-                    style={{
-                        backgroundColor: forecastModel.includes(model) ? modelColorMap[model] : 'white',
-                        borderColor: modelColorMap[model],
-                    }}
-                />
                             <input
                                 type="checkbox"
-                                className="sr-only"
+                                className="form-checkbox text-blue-600"
                                 checked={forecastModel.includes(model)}
                                 onChange={(e) => onModelSelectionChange(model, e.target.checked)}
                             />
                             <span className="ml-2 text-gray-700">{model}</span>
-                        </label>
-                    ))}
+                        </label>))}
                 </div>
             </div>
 
@@ -176,30 +186,99 @@ const FiltersPane: React.FC = () => {
                     <Option value="2023-2024">2023–2024</Option>
                     <Option value="2024-2025">2024–2025</Option>
                 </Select>
-            </div>
+                <div className="mt-4 mb-4">
+                    <Popover placement={"bottom"}>
+                        <PopoverHandler>
+                            <Input label={"Select Start Date"}
+                                   value={dateStart ? format(dateStart, "PPP") : ""}
+                                   onChange={() => null}/>
+                        </PopoverHandler>
+                        <PopoverContent>
+                            <DayPicker
+                                mode="single"
+                                selected={dateStart}
+                                onSelect={(value) => onDateStartSelectionChange(value)}
+                                showOutsideDays
+                                disabled={disabledStartDays}
+                                className="border-0"
+                                classNames={{
+                                    caption: "flex justify-center py-2 mb-4 relative items-center",
+                                    caption_label: "text-sm font-medium text-gray-900",
+                                    nav: "flex items-center",
+                                    nav_button: "h-6 w-6 bg-transparent hover:bg-blue-gray-50 p-1 rounded-md transition-colors duration-300",
+                                    nav_button_previous: "absolute left-1.5",
+                                    nav_button_next: "absolute right-1.5",
+                                    table: "w-full border-collapse",
+                                    head_row: "flex font-medium text-gray-900",
+                                    head_cell: "m-0.5 w-9 font-normal text-sm",
+                                    row: "flex w-full mt-2",
+                                    cell: "text-gray-600 rounded-md h-9 w-9 text-center text-sm p-0 m-0.5 relative [&:has([aria-selected].day-range-end)]:rounded-r-md [&:has([aria-selected].day-outside)]:bg-gray-900/20 [&:has([aria-selected].day-outside)]:text-white [&:has([aria-selected])]:bg-gray-900/50 first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20",
+                                    day: "h-9 w-9 p-0 font-normal",
+                                    day_range_end: "day-range-end",
+                                    day_selected: "rounded-md bg-gray-900 text-white hover:bg-gray-900 hover:text-white focus:bg-gray-900 focus:text-white",
+                                    day_today: "rounded-md bg-gray-200 text-gray-900",
+                                    day_outside: "day-outside text-gray-500 opacity-50 aria-selected:bg-gray-500 aria-selected:text-gray-900 aria-selected:bg-opacity-10",
+                                    day_disabled: "text-gray-500 opacity-50",
+                                    day_hidden: "invisible",
+                                }}
+                                components={{
+                                    IconLeft: ({...props}) => (
+                                        <ChevronLeftIcon {...props} className="h-4 w-4 stroke-2"/>),
+                                    IconRight: ({...props}) => (
+                                        <ChevronRightIcon {...props} className="h-4 w-4 stroke-2"/>),
+                                }}
+                            />
 
-            <div className="mb-4">
-                <Typography variant="h6">Start Date</Typography>
-                <DatePicker
-                    value={dateStart}
-                    onChange={onDateStartSelectionChange}
-                    minDate={minDate}
-                    maxDate={dateEnd}
-                    format="yyyy-MM-dd"
-                />
-            </div>
+                        </PopoverContent>
+                    </Popover>
+                </div>
+                <div>
+                    <Popover placement={"bottom"}>
+                        <PopoverHandler>
+                            <Input label={"Select End Date"}
+                                   value={dateEnd ? format(dateEnd, "PPP") : ""}
+                                   onChange={() => null}/>
+                        </PopoverHandler>
+                        <PopoverContent>
+                            <DayPicker
+                                mode="single"
+                                selected={dateEnd}
+                                onSelect={(value) => onDateEndSelectionChange(value)}
+                                showOutsideDays
+                                disabled={disabledEndDays}
+                                className="border-0"
+                                classNames={{
+                                    caption: "flex justify-center py-2 mb-4 relative items-center",
+                                    caption_label: "text-sm font-medium text-gray-900",
+                                    nav: "flex items-center",
+                                    nav_button: "h-6 w-6 bg-transparent hover:bg-blue-gray-50 p-1 rounded-md transition-colors duration-300",
+                                    nav_button_previous: "absolute left-1.5",
+                                    nav_button_next: "absolute right-1.5",
+                                    table: "w-full border-collapse",
+                                    head_row: "flex font-medium text-gray-900",
+                                    head_cell: "m-0.5 w-9 font-normal text-sm",
+                                    row: "flex w-full mt-2",
+                                    cell: "text-gray-600 rounded-md h-9 w-9 text-center text-sm p-0 m-0.5 relative [&:has([aria-selected].day-range-end)]:rounded-r-md [&:has([aria-selected].day-outside)]:bg-gray-900/20 [&:has([aria-selected].day-outside)]:text-white [&:has([aria-selected])]:bg-gray-900/50 first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20",
+                                    day: "h-9 w-9 p-0 font-normal",
+                                    day_range_end: "day-range-end",
+                                    day_selected: "rounded-md bg-gray-900 text-white hover:bg-gray-900 hover:text-white focus:bg-gray-900 focus:text-white",
+                                    day_today: "rounded-md bg-gray-200 text-gray-900",
+                                    day_outside: "day-outside text-gray-500 opacity-50 aria-selected:bg-gray-500 aria-selected:text-gray-900 aria-selected:bg-opacity-10",
+                                    day_disabled: "text-gray-500 opacity-50",
+                                    day_hidden: "invisible",
+                                }}
+                                components={{
+                                    IconLeft: ({...props}) => (
+                                        <ChevronLeftIcon {...props} className="h-4 w-4 stroke-2"/>),
+                                    IconRight: ({...props}) => (
+                                        <ChevronRightIcon {...props} className="h-4 w-4 stroke-2"/>),
+                                }}
+                            />
 
-            <div className="mb-4">
-                <Typography variant="h6">End Date</Typography>
-                <DatePicker
-                    value={dateEnd}
-                    onChange={onDateEndSelectionChange}
-                    minDate={dateStart}
-                    maxDate={maxDate}
-                    format="yyyy-MM-dd"
-                />
+                        </PopoverContent>
+                    </Popover>
+                </div>
             </div>
-
             <div className="mb-4">
                 <Typography variant={"h6"}> Number of Weeks Ahead </Typography>
                 <Radio name={"weeksAheadRadioBtn"} value={"0"} label={"0"}
