@@ -5,7 +5,7 @@ import React, {useEffect, useRef, useState} from "react";
 import * as d3 from "d3";
 import {Axis, BaseType, NumberValue, ScaleLinear, ScaleLogarithmic, ScaleTime} from "d3";
 import {useAppSelector} from '../../store/hooks';
-
+import {modelColorMap} from '../../Interfaces/modelColors';
 import {DataPoint, ModelPrediction, PredictionDataPoint} from "../../Interfaces/forecast-interfaces";
 
 
@@ -35,15 +35,6 @@ const LineChart: React.FC = () => {
     //
     const [initialDataLoaded, setInitialDataLoaded] = useState(false);
     const [userSelectedWeek, setUserSelectedWeek] = useState(new Date());
-
-    // Color Mapping, TODO: move this to Interface later
-    const modelColorMap: Record<string, string> = {
-        "MOBS-GLEAM_FLUH": "hsl(0, 100%, 50%)",   // Red
-        "MIGHTE-Nsemble": "hsl(120, 100%, 50%)", // Green
-        "CEPH-Rtrend_fluH": "hsl(240, 100%, 50%)", // Blue
-        "NU_UCSD-GLEAM_AI_FLUH": "hsl(60, 100%, 50%)",  // Yellow
-        // Add more models and their corresponding colors here in the future
-    };
 
     // Function to filter ground truth data by selected state and dates
     function filterGroundTruthData(data: DataPoint[], state: string, dateRange: [Date, Date]) {
@@ -242,8 +233,8 @@ const LineChart: React.FC = () => {
             .append("circle")
             .attr("class", "ground-truth-dot")
             .attr("cx", d => xScale(d.date))
-            .attr("cy", d => yScale(d.admissions))
-            .attr("r", 3)
+            .attr("cy", d => d.admissions !== -1 ? yScale(d.admissions) : null)
+            .attr("r", d => d.admissions !== -1 ? 3 : 0)
             .attr("fill", "steelblue")
             .attr("transform", `translate(${marginLeft}, ${marginTop})`);
     }
@@ -395,7 +386,7 @@ const LineChart: React.FC = () => {
                 tooltipText
                     .attr("transform", `translate(${xPosition + 10}, ${height - marginBottom - 10})`)
                     .attr("text-anchor", "start")
-                    .text(`Date: ${date.toLocaleDateString()}, Admissions: ${admissions}`)
+                    .text(`Date: ${date.toLocaleDateString()}, Admissions: ${admissions !== -1 ? admissions : "N/A"}`)
                     .attr("opacity", 1);
             } else {
                 // Position the tooltip on the left side of the visual indicator
@@ -405,7 +396,7 @@ const LineChart: React.FC = () => {
                 tooltipText
                     .attr("transform", `translate(${xPosition - tooltipWidth - 10}, ${height - marginBottom - 10})`)
                     .attr("text-anchor", "end")
-                    .text(`Date: ${date.toLocaleDateString()}, Admissions: ${admissions}`)
+                    .text(`Date: ${date.toLocaleDateString()}, Admissions: ${admissions !== -1 ? admissions : "N/A"}`)
                     .attr("opacity", 1);
             }
         }
