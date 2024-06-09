@@ -29,38 +29,39 @@ const Page: React.FC = () => {
                     admissions: +d.value,
                 }
             })
-            console.log("Ground Truth Data Loaded: ", dataPoints);
-            dispatch(setGroundTruthData(dataPoints));
-            // setGroundTruthData(dataPoints);
-        });
 
-
-        // Load Prediction Data for Each Model
-        const predictionDataPromises = ["MOBS-GLEAM_FLUH", "CEPH-Rtrend_fluH", "MIGHTE-Nsemble", "NU_UCSD-GLEAM_AI_FLUH"].map((team_model) => {
-            return d3.csv(`/data/processed/${team_model}/predictions.csv`).then((data) => {
-                const predictionData: PredictionDataPoint[] = data.map((d) => {
-                    // Adapt prediction data to match my interface
-                    return {
-                        referenceDate: d.reference_date,
-                        targetEndDate: d.target_end_date,
-                        stateNum: d.location,
-                        confidence025: +d["0.025"],
-                        confidence050: +d["0.05"],
-                        confidence250: +d["0.25"],
-                        confidence500: +d["0.5"],
-                        confidence750: +d["0.75"],
-                        confidence950: +d["0.95"],
-                        confidence975: +d["0.975"],
-                    }
+            // Load Prediction Data for Each Model
+            const predictionDataPromises = ["MOBS-GLEAM_FLUH", "CEPH-Rtrend_fluH", "MIGHTE-Nsemble", "NU_UCSD-GLEAM_AI_FLUH"].map((team_model) => {
+                return d3.csv(`/data/processed/${team_model}/predictions.csv`).then((data) => {
+                    const predictionData: PredictionDataPoint[] = data.map((d) => {
+                        // Adapt prediction data to match my interface
+                        return {
+                            referenceDate: new Date(d.reference_date.replace(/-/g, '\/')),
+                            targetEndDate: new Date(d.target_end_date.replace(/-/g, '\/')),
+                            stateNum: d.location,
+                            confidence025: +d["0.025"],
+                            confidence050: +d["0.05"],
+                            confidence250: +d["0.25"],
+                            confidence500: +d["0.5"],
+                            confidence750: +d["0.75"],
+                            confidence950: +d["0.95"],
+                            confidence975: +d["0.975"],
+                        }
+                    });
+                    return {modelName: team_model, predictionData};
                 });
-                return {modelName: team_model, predictionData};
             });
-        });
 
-        // Load all selected teams's prediction data
-        Promise.all(predictionDataPromises).then((allPredictionsData: ModelPrediction[]) => {
-            console.log("All Predictions Data Loaded: ", allPredictionsData.length);
-            dispatch(setPredictionsData(allPredictionsData));
+            // Load all selected teams's prediction data
+            Promise.all(predictionDataPromises).then((allPredictionsData: ModelPrediction[]) => {
+
+                // Add placeholder data to ground truth data based on prediction data
+                const updatedGroundTruthData = addBackEmptyDatesWithPrediction(dataPoints, allPredictionsData);
+                console.log("page.tsx: DEBUG: Added placeholder, updated Ground Truth Data: ", updatedGroundTruthData);
+
+                dispatch(setGroundTruthData(updatedGroundTruthData));
+                dispatch(setPredictionsData(allPredictionsData));
+            });
         });
 
         // Load location data (just once)
@@ -75,7 +76,6 @@ const Page: React.FC = () => {
             console.log("Location Data Loaded: ", locationData);
             dispatch(setLocationData(locationData));
         });
-
     }, []);
 
     return (
@@ -110,5 +110,47 @@ const Page: React.FC = () => {
 
     )
 };
+
+function addBackEmptyDatesWithPrediction(groundTruthData: DataPoint[], predictionsData: ModelPrediction[]): DataPoint[] {
+    const states = new Set<string>();
+    let mostRecentDate = new Date(0);
+
+    // Step 1: Keep track of distinct states and the most recent date in ground truth data
+    groundTruthData.forEach((dataPoint) => {
+        states.add(`${dataPoint.stateNum}-${dataPoint.stateName}`);
+        if (dataPoint.date > mostRecentDate) {
+            mostRecentDate = dataPoint.date;
+        }
+    });
+
+    const newerDates = new Set<string>();
+
+    // Step 2: Find dates in prediction data that are newer than the most recent ground truth date
+    predictionsData.forEach((model) => {
+        model.predictionData.forEach((dataPoint) => {
+            if (dataPoint.referenceDate > mostRecentDate) {
+                newerDates.add(dataPoint.referenceDate.toISOString());
+            }
+        });
+    });
+
+    const placeholderData: DataPoint[] = [];
+
+    // Step 3: Create placeholder data for each distinct state and newer date
+    newerDates.forEach((dateString) => {
+        const date = new Date(dateString);
+        states.forEach((stateString) => {
+            const [stateNum, stateName] = stateString.split('-');
+            placeholderData.push({
+                date,
+                stateNum,
+                stateName,
+                admissions: -1 // Use -1 to indicate a placeholder
+            });
+        });
+    });
+
+    return [...groundTruthData, ...placeholderData].sort((a, b) => b.date.getTime() - a.date.getTime());
+}
 
 export default Page;

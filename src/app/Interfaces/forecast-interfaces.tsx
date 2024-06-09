@@ -11,8 +11,8 @@ export interface DataPoint {
 }
 
 export interface PredictionDataPoint {
-    referenceDate: string;
-    targetEndDate: string;
+    referenceDate: Date;
+    targetEndDate: Date;
     stateNum: string;
     confidence025: number;
     confidence050: number;
