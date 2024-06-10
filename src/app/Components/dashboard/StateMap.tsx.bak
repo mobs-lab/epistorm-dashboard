@@ -1,11 +1,14 @@
-import React, {useEffect, useRef} from "react";
+'use client'
+import {useEffect, useRef} from "react"
 import * as topojson from "topojson-client";
-import * as d3 from "d3";
+import * as d3 from "d3"
 import {zoom, zoomIdentity} from "d3-zoom";
 import {useAppDispatch, useAppSelector} from '../../store/hooks';
 import {updateSelectedState} from '../../store/filterSlice';
 
-const usStateData = "/states-albers-10m.json";
+// Path to the shapeFile containing US state data, in GEOJSON format
+const usStateData = "/states-albers-10m.json"
+
 
 const StateMap: React.FC = () => {
     const svgRef = useRef(null);
@@ -34,8 +37,8 @@ const StateMap: React.FC = () => {
         }
 
         const zoomBehavior = zoom()
-            .scaleExtent([1, 16])
-            .translateExtent([[-width / 2, -height / 2], [width * 1.5, height * 1.5]])
+            .scaleExtent([1, 8])
+            .translateExtent([[0, 0], [width, height]])
             .on("zoom", zoomed);
 
         svg.call(zoomBehavior);
@@ -65,18 +68,6 @@ const StateMap: React.FC = () => {
                     .attr("stroke-linejoin", "round")
                     .attr("d", path(topojson.mesh(us, us.objects.states, (a: any, b: any) => a !== b)));
 
-                // Calculate the scale and translation based on the original and new container sizes
-                const originalWidth = 915;
-                const originalHeight = 670;
-                const scaleX = width / originalWidth;
-                const scaleY = height / originalHeight;
-                const scale = Math.min(scaleX, scaleY);
-                const translateX = ((width - originalWidth) * scale) / 2;
-                const translateY = ((height - originalHeight) * scale) / 2;
-
-                // Set the initial zoom and translation
-                svg.call(zoomBehavior.transform, zoomIdentity.translate(translateX, translateY).scale(scale));
-
             } catch (error) {
                 console.error("Error loading US state data: ", error);
             }
@@ -84,7 +75,7 @@ const StateMap: React.FC = () => {
 
         function reset() {
             g.selectAll("path").transition().style("fill", null);
-            svg.transition().duration(750).call(zoomBehavior.transform, zoomIdentity);
+            svg.transition().duration(750).call(zoomBehavior.transform, zoomIdentity, zoomIdentity.translate(width / 2, height / 2).scale(1));
         }
 
         function clicked(event: any, d: any) {
@@ -92,25 +83,11 @@ const StateMap: React.FC = () => {
             event.stopPropagation();
             g.selectAll("path").transition().style("fill", null);
             d3.select(event.currentTarget).transition().style("fill", "red");
-
-            const dx = x1 - x0;
-            const dy = y1 - y0;
-            const x = (x0 + x1) / 2;
-            const y = (y0 + y1) / 2;
-            const scale = Math.min(8, 0.9 / Math.max(dx / width, dy / height));
-            const translate = [width / 2 - scale * x, height / 2 - scale * y];
-
-            svg.transition().duration(750).call(
-                zoomBehavior.transform,
-                zoomIdentity.translate(translate[0], translate[1]).scale(scale)
-            );
-
+            svg.transition().duration(750).call(zoomBehavior.transform, zoomIdentity
+                .translate(width / 2, height / 2)
+                .scale(Math.min(8, 0.9 / Math.max((x1 - x0) / width, (y1 - y0) / height)))
+                .translate(-(x0 + x1) / 2, -(y0 + y1) / 2), d3.pointer(event, svg.node()));
             dispatch(updateSelectedState({stateName: d.properties.name, stateNum: d.id}));
-
-            // Zoom out to the initial view after a certain duration
-            setTimeout(() => {
-                svg.transition().duration(750).call(zoomBehavior.transform, zoomIdentity);
-            }, 2000);
         }
 
         function zoomed(event: any) {

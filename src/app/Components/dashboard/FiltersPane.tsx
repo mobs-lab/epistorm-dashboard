@@ -23,6 +23,7 @@ import {
     updateSelectedState,
     updateYScale
 } from '../../store/filterSlice';
+import StateMap from "./StateMap";
 
 
 // Date Range Mapping from season selection to actual date range
@@ -129,7 +130,7 @@ const FiltersPane: React.FC = () => {
     return (<Card>
         <CardBody>
             <div className="mb-4 flex items-center justify-center h-full w-full">
-                {/*<StateMap/>*/}
+                <StateMap/>
             </div>
             <div className="mb-4">
                 <Typography variant="h6">State</Typography>
@@ -205,7 +206,7 @@ const FiltersPane: React.FC = () => {
             </div>
 
             <div className="mb-4">
-                <Typography variant={"h6"}> Number of Weeks Ahead </Typography>
+                <Typography variant={"h6"}> Number of Forecast Horizon </Typography>
                 <Radio name={"weeksAheadRadioBtn"} value={"0"} label={"0"}
                        onChange={(value) => onNumOfWeeksAheadChange(value)}/>
                 <Radio name={"weeksAheadRadioBtn"} value={"1"} label={"1"}
