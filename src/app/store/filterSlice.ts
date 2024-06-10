@@ -21,7 +21,7 @@ const initialState: FilterState = {
     numOfWeeksAhead: 3,
     dateRange: "2023-2024",
     dateStart: new Date("2023-06-01T00:00:00.000Z"),
-    dateEnd: new Date("2024-05-05T00:00:00.000Z"),
+    dateEnd: new Date("2024-06-01T00:00:00.000Z"),
     yAxisScale: "linear",
     confidenceInterval: ["90"],
     displayMode: "byDate",
