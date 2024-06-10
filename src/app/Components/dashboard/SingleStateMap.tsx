@@ -81,10 +81,9 @@ const SingleStateMap: React.FC = () => {
 
     return (
         <div className="bg-gray-800 text-white p-4 rounded">
-            <h2 className="text-xl font-bold mb-4">Influenza Hospitalizations 2023-2024</h2>
+            <h2 className="text-3xl font-bold mb-4">{selectedStateName}</h2>
             <div className="flex items-center">
                 <svg ref={svgRef} width={400} height={300}/>
-                <span className="text-3xl">{selectedStateName}</span>
             </div>
         </div>
     );

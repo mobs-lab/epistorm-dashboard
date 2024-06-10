@@ -11,7 +11,7 @@
         grid:
         [row1-left]"state gauge settings" minmax(300px, auto) [row1-right]
         [row2-left]"graph graph settings" minmax(200px, auto) [row2-right]
-        / minmax(400px, auto) minmax(100px, auto) minmax(360px, auto);
+        / minmax(400px, auto) minmax(300px, auto) minmax(360px, auto);
     }
 
     .forecast-state {
