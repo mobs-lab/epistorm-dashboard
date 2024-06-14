@@ -27,11 +27,10 @@ import StateMap from "./StateMap";
 
 
 // Date Range Mapping from season selection to actual date range
+// TODO: Change this to dynamic parsing data into seasons
 const dateRangeMapping = {
-    "2021-2022": [new Date("2021-06-01T00:00:00.000Z"), new Date("2022-06-01T00:00:00.000Z")],
     "2022-2023": [new Date("2022-06-01T00:00:00.000Z"), new Date("2023-06-01T00:00:00.000Z")],
     "2023-2024": [new Date("2023-06-01T00:00:00.000Z"), new Date("2024-06-01T00:00:00.000Z")],
-    "2024-2025": [new Date("2024-06-01T00:00:00.000Z"), new Date("2025-06-01T00:00:00.000Z")],
 }
 
 
@@ -44,9 +43,11 @@ const FiltersPane: React.FC = () => {
         USStateNum, forecastModel, dateStart, dateEnd, dateRange, confidenceInterval,
     } = useAppSelector((state) => state.filter);
 
-    const [startDateMaxDate, setStartDateMaxDate] = useState<Date | undefined>(undefined);
-    const [endDateMinDate, setEndDateMinDate] = useState<Date | undefined>(undefined);
+    const [startDateMaxDate, setStartDateMaxDate] = useState<Date | undefined>(dateEnd);
+    const [endDateMinDate, setEndDateMinDate] = useState<Date | undefined>(dateStart);
 
+    console.log("when the component is rendered, the dateStart and dateEnd are: ", dateStart, dateEnd);
+    console.log("And checking startDateMaxDate and endDateMinDate:", startDateMaxDate, endDateMinDate);
 
     const onStateSelectionChange = (stateNum: string) => {
         const selectedState = locationData.find((state) => state.stateNum === stateNum);
@@ -84,11 +85,19 @@ const FiltersPane: React.FC = () => {
     };
 
     useEffect(() => {
-        console.log('dateEnd value:', dateEnd);
-        console.log('dateStart value:', dateStart);
+
         setStartDateMaxDate(dateEnd);
         setEndDateMinDate(dateStart);
     }, [dateEnd, dateStart]);
+
+    useEffect(() => {
+        //     This useEffect is run just once when the component is mounted, to update the current dateEnd by checking the latest date from the groundTruthData to ensure that the datepicker receive a correct update for the maxDate
+        if (groundTruthData && groundTruthData.length > 0) {
+            const latestAvailableDate = groundTruthData[0].date;
+            dispatch(updateDateEnd(latestAvailableDate));
+
+        }
+    }, [])
 
     const earliestDayFromGroundTruthData = groundTruthData.length > 0 ? groundTruthData[groundTruthData.length - 1].date : undefined;
     const latestDayFromGroundTruthData = groundTruthData.length > 0 ? groundTruthData[0].date : undefined;
@@ -99,10 +108,13 @@ const FiltersPane: React.FC = () => {
             const dateRange = dateRangeMapping[event];
             const startDate = dateRange[0];
             const endDate = dateRange[1];
-            if (startDate >= earliestDayFromGroundTruthData && endDate <= latestDayFromGroundTruthData && earliestDayFromGroundTruthData && latestDayFromGroundTruthData) {
-                dispatch(updateDateStart(startDate));
-                dispatch(updateDateEnd(endDate));
-            }
+            console.log(earliestDayFromGroundTruthData, latestDayFromGroundTruthData, startDate, endDate)
+
+            dispatch(updateDateStart(startDate));
+            dispatch(updateDateEnd(endDate));
+            console.log('dateEnd value:', dateEnd);
+            console.log('dateStart value:', dateStart);
+
         }
     };
 
@@ -176,10 +188,9 @@ const FiltersPane: React.FC = () => {
                     value={dateRange}
                     onChange={onDateRangeSelectionChange}
                 >
-                    <Option value="2021-2022">2021–2022</Option>
+                    {/*TODO: Change this to dynamic parsing data into seasons*/}
                     <Option value="2022-2023">2022–2023</Option>
                     <Option value="2023-2024">2023–2024</Option>
-                    <Option value="2024-2025">2024–2025</Option>
                 </Select>
             </div>
 
@@ -206,7 +217,7 @@ const FiltersPane: React.FC = () => {
             </div>
 
             <div className="mb-4">
-                <Typography variant={"h6"}> Number of Forecast Horizon </Typography>
+                <Typography variant={"h6"}> Horizons </Typography>
                 <Radio name={"weeksAheadRadioBtn"} value={"0"} label={"0"}
                        onChange={(value) => onNumOfWeeksAheadChange(value)}/>
                 <Radio name={"weeksAheadRadioBtn"} value={"1"} label={"1"}
