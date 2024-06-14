@@ -11,7 +11,7 @@ import {setLocationData} from '../store/locationSlice';
 
 import * as d3 from "d3";
 
-import {DataPoint, LocationData, PredictionDataPoint, ModelPrediction} from "../Interfaces/forecast-interfaces";
+import {DataPoint, ModelPrediction} from "../Interfaces/forecast-interfaces";
 
 
 const Page: React.FC = () => {
@@ -34,37 +34,56 @@ const Page: React.FC = () => {
                 }));
 
 // Fetch predictions data
-                const predictionsData = await Promise.all(
-                    ['MOBS-GLEAM_FLUH', 'CEPH-Rtrend_fluH', 'MIGHTE-Nsemble', 'NU_UCSD-GLEAM_AI_FLUH'].map(async (team_model) => {
-                        const data = await d3.csv(`/data/processed/${team_model}/predictions.csv`);
-                        const predictionData = data.map((d) => ({
-                            referenceDate: new Date(d.reference_date.replace(/-/g, '\/')),
-                            targetEndDate: new Date(d.target_end_date.replace(/-/g, '\/')),
-                            stateNum: d.location,
-                            confidence025: +d['0.025'],
-                            confidence050: +d['0.05'],
-                            confidence250: +d['0.25'],
-                            confidence500: +d['0.5'],
-                            confidence750: +d['0.75'],
-                            confidence950: +d['0.95'],
-                            confidence975: +d['0.975'],
-                        }));
-                        return {modelName: team_model, predictionData};
-                    })
-                );
+                // Fetch predictions data (new and old)
+                const predictionsData = await Promise.all(['MOBS-GLEAM_FLUH', 'CEPH-Rtrend_fluH', 'MIGHTE-Nsemble', 'NU_UCSD-GLEAM_AI_FLUH'].map(async (team_model) => {
+                    const newPredictions = await d3.csv(`/data/processed/${team_model}/predictions.csv`);
+                    const oldPredictions = await d3.csv(`/data/processed/${team_model}/predictions_older.csv`);
+                    /*old predictions debug*/
+                    console.log("DEBUG: page.tsx: newPredictions", newPredictions.length);
+                    console.log("DEBUG: page.tsx: oldPredictions", oldPredictions.length);
+
+                    const predictionData = [...newPredictions.map((d) => ({
+                        referenceDate: new Date(d.reference_date.replace(/-/g, '\/')),
+                        targetEndDate: new Date(d.target_end_date.replace(/-/g, '\/')),
+                        stateNum: d.location,
+                        confidence025: +d['0.025'],
+                        confidence050: +d['0.05'],
+                        confidence250: +d['0.25'],
+                        confidence500: +d['0.5'],
+                        confidence750: +d['0.75'],
+                        confidence950: +d['0.95'],
+                        confidence975: +d['0.975'],
+                        isOld: false, // Add a flag to identify new predictions
+                    })), ...oldPredictions.map((d) => ({
+                        referenceDate: new Date(d.reference_date.replace(/-/g, '\/')),
+                        targetEndDate: new Date(d.target_end_date.replace(/-/g, '\/')),
+                        stateNum: d.location,
+                        confidence025: +d['0.025'],
+                        confidence050: +d['0.05'],
+                        confidence250: +d['0.25'],
+                        confidence500: +d['0.5'],
+                        confidence750: +d['0.75'],
+                        confidence950: +d['0.95'],
+                        confidence975: +d['0.975'],
+                        isOld: true, // Add a flag to identify old predictions
+                    })),];
+
+                    return {modelName: team_model, predictionData};
+                }));
 
                 // Fetch location data
                 const locationData = await d3.csv('/data/locations.csv');
                 const parsedLocationData = locationData.map((d) => ({
-                    stateNum: d.location,
-                    state: d.abbreviation,
-                    stateName: d.location_name,
+                    stateNum: d.location, state: d.abbreviation, stateName: d.location_name,
                 }));
 
 
                 if (parsedGroundTruthData.length > 0 && predictionsData.length > 0 && parsedLocationData.length > 0) {
                     // Use the ground truth data to add back empty dates with predictions
                     const groundTruthDataWithPredictions = addBackEmptyDatesWithPrediction(parsedGroundTruthData, predictionsData);
+
+                    console.log("DEBUG: page.tsx: predictionData", predictionsData);
+
                     dispatch(setGroundTruthData(groundTruthDataWithPredictions));
                     dispatch(setPredictionsData(predictionsData));
                     dispatch(setLocationData(parsedLocationData));
@@ -79,30 +98,25 @@ const Page: React.FC = () => {
         fetchData();
     }, [dispatch]);
 
-    return (
-        <div className={"container mx-auto"}>
-            {dataLoaded ? (
-                <>
-                    <div className={"dashboard-grid-layout"}>
-                        <div className={"forecast-state"}>
-                            <SingleStateMap/>
-                        </div>
-                        <div className={"forecast-gauge"}>
-                            {/*<RiskLevelGauge riskLevel={"Very High"}></RiskLevelGauge>*/}
-                        </div>
-                        {/* Line chart below */}
-                        <div className={"forecast-graph"}>
-                            <ForecastChart/>
-                        </div>
-                        <div className={"forecast-settings"}>
-                            <FiltersPane/>
-                        </div>
-                    </div>
-                </>) : (
-                <div className={"container mx-auto"}> Loading... </div>
-            )}
-        </div>
-    );
+    return (<div className={"container mx-auto"}>
+        {dataLoaded ? (<>
+            <div className={"dashboard-grid-layout"}>
+                <div className={"forecast-state"}>
+                    <SingleStateMap/>
+                </div>
+                <div className={"forecast-gauge"}>
+                    {/*<RiskLevelGauge riskLevel={"Very High"}></RiskLevelGauge>*/}
+                </div>
+                {/* Line chart below */}
+                <div className={"forecast-graph"}>
+                    <ForecastChart/>
+                </div>
+                <div className={"forecast-settings"}>
+                    <FiltersPane/>
+                </div>
+            </div>
+        </>) : (<div className={"container mx-auto"}> Loading... </div>)}
+    </div>);
 };
 
 function addBackEmptyDatesWithPrediction(groundTruthData: DataPoint[], predictionsData: ModelPrediction[]): DataPoint[] {
@@ -136,10 +150,7 @@ function addBackEmptyDatesWithPrediction(groundTruthData: DataPoint[], predictio
         states.forEach((stateString) => {
             const [stateNum, stateName] = stateString.split('-');
             placeholderData.push({
-                date,
-                stateNum,
-                stateName,
-                admissions: -1 // Use -1 to indicate a placeholder
+                date, stateNum, stateName, admissions: -1 // Use -1 to indicate a placeholder
             });
         });
     });

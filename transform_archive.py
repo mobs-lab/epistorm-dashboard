@@ -1,5 +1,6 @@
 import glob
 import pandas as pd
+import re
 
 
 def transform_older_data(model_name):
@@ -24,8 +25,13 @@ def transform_older_data(model_name):
     locations = pd.read_csv('public/data/locations.csv', dtype={'location': str})
     older_data = pd.merge(older_data, locations[['location', 'location_name']], on='location', how='left')
 
+    # Convert quantile values to float and remove trailing zeros
+    def clean_quantile(quantile):
+        return float(re.sub(r'\.?0+$', '', f"{float(quantile):.3f}"))
+
     # Filter for predictions at the desired quantiles
-    desired_quantiles = ['0.025', '0.05', '0.25', '0.50', '0.75', '0.95', '0.975']
+    desired_quantiles = [0.025, 0.05, 0.25, 0.5, 0.75, 0.95, 0.975]
+    older_data['output_type_id'] = older_data['output_type_id'].apply(clean_quantile)
     older_data = older_data[older_data['output_type_id'].isin(desired_quantiles)]
 
     # Remove unneeded columns

@@ -157,6 +157,13 @@ const LineChart: React.FC = () => {
             .domain([d3.min(ground, d => d.date) as Date, maxDate])
             .range([0, chartWidth]);
 
+        // Custom tick format for x-axis
+        const xAxisTickFormat = (date: Date) => {
+            const month = date.toLocaleString('default', {month: 'long'});
+            const day = date.getDate();
+            return `${month}\n${day}`;
+        };
+
 
         // Initialize yScale with a default linear scale
         let yScale: ScaleLogarithmic<number, number, never> | ScaleLinear<number, number, never>;
@@ -189,7 +196,24 @@ const LineChart: React.FC = () => {
             };
         }
 
-        const xAxis = d3.axisBottom(xScale);
+// Create a custom x-axis with month labels on the top row and day labels on the bottom row
+        const xAxis = d3.axisBottom(xScale)
+            .tickFormat((d, i) => {
+                const monthFormat = d3.timeFormat("%b"); // Format for month abbreviation
+                const dayFormat = d3.timeFormat("%d"); // Format for day of the month
+                const monthLabel = monthFormat(d);
+                const dayLabel = dayFormat(d);
+
+                // Check if the current tick corresponds to a ground truth data point
+                const hasDataPoint = ground.some(dataPoint => dataPoint.date.toDateString() === d.toDateString());
+
+                if (hasDataPoint) {
+                    return `${monthLabel}\n${dayLabel}`; // Show both month and day labels
+                } else {
+                    return monthLabel; // Show only the month label
+                }
+            });
+
         const yAxis = d3.axisLeft(yScale)
             .tickFormat(d3.format("d"))
             .ticks(yAxisScale === "log" ? Math.min(3, yScale.ticks().length) : undefined);
