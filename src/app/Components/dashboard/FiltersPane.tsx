@@ -46,9 +46,6 @@ const FiltersPane: React.FC = () => {
     const [startDateMaxDate, setStartDateMaxDate] = useState<Date | undefined>(dateEnd);
     const [endDateMinDate, setEndDateMinDate] = useState<Date | undefined>(dateStart);
 
-    console.log("when the component is rendered, the dateStart and dateEnd are: ", dateStart, dateEnd);
-    console.log("And checking startDateMaxDate and endDateMinDate:", startDateMaxDate, endDateMinDate);
-
     const onStateSelectionChange = (stateNum: string) => {
         const selectedState = locationData.find((state) => state.stateNum === stateNum);
         if (selectedState) {
@@ -72,7 +69,6 @@ const FiltersPane: React.FC = () => {
     const onDateStartSelectionChange = (date: Date | undefined) => {
         if (date && date >= earliestDayFromGroundTruthData && date <= dateEnd) {
             dispatch(updateDateStart(date));
-            console.log('Selected start date:', date);
         }
     };
 
@@ -85,7 +81,6 @@ const FiltersPane: React.FC = () => {
     };
 
     useEffect(() => {
-
         setStartDateMaxDate(dateEnd);
         setEndDateMinDate(dateStart);
     }, [dateEnd, dateStart]);
