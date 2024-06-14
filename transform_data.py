@@ -1,5 +1,6 @@
 # Retrieved from Remy's repo: https://github.com/mobs-lab/flu-dashboard/blob/main/transform_data.py
 # Only minor modifications were made to the original code: the file paths were changed to match this project's directory structure.
+# 2024-06-13: @Remy Modified from https://github.com/mobs-lab/flu-dashboard/blob/main/transform_data.py
 
 import numpy as np
 import pandas as pd
@@ -8,7 +9,7 @@ import glob
 
 def data_transformation(team_name):
     """
-    Function to transform the data from the different teams into their own separate single file.
+    Data transformation for main line chart and nowcasted hospitalization rate change trends.
 
     Args:
     team_name: str, name of the team
@@ -18,43 +19,67 @@ def data_transformation(team_name):
     """
 
     team_data_source_location = "./public/data/unprocessed/" + team_name + "/*" + team_name + ".csv"
-    team_data_target_location = "./public/data/processed/" + team_name + "/" + "predictions.csv"
+    predictions_target_location = "./public/data/processed/" + team_name + "/predictions.csv"
+    trends_target_location = "./public/data/processed/nowcast_trends.csv"
 
-    print(team_data_source_location)
-    print(team_data_target_location)
-    ### PREDICTIONS
-    # Load all CSV files in forecasts folder into a single data frame. Ignore horizon column.
-    predictions = pd.concat((pd.read_csv(f, usecols=['reference_date', 'target', 'target_end_date', 'location',
-                                                     'output_type', 'output_type_id', 'value'], parse_dates=True) for f
-                             in glob.glob(team_data_source_location)), ignore_index=True).replace(' ', '_', regex=True)
+    # Load all CSV files in forecasts folder into a single data frame, ignore unneeded columns.
+    team_data = pd.concat((pd.read_csv(f, usecols=['reference_date', 'target', 'target_end_date', 'location', 'output_type_id', 'value'],
+                                       dtype={'location':str, 'output_type_id':str}, parse_dates=True)
+                           for f in glob.glob(team_data_source_location)), ignore_index=True).replace(' ', '_', regex=True)
 
+    ### Weekly Incidence of Flu Hospitalization Predictions (for main line chart)
     # Retain only predictions for weekly incidence of flu hospitalization.
-    predictions.drop(predictions[predictions.target != 'wk_inc_flu_hosp'].index, inplace=True)
-
-    # Retain only quantile outputs.
-    predictions.drop(predictions[predictions.output_type != 'quantile'].index, inplace=True)
+    predictions = team_data.drop(team_data[team_data.target != 'wk_inc_flu_hosp'].index, inplace=False)
 
     # Filter for predictions at the desired quantiles.
-    predictions.drop(predictions[~predictions.output_type_id.isin(['0.025', '0.05', '0.25', '0.5', '0.75', '0.95','0.975'])].index,
-                     inplace=True)
+    predictions.drop(predictions[~predictions.output_type_id.isin(['0.025', '0.05', '0.25', '0.5', '0.75', '0.95','0.975'])].index, inplace=True)
 
-    # Remove unneeded columns.
-    predictions.drop(columns=['target', 'output_type'], inplace=True)
+    # Remove unneeded column.
+    predictions.drop(columns=['target'], inplace=True)
 
     # Turn quantiles into columns.
     predictions = predictions.pivot_table(values='value', index=['reference_date', 'target_end_date', 'location'],
                                           columns=['output_type_id']).reset_index()
 
     # Export file.
-    predictions.to_csv(team_data_target_location, header=True, index=False, mode='w')
+    predictions.to_csv(predictions_target_location, header=True, index=False, mode='w')
 
     del predictions
 
+    ### Hospitalization Rate Change Trends (for not-a-pie-chart)
+    #Perform only for MOBS.
+    if team_name == "MOBS-GLEAM_FLUH":
 
-# Now we use data_transformation function on all the teams
+        # Retain only rate change trends.
+        trends = team_data.drop(team_data[team_data.target != 'wk_flu_hosp_rate_change'].index, inplace=False)
+
+        # Filter for most recent nowcast.
+        nowcast_date = max(pd.to_datetime(trends.reference_date.unique(), format='%Y-%m-%d')).strftime('%Y-%m-%d')
+        trends.drop(trends[~trends.target_end_date.str.fullmatch(nowcast_date)].index, inplace=True)
+        trends.drop(trends[~trends.reference_date.str.fullmatch(nowcast_date)].index, inplace=True)
+
+        # Drop "large" prefix to enable grouping.
+        trends['output_type_id'] = trends.output_type_id.str.removeprefix('large_')
+
+        # Remove unneeded columns.
+        trends.drop(columns=['reference_date', 'target', 'target_end_date'], inplace=True)
+
+        # Consolidate "increase" and "decrease" values, pivot table for increase/decrease/stable columns.
+        trends = trends.groupby(['location', 'output_type_id'], as_index=False).sum().pivot_table(values='value', index=['location'],
+                                                                                                  columns=['output_type_id']).reset_index()
+
+        # Insert reference=target date of nowcast.
+        trends.insert(loc=0, column='nowcast_date', value=nowcast_date)
+
+        # Export file.
+        trends.to_csv(trends_target_location, header=True, index=False, mode='w')
+
+        del trends
+
+    del team_data
+
+# Transform data for all teams.
 teams_list = ["MOBS-GLEAM_FLUH", "MIGHTE-Nsemble", "NU_UCSD-GLEAM_AI_FLUH", "CEPH-Rtrend_fluH"]
-
-
 for team in teams_list:
     data_transformation(team)
 
