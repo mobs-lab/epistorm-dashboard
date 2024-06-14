@@ -6,6 +6,7 @@ import {modelColorMap} from '../../Interfaces/modelColors';
 import DatePicker from 'react-date-picker';
 import 'react-date-picker/dist/DatePicker.css';
 import 'react-calendar/dist/Calendar.css';
+import {format, subYears, addYears, startOfYear, endOfYear} from 'date-fns';
 
 /*
 NOTE: Since using Next.js, these are from our own custom wrapper for required UI components
@@ -38,10 +39,11 @@ const FiltersPane: React.FC = () => {
     const dispatch = useAppDispatch();
     const groundTruthData = useAppSelector((state) => state.groundTruth.data);
     const locationData = useAppSelector((state) => state.location.data);
-    const predictionsData = useAppSelector((state) => state.predictions.data);
     const {
         USStateNum, forecastModel, dateStart, dateEnd, dateRange, confidenceInterval,
     } = useAppSelector((state) => state.filter);
+    const [seasonOptions, setSeasonOptions] = useState([]);
+    const [selectedSeason, setSelectedSeason] = useState('');
 
     const [startDateMaxDate, setStartDateMaxDate] = useState<Date | undefined>(dateEnd);
     const [endDateMinDate, setEndDateMinDate] = useState<Date | undefined>(dateStart);
@@ -80,10 +82,78 @@ const FiltersPane: React.FC = () => {
         }
     };
 
+    const onSeasonSelectionChange = (value: string) => {
+        setSelectedSeason(value);
+
+        if (value) {
+            const [startDateString, endDateString] = value.split('/');
+            const startDate = new Date(startDateString);
+            const endDate = new Date(endDateString);
+
+            console.log("FiltersPane update: Season Selection changed to: ", startDate, endDate);
+
+            dispatch(updateDateStart(startDate));
+            dispatch(updateDateEnd(endDate));
+        }
+    };
+
+    const generateSeasonOptions = (groundTruthData) => {
+        // Find the earliest and latest years from the ground truth data
+        const earliestYear = new Date(Math.min(...groundTruthData.map(d => d.date.getTime()))).getFullYear();
+        const latestYear = new Date(Math.max(...groundTruthData.map(d => d.date.getTime()))).getFullYear();
+
+        const options = [];
+
+        // Handle the first season (before the earliest full year)
+        const earliestDataPoint = groundTruthData.reduce((min, current) => (min.date < current.date ? min : current));
+        const firstSeasonStart = earliestDataPoint.date;
+        const firstSeasonEnd = new Date(earliestYear, 7, 1); // July 31st of the earliest year
+
+        options.push({
+            label: `Before ${earliestYear}`,
+            value: `${format(firstSeasonStart, 'yyyy-MM-dd')}/${format(firstSeasonEnd, 'yyyy-MM-dd')}`,
+            startDate: firstSeasonStart,
+            endDate: firstSeasonEnd,
+        });
+
+        // Handle the full seasons between the earliest and latest years
+        for (let year = earliestYear; year < latestYear; year++) {
+            const seasonStart = new Date(year, 7, 2); // August 1st
+            const seasonEnd = new Date(year + 1, 7, 1); // July 31st of the following year
+
+            options.push({
+                label: `${year} - ${year + 1}`,
+                value: `${format(seasonStart, 'yyyy-MM-dd')}/${format(seasonEnd, 'yyyy-MM-dd')}`,
+                startDate: seasonStart,
+                endDate: seasonEnd,
+            });
+        }
+
+        // Handle the last season (after the latest full year)
+        const latestDataPoint = groundTruthData.reduce((max, current) => (max.date > current.date ? max : current));
+        const lastSeasonStart = new Date(latestYear, 7, 1); // August 1st of the latest year
+        const lastSeasonEnd = latestDataPoint.date;
+
+        options.push({
+            label: `After ${latestYear}`,
+            value: `${format(lastSeasonStart, 'yyyy-MM-dd')}/${format(lastSeasonEnd, 'yyyy-MM-dd')}`,
+            startDate: lastSeasonStart,
+            endDate: lastSeasonEnd,
+        });
+
+        return options;
+    };
     useEffect(() => {
         setStartDateMaxDate(dateEnd);
         setEndDateMinDate(dateStart);
     }, [dateEnd, dateStart]);
+
+    useEffect(() => {
+        if (groundTruthData.length > 0) {
+            const options = generateSeasonOptions(groundTruthData);
+            setSeasonOptions(options);
+        }
+    }, [groundTruthData]);
 
     useEffect(() => {
         //     This useEffect is run just once when the component is mounted, to update the current dateEnd by checking the latest date from the groundTruthData to ensure that the datepicker receive a correct update for the maxDate
@@ -96,22 +166,6 @@ const FiltersPane: React.FC = () => {
 
     const earliestDayFromGroundTruthData = groundTruthData.length > 0 ? groundTruthData[groundTruthData.length - 1].date : undefined;
     const latestDayFromGroundTruthData = groundTruthData.length > 0 ? groundTruthData[0].date : undefined;
-
-    const onDateRangeSelectionChange = (event: string | undefined) => {
-        if (event && groundTruthData.length > 0) {
-            dispatch(updateDateRange(event));
-            const dateRange = dateRangeMapping[event];
-            const startDate = dateRange[0];
-            const endDate = dateRange[1];
-            console.log(earliestDayFromGroundTruthData, latestDayFromGroundTruthData, startDate, endDate)
-
-            dispatch(updateDateStart(startDate));
-            dispatch(updateDateEnd(endDate));
-            console.log('dateEnd value:', dateEnd);
-            console.log('dateStart value:', dateStart);
-
-        }
-    };
 
     const onYAxisScaleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         console.log("FiltersPane update: Y-axis scale changed to: ", event.target.value);
@@ -180,12 +234,14 @@ const FiltersPane: React.FC = () => {
                 <Typography variant="h6">Dates</Typography>
                 <Select
                     label="Select a Season"
-                    value={dateRange}
-                    onChange={onDateRangeSelectionChange}
+                    value={selectedSeason}
+                    onChange={(value) => onSeasonSelectionChange(value as string)}
                 >
-                    {/*TODO: Change this to dynamic parsing data into seasons*/}
-                    <Option value="2022-2023">2022–2023</Option>
-                    <Option value="2023-2024">2023–2024</Option>
+                    {seasonOptions.map((option) => (
+                        <Option key={option.value} value={option.value}>
+                            {option.label}
+                        </Option>
+                    ))}
                 </Select>
             </div>
 
