@@ -268,7 +268,7 @@ const FiltersPane: React.FC = () => {
             </div>
 
             <div className="mb-4">
-                <Typography variant={"h6"}> Horizons </Typography>
+                <Typography variant={"h6"}> Horizon </Typography>
                 <Radio name={"weeksAheadRadioBtn"} value={"0"} label={"0"}
                        onChange={(value) => onNumOfWeeksAheadChange(value)}/>
                 <Radio name={"weeksAheadRadioBtn"} value={"1"} label={"1"}

@@ -21,6 +21,8 @@ def transform_older_data(model_name):
         'quantile': 'output_type_id'
     }, inplace=True)
 
+    # Shift reference_date (forecast_date in older data) to 5 days later to match newer data
+
     # Load locations data and merge with older_data
     locations = pd.read_csv('public/data/locations.csv', dtype={'location': str})
     older_data = pd.merge(older_data, locations[['location', 'location_name']], on='location', how='left')
