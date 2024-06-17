@@ -196,7 +196,7 @@ const LineChart: React.FC = () => {
             };
         }
 
-// Create a custom x-axis with month labels on the top row and day labels on the bottom row
+        // Create a custom x-axis with month labels on the top row and day labels on the bottom row
         const xAxis = d3.axisBottom(xScale)
             .tickFormat((d, i) => {
                 const monthFormat = d3.timeFormat("%b"); // Format for month abbreviation
