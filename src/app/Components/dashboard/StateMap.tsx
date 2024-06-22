@@ -5,28 +5,24 @@ import {zoom, zoomIdentity} from "d3-zoom";
 import {useAppDispatch, useAppSelector} from '../../store/hooks';
 import {updateSelectedState} from '../../store/filterSlice';
 
-const usStateData = "/states-albers-10m.json";
+const usStateData = "/states-10m.json";
 
 const StateMap: React.FC = () => {
-    const svgRef = useRef(null);
-    const width = 640;
-    const height = 480;
-
+    const svgRef = useRef<SVGSVGElement>(null);
     const dispatch = useAppDispatch();
-    const {selectedStateName, USStateNum} = useAppSelector((state) => state.filter);
+    const {selectedStateName} = useAppSelector((state) => state.filter);
     const locationData = useAppSelector((state) => state.location.data);
 
     const renderMap = () => {
         if (!svgRef.current) return;
 
         const svg = d3.select(svgRef.current)
-            .attr("viewBox", [0, 0, width, height])
-            .attr("width", width)
-            .attr("height", height)
-            .attr("style", "max-width: 100%; height: auto;")
-            .on("click", reset);
+            .attr("viewBox", "0 0 960 600") // Adjusted viewBox to fit the aspect ratio
+            .attr("preserveAspectRatio", "xMidYMid meet") // Maintain aspect ratio
+            .attr("style", "max-width: 100%; height: auto;");
 
-        const path = d3.geoPath();
+        const projection = d3.geoAlbersUsa().fitSize([960, 600], {type: "Sphere"}); // Use Albers USA projection
+        const path = d3.geoPath().projection(projection);
 
         let g = svg.select("g");
         if (g.empty()) {
@@ -34,71 +30,41 @@ const StateMap: React.FC = () => {
         }
 
         const zoomBehavior = zoom()
-            .scaleExtent([1, 16])
-            .translateExtent([[-width / 2, -height / 2], [width * 1.5, height * 1.5]])
-            .on("zoom", zoomed);
+            .scaleExtent([1, 8])
+            .on("zoom", (event) => g.attr("transform", event.transform));
 
         svg.call(zoomBehavior);
 
         const fetchData = async () => {
             try {
                 const us: any = await d3.json(usStateData);
-
                 const states = g.selectAll("path")
                     .data(topojson.feature(us, us.objects.states).features)
                     .join("path")
                     .attr("fill", "#444")
+                    .attr("stroke", "#fff")
                     .attr("cursor", "pointer")
-                    .on("click", clicked)
+                    .on("click", (event, d) => handleClick(event, d, path, zoomBehavior))
                     .attr("d", path);
-
-                svg.selectAll("path").each(function (d: any) {
-                    d.path = this;
-                });
 
                 states.append("title")
                     .text((d: any) => d.properties.name);
 
-                g.append("path")
-                    .attr("fill", "none")
-                    .attr("stroke", "white")
-                    .attr("stroke-linejoin", "round")
-                    .attr("d", path(topojson.mesh(us, us.objects.states, (a: any, b: any) => a !== b)));
+                // Initial zoom and center
+                const [[x0, y0], [x1, y1]] = path.bounds(topojson.feature(us, us.objects.states));
+                const initialScale = Math.min(8, 0.9 / Math.max((x1 - x0) / 960, (y1 - y0) / 600));
+                const initialTranslate = [480 - initialScale * (x0 + x1) / 2, 300 - initialScale * (y0 + y1) / 2];
 
-                // Calculate the scale and translation based on the original and new container sizes
-                const originalWidth = 915;
-                const originalHeight = 670;
-                const scaleX = width / originalWidth;
-                const scaleY = height / originalHeight;
-                const scale = Math.min(scaleX, scaleY);
-                const translateX = ((width - originalWidth) * scale) / 2;
-                const translateY = ((height - originalHeight) * scale) / 2;
-
-                // Set the initial zoom and translation
-                svg.call(zoomBehavior.transform, zoomIdentity.translate(translateX, translateY).scale(scale));
-
+                svg.call(zoomBehavior.transform, zoomIdentity.translate(initialTranslate[0], initialTranslate[1]).scale(initialScale));
             } catch (error) {
-                console.error("Error loading US state data: ", error);
+                console.error("Error loading map data:", error);
             }
         };
 
-        function reset() {
-            g.selectAll("path").transition().style("fill", null);
-            svg.transition().duration(750).call(zoomBehavior.transform, zoomIdentity);
-        }
-
-        function clicked(event: any, d: any) {
+        const handleClick = (event: any, d: any, path: any, zoomBehavior: any) => {
             const [[x0, y0], [x1, y1]] = path.bounds(d);
-            event.stopPropagation();
-            g.selectAll("path").transition().style("fill", null);
-            d3.select(event.currentTarget).transition().style("fill", "red");
-
-            const dx = x1 - x0;
-            const dy = y1 - y0;
-            const x = (x0 + x1) / 2;
-            const y = (y0 + y1) / 2;
-            const scale = Math.min(8, 0.9 / Math.max(dx / width, dy / height));
-            const translate = [width / 2 - scale * x, height / 2 - scale * y];
+            const scale = Math.max(1, Math.min(8, 0.9 / Math.max((x1 - x0) / 960, (y1 - y0) / 600)));
+            const translate = [480 - scale * (x0 + x1) / 2, 300 - scale * (y0 + y1) / 2];
 
             svg.transition().duration(750).call(
                 zoomBehavior.transform,
@@ -111,30 +77,7 @@ const StateMap: React.FC = () => {
             setTimeout(() => {
                 svg.transition().duration(750).call(zoomBehavior.transform, zoomIdentity);
             }, 2000);
-        }
-
-        function zoomed(event: any) {
-            const {transform} = event;
-            g.attr("transform", transform);
-            g.attr("stroke-width", 1 / transform.k);
-        }
-
-        const resetButton = svg.append("g")
-            .attr("transform", `translate(${width - 50}, 20)`)
-            .attr("cursor", "pointer")
-            .on("click", reset);
-
-        resetButton.append("rect")
-            .attr("width", 40)
-            .attr("height", 20)
-            .attr("fill", "#f0f0f0")
-            .attr("stroke", "#999");
-
-        resetButton.append("text")
-            .attr("x", 20)
-            .attr("y", 15)
-            .attr("text-anchor", "middle")
-            .text("Reset");
+        };
 
         fetchData();
     };
@@ -149,16 +92,15 @@ const StateMap: React.FC = () => {
         if (svgRef.current) {
             const svg = d3.select(svgRef.current);
             const paths = svg.selectAll("path");
-            svg.selectAll("path").transition().style("fill", null);
+            paths.transition().style("fill", null);
 
-            const selectedState = paths.filter((d: any) => {
-                return d && d.properties && d.properties.name === selectedStateName;
-            });
+            const selectedState = paths.filter((d: any) => d && d.properties && d.properties.name === selectedStateName);
             selectedState.transition().style("fill", "red");
         }
     }, [selectedStateName]);
 
     return <svg ref={svgRef}/>;
 };
+
 
 export default StateMap;
