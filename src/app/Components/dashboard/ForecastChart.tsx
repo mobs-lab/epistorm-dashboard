@@ -158,45 +158,59 @@ const LineChart: React.FC = () => {
             .range([0, chartWidth]);
 
         // Custom tick format for x-axis
-        const xAxisTickFormat = (date: Date) => {
+        /*const xAxisTickFormat = (date: Date) => {
             const month = date.toLocaleString('default', {month: 'long'});
             const day = date.getDate();
             return `${month}\n${day}`;
-        };
+        };*/
 
 
         // Initialize yScale with a default linear scale
+        // Update yScale
         let yScale: ScaleLogarithmic<number, number, never> | ScaleLinear<number, number, never>;
-
         const maxGroundTruthValue = d3.max(ground.filter(d => d.admissions !== -1), d => d.admissions) as number;
-        let maxPredictionValue = maxGroundTruthValue;
+        let maxPredictionValue = 0;
 
         if (predictions && Object.keys(predictions).length > 0) {
-            maxPredictionValue = d3.max(Object.values(predictions).flat().map((d: any) => d.data.map((p: any) => p.confidence_high || p.confidence500)).flat()) as number;
+            const predictionValues = Object.values(predictions)
+                .flatMap((modelData: any) => modelData[0]?.data || [])
+                .map((p: any) => p.confidence_high || p.confidence500);
+
+            maxPredictionValue = predictionValues.length > 0 ? d3.max(predictionValues) : 0;
         }
 
-        if (maxPredictionValue === undefined) {
-            maxPredictionValue = maxGroundTruthValue;
-        }
         const maxValue = Math.max(maxGroundTruthValue, maxPredictionValue);
+
+        console.log("DEBUG: maxGroundTruthValue", maxGroundTruthValue);
+        console.log("DEBUG: maxPredictionValue", maxPredictionValue);
+        console.log("DEBUG: maxValue", maxValue);
+
 
         if (yAxisScale === "linear") {
             yScale = d3.scaleLinear()
-                .domain([0, maxValue])
+                .domain([0, maxValue * 1.1]) // Add 10% padding to the top
                 .range([chartHeight, 0]);
         } else if (yAxisScale === "log") {
-            yScale = d3.scaleSymlog()
-                .domain([0, maxValue])
+            const minNonZeroValue = d3.min(ground.filter(d => d.admissions > 0), d => d.admissions) as number;
+            yScale = d3.scaleLog()
+                .domain([Math.max(0.5, minNonZeroValue / 2), maxValue * 1.05]) // Extend lower bound and add 10% padding to the top
                 .range([chartHeight, 0])
-                .constant(1);
-
-            yScale.ticks = function () {
-                const ticks = [0, 1, 3, 5, 10, 30, 50, 100, 300, 500, 1000, 3000, 5000, 10000, 30000, 40000, 50000];
-                return ticks.filter((tick) => tick <= maxValue);
-            };
+                .nice();
         }
 
-        // Create a custom x-axis with month labels on the top row and day labels on the bottom row
+        // Create a smart tick generator for y-axis
+        const yAxis = d3.axisLeft(yScale)
+            .tickFormat(d3.format("~s"))
+            .tickSize(-chartWidth);
+
+        if (yAxisScale === "log") {
+            yAxis.ticks(10, ".0s");
+        }
+        // Update xAxis based on date range
+        const timeDiff = dateEnd.getTime() - dateStart.getTime();
+        const daysDiff = timeDiff / (1000 * 3600 * 24);
+
+        /*// Create a custom x-axis with month labels on the top row and day labels on the bottom row
         const xAxis = d3.axisBottom(xScale)
             .tickFormat((d, i) => {
                 const monthFormat = d3.timeFormat("%b"); // Format for month abbreviation
@@ -212,11 +226,42 @@ const LineChart: React.FC = () => {
                 } else {
                     return monthLabel; // Show only the month label
                 }
-            });
+            });*/
 
-        const yAxis = d3.axisLeft(yScale)
+        let xAxis;
+        if (daysDiff > 334) {
+            xAxis = d3.axisBottom(xScale)
+                .ticks(d3.timeMonth.every(1))
+                .tickFormat((d: Date) => {
+                    const format = d3.timeFormat("%b %Y");
+                    return format(d);
+                });
+        } else if (daysDiff > 90) {
+            xAxis = d3.axisBottom(xScale)
+                .ticks(d3.timeDay.filter(d => d.getDate() === 1 || d.getDate() === 15))
+                .tickFormat((d: Date) => {
+                    const format = d3.timeFormat("%b %d");
+                    return format(d);
+                });
+        } else if (daysDiff > 30) {
+            xAxis = d3.axisBottom(xScale)
+                .ticks(d3.timeDay.filter(d => d.getDay() === 6))
+                .tickFormat((d: Date) => {
+                    const format = d3.timeFormat("%b %d");
+                    return format(d);
+                });
+        } else {
+            xAxis = d3.axisBottom(xScale)
+                .ticks(d3.timeDay.every(1))
+                .tickFormat((d: Date) => {
+                    const format = d3.timeFormat("%b %d");
+                    return format(d);
+                });
+        }
+
+        /*const yAxis = d3.axisLeft(yScale)
             .tickFormat(d3.format("d"))
-            .ticks(yAxisScale === "log" ? Math.min(3, yScale.ticks().length) : undefined);
+            .ticks(yAxisScale === "log" ? Math.min(3, yScale.ticks().length) : undefined);*/
 
         return {xScale, yScale, xAxis, yAxis};
     }
@@ -500,14 +545,39 @@ const LineChart: React.FC = () => {
     }
 
 
-    function appendAxes(svg: d3.Selection<d3.BaseType, unknown, HTMLElement, any>, xAxis: Axis<NumberValue>, yAxis: Axis<NumberValue>, marginLeft: number, marginTop: number, chartWidth: number, chartHeight: number) {
-        svg.append("g")
-            .attr("transform", `translate(${marginLeft}, ${height - marginBottom})`)
+    function appendAxes(svg: d3.Selection<d3.BaseType, unknown, HTMLElement, any>, xAxis: Axis<NumberValue>, yAxis: Axis<NumberValue>, xScale: d3.ScaleTime<number, number, never>, marginLeft: number, marginTop: number, chartWidth: number, chartHeight: number, dateStart: Date, dateEnd: Date) {
+        // Append x-axis
+        const xAxisGroup = svg.append("g")
+            .attr("transform", `translate(${marginLeft}, ${chartHeight + marginTop})`)
             .call(xAxis);
 
+        // Add year labels if the date range is more than a year
+        const timeDiff = dateEnd.getTime() - dateStart.getTime();
+        const daysDiff = timeDiff / (1000 * 3600 * 24);
+
+        if (daysDiff > 365) {
+            const years = d3.timeYear.range(dateStart, dateEnd);
+            years.push(dateEnd); // Add the end date to ensure the last year is labeled
+
+            xAxisGroup.selectAll(".year-label")
+                .data(years)
+                .enter()
+                .append("text")
+                .attr("class", "year-label")
+                .attr("x", d => xScale(d))
+                .attr("y", 30)
+                .attr("text-anchor", "middle")
+                .text(d => d.getFullYear());
+        }
+
+        // Append y-axis
         svg.append("g")
             .attr("transform", `translate(${marginLeft}, ${marginTop})`)
-            .call(yAxis);
+            .call(yAxis)
+            .call(g => g.select(".domain").remove()) // Remove the y-axis line
+            .call(g => g.selectAll(".tick line")
+                .attr("stroke-opacity", 0.5)
+                .attr("stroke-dasharray", "2,2"));
     }
 
     function findNearestDataPoint(data: DataPoint[], targetDate: Date): DataPoint {
@@ -549,12 +619,15 @@ const LineChart: React.FC = () => {
                 const processedPredictionData = processPredictionData(predictionsData, forecastModel, USStateNum, userSelectedWeek, numOfWeeksAhead, confidenceInterval, displayMode);
 
                 const {
-                    xScale, yScale, xAxis, yAxis
+                    xScale,
+                    yScale,
+                    xAxis,
+                    yAxis
                 } = createScalesAndAxes(filteredGroundTruthData, processedPredictionData, chartWidth, chartHeight, yAxisScale);
 
                 renderGroundTruthData(svg, filteredGroundTruthData, xScale, yScale, marginLeft, marginTop);
                 renderPredictionData(svg, processedPredictionData, xScale, yScale, marginLeft, marginTop, confidenceInterval, false);
-                appendAxes(svg, xAxis, yAxis, marginLeft, marginTop, chartWidth, chartHeight);
+                appendAxes(svg, xAxis, yAxis, xScale, marginLeft, marginTop, chartWidth, chartHeight, dateStart, dateEnd);
 
                 const {
                     mouseFollowLine, verticalIndicatorGroup, lineTooltip, cornerTooltip
