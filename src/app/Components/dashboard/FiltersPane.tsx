@@ -98,26 +98,9 @@ const FiltersPane: React.FC = () => {
     };
 
     const generateSeasonOptions = (groundTruthData) => {
-        // Find the earliest and latest years from the ground truth data
-        const earliestYear = new Date(Math.min(...groundTruthData.map(d => d.date.getTime()))).getFullYear();
-        const latestYear = new Date(Math.max(...groundTruthData.map(d => d.date.getTime()))).getFullYear();
-
         const options = [];
 
-        // Handle the first season (before the earliest full year)
-        const earliestDataPoint = groundTruthData.reduce((min, current) => (min.date < current.date ? min : current));
-        const firstSeasonStart = earliestDataPoint.date;
-        const firstSeasonEnd = new Date(earliestYear, 7, 1); // July 31st of the earliest year
-
-        options.push({
-            label: `Before ${earliestYear}`,
-            value: `${format(firstSeasonStart, 'yyyy-MM-dd')}/${format(firstSeasonEnd, 'yyyy-MM-dd')}`,
-            startDate: firstSeasonStart,
-            endDate: firstSeasonEnd,
-        });
-
-        // Handle the full seasons between the earliest and latest years
-        for (let year = earliestYear; year < latestYear; year++) {
+        for (let year = 2022; year <= 2023; year++) {
             const seasonStart = new Date(year, 7, 2); // August 1st
             const seasonEnd = new Date(year + 1, 7, 1); // July 31st of the following year
 
@@ -129,20 +112,10 @@ const FiltersPane: React.FC = () => {
             });
         }
 
-        // Handle the last season (after the latest full year)
-        const latestDataPoint = groundTruthData.reduce((max, current) => (max.date > current.date ? max : current));
-        const lastSeasonStart = new Date(latestYear, 7, 1); // August 1st of the latest year
-        const lastSeasonEnd = latestDataPoint.date;
-
-        options.push({
-            label: `After ${latestYear}`,
-            value: `${format(lastSeasonStart, 'yyyy-MM-dd')}/${format(lastSeasonEnd, 'yyyy-MM-dd')}`,
-            startDate: lastSeasonStart,
-            endDate: lastSeasonEnd,
-        });
-
         return options;
     };
+
+
     useEffect(() => {
         setStartDateMaxDate(dateEnd);
         setEndDateMinDate(dateStart);
