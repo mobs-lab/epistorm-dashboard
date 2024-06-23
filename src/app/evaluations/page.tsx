@@ -1,7 +1,7 @@
 import React from "react";
 import StateDetail from "../Components/dashboard/SingleStateMap";
 import RiskLevelGauge from "../Components/dashboard/RiskLevelGauge";
-import LineChart from "../Components/dashboard/ForecastChart";
+import ForecastChart from "../Components/dashboard/ForecastChart";
 import StateMapWithFilters from "../Components/dashboard/FiltersPane";
 
 export default function Page() {

@@ -1,4 +1,4 @@
-// components/ForecastChart.tsx
+// src/app/Components/dashboard/ForecastChart.tsx
 'use client';
 
 import React, {useEffect, useRef, useState} from "react";
@@ -8,8 +8,7 @@ import {useAppSelector} from '../../store/hooks';
 import {modelColorMap} from '../../Interfaces/modelColors';
 import {DataPoint, ModelPrediction, PredictionDataPoint} from "../../Interfaces/forecast-interfaces";
 
-
-const LineChart: React.FC = () => {
+const ForecastChart: React.FC = () => {
     // reference to svg object
     const svgRef = useRef(null);
 
@@ -21,6 +20,9 @@ const LineChart: React.FC = () => {
         USStateNum, forecastModel, numOfWeeksAhead, dateStart, dateEnd, yAxisScale, confidenceInterval, displayMode,
     } = useAppSelector((state) => state.filter);
 
+    // State Variables that only the component itself needs to keep track of selected week and whether it is loaded
+    const [initialDataLoaded, setInitialDataLoaded] = useState(false);
+    const [userSelectedWeek, setUserSelectedWeek] = useState(new Date());
 
     // Set up size and margins
     const width = 928;
@@ -32,9 +34,6 @@ const LineChart: React.FC = () => {
     const chartWidth = width - marginLeft - marginRight;
     const chartHeight = height - marginTop - marginBottom;
 
-    //
-    const [initialDataLoaded, setInitialDataLoaded] = useState(false);
-    const [userSelectedWeek, setUserSelectedWeek] = useState(new Date());
 
     // Function to filter ground truth data by selected state and dates
     function filterGroundTruthData(data: DataPoint[], state: string, dateRange: [Date, Date]) {
@@ -129,7 +128,6 @@ const LineChart: React.FC = () => {
             return {};
         }
     }
-
 
     function createScalesAndAxes(ground: DataPoint[], predictions: any, chartWidth: number, chartHeight: number, yAxisScale: string) {
         /*// Find the maximum date from the ground truth data
@@ -444,6 +442,12 @@ const LineChart: React.FC = () => {
             .attr("transform", `translate(${marginLeft}, ${marginTop + 20})`);
     }
 
+    function createPredictionTooltip(svg: d3.Selection<SVGSVGElement, unknown, null, undefined>, marginLeft: number, marginTop: number, chartWidth: number) {
+        return svg.append("g")
+            .attr("class", "prediction-tooltip")
+            .attr("transform", `translate(${marginLeft}, ${marginTop + 20})`);
+    }
+
     function updateCornerTooltip(data: DataPoint, groundTruthData: DataPoint[], predictionData: any, xScale: d3.ScaleTime<number, number>, chartWidth: number, marginLeft: number, marginTop: number, cornerTooltip: d3.Selection<SVGGElement, unknown, null, undefined>) {
         const xPosition = xScale(data.date);
         const isLeftSide = xPosition > chartWidth / 2;
@@ -462,7 +466,7 @@ const LineChart: React.FC = () => {
             .attr("y", currentY)
             .attr("text-anchor", textAnchor)
             .attr("font-weight", "bold")
-            .text(`Admissions: ${data.admissions !== null ? data.admissions : "N/A"}`);
+            .text(`Admissions: ${data.admissions !== null && data.admissions !== -1 ? data.admissions : "N/A"}`);
 
         currentY += lineHeight;
 
@@ -491,6 +495,79 @@ const LineChart: React.FC = () => {
         cornerTooltip.style("opacity", 1);
     }
 
+    function updatePredictionTooltip(data: any, xScale: d3.ScaleTime<number, number>, yScale: d3.ScaleLinear<number, number>, chartWidth: number, marginLeft: number, marginTop: number, tooltip: d3.Selection<SVGGElement, unknown, null, undefined>) {
+        const x = xScale(new Date(Object.values(data)[0].targetEndDate));
+        const y = yScale(Object.values(data)[0].confidence500);
+
+        tooltip.style("opacity", 1);
+        tooltip.attr("transform", `translate(${x}, ${y})`);
+
+        tooltip.selectAll("*").remove();
+
+        let currentY = 0;
+        const lineHeight = 20;
+        const tooltipWidth = 300;
+        const tooltipPadding = 10;
+        const lineGap = 10;
+
+        // Calculate the total height of the tooltip based on the number of models and confidence intervals
+        const totalLines = Object.keys(data).reduce((acc, modelName) => acc + confidenceInterval.length + 1, 0);
+        const tooltipHeight = totalLines * lineHeight + (Object.keys(data).length - 1) * lineGap + tooltipPadding * 2;
+
+        // Create a rectangular background for the tooltip
+        tooltip.append("rect")
+            .attr("x", -tooltipWidth / 2)
+            .attr("y", -tooltipPadding)
+            .attr("width", tooltipWidth)
+            .attr("height", tooltipHeight + tooltipPadding * 2)
+            .attr("fill", "white")
+            .attr("stroke", "black")
+            .attr("stroke-width", 1)
+            .attr("rx", 5)
+            .attr("ry", 5);
+
+        Object.entries(data).forEach(([modelName, modelData]: [string, any], index) => {
+            tooltip.append("text")
+                .attr("x", -tooltipWidth / 2 + tooltipPadding)
+                .attr("y", currentY + 5)
+                .attr("font-size", "12px")
+                .attr("font-weight", "bold")
+                .text(`${modelName}`);
+            currentY += lineHeight;
+
+            tooltip.append("text")
+                .attr("x", -tooltipWidth / 2 + tooltipPadding * 2)
+                .attr("y", currentY)
+                .attr("font-size", "12px")
+                .text(`${modelData.confidence500.toFixed(2)}`);
+            currentY += lineHeight;
+
+            confidenceInterval.forEach((interval) => {
+                const lowKey = `confidence${interval === "50" ? "250" : interval === "90" ? "050" : "025"}`;
+                const highKey = `confidence${interval === "50" ? "750" : interval === "90" ? "950" : "975"}`;
+
+                tooltip.append("text")
+                    .attr("x", -tooltipWidth / 2 + tooltipPadding * 3)
+                    .attr("y", currentY)
+                    .attr("font-size", "12px")
+                    .text(`${interval}% CI: [${modelData[lowKey].toFixed(2)}, ${modelData[highKey].toFixed(2)}]`);
+                currentY += lineHeight;
+            });
+
+            if (index < Object.keys(data).length - 1) {
+                currentY += lineGap;
+            }
+        });
+
+        const isLeftSide = x > chartWidth / 2;
+        const tooltipX = isLeftSide ? x - tooltipWidth - 10 : x + 10;
+        const tooltipY = y - tooltipHeight / 2;
+
+        tooltip.attr("transform", `translate(${tooltipX}, ${tooltipY})`);
+    }
+
+
+
     function findPredictionsForDate(predictionData: any, date: Date) {
         const predictions = {};
         Object.entries(predictionData).forEach(([modelName, modelPredictions]: [string, any]) => {
@@ -512,58 +589,6 @@ const LineChart: React.FC = () => {
             .style("fill", "none")
             .style("pointer-events", "all");
     }
-
-    function renderChartComponents(svg: d3.Selection<SVGSVGElement, unknown, null, undefined>, filteredGroundTruthData: DataPoint[], processedPredictionData: any, xScale: d3.ScaleTime<number, number>, yScale: d3.ScaleLinear<number, number>, marginLeft: number, marginTop: number, chartWidth: number, chartHeight: number, height: number, marginBottom: number) {
-
-        // Combined ground truth and prediction data for all dates
-        const combinedData = createCombinedDataset(filteredGroundTruthData, processedPredictionData);
-
-        const mouseFollowLine = createMouseFollowLine(svg, marginLeft, marginTop, height, marginBottom);
-        const {
-            group: verticalIndicatorGroup, line: verticalIndicator, tooltip: lineTooltip
-        } = renderVerticalIndicator(svg, xScale, marginLeft, marginTop, height, marginBottom);
-        const cornerTooltip = createCornerTooltip(svg, marginLeft, marginTop, chartWidth);
-
-        const eventOverlay = createEventOverlay(svg, marginLeft, marginTop, chartWidth, chartHeight);
-
-        function handleMouseMove(event: any) {
-            const [mouseX] = d3.pointer(event);
-            const date = xScale.invert(mouseX - marginLeft);
-            const closestData = findNearestDataPoint(combinedData, date);
-
-            const snappedX = xScale(closestData.date);
-            mouseFollowLine
-                .attr("transform", `translate(${snappedX + marginLeft}, 0)`)
-                .style("opacity", 1);
-
-            updateCornerTooltip(closestData, filteredGroundTruthData, processedPredictionData, xScale, chartWidth, marginLeft, marginTop, cornerTooltip);
-        }
-
-        function handleClick(event: any) {
-            const [mouseX] = d3.pointer(event);
-            const date = xScale.invert(mouseX - marginLeft);
-            const closestData = findNearestDataPoint(combinedData, date);
-
-            if (closestData.date.getTime() !== userSelectedWeek.getTime()) {
-                setUserSelectedWeek(closestData.date);
-                updateVerticalIndicator(closestData.date, xScale, marginLeft, chartWidth, verticalIndicatorGroup, lineTooltip);
-            }
-        }
-
-
-        function handleMouseOut() {
-            mouseFollowLine.style("opacity", 0);
-            cornerTooltip.style("opacity", 0);
-        }
-
-        eventOverlay
-            .on("mousemove", handleMouseMove)
-            .on("mouseout", handleMouseOut)
-            .on("click", handleClick);
-
-        return {mouseFollowLine, verticalIndicatorGroup, lineTooltip, cornerTooltip};
-    }
-
 
     function appendAxes(svg: d3.Selection<d3.BaseType, unknown, HTMLElement, any>, xAxis: Axis<NumberValue>, yAxis: Axis<NumberValue>, xScale: d3.ScaleTime<number, number, never>, marginLeft: number, marginTop: number, chartWidth: number, chartHeight: number, dateStart: Date, dateEnd: Date) {
         // Append x-axis
@@ -642,15 +667,79 @@ const LineChart: React.FC = () => {
         return combinedData.sort((a, b) => a.date.getTime() - b.date.getTime());
     }
 
+    function renderChartComponents(svg: d3.Selection<SVGSVGElement, unknown, null, undefined>, filteredGroundTruthData: DataPoint[], processedPredictionData: any, xScale: d3.ScaleTime<number, number>, yScale: d3.ScaleLinear<number, number>, marginLeft: number, marginTop: number, chartWidth: number, chartHeight: number, height: number, marginBottom: number) {
+
+        // Combined ground truth and prediction data for all dates
+        const combinedData = createCombinedDataset(filteredGroundTruthData, processedPredictionData);
+
+        const mouseFollowLine = createMouseFollowLine(svg, marginLeft, marginTop, height, marginBottom);
+        const {
+            group: verticalIndicatorGroup, line: verticalIndicator, tooltip: lineTooltip
+        } = renderVerticalIndicator(svg, xScale, marginLeft, marginTop, height, marginBottom);
+        const cornerTooltip = createCornerTooltip(svg, marginLeft, marginTop, chartWidth);
+        const predictionTooltip = createPredictionTooltip(svg, marginLeft, marginTop, chartWidth);
+        const eventOverlay = createEventOverlay(svg, marginLeft, marginTop, chartWidth, chartHeight);
+
+        function handleMouseMove(event: any) {
+            const [mouseX] = d3.pointer(event);
+            const date = xScale.invert(mouseX - marginLeft);
+            const closestData = findNearestDataPoint(combinedData, date);
+
+            const snappedX = xScale(closestData.date);
+            mouseFollowLine
+                .attr("transform", `translate(${snappedX + marginLeft}, 0)`)
+                .style("opacity", 1);
+
+            updateCornerTooltip(closestData, filteredGroundTruthData, processedPredictionData, xScale, chartWidth, marginLeft, marginTop, cornerTooltip);
+
+            const predictionData = findPredictionsForDate(processedPredictionData, closestData.date);
+            if (predictionData) {
+                updatePredictionTooltip(predictionData, xScale, yScale, chartWidth, marginLeft, marginTop, predictionTooltip);
+            } else {
+                predictionTooltip.style("opacity", 0);
+            }
+        }
+
+        function handleClick(event: any) {
+            const [mouseX] = d3.pointer(event);
+            const date = xScale.invert(mouseX - marginLeft);
+            const closestData = findNearestDataPoint(combinedData, date);
+
+            if (closestData.date.getTime() !== userSelectedWeek.getTime()) {
+                setUserSelectedWeek(closestData.date);
+                updateVerticalIndicator(closestData.date, xScale, marginLeft, chartWidth, verticalIndicatorGroup, lineTooltip);
+            }
+        }
+
+
+        function handleMouseOut() {
+            mouseFollowLine.style("opacity", 0);
+            cornerTooltip.style("opacity", 0);
+        }
+
+        eventOverlay
+            .on("mousemove", handleMouseMove)
+            .on("mouseout", handleMouseOut)
+            .on("click", handleClick);
+
+        return {mouseFollowLine, verticalIndicatorGroup, lineTooltip, cornerTooltip};
+    }
 
     useEffect(() => {
         console.log("DEBUG: ForecastChart useEffect executed.");
+
 
         if (svgRef.current && groundTruthData.length > 0) {
             const svg = d3.select(svgRef.current);
             svg.selectAll("*").remove();
 
             const filteredGroundTruthData = filterGroundTruthData(groundTruthData, USStateNum, [dateStart, dateEnd]);
+
+            if (!initialDataLoaded) {
+                const latestDate = d3.max(filteredGroundTruthData, d => d.date) as Date;
+                setUserSelectedWeek(latestDate);
+                setInitialDataLoaded(true);
+            }
 
             const allPlaceholders = filteredGroundTruthData.every(d => d.admissions === -1);
 
@@ -676,11 +765,6 @@ const LineChart: React.FC = () => {
                     mouseFollowLine, verticalIndicatorGroup, lineTooltip, cornerTooltip
                 } = renderChartComponents(svg, filteredGroundTruthData, processedPredictionData, xScale, yScale, marginLeft, marginTop, chartWidth, chartHeight, height, marginBottom);
 
-                if (!initialDataLoaded) {
-                    const latestDate = d3.max(filteredGroundTruthData, d => d.date) as Date;
-                    setUserSelectedWeek(latestDate);
-                    setInitialDataLoaded(true);
-                }
 
                 updateVerticalIndicator(userSelectedWeek || filteredGroundTruthData[0].date, xScale, marginLeft, chartWidth, verticalIndicatorGroup, lineTooltip);
             }
@@ -692,4 +776,4 @@ const LineChart: React.FC = () => {
     return (<svg ref={svgRef} width={width} height={height}></svg>);
 };
 
-export default LineChart;
+export default ForecastChart;
