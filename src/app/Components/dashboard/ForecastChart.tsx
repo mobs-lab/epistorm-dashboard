@@ -157,6 +157,9 @@ const LineChart: React.FC = () => {
             .domain([d3.min(ground, d => d.date) as Date, maxDate])
             .range([0, chartWidth]);
 
+        console.log("DEBUG: maxDate", maxDate); //TODO: After testing I found that this produces the correct max Date which is the latest from prediction data (may 25th, 2024) but still the mouse hovering over these prediction data points is not working: the dashed line and corner tooltip are not updating
+
+
         // Custom tick format for x-axis
         /*const xAxisTickFormat = (date: Date) => {
             const month = date.toLocaleString('default', {month: 'long'});
@@ -266,35 +269,35 @@ const LineChart: React.FC = () => {
         return {xScale, yScale, xAxis, yAxis};
     }
 
-    function renderGroundTruthData(svg: Selection<BaseType, unknown, HTMLElement, any>, surveillanceData: (DataPoint | {
-        date: any; stateNum: string; stateName: string; admissions: null
-    })[], xScale: ScaleTime<number, number, never>, yScale: ScaleLogarithmic<number, number, never> | ScaleLinear<number, number, never>, marginLeft: number, marginTop: number) {
+    function renderGroundTruthData(svg: Selection<BaseType, unknown, HTMLElement, any>, surveillanceData: DataPoint[], xScale: ScaleTime<number, number, never>, yScale: ScaleLogarithmic<number, number, never> | ScaleLinear<number, number, never>, marginLeft: number, marginTop: number) {
         // Remove existing ground truth data paths and circles
         svg.selectAll(".ground-truth-path, .ground-truth-dot").remove();
 
         const line = d3.line<DataPoint>()
-            .defined(d => d.admissions !== -1) // Skip placeholder values for the line
+            .defined(d => d.admissions !== -1 || d.admissions === null) // Include placeholder points
             .x(d => xScale(d.date))
-            .y(d => yScale(d.admissions));
+            .y(d => d.admissions !== -1 ? yScale(d.admissions) : yScale.range()[0]); // Use bottom of chart for placeholders
 
         svg.append("path")
             .datum(surveillanceData)
+            .attr("class", "ground-truth-path")
             .attr("fill", "none")
-            .attr("stroke", (d) => d.admissions === -1 ? "transparent" : "steelblue")
+            .attr("stroke", "steelblue")
             .attr("stroke-width", 1.5)
             .attr("d", line)
             .attr("transform", `translate(${marginLeft}, ${marginTop})`);
 
-        // Add circles for ground truth data points with non-null admissions
+        // Add circles for ground truth data points (including placeholders)
         svg.selectAll(".ground-truth-dot")
             .data(surveillanceData)
             .enter()
             .append("circle")
             .attr("class", "ground-truth-dot")
             .attr("cx", d => xScale(d.date))
-            .attr("cy", d => d.admissions !== -1 ? yScale(d.admissions) : null)
-            .attr("r", d => d.admissions !== -1 ? 3 : 0)
-            .attr("fill", "steelblue")
+            .attr("cy", d => d.admissions !== -1 ? yScale(d.admissions) : yScale.range()[0])
+            .attr("r", 3)
+            .attr("fill", d => d.admissions !== -1 ? "steelblue" : "transparent")
+            .attr("stroke", d => d.admissions !== -1 ? "none" : "steelblue")
             .attr("transform", `translate(${marginLeft}, ${marginTop})`);
     }
 
@@ -405,14 +408,7 @@ const LineChart: React.FC = () => {
         return {group, line, tooltip};
     }
 
-    function updateVerticalIndicator(
-        date: Date,
-        xScale: d3.ScaleTime<number, number>,
-        marginLeft: number,
-        chartWidth: number,
-        group: d3.Selection<SVGGElement, unknown, null, undefined>,
-        tooltip: d3.Selection<SVGTextElement, unknown, null, undefined>
-    ) {
+    function updateVerticalIndicator(date: Date, xScale: d3.ScaleTime<number, number>, marginLeft: number, chartWidth: number, group: d3.Selection<SVGGElement, unknown, null, undefined>, tooltip: d3.Selection<SVGTextElement, unknown, null, undefined>) {
         const xPosition = xScale(date);
         const epiweek = getEpiweek(date);
         const isLeftSide = xPosition < chartWidth / 5; // Check if in the leftmost 1/5
@@ -466,9 +462,10 @@ const LineChart: React.FC = () => {
             .attr("y", currentY)
             .attr("text-anchor", textAnchor)
             .attr("font-weight", "bold")
-            .text(`Admissions: ${data.admissions !== -1 ? data.admissions : "N/A"}`);
+            .text(`Admissions: ${data.admissions !== null ? data.admissions : "N/A"}`);
 
         currentY += lineHeight;
+
 
         // Find prediction data for the current date
         const currentPredictions = findPredictionsForDate(predictionData, data.date);
@@ -490,6 +487,8 @@ const LineChart: React.FC = () => {
                 }
             });
         }
+
+        cornerTooltip.style("opacity", 1);
     }
 
     function findPredictionsForDate(predictionData: any, date: Date) {
@@ -503,20 +502,34 @@ const LineChart: React.FC = () => {
         return Object.keys(predictions).length > 0 ? predictions : null;
     }
 
+    function createEventOverlay(svg: d3.Selection<SVGSVGElement, unknown, null, undefined>, marginLeft: number, marginTop: number, chartWidth: number, chartHeight: number) {
+        return svg.append("rect")
+            .attr("class", "event-overlay")
+            .attr("x", marginLeft)
+            .attr("y", marginTop)
+            .attr("width", chartWidth)
+            .attr("height", chartHeight)
+            .style("fill", "none")
+            .style("pointer-events", "all");
+    }
+
     function renderChartComponents(svg: d3.Selection<SVGSVGElement, unknown, null, undefined>, filteredGroundTruthData: DataPoint[], processedPredictionData: any, xScale: d3.ScaleTime<number, number>, yScale: d3.ScaleLinear<number, number>, marginLeft: number, marginTop: number, chartWidth: number, chartHeight: number, height: number, marginBottom: number) {
+
+        // Combined ground truth and prediction data for all dates
+        const combinedData = createCombinedDataset(filteredGroundTruthData, processedPredictionData);
+
         const mouseFollowLine = createMouseFollowLine(svg, marginLeft, marginTop, height, marginBottom);
         const {
-            group: verticalIndicatorGroup,
-            line: verticalIndicator,
-            tooltip: lineTooltip
+            group: verticalIndicatorGroup, line: verticalIndicator, tooltip: lineTooltip
         } = renderVerticalIndicator(svg, xScale, marginLeft, marginTop, height, marginBottom);
         const cornerTooltip = createCornerTooltip(svg, marginLeft, marginTop, chartWidth);
+
+        const eventOverlay = createEventOverlay(svg, marginLeft, marginTop, chartWidth, chartHeight);
 
         function handleMouseMove(event: any) {
             const [mouseX] = d3.pointer(event);
             const date = xScale.invert(mouseX - marginLeft);
-            const closestData = findNearestDataPoint(filteredGroundTruthData, date);
-            console.log("DEBUG: closestData", closestData);
+            const closestData = findNearestDataPoint(combinedData, date);
 
             const snappedX = xScale(closestData.date);
             mouseFollowLine
@@ -524,13 +537,12 @@ const LineChart: React.FC = () => {
                 .style("opacity", 1);
 
             updateCornerTooltip(closestData, filteredGroundTruthData, processedPredictionData, xScale, chartWidth, marginLeft, marginTop, cornerTooltip);
-            // updateVerticalIndicator(closestData.date, xScale, marginLeft, chartWidth, verticalIndicatorGroup, lineTooltip);
         }
 
         function handleClick(event: any) {
             const [mouseX] = d3.pointer(event);
             const date = xScale.invert(mouseX - marginLeft);
-            const closestData = findNearestDataPoint(filteredGroundTruthData, date);
+            const closestData = findNearestDataPoint(combinedData, date);
 
             if (closestData.date.getTime() !== userSelectedWeek.getTime()) {
                 setUserSelectedWeek(closestData.date);
@@ -538,7 +550,15 @@ const LineChart: React.FC = () => {
             }
         }
 
-        svg.on("mousemove", handleMouseMove)
+
+        function handleMouseOut() {
+            mouseFollowLine.style("opacity", 0);
+            cornerTooltip.style("opacity", 0);
+        }
+
+        eventOverlay
+            .on("mousemove", handleMouseMove)
+            .on("mouseout", handleMouseOut)
             .on("click", handleClick);
 
         return {mouseFollowLine, verticalIndicatorGroup, lineTooltip, cornerTooltip};
@@ -581,7 +601,11 @@ const LineChart: React.FC = () => {
     }
 
     function findNearestDataPoint(data: DataPoint[], targetDate: Date): DataPoint {
-        return data.reduce((prev, curr) => (Math.abs(curr.date - targetDate) < Math.abs(prev.date - targetDate)) ? curr : prev);
+        return data.reduce((prev, curr) => {
+            const prevDiff = Math.abs(prev.date.getTime() - targetDate.getTime());
+            const currDiff = Math.abs(curr.date.getTime() - targetDate.getTime());
+            return currDiff < prevDiff ? curr : prev;
+        });
     }
 
     function renderMessage(svg: d3.Selection<null, unknown, null, undefined>, message: string, chartWidth: number, chartHeight: number, marginLeft: number, marginTop: number) {
@@ -596,6 +620,28 @@ const LineChart: React.FC = () => {
             .attr("font-weight", "bold")
             .text(message);
     }
+
+    function createCombinedDataset(groundTruthData: DataPoint[], predictionData: any): DataPoint[] {
+        let combinedData = [...groundTruthData];
+
+        Object.values(predictionData).forEach((modelPredictions: any) => {
+            modelPredictions[0].data.forEach((prediction: any) => {
+                const existingPoint = combinedData.find(d => d.date.getTime() === new Date(prediction.targetEndDate).getTime());
+                if (!existingPoint) {
+                    combinedData.push({
+                        date: new Date(prediction.targetEndDate),
+                        admissions: null,
+                        stateNum: groundTruthData[0].stateNum,
+                        stateName: groundTruthData[0].stateName,
+                        isPrediction: true
+                    });
+                }
+            });
+        });
+
+        return combinedData.sort((a, b) => a.date.getTime() - b.date.getTime());
+    }
+
 
     useEffect(() => {
         console.log("DEBUG: ForecastChart useEffect executed.");
@@ -619,10 +665,7 @@ const LineChart: React.FC = () => {
                 const processedPredictionData = processPredictionData(predictionsData, forecastModel, USStateNum, userSelectedWeek, numOfWeeksAhead, confidenceInterval, displayMode);
 
                 const {
-                    xScale,
-                    yScale,
-                    xAxis,
-                    yAxis
+                    xScale, yScale, xAxis, yAxis
                 } = createScalesAndAxes(filteredGroundTruthData, processedPredictionData, chartWidth, chartHeight, yAxisScale);
 
                 renderGroundTruthData(svg, filteredGroundTruthData, xScale, yScale, marginLeft, marginTop);
