@@ -25,7 +25,7 @@ const LineChart: React.FC = () => {
     // Set up size and margins
     const width = 928;
     const height = 500;
-    const marginTop = 60;
+    const marginTop = 5;
     const marginBottom = 50;
     const marginLeft = 50;
     const marginRight = 50;
