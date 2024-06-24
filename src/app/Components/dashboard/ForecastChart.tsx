@@ -280,7 +280,7 @@ const ForecastChart: React.FC = () => {
             .datum(surveillanceData)
             .attr("class", "ground-truth-path")
             .attr("fill", "none")
-            .attr("stroke", "steelblue")
+            .attr("stroke", "white")
             .attr("stroke-width", 1.5)
             .attr("d", line)
             .attr("transform", `translate(${marginLeft}, ${marginTop})`);
@@ -294,8 +294,8 @@ const ForecastChart: React.FC = () => {
             .attr("cx", d => xScale(d.date))
             .attr("cy", d => d.admissions !== -1 ? yScale(d.admissions) : yScale.range()[0])
             .attr("r", 3)
-            .attr("fill", d => d.admissions !== -1 ? "steelblue" : "transparent")
-            .attr("stroke", d => d.admissions !== -1 ? "steelblue" : "none")
+            .attr("fill", d => d.admissions !== -1 ? "white" : "transparent")
+            .attr("stroke", d => d.admissions !== -1 ? "white" : "none")
             .attr("transform", `translate(${marginLeft}, ${marginTop})`);
     }
 
@@ -391,14 +391,14 @@ const ForecastChart: React.FC = () => {
 
         const line = group.append("line")
             .attr("class", "vertical-indicator")
-            .attr("stroke", "blue")
-            .attr("stroke-width", 2)
+            .attr("stroke", "gray")
+            .attr("stroke-width", 0.8)
             .attr("y1", marginTop)
             .attr("y2", height - marginBottom);
 
         const tooltip = group.append("text")
             .attr("class", "line-tooltip")
-            .attr("fill", "black")
+            .attr("fill", "white")
             .attr("font-size", 12)
             .attr("text-anchor", "end")
             .attr("y", marginTop + 5);
@@ -466,7 +466,8 @@ const ForecastChart: React.FC = () => {
             .attr("y", currentY)
             .attr("text-anchor", textAnchor)
             .attr("font-weight", "bold")
-            .text(`Admissions: ${data.admissions !== null && data.admissions !== -1 ? data.admissions : "N/A"}`);
+            .text(`Admissions: ${data.admissions !== null && data.admissions !== -1 ? data.admissions : "N/A"}`)
+            .attr("fill", "white");
 
         currentY += lineHeight;
 
@@ -479,14 +480,18 @@ const ForecastChart: React.FC = () => {
                 cornerTooltip.append("text")
                     .attr("y", currentY)
                     .attr("text-anchor", textAnchor)
-                    .text(`${modelName}: ${modelData.confidence500.toFixed(2)}`);
+                    .text(`${modelName}: ${modelData.confidence500.toFixed(2)}`)
+                    .attr("fill", "white");
+                ;
                 currentY += lineHeight;
 
                 if (confidenceInterval.length > 0) {
                     cornerTooltip.append("text")
                         .attr("y", currentY)
                         .attr("text-anchor", textAnchor)
-                        .text(`CI: [${modelData.confidence_low.toFixed(2)}, ${modelData.confidence_high.toFixed(2)}]`);
+                        .text(`CI: [${modelData.confidence_low.toFixed(2)}, ${modelData.confidence_high.toFixed(2)}]`)
+                        .attr("fill", "white");
+
                     currentY += lineHeight;
                 }
             });
@@ -565,7 +570,6 @@ const ForecastChart: React.FC = () => {
 
         tooltip.attr("transform", `translate(${tooltipX}, ${tooltipY})`);
     }
-
 
 
     function findPredictionsForDate(predictionData: any, date: Date) {

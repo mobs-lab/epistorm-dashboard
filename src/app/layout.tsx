@@ -1,7 +1,6 @@
 'use client'
 import React from "react";
 import './CSS/globals.css'
-import {Metadata} from "next";
 import Header from './Components/Header';
 import {Provider} from 'react-redux';
 import store from './store';
@@ -18,7 +17,7 @@ export default function RootLayout({
     children: React.ReactNode
 }) {
     return (<html lang="en" className={"h-full"}>
-    <body className={"grid grid-rows-[auto_1fr] min-h-screen bg-gray-100"}>
+    <body className={"grid grid-rows-[auto_1fr] min-h-screen"}>
     <Header/>
     <main className={"p-4"}>
         <Provider store={store}>{children}</Provider>

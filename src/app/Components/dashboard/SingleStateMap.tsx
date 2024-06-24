@@ -35,8 +35,8 @@ const SingleStateMap: React.FC = () => {
                         .enter()
                         .append('path')
                         .attr('d', path)
-                        .attr('fill', 'lightblue')
-                        .attr('stroke', 'black');
+                        .attr('fill', '#32bbe0')
+                        .attr('stroke', 'white');
                 } else {
                     const selectedState = states.features.find(
                         (feature) => feature.properties.name === selectedStateName
@@ -49,8 +49,8 @@ const SingleStateMap: React.FC = () => {
                         svg.append('path')
                             .datum(selectedState)
                             .attr('d', path)
-                            .attr('fill', 'lightblue')
-                            .attr('stroke', 'black');
+                            .attr('fill', '#32bbe0')
+                            .attr('stroke', 'white');
                     }
                 }
             } catch (error) {
@@ -62,7 +62,7 @@ const SingleStateMap: React.FC = () => {
     }, [selectedStateName]);
 
     return (
-        <div className="bg-gray-800 text-white p-4 rounded">
+        <div className="text-white p-4 rounded">
             <h2 className="text-3xl font-bold mb-4">{selectedStateName}</h2>
             <div className="flex items-center">
                 <svg ref={svgRef} width={400} height={300}/>

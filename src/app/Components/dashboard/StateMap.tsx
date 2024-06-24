@@ -41,8 +41,8 @@ const StateMap: React.FC = () => {
                 const states = g.selectAll("path")
                     .data(topojson.feature(us, us.objects.states).features)
                     .join("path")
-                    .attr("fill", "#444")
-                    .attr("stroke", "#fff")
+                    .attr("fill", "#00505b")
+                    .attr("stroke", "lightgray")
                     .attr("cursor", "pointer")
                     .on("click", (event, d) => handleClick(event, d, path, zoomBehavior))
                     .attr("d", path);
