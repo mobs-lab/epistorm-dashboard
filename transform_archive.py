@@ -19,9 +19,7 @@ def transform_older_data(model_name):
         'forecast_date': 'reference_date',
         'type': 'output_type',
         'quantile': 'output_type_id'
-    }, inplace=True)
-
-    # Shift reference_date (forecast_date in older data) to 5 days later to match newer data
+    }, inplace=True)  
 
     # Load locations data and merge with older_data
     locations = pd.read_csv('public/data/locations.csv', dtype={'location': str})
@@ -43,6 +41,10 @@ def transform_older_data(model_name):
     older_data = older_data.pivot_table(values='value',
                                         index=['reference_date', 'target_end_date', 'location', 'location_name'],
                                         columns=['output_type_id']).reset_index()
+
+    
+    # Shift reference_date (forecast_date in older data) to 5 days later to match newer data
+    older_data['reference_date'] + pd.to_timedelta(5, unit='D')
 
     # Export transformed data
     output_path = f"public/data/processed/{model_name}/predictions_older.csv"
