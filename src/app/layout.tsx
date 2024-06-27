@@ -16,13 +16,14 @@ export default function RootLayout({
                                    }: {
     children: React.ReactNode
 }) {
-    return (<html lang="en" className={"h-full"}>
-    <body className={"grid grid-rows-[auto_1fr] min-h-screen"}>
-    <Header/>
-    <main className={"p-4"}>
-        <Provider store={store}>{children}</Provider>
-    </main>
-
-    </body>
-    </html>)
+    return (
+        <html lang="en">
+        <body className="flex flex-col">
+        <Header/>
+        <main className="p-4 w-full mx-1 h-full">
+            <Provider store={store}>{children}</Provider>
+        </main>
+        </body>
+        </html>
+    )
 }

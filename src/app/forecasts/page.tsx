@@ -98,8 +98,8 @@ const Page: React.FC = () => {
         fetchData();
     }, [dispatch]);
 
-    return (<div className={"container mx-auto"}>
-        {dataLoaded ? (<>
+    return (<div className={" w-full h-full"}>
+        {dataLoaded ? (
             <div className={"dashboard-grid-layout"}>
                 <div className={"forecast-state"}>
                     <SingleStateMap/>
@@ -115,7 +115,7 @@ const Page: React.FC = () => {
                     <FiltersPane/>
                 </div>
             </div>
-        </>) : (<div className={"container mx-auto"}> Loading... </div>)}
+        ) : (<div className={"mx-auto"}> Loading... </div>)}
     </div>);
 };
 
