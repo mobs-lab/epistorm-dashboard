@@ -100,20 +100,20 @@ const Page: React.FC = () => {
         fetchData();
     }, [dispatch]);
 
-    return (<div className={" w-full h-full"}>
+    return (<div className={"w-full h-full"}>
         {dataLoaded ? (
-            <div className={"dashboard-grid-layout"}>
-                <div className={"forecast-state"}>
+            <div className="dashboard-grid-layout w-full h-1/2">
+                <div className="forecast-state">
                     <SingleStateMap/>
                 </div>
-                <div className={"forecast-gauge"}>
-                    {/*<RiskLevelGauge riskLevel={"Very High"}></RiskLevelGauge>*/}
+                <div className="forecast-gauge">
+                    {/* Add your gauge component here */}
+                    <div>Gauge Placeholder</div>
                 </div>
-                {/* Line chart below */}
-                <div className={"forecast-graph"}>
+                <div className="forecast-graph">
                     <ForecastChart/>
                 </div>
-                <div className={"forecast-settings"}>
+                <div className="forecast-settings">
                     <FiltersPane/>
                 </div>
             </div>
