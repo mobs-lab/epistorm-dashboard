@@ -2,6 +2,11 @@
 @tailwind components;
 @tailwind utilities;
 
+body {
+    background-color: #00505b;
+    color: white;
+}
+
 
 @layer utilities {
     .dashboard-grid-layout {
@@ -12,6 +17,22 @@
         [row1-left]"state gauge settings" minmax(300px, auto) [row1-right]
         [row2-left]"graph graph settings" minmax(200px, auto) [row2-right]
         / minmax(400px, auto) minmax(300px, auto) minmax(360px, auto);
+    }
+
+    .white-separator {
+        height: 1px;
+        background-color: white;
+        margin: 1rem 0;
+    }
+
+    /* Prevent text selection */
+    .no-select {
+        user-select: none;
+    }
+
+    /* Remove focus outline */
+    *:focus {
+        outline: none;
     }
 
     .forecast-state {
@@ -30,7 +51,7 @@
         grid-area: settings;
     }
 
-    .evaluations-grid-layout{
+    .evaluations-grid-layout {
         display: grid;
         column-gap: 10px;
         row-gap: 20px;
@@ -39,16 +60,20 @@
             [row2-left]"graph score settings" minmax(500px, auto) [row2-right]
             / minmax(150px, auto) minmax(150px, auto) minmax(100px, auto);
     }
-    .evaluations-title{
+
+    .evaluations-title {
         grid-area: title;
     }
-    .evaluations-graph{
+
+    .evaluations-graph {
         grid-area: graph;
     }
-    .evaluations-score{
+
+    .evaluations-score {
         grid-area: score;
     }
-    .evaluations-settings{
+
+    .evaluations-settings {
         grid-area: settings;
     }
 

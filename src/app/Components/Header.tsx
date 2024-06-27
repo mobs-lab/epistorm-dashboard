@@ -1,24 +1,19 @@
 import Link from 'next/link';
 import React from "react";
 
-interface HeaderProps {
-    // Add props if needed in the future
-}
-
-const Header: React.FC<HeaderProps> = () => {
+const Header: React.FC = () => {
     return (
-        <>
-            <header>
-                <div className={"p-4 flex columns-2 space-x-4 justify-between bg-blue-600"}>
-                    <a href={'..'}><h1 className={"flex-1 flex-nowrap "}> Flu Forecast </h1></a>
-                    <nav className={"flex sm; justify-center "}>
-                        {[["Home", '..'], ['Forecasts', '../forecasts'], ['Evaluations', '../evaluations'], ['Contact', '../contact'], ['Background', '../background'],].map(([title, url]) => (
-                            <Link href={url}
-                                  className={"rounded - lg px-3 py-2 text-slate-700 font-medium hover:bg-slate-100 hover:text-slate-900"}>{title}</Link>))}
-                    </nav>
-                </div>
-            </header>
-        </>
+        <header className="bg-white shadow-md">
+            <div className="container mx-auto px-4 py-3 flex justify-between items-center">
+                <Link href="/" className="text-2xl font-bold text-teal-700">FluForecast</Link>
+                <nav className="flex space-x-6">
+                    {[['Home', '/'], ['Forecasts', '/forecasts'], ['Evaluations', '/evaluations'], ['Background', '/background'], ['Contact', '/contact']].map(([title, url]) => (
+                        <Link key={title} href={url} className="text-teal-700 hover:text-teal-900">{title}</Link>
+                    ))}
+                </nav>
+            </div>
+        </header>
     )
 }
+
 export default Header;
