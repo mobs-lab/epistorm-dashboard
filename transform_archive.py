@@ -43,8 +43,8 @@ def transform_older_data(model_name):
                                         columns=['output_type_id']).reset_index()
 
     
-    # Shift reference_date (forecast_date in older data) to 5 days later to match newer data
-    older_data['reference_date'] + pd.to_timedelta(5, unit='D')
+    # For column with header "reference_date", shift all entries' value by 2 days to earlier, for example 05/15/2023 becomes 05/13/2023
+    older_data['reference_date'] = older_data['reference_date'] - pd.DateOffset(days=2)
 
     # Export transformed data
     output_path = f"public/data/processed/{model_name}/predictions_older.csv"
@@ -52,7 +52,7 @@ def transform_older_data(model_name):
 
 
 model_names = ["MOBS-GLEAM_FLUH", "MIGHTE-Nsemble",
-               "CEPH-Rtrend_fluH"]  # Replace with actual model names
+               "CEPH-Rtrend_fluH", "NU_UCSD-GLEAM_AI_FLUH"]
 
 for model in model_names:
     transform_older_data(model)

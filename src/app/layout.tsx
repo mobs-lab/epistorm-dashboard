@@ -1,3 +1,4 @@
+// src/app/layout.tsx
 'use client'
 import React from "react";
 import './CSS/globals.css'
