@@ -5,12 +5,20 @@ import React, {useEffect, useRef} from 'react';
 import * as d3 from 'd3';
 import * as topojson from 'topojson-client';
 import {useAppSelector} from '../../store/hooks';
+import InfoButton from './InfoButton';
 
 const shapeFile = '/states-10m.json';
 
 const SingleStateMap: React.FC = () => {
     const svgRef = useRef<SVGSVGElement>(null);
     const {selectedStateName} = useAppSelector((state) => state.filter);
+
+    const mapInfo = (
+        <div>
+            <p>This map shows the selected state or the entire US.</p>
+            <p>The map updates based on your state selection in the filters pane.</p>
+        </div>
+    );
 
     useEffect(() => {
         const fetchData = async () => {
@@ -62,8 +70,11 @@ const SingleStateMap: React.FC = () => {
     }, [selectedStateName]);
 
     return (
-        <div className="text-white p-4 rounded">
-            <h2 className="text-3xl font-bold mb-4">{selectedStateName}</h2>
+        <div className="text-white p-4 rounded relative">
+            <div className="flex justify-between items-center mb-4">
+                <h2 className="text-3xl font-bold">{selectedStateName}</h2>
+                <InfoButton title="State Map Information" content={mapInfo} />
+            </div>
             <div className="flex items-center">
                 <svg ref={svgRef} width={"100%"} height={"100%"}/>
             </div>
