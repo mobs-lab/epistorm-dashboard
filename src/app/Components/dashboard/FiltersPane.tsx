@@ -4,9 +4,8 @@
 import React, {useEffect, useState} from 'react';
 import {modelColorMap} from '../../Interfaces/modelColors';
 import DatePicker from 'react-date-picker';
-import 'react-date-picker/dist/DatePicker.css';
-import 'react-calendar/dist/Calendar.css';
-import {format, subYears, addYears, startOfYear, endOfYear} from 'date-fns';
+import {format} from 'date-fns';
+import InfoButton from './InfoButton';
 
 /*
 NOTE: Since using Next.js, these are from our own custom wrapper for required UI components
@@ -17,7 +16,6 @@ import {useAppDispatch, useAppSelector} from '../../store/hooks';
 import {
     updateConfidenceInterval,
     updateDateEnd,
-    updateDateRange,
     updateDateStart,
     updateForecastModel,
     updateNumOfWeeksAhead,
@@ -36,6 +34,15 @@ const dateRangeMapping = {
 
 
 const FiltersPane: React.FC = () => {
+
+    const stateMapInfo = (
+        <div>
+            <p>Use this map to select a specific state for your forecast.</p>
+            <p>Click on a state to zoom in and select it. The map will automatically zoom out after selection.</p>
+            <p>You can also use the dropdown menu below to select a state.</p>
+        </div>
+    );
+
     const dispatch = useAppDispatch();
     const groundTruthData = useAppSelector((state) => state.groundTruth.data);
     const locationData = useAppSelector((state) => state.location.data);
@@ -164,7 +171,8 @@ const FiltersPane: React.FC = () => {
     return (
         <Card className={"bg-[#005e6d] text-white fill-white"}>
             <CardBody>
-                <h3> Select a location </h3>
+                <h3> Select a location <InfoButton title="State Selection Information" content={stateMapInfo}/></h3>
+
                 <div className="mb-4 flex items-center justify-center h-full w-full">
                     <StateMap/>
                 </div>
@@ -202,8 +210,7 @@ const FiltersPane: React.FC = () => {
                                     onChange={(e) => onModelSelectionChange(model, e.target.checked)}
                                 />
                                 <span className="ml-2">{model}</span>
-                            </label>
-                        ))}
+                            </label>))}
                     </div>
                 </div>
 
@@ -218,8 +225,7 @@ const FiltersPane: React.FC = () => {
                         {seasonOptions.map((option) => (
                             <Option key={option.value} value={option.value} className="text-black">
                                 {option.label}
-                            </Option>
-                        ))}
+                            </Option>))}
                     </Select>
                 </div>
 
@@ -231,7 +237,10 @@ const FiltersPane: React.FC = () => {
                         minDate={earliestDayFromGroundTruthData}
                         maxDate={startDateMaxDate}
                         format="yyyy-MM-dd"
-
+                        className="bg-mobs-lab-color-filterspane text-white border-white"
+                        calendarClassName="bg-mobs-lab-color-filterspane text-white"
+                        dayClassName={() => "hover:bg-date-picker-accent hover:text-white"}
+                        selectedDayClassName="bg-date-picker-accent text-white"
                     />
                 </div>
 
@@ -243,39 +252,38 @@ const FiltersPane: React.FC = () => {
                         minDate={endDateMinDate}
                         maxDate={latestDayFromGroundTruthData}
                         format="yyyy-MM-dd"
-                        className="text-white bg-transparent border-white"
+                        className="bg-mobs-lab-color-filterspane text-white border-white"
+                        calendarClassName="bg-mobs-lab-color-filterspane text-white"
+                        dayClassName={() => "hover:bg-date-picker-accent hover:text-white"}
+                        selectedDayClassName="bg-date-picker-accent text-white"
                     />
                 </div>
 
                 <div className="mb-4">
                     <Typography variant="h6" className="text-white"> Horizon </Typography>
-                    {[0, 1, 2, 3].map((value) => (
-                        <Radio
-                            key={value}
-                            name="weeksAheadRadioBtn"
-                            value={value.toString()}
-                            label={value.toString()}
-                            onChange={(e) => onNumOfWeeksAheadChange(e)}
-                            className="text-white"
-                            labelProps={{className: "text-white"}}
-                            defaultChecked={value === 3}
-                        />
-                    ))}
+                    {[0, 1, 2, 3].map((value) => (<Radio
+                        key={value}
+                        name="weeksAheadRadioBtn"
+                        value={value.toString()}
+                        label={value.toString()}
+                        onChange={(e) => onNumOfWeeksAheadChange(e)}
+                        className="text-white"
+                        labelProps={{className: "text-white"}}
+                        defaultChecked={value === 3}
+                    />))}
                 </div>
                 <div className="mb-4">
                     <Typography variant="h6" className="text-white">Y-axis scale</Typography>
-                    {["linear", "log"].map((value) => (
-                        <Radio
-                            key={value}
-                            name="yAxisRadioBtn"
-                            value={value}
-                            label={value === "linear" ? "Linear" : "Logarithmic"}
-                            onChange={(e) => onYAxisScaleChange(e)}
-                            className="text-white"
-                            labelProps={{className: "text-white"}}
-                            defaultChecked={value === "linear"}
-                        />
-                    ))}
+                    {["linear", "log"].map((value) => (<Radio
+                        key={value}
+                        name="yAxisRadioBtn"
+                        value={value}
+                        label={value === "linear" ? "Linear" : "Logarithmic"}
+                        onChange={(e) => onYAxisScaleChange(e)}
+                        className="text-white"
+                        labelProps={{className: "text-white"}}
+                        defaultChecked={value === "linear"}
+                    />))}
                 </div>
 
                 <div className="mb-4">
@@ -290,8 +298,7 @@ const FiltersPane: React.FC = () => {
                                     onChange={(e) => onConfidenceIntervalChange(interval, e.target.checked)}
                                 />
                                 <span className="ml-2">{interval}</span>
-                            </label>
-                        ))}
+                            </label>))}
                     </div>
                     <button
                         className={`px-4 py-2 rounded mt-2 ${confidenceInterval.length === 0 ? "bg-blue-500 text-white" : "bg-gray-200 text-gray-700"}`}
@@ -302,18 +309,16 @@ const FiltersPane: React.FC = () => {
                 </div>
                 <div>
                     <Typography variant="h6" className="text-white">Display mode</Typography>
-                    {["byDate", "byHorizon"].map((value) => (
-                        <Radio
-                            key={value}
-                            name="displayModeRadioBtn"
-                            value={value}
-                            label={value === "byDate" ? "By Date" : "By Horizon"}
-                            onChange={(e) => onDisplayModeChange(e)}
-                            className="text-white"
-                            labelProps={{className: "text-white"}}
-                            defaultChecked={value === "byDate"}
-                        />
-                    ))}
+                    {["byDate", "byHorizon"].map((value) => (<Radio
+                        key={value}
+                        name="displayModeRadioBtn"
+                        value={value}
+                        label={value === "byDate" ? "By Date" : "By Horizon"}
+                        onChange={(e) => onDisplayModeChange(e)}
+                        className="text-white"
+                        labelProps={{className: "text-white"}}
+                        defaultChecked={value === "byDate"}
+                    />))}
                 </div>
             </CardBody>
         </Card>);

@@ -1,25 +1,30 @@
 'use client'
 
 import {
-    Select,
-    Option,
-    Radio,
-    Typography,
+    Button,
     Card,
     CardBody,
     CardHeader,
+    Checkbox,
+    Dialog,
+    DialogBody,
+    DialogFooter,
+    DialogHeader,
     Input,
-    Popover,
-    PopoverHandler,
-    PopoverContent,
     Menu,
     MenuHandler,
     MenuItem,
-    Button,
-    Checkbox,
     MenuList,
+    Option,
+    Popover,
+    PopoverContent,
+    PopoverHandler,
+    Radio,
+    Select,
+    Typography
 } from "@material-tailwind/react";
-import { ChevronRightIcon, ChevronLeftIcon } from "@heroicons/react/24/outline";
+
+import {ChevronLeftIcon, ChevronRightIcon} from "@heroicons/react/24/outline";
 
 export {
     Select,
@@ -40,7 +45,11 @@ export {
     Checkbox,
     MenuList,
     ChevronLeftIcon,
-    ChevronRightIcon
+    ChevronRightIcon,
+    Dialog,
+    DialogHeader,
+    DialogBody,
+    DialogFooter
 };
 
 

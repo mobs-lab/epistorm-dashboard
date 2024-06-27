@@ -7,8 +7,19 @@ import {Axis, BaseType, NumberValue, ScaleLinear, ScaleLogarithmic, ScaleTime} f
 import {useAppSelector} from '../../store/hooks';
 import {modelColorMap} from '../../Interfaces/modelColors';
 import {DataPoint, ModelPrediction, PredictionDataPoint} from "../../Interfaces/forecast-interfaces";
+import InfoButton from "./InfoButton";
 
 const ForecastChart: React.FC = () => {
+
+    const chartInfo = (
+        <div>
+            <p>This chart displays the forecast for influenza hospitalizations.</p>
+            <p>The solid line represents historical data, while the dashed lines show predictions from different
+                models.</p>
+            <p>You can hover over the chart to see detailed information for each date.</p>
+        </div>
+    );
+
     // reference to svg object
     const svgRef = useRef(null);
 
@@ -774,7 +785,15 @@ const ForecastChart: React.FC = () => {
 
 
 // Return the SVG object using reference
-    return (<svg ref={svgRef} width={width} height={height}></svg>);
+    return (
+        <div className="relative">
+            <div className="flex justify-between items-center mb-4">
+                <h2 className="text-2xl font-bold">Forecast Chart</h2>
+                <InfoButton title="Forecast Chart Information" content={chartInfo}/>
+            </div>
+            <svg ref={svgRef} width={width} height={height}></svg>
+        </div>
+    );
 };
 
 export default ForecastChart;

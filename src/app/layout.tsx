@@ -2,6 +2,7 @@
 'use client'
 import React from "react";
 import './CSS/globals.css'
+import 'react-date-picker/dist/DatePicker.css';
 import Header from './Components/Header';
 import {Provider} from 'react-redux';
 import store from './store';
