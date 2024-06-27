@@ -182,10 +182,6 @@ const ForecastChart: React.FC = () => {
 
         const maxValue = Math.max(maxGroundTruthValue, maxPredictionValue);
 
-        console.log("DEBUG: maxGroundTruthValue", maxGroundTruthValue);
-        console.log("DEBUG: maxPredictionValue", maxPredictionValue);
-        console.log("DEBUG: maxValue", maxValue);
-
 
         if (yAxisScale === "linear") {
             yScale = d3.scaleLinear()
@@ -230,6 +226,7 @@ const ForecastChart: React.FC = () => {
             });*/
 
         let xAxis;
+
         if (daysDiff > 334) {
             xAxis = d3.axisBottom(xScale)
                 .ticks(d3.timeMonth.every(1))

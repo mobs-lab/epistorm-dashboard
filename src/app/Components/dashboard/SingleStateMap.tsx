@@ -21,8 +21,8 @@ const SingleStateMap: React.FC = () => {
                 const svg = d3.select(svgRef.current);
                 svg.selectAll('*').remove();
 
-                const width = 400;
-                const height = 300;
+                const width = svgRef.current?.clientWidth || 400;
+                const height = svgRef.current?.clientHeight || 300;
 
                 const path = d3.geoPath();
 
@@ -65,7 +65,7 @@ const SingleStateMap: React.FC = () => {
         <div className="text-white p-4 rounded">
             <h2 className="text-3xl font-bold mb-4">{selectedStateName}</h2>
             <div className="flex items-center">
-                <svg ref={svgRef} width={400} height={300}/>
+                <svg ref={svgRef} width={"100%"} height={"100%"}/>
             </div>
         </div>
     );
