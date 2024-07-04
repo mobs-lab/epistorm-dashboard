@@ -513,78 +513,78 @@ const ForecastChart: React.FC = () => {
         cornerTooltip.style("opacity", 1);
     }
 
-/*
-    function updatePredictionTooltip(data: any, xScale: d3.ScaleTime<number, number>, yScale: d3.ScaleLinear<number, number>, chartWidth: number, marginLeft: number, marginTop: number, tooltip: d3.Selection<SVGGElement, unknown, null, undefined>) {
-        const x = xScale(new Date(Object.values(data)[0].targetEndDate));
-        const y = yScale(Object.values(data)[0].confidence500);
+    /*
+        function updatePredictionTooltip(data: any, xScale: d3.ScaleTime<number, number>, yScale: d3.ScaleLinear<number, number>, chartWidth: number, marginLeft: number, marginTop: number, tooltip: d3.Selection<SVGGElement, unknown, null, undefined>) {
+            const x = xScale(new Date(Object.values(data)[0].targetEndDate));
+            const y = yScale(Object.values(data)[0].confidence500);
 
-        tooltip.style("opacity", 1);
-        tooltip.attr("transform", `translate(${x}, ${y})`);
+            tooltip.style("opacity", 1);
+            tooltip.attr("transform", `translate(${x}, ${y})`);
 
-        tooltip.selectAll("*").remove();
+            tooltip.selectAll("*").remove();
 
-        let currentY = 0;
-        const lineHeight = 20;
-        const tooltipWidth = 300;
-        const tooltipPadding = 10;
-        const lineGap = 10;
+            let currentY = 0;
+            const lineHeight = 20;
+            const tooltipWidth = 300;
+            const tooltipPadding = 10;
+            const lineGap = 10;
 
-        // Calculate the total height of the tooltip based on the number of models and confidence intervals
-        const totalLines = Object.keys(data).reduce((acc, modelName) => acc + confidenceInterval.length + 1, 0);
-        const tooltipHeight = totalLines * lineHeight + (Object.keys(data).length - 1) * lineGap + tooltipPadding * 2;
+            // Calculate the total height of the tooltip based on the number of models and confidence intervals
+            const totalLines = Object.keys(data).reduce((acc, modelName) => acc + confidenceInterval.length + 1, 0);
+            const tooltipHeight = totalLines * lineHeight + (Object.keys(data).length - 1) * lineGap + tooltipPadding * 2;
 
-        // Create a rectangular background for the tooltip
-        tooltip.append("rect")
-            .attr("x", -tooltipWidth / 2)
-            .attr("y", -tooltipPadding)
-            .attr("width", tooltipWidth)
-            .attr("height", tooltipHeight + tooltipPadding * 2)
-            .attr("fill", "white")
-            .attr("stroke", "black")
-            .attr("stroke-width", 1)
-            .attr("rx", 5)
-            .attr("ry", 5);
+            // Create a rectangular background for the tooltip
+            tooltip.append("rect")
+                .attr("x", -tooltipWidth / 2)
+                .attr("y", -tooltipPadding)
+                .attr("width", tooltipWidth)
+                .attr("height", tooltipHeight + tooltipPadding * 2)
+                .attr("fill", "white")
+                .attr("stroke", "black")
+                .attr("stroke-width", 1)
+                .attr("rx", 5)
+                .attr("ry", 5);
 
-        Object.entries(data).forEach(([modelName, modelData]: [string, any], index) => {
-            tooltip.append("text")
-                .attr("x", -tooltipWidth / 2 + tooltipPadding)
-                .attr("y", currentY + 5)
-                .attr("font-size", "12px")
-                .attr("font-weight", "bold")
-                .text(`${modelName}`);
-            currentY += lineHeight;
-
-            tooltip.append("text")
-                .attr("x", -tooltipWidth / 2 + tooltipPadding * 2)
-                .attr("y", currentY)
-                .attr("font-size", "12px")
-                .text(`${modelData.confidence500.toFixed(2)}`);
-            currentY += lineHeight;
-
-            confidenceInterval.forEach((interval) => {
-                const lowKey = `confidence${interval === "50" ? "250" : interval === "90" ? "050" : "025"}`;
-                const highKey = `confidence${interval === "50" ? "750" : interval === "90" ? "950" : "975"}`;
+            Object.entries(data).forEach(([modelName, modelData]: [string, any], index) => {
+                tooltip.append("text")
+                    .attr("x", -tooltipWidth / 2 + tooltipPadding)
+                    .attr("y", currentY + 5)
+                    .attr("font-size", "12px")
+                    .attr("font-weight", "bold")
+                    .text(`${modelName}`);
+                currentY += lineHeight;
 
                 tooltip.append("text")
-                    .attr("x", -tooltipWidth / 2 + tooltipPadding * 3)
+                    .attr("x", -tooltipWidth / 2 + tooltipPadding * 2)
                     .attr("y", currentY)
                     .attr("font-size", "12px")
-                    .text(`${interval}% CI: [${modelData[lowKey].toFixed(2)}, ${modelData[highKey].toFixed(2)}]`);
+                    .text(`${modelData.confidence500.toFixed(2)}`);
                 currentY += lineHeight;
+
+                confidenceInterval.forEach((interval) => {
+                    const lowKey = `confidence${interval === "50" ? "250" : interval === "90" ? "050" : "025"}`;
+                    const highKey = `confidence${interval === "50" ? "750" : interval === "90" ? "950" : "975"}`;
+
+                    tooltip.append("text")
+                        .attr("x", -tooltipWidth / 2 + tooltipPadding * 3)
+                        .attr("y", currentY)
+                        .attr("font-size", "12px")
+                        .text(`${interval}% CI: [${modelData[lowKey].toFixed(2)}, ${modelData[highKey].toFixed(2)}]`);
+                    currentY += lineHeight;
+                });
+
+                if (index < Object.keys(data).length - 1) {
+                    currentY += lineGap;
+                }
             });
 
-            if (index < Object.keys(data).length - 1) {
-                currentY += lineGap;
-            }
-        });
+            const isLeftSide = x > chartWidth / 2;
+            const tooltipX = isLeftSide ? x - tooltipWidth - 10 : x + 10;
+            const tooltipY = y - tooltipHeight / 2;
 
-        const isLeftSide = x > chartWidth / 2;
-        const tooltipX = isLeftSide ? x - tooltipWidth - 10 : x + 10;
-        const tooltipY = y - tooltipHeight / 2;
-
-        tooltip.attr("transform", `translate(${tooltipX}, ${tooltipY})`);
-    }
-*/
+            tooltip.attr("transform", `translate(${tooltipX}, ${tooltipY})`);
+        }
+    */
 
 
     function findPredictionsForDate(predictionData: any, date: Date) {
