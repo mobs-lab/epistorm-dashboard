@@ -42,8 +42,6 @@ const Page: React.FC = () => {
                     const newPredictions = await d3.csv(`/data/processed/${team_model}/predictions.csv`);
                     const oldPredictions = await d3.csv(`/data/processed/${team_model}/predictions_older.csv`);
                     /*old predictions debug*/
-                    console.log("DEBUG: page.tsx: newPredictions", newPredictions.length);
-                    console.log("DEBUG: page.tsx: oldPredictions", oldPredictions.length);
 
                     const predictionData = [...newPredictions.map((d) => ({
                         referenceDate: new Date(d.reference_date.replace(/-/g, '\/')),
@@ -85,7 +83,7 @@ const Page: React.FC = () => {
                     // Use the ground truth data to add back empty dates with predictions
                     const groundTruthDataWithPredictions = addBackEmptyDatesWithPrediction(parsedGroundTruthData, predictionsData);
 
-                    console.log("DEBUG: page.tsx: predictionData", predictionsData);
+                    console.log("DEBUG: page.tsx: groundTruthDataWithPredictions: ", groundTruthDataWithPredictions);
 
                     dispatch(setGroundTruthData(groundTruthDataWithPredictions));
                     dispatch(setPredictionsData(predictionsData));
@@ -131,6 +129,7 @@ function addBackEmptyDatesWithPrediction(groundTruthData: DataPoint[], predictio
     groundTruthData.forEach((dataPoint) => {
         states.add(`${dataPoint.stateNum}-${dataPoint.stateName}`);
         if (dataPoint.date > mostRecentDate) {
+            console.log("DEBUG: page.tsx: addBackEmptyDatesWithPrediction: dataPoint.date: ", dataPoint.date);
             mostRecentDate = dataPoint.date;
         }
     });
@@ -142,6 +141,8 @@ function addBackEmptyDatesWithPrediction(groundTruthData: DataPoint[], predictio
         model.predictionData.forEach((dataPoint) => {
             if (dataPoint.referenceDate > mostRecentDate) {
                 newerDates.add(dataPoint.referenceDate.toISOString());
+            } else if (dataPoint.targetEndDate > mostRecentDate) {
+                newerDates.add(dataPoint.targetEndDate.toISOString());
             }
         });
     });
