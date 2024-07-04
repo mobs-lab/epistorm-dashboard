@@ -43,8 +43,8 @@ def transform_older_data(model_name):
                                         columns=['output_type_id']).reset_index()
 
     
-    # For column with header "reference_date", shift all entries' value by 2 days to earlier, for example 05/15/2023 becomes 05/13/2023
-    older_data['reference_date'] = older_data['reference_date'] - pd.DateOffset(days=2)
+    # For column with header "reference_date", shift all entries' value by 5 days to the future, for example 05/15/2023 becomes 05/20/2023
+    older_data['reference_date'] = older_data['reference_date'] + pd.DateOffset(days=5)
 
     # Export transformed data
     output_path = f"public/data/processed/{model_name}/predictions_older.csv"

@@ -23,6 +23,7 @@ import {
     updateYScale
 } from '../../store/filterSlice';
 import StateMap from "./StateMap";
+import StyledDatePicker from "./StyledDatePicker";
 
 
 // Date Range Mapping from season selection to actual date range
@@ -231,7 +232,14 @@ const FiltersPane: React.FC = () => {
 
                 <div className="mb-4">
                     <Typography variant="h6" className="text-white">Start Date</Typography>
-                    <DatePicker
+                    <StyledDatePicker
+                        value={dateStart}
+                        onChange={onDateStartSelectionChange}
+                        minDate={earliestDayFromGroundTruthData}
+                        maxDate={startDateMaxDate}
+                    />
+
+                    {/*<DatePicker
                         value={dateStart}
                         onChange={onDateStartSelectionChange}
                         minDate={earliestDayFromGroundTruthData}
@@ -241,12 +249,20 @@ const FiltersPane: React.FC = () => {
                         calendarClassName="bg-mobs-lab-color-filterspane text-white"
                         dayClassName={() => "hover:bg-date-picker-accent hover:text-white"}
                         selectedDayClassName="bg-date-picker-accent text-white"
-                    />
+                    />*/}
+
                 </div>
 
                 <div className="mb-4">
                     <Typography variant="h6" className="text-white">End Date</Typography>
-                    <DatePicker
+                    <StyledDatePicker
+                        value={dateEnd}
+                        onChange={onDateEndSelectionChange}
+                        minDate={endDateMinDate}
+                        maxDate={latestDayFromGroundTruthData}
+                    />
+
+                    {/*<DatePicker
                         value={dateEnd}
                         onChange={onDateEndSelectionChange}
                         minDate={endDateMinDate}
@@ -256,7 +272,7 @@ const FiltersPane: React.FC = () => {
                         calendarClassName="bg-mobs-lab-color-filterspane text-white"
                         dayClassName={() => "hover:bg-date-picker-accent hover:text-white"}
                         selectedDayClassName="bg-date-picker-accent text-white"
-                    />
+                    />*/}
                 </div>
 
                 <div className="mb-4">
