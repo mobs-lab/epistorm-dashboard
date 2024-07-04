@@ -14,6 +14,7 @@ import {setLocationData} from '../store/locationSlice';
 import * as d3 from "d3";
 
 import {DataPoint, ModelPrediction} from "../Interfaces/forecast-interfaces";
+import RiskLevelGauge from "../Components/dashboard/RiskLevelGauge";
 
 
 const Page: React.FC = () => {
@@ -109,6 +110,7 @@ const Page: React.FC = () => {
                 <div className="forecast-gauge">
                     {/* Add your gauge component here */}
                     <div>Gauge Placeholder</div>
+                    <RiskLevelGauge/>
                 </div>
                 <div className="forecast-graph">
                     <ForecastChart/>
