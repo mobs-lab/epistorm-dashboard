@@ -36,12 +36,12 @@ const ForecastChart: React.FC = () => {
     const [userSelectedWeek, setUserSelectedWeek] = useState(new Date());
 
     // Set up size and margins
-    const width = 928;
-    const height = 500;
+    const width = 1096;
+    const height = 618;
     const marginTop = 10;
     const marginBottom = 50;
-    const marginLeft = 50;
-    const marginRight = 50;
+    const marginLeft = 10;
+    const marginRight = 10;
     const chartWidth = width - marginLeft - marginRight;
     const chartHeight = height - marginTop - marginBottom;
 
