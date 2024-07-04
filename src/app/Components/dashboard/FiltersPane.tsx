@@ -148,6 +148,8 @@ const FiltersPane: React.FC = () => {
     const earliestDayFromGroundTruthData = groundTruthData.length > 0 ? groundTruthData[groundTruthData.length - 1].date : undefined;
     const latestDayFromGroundTruthData = groundTruthData.length > 0 ? groundTruthData[0].date : undefined;
 
+    console.log("FiltersPane update: latestDayFromGroundTruthData: ", latestDayFromGroundTruthData);
+
     const onYAxisScaleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         console.log("FiltersPane update: Y-axis scale changed to: ", event.target.value);
         dispatch(updateYScale(event.target.value));
