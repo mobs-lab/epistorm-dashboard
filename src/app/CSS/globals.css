@@ -2,6 +2,14 @@
 @tailwind components;
 @tailwind utilities;
 
+* {
+    caret-color: transparent;
+}
+
+input, textarea {
+    caret-color: auto;
+}
+
 body {
     background-color: #00505b;
     color: white;

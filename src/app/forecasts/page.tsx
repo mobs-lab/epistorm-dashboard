@@ -10,6 +10,7 @@ import {useAppDispatch} from '../store/hooks';
 import {setGroundTruthData} from '../store/groundTruthSlice';
 import {setPredictionsData} from '../store/predictionsSlice';
 import {setLocationData} from '../store/locationSlice';
+import { setNowcastTrendsData } from '../store/nowcastTrendsSlice';
 
 import * as d3 from "d3";
 
@@ -78,6 +79,18 @@ const Page: React.FC = () => {
                     stateNum: d.location, state: d.abbreviation, stateName: d.location_name,
                 }));
 
+                // Fetch nowcast trends data
+                const nowcastTrendsData = await d3.csv('/data/processed/nowcast_trends.csv');
+                const parsedNowcastTrendsData = nowcastTrendsData.map((d) => ({
+                    nowcast_date: d.nowcast_date,
+                    location: d.location,
+                    decrease: +d.decrease,
+                    increase: +d.increase,
+                    stable: +d.stable,
+                }));
+
+                console.log("DEBUG: page.tsx: Nowcast trends data loaded:", parsedNowcastTrendsData);
+
 
                 if (parsedGroundTruthData.length > 0 && predictionsData.length > 0 && parsedLocationData.length > 0) {
                     // Use the ground truth data to add back empty dates with predictions
@@ -88,6 +101,7 @@ const Page: React.FC = () => {
                     dispatch(setGroundTruthData(groundTruthDataWithPredictions));
                     dispatch(setPredictionsData(predictionsData));
                     dispatch(setLocationData(parsedLocationData));
+                    dispatch(setNowcastTrendsData(parsedNowcastTrendsData));
                     setDataLoaded(true);
                 }
 
