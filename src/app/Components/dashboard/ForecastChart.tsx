@@ -406,14 +406,19 @@ const ForecastChart: React.FC = () => {
     function updateVerticalIndicator(date: Date, xScale: d3.ScaleTime<number, number>, marginLeft: number, chartWidth: number, group: d3.Selection<SVGGElement, unknown, null, undefined>, tooltip: d3.Selection<SVGTextElement, unknown, null, undefined>) {
         const xPosition = xScale(date);
         const epiweek = getEpiweek(date);
-        const isLeftSide = xPosition < chartWidth / 5; // Check if in the leftmost 1/5
+        const isLeftSide = xPosition < chartWidth / 5;
 
         group.attr("transform", `translate(${xPosition + marginLeft}, 0)`);
 
+        group.select("line")
+            .attr("stroke", "lightgray")
+            .attr("stroke-width", 2);
+
         tooltip
-            .attr("x", isLeftSide ? 5 : -5)  // Adjust x based on position
-            .attr("text-anchor", isLeftSide ? "start" : "end")  // Adjust text-anchor based on position
-            .text(`${date.toLocaleDateString()} (Week ${epiweek})`);
+            .attr("x", isLeftSide ? 5 : -5)
+            .attr("text-anchor", isLeftSide ? "start" : "end")
+            .text(`${date.toLocaleDateString()} (Week ${epiweek})`)
+            .attr("fill", "white");
     }
 
     function getEpiweek(date: Date): number {
@@ -440,77 +445,94 @@ const ForecastChart: React.FC = () => {
     }
 
     function updateCornerTooltip(data: DataPoint, groundTruthData: DataPoint[], predictionData: any, xScale: d3.ScaleTime<number, number>, chartWidth: number, marginLeft: number, marginTop: number, cornerTooltip: d3.Selection<SVGGElement, unknown, null, undefined>) {
-        const xPosition = xScale(data.date);
-        const isLeftSide = xPosition > chartWidth / 2;
-        const textAnchor = isLeftSide ? "start" : "end";
-        const x = isLeftSide ? marginLeft + 60 : chartWidth - 10; // Increased left margin
-        const yOffset = isLeftSide ? marginTop + 40 : marginTop + 20; // Increased top margin for left side
-
-        cornerTooltip.attr("transform", `translate(${x}, ${yOffset})`);
         cornerTooltip.selectAll("*").remove();
 
-        let currentY = 0;
+        const padding = 10;
         const lineHeight = 20;
+        let currentY = padding;
+        let maxWidth = 0;
+
+        // Background rectangle (we'll set its size after calculating content)
+        const background = cornerTooltip.append("rect")
+            .attr("fill", "rgba(40,5,5,0.8)")
+            .attr("rx", 5)
+            .attr("ry", 5);
 
         // Add admissions data
-        cornerTooltip.append("text")
+        const admissionsText = cornerTooltip.append("text")
+            .attr("x", padding)
             .attr("y", currentY)
-            .attr("text-anchor", textAnchor)
+            .attr("fill", "white")
             .attr("font-weight", "bold")
-            .text(`Admissions: ${data.admissions !== null && data.admissions !== -1 ? data.admissions : "N/A"}`)
-            .attr("fill", "white");
+            .text(`Admissions: ${data.admissions !== null && data.admissions !== -1 ? data.admissions : "N/A"}`);
 
+        maxWidth = Math.max(maxWidth, admissionsText.node().getComputedTextLength());
         currentY += lineHeight;
-
 
         // Find prediction data for the current date
         const currentPredictions = findPredictionsForDate(predictionData, data.date);
 
         if (currentPredictions) {
             Object.entries(currentPredictions).forEach(([modelName, modelData]: [string, any]) => {
-                // Add colored box for the model
+                // Color rectangle for the model
                 cornerTooltip.append("rect")
-                    .attr("x", textAnchor === "start" ? 0 : -10)
+                    .attr("x", padding)
                     .attr("y", currentY - 10)
                     .attr("width", 10)
                     .attr("height", 10)
                     .attr("fill", modelColorMap[modelName]);
 
-                cornerTooltip.append("text")
+                const modelText = cornerTooltip.append("text")
+                    .attr("x", padding + 15)
                     .attr("y", currentY)
-                    .attr("text-anchor", textAnchor)
+                    .attr("fill", "white")
                     .attr("font-weight", "bold")
-                    .text(`${modelName}`)
-                    .attr("fill", "white");
+                    .text(modelName);
 
+                maxWidth = Math.max(maxWidth, modelText.node().getComputedTextLength() + 15);
                 currentY += lineHeight;
 
-                cornerTooltip.append("text")
+                const medianText = cornerTooltip.append("text")
+                    .attr("x", padding + 15)
                     .attr("y", currentY)
-                    .attr("text-anchor", textAnchor)
-                    .text(`Median: ${modelData.confidence500.toFixed(2)}`)
-                    .attr("fill", "white");
+                    .attr("fill", "white")
+                    .text(`Median: ${modelData.confidence500.toFixed(2)}`);
 
+                maxWidth = Math.max(maxWidth, medianText.node().getComputedTextLength() + 15);
                 currentY += lineHeight;
 
                 confidenceInterval.forEach((interval) => {
                     const lowKey = `confidence${interval === "50" ? "250" : interval === "90" ? "050" : "025"}`;
                     const highKey = `confidence${interval === "50" ? "750" : interval === "90" ? "950" : "975"}`;
 
-                    cornerTooltip.append("text")
+                    const ciText = cornerTooltip.append("text")
+                        .attr("x", padding + 15)
                         .attr("y", currentY)
-                        .attr("text-anchor", textAnchor)
-                        .text(`${interval}% CI: [${modelData[lowKey].toFixed(2)}, ${modelData[highKey].toFixed(2)}]`)
-                        .attr("fill", "white");
+                        .attr("fill", "white")
+                        .text(`${interval}% CI: [${modelData[lowKey].toFixed(2)}, ${modelData[highKey].toFixed(2)}]`);
 
+                    maxWidth = Math.max(maxWidth, ciText.node().getComputedTextLength() + 15);
                     currentY += lineHeight;
                 });
 
-                currentY += lineHeight; // Add extra space between models
+                currentY += lineHeight / 2; // Add extra space between models
             });
         }
 
-        cornerTooltip.style("opacity", 1);
+        // Set background rectangle size and position
+        background
+            .attr("width", maxWidth + padding * 2)
+            .attr("height", currentY + padding);
+
+        // Position the tooltip
+        const xPosition = xScale(data.date);
+        const isLeftSide = xPosition < chartWidth / 2;
+        const tooltipX = isLeftSide ? chartWidth - maxWidth - padding * 2 : 0;
+        const tooltipY = marginTop;
+
+        cornerTooltip
+            .attr("transform", `translate(${tooltipX}, ${tooltipY})`)
+            .style("opacity", 1);
     }
 
     /*
@@ -716,20 +738,17 @@ const ForecastChart: React.FC = () => {
         return combinedData.sort((a, b) => a.date.getTime() - b.date.getTime());
     }
 
-    function renderChartComponents(svg: d3.Selection<SVGSVGElement, unknown, null, undefined>, filteredGroundTruthData: DataPoint[], processedPredictionData: any, xScale: d3.ScaleTime<number, number>, yScale: d3.ScaleLinear<number, number>, marginLeft: number, marginTop: number, chartWidth: number, chartHeight: number, height: number, marginBottom: number) {
-
-        // Combined ground truth and prediction data for all dates
+    function renderChartComponents(svg: d3.Selection<BaseType, unknown, null, undefined>, filteredGroundTruthData: DataPoint[], processedPredictionData: any, xScale: d3.ScaleTime<number, number>, yScale: d3.ScaleLinear<number, number>, marginLeft: number, marginTop: number, chartWidth: number, chartHeight: number, height: number, marginBottom: number) {
         const combinedData = createCombinedDataset(filteredGroundTruthData, processedPredictionData);
 
         const mouseFollowLine = createMouseFollowLine(svg, marginLeft, marginTop, height, marginBottom);
-        const {
-            group: verticalIndicatorGroup, line: verticalIndicator, tooltip: lineTooltip
-        } = renderVerticalIndicator(svg, xScale, marginLeft, marginTop, height, marginBottom);
+        const { group: verticalIndicatorGroup, line: verticalIndicator, tooltip: lineTooltip } = renderVerticalIndicator(svg, xScale, marginLeft, marginTop, height, marginBottom);
         const cornerTooltip = createCornerTooltip(svg, marginLeft, marginTop, chartWidth);
-        // const predictionTooltip = createPredictionTooltip(svg, marginLeft, marginTop, chartWidth);
         const eventOverlay = createEventOverlay(svg, marginLeft, marginTop, chartWidth, chartHeight);
 
-        function handleMouseMove(event: any) {
+        let isDragging = false;
+
+        function updateFollowLine(event: any) {
             const [mouseX] = d3.pointer(event);
             const date = xScale.invert(mouseX - marginLeft);
             const closestData = findNearestDataPoint(combinedData, date);
@@ -740,13 +759,21 @@ const ForecastChart: React.FC = () => {
                 .style("opacity", 1);
 
             updateCornerTooltip(closestData, filteredGroundTruthData, processedPredictionData, xScale, chartWidth, marginLeft, marginTop, cornerTooltip);
+        }
 
-            const predictionData = findPredictionsForDate(processedPredictionData, closestData.date);
-            // if (predictionData) {
-            //     updatePredictionTooltip(predictionData, xScale, yScale, chartWidth, marginLeft, marginTop, predictionTooltip);
-            // } else {
-            //     predictionTooltip.style("opacity", 0);
-            // }
+        function updateVerticalIndicatorPosition(event: any) {
+            const [mouseX] = d3.pointer(event);
+            const date = xScale.invert(mouseX - marginLeft);
+            const closestData = findNearestDataPoint(combinedData, date);
+
+            updateVerticalIndicator(closestData.date, xScale, marginLeft, chartWidth, verticalIndicatorGroup, lineTooltip);
+        }
+
+        function handleMouseMove(event: any) {
+            updateFollowLine(event);
+            if (isDragging) {
+                updateVerticalIndicatorPosition(event);
+            }
         }
 
         function handleClick(event: any) {
@@ -754,25 +781,48 @@ const ForecastChart: React.FC = () => {
             const date = xScale.invert(mouseX - marginLeft);
             const closestData = findNearestDataPoint(combinedData, date);
 
-            if (closestData.date.getTime() !== userSelectedWeek.getTime()) {
-                setUserSelectedWeek(closestData.date);
-                updateVerticalIndicator(closestData.date, xScale, marginLeft, chartWidth, verticalIndicatorGroup, lineTooltip);
-            }
+            setUserSelectedWeek(closestData.date);
+            updateVerticalIndicator(closestData.date, xScale, marginLeft, chartWidth, verticalIndicatorGroup, lineTooltip);
         }
 
+        function handleMouseDown(event: any) {
+            isDragging = true;
+            updateVerticalIndicatorPosition(event);
+        }
+
+        function handleMouseUp() {
+            isDragging = false;
+        }
 
         function handleMouseOut() {
             mouseFollowLine.style("opacity", 0);
             cornerTooltip.style("opacity", 0);
+            if (isDragging) {
+                isDragging = false;
+            }
         }
 
         eventOverlay
             .on("mousemove", handleMouseMove)
             .on("mouseout", handleMouseOut)
-            .on("click", handleClick);
+            .on("click", handleClick)
+            .on("mousedown", handleMouseDown)
+            .on("mouseup", handleMouseUp);
 
-        return {mouseFollowLine, verticalIndicatorGroup, lineTooltip, cornerTooltip};
+        return { mouseFollowLine, verticalIndicatorGroup, lineTooltip, cornerTooltip };
     }
+    function throttle(func: Function, limit: number) {
+        let inThrottle: boolean;
+        return function(this: any, ...args: any[]) {
+            const context = this;
+            if (!inThrottle) {
+                func.apply(context, args);
+                inThrottle = true;
+                setTimeout(() => inThrottle = false, limit);
+            }
+        }
+    }
+
 
     useEffect(() => {
         console.log("DEBUG: ForecastChart useEffect executed.");

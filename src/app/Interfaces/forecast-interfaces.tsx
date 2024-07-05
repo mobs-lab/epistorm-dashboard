@@ -33,3 +33,15 @@ export interface ModelPrediction {
     modelName: string;
     predictionData: PredictionDataPoint[];
 }
+
+export interface NowcastTrend {
+    nowcast_date: string;
+    location: string;
+    decrease: number;
+    increase: number;
+    stable: number;
+}
+
+export interface NowcastTrendsState {
+    data: NowcastTrend[];
+}
