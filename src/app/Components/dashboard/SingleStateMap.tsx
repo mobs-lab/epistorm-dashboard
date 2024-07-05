@@ -1,24 +1,42 @@
-// components/StateDetail.tsx
-'use client'
-
-import React, {useEffect, useRef} from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import * as d3 from 'd3';
 import * as topojson from 'topojson-client';
-import {useAppSelector} from '../../store/hooks';
+import { useAppSelector } from '../../store/hooks';
 import InfoButton from './InfoButton';
+import RiskLevelThermometer from './RiskLevelThermometer';
+import RiskLevelGauge from './RiskLevelGauge';
+import { NowcastTrend } from "../../Interfaces/forecast-interfaces";
 
 const shapeFile = '/states-10m.json';
 
 const SingleStateMap: React.FC = () => {
     const svgRef = useRef<SVGSVGElement>(null);
-    const {selectedStateName} = useAppSelector((state) => state.filter);
+    const { selectedStateName, USStateNum } = useAppSelector((state) => state.filter);
+    const [nowcastTrend, setNowcastTrend] = useState<NowcastTrend | null>(null);
 
     const mapInfo = (
         <div>
             <p>This map shows the selected state or the entire US.</p>
             <p>The map updates based on your state selection in the filters pane.</p>
+            <p>The thermometer on the right shows the current risk level trend.</p>
         </div>
     );
+
+    useEffect(() => {
+        const fetchNowcastTrend = async () => {
+            try {
+                const response = await fetch('/data/processed/nowcast_trends.csv');
+                const csvData = await response.text();
+                const parsedData = d3.csvParse(csvData) as NowcastTrend[];
+                const stateData = parsedData.find(d => d.location === USStateNum);
+                setNowcastTrend(stateData || null);
+            } catch (error) {
+                console.error('Error loading nowcast data:', error);
+            }
+        };
+
+        fetchNowcastTrend();
+    }, [USStateNum]);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -29,7 +47,7 @@ const SingleStateMap: React.FC = () => {
                 const svg = d3.select(svgRef.current);
                 svg.selectAll('*').remove();
 
-                const width = svgRef.current?.clientWidth || 400;
+                const width = (svgRef.current?.clientWidth || 400) * 0.8;
                 const height = svgRef.current?.clientHeight || 300;
 
                 const path = d3.geoPath();
@@ -70,13 +88,14 @@ const SingleStateMap: React.FC = () => {
     }, [selectedStateName]);
 
     return (
-        <div className="text-white p-4 rounded relative">
+        <div className="text-white p-4 rounded relative h-full flex flex-col">
             <div className="flex justify-between items-center mb-4">
                 <h2 className="text-3xl font-bold">{selectedStateName}</h2>
-                <InfoButton title="State Map Information" content={mapInfo} />
+                <InfoButton title="State Map Information" content={mapInfo}/>
             </div>
-            <div className="flex items-center">
-                <svg ref={svgRef} width={"100%"} height={"100%"}/>
+            <div className="flex items-stretch justify-between flex-grow">
+                <svg ref={svgRef} width="80%" height="100%"/>
+                <RiskLevelThermometer nowcastTrend={nowcastTrend}/>
             </div>
         </div>
     );

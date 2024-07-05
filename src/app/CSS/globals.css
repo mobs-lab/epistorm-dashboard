@@ -22,11 +22,12 @@ body {
         width: 100%;
         height: 100%;
         gap: 20px;
-        grid-template-columns: 30% 30% 30%;
-        grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
+        grid-template-columns: 30% 1% 30% 29%;
+        grid-template-rows: minmax(0, 3fr) minmax(0, 1fr) minmax(0, 3fr);
         grid-template-areas:
-    "state gauge settings"
-    "graph graph settings";
+    "state verticalSeparator gauge settings"
+    "separator separator separator settings"
+    "graph graph graph settings";
     }
 
     .white-separator {
