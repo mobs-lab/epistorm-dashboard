@@ -122,7 +122,11 @@ const Page: React.FC = () => {
                 <div className="forecast-gauge">
                     {/* Add your gauge component here */}
                     <div>Gauge Placeholder</div>
-                    <RiskLevelGauge/>
+                    <RiskLevelGauge
+                        riskLevel="Title"
+                        subText="paragraphs of text here"
+                        dateRange="Jun 16-Jun 22, 2024"
+                    />
                 </div>
                 <div className="forecast-graph">
                     <ForecastChart/>
