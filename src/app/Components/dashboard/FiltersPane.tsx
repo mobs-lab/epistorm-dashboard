@@ -36,10 +36,10 @@ interface SeasonOption {
 const FiltersPane: React.FC = () => {
 
     const stateMapInfo = (<div>
-            <p>Use this map to select a specific state for your forecast.</p>
-            <p>Click on a state to zoom in and select it. The map will automatically zoom out after selection.</p>
-            <p>You can also use the dropdown menu below to select a state.</p>
-        </div>);
+        <p>Use this map to select a specific state for your forecast.</p>
+        <p>Click on a state to zoom in and select it. The map will automatically zoom out after selection.</p>
+        <p>You can also use the dropdown menu below to select a state.</p>
+    </div>);
 
     const dispatch = useAppDispatch();
     const groundTruthData = useAppSelector((state) => state.groundTruth.data);
@@ -170,33 +170,34 @@ const FiltersPane: React.FC = () => {
     };
 
 
-    return (<Card className={"bg-[#005e6d] text-white fill-white"}>
-        <CardBody>
-            <h3> Select a location <InfoButton title="State Selection Information" content={stateMapInfo}/></h3>
+    return (
+        <Card className={"bg-[#005e6d] text-white fill-white"}>
+            <CardBody>
+                <h3> Select a location <InfoButton title="State Selection Information" content={stateMapInfo}/></h3>
 
-            <div className="mb-4 flex items-center justify-center h-full w-full">
-                <StateMap/>
-            </div>
-            <div className="mb-4">
-                <Typography variant="h6">Select a State</Typography>
-                <Select
-                    value={USStateNum}
-                    onChange={(value) => onStateSelectionChange(value as string)}
-                    variant="outlined"
-                    className={"text-white border-white"}
-                >
-                    {locationData.map((state) => (<Option key={state.state} value={state.stateNum}>
-                        {state.stateNum} : {state.stateName}
-                    </Option>))}
-                </Select>
-            </div>
+                <div className="mb-4 flex items-center justify-center h-full w-full">
+                    <StateMap/>
+                </div>
+                <div className="mb-4">
+                    <Typography variant="h6">Select a State</Typography>
+                    <Select
+                        value={USStateNum}
+                        onChange={(value) => onStateSelectionChange(value as string)}
+                        variant="outlined"
+                        className={"text-white border-white"}
+                    >
+                        {locationData.map((state) => (<Option key={state.state} value={state.stateNum}>
+                            {state.stateNum} : {state.stateName}
+                        </Option>))}
+                    </Select>
+                </div>
 
-            {/*NOTE: Revisit for potential improvement*/}
-            <div className="mb-4">
-                <Typography variant="h6" className="text-white">Model</Typography>
-                <div className="flex flex-col">
-                    {["MOBS-GLEAM_FLUH", "CEPH-Rtrend_fluH", "MIGHTE-Nsemble", "NU_UCSD-GLEAM_AI_FLUH"].map((model) => (
-                        <label key={model} className="inline-flex items-center text-white">
+                {/*NOTE: Revisit for potential improvement*/}
+                <div className="mb-4">
+                    <Typography variant="h6" className="text-white">Model</Typography>
+                    <div className="flex flex-col">
+                        {["MOBS-GLEAM_FLUH", "CEPH-Rtrend_fluH", "MIGHTE-Nsemble", "NU_UCSD-GLEAM_AI_FLUH"].map((model) => (
+                            <label key={model} className="inline-flex items-center text-white">
                                 <span
                                     className="w-5 h-5 border-2 rounded-sm mr-2"
                                     style={{
@@ -204,43 +205,43 @@ const FiltersPane: React.FC = () => {
                                         borderColor: modelColorMap[model],
                                     }}
                                 />
-                            <input
-                                type="checkbox"
-                                className="sr-only"
-                                checked={forecastModel.includes(model)}
-                                onChange={(e) => onModelSelectionChange(model, e.target.checked)}
-                            />
-                            <span className="ml-2">{model}</span>
-                        </label>))}
+                                <input
+                                    type="checkbox"
+                                    className="sr-only"
+                                    checked={forecastModel.includes(model)}
+                                    onChange={(e) => onModelSelectionChange(model, e.target.checked)}
+                                />
+                                <span className="ml-2">{model}</span>
+                            </label>))}
+                    </div>
                 </div>
-            </div>
 
-            <div className="mb-4 mt-4">
-                <Typography variant="h6" className="text-white">Dates</Typography>
-                <Select
-                    label="Select a Season"
-                    value={selectedSeason}
-                    onChange={(value) => onSeasonSelectionChange(value as string)}
-                    className="text-white border-white"
-                >
-                    {seasonOptions.map((option) => (
-                        <Option key={option.itemIndex} value={option.displayString} className="text-black">
-                            {option.displayString}
-                        </Option>
-                    ))}
-                </Select>
-            </div>
+                <div className="mb-4 mt-4">
+                    <Typography variant="h6" className="text-white">Dates</Typography>
+                    <Select
+                        label="Select a Season"
+                        value={selectedSeason}
+                        onChange={(value) => onSeasonSelectionChange(value as string)}
+                        className="text-white border-white"
+                    >
+                        {seasonOptions.map((option) => (
+                            <Option key={option.itemIndex} value={option.displayString} className="text-black">
+                                {option.displayString}
+                            </Option>
+                        ))}
+                    </Select>
+                </div>
 
-            <div className="mb-4">
-                <Typography variant="h6" className="text-white">Start Date</Typography>
-                <StyledDatePicker
-                    value={dateStart}
-                    onChange={onDateStartSelectionChange}
-                    minDate={earliestDayFromGroundTruthData}
-                    maxDate={startDateMaxDate}
-                />
+                <div className="mb-4">
+                    <Typography variant="h6" className="text-white">Start Date</Typography>
+                    <StyledDatePicker
+                        value={dateStart}
+                        onChange={onDateStartSelectionChange}
+                        minDate={earliestDayFromGroundTruthData}
+                        maxDate={startDateMaxDate}
+                    />
 
-                {/*<DatePicker
+                    {/*<DatePicker
                         value={dateStart}
                         onChange={onDateStartSelectionChange}
                         minDate={earliestDayFromGroundTruthData}
@@ -252,18 +253,18 @@ const FiltersPane: React.FC = () => {
                         selectedDayClassName="bg-date-picker-accent text-white"
                     />*/}
 
-            </div>
+                </div>
 
-            <div className="mb-4">
-                <Typography variant="h6" className="text-white">End Date</Typography>
-                <StyledDatePicker
-                    value={dateEnd}
-                    onChange={onDateEndSelectionChange}
-                    minDate={endDateMinDate}
-                    maxDate={latestDayFromGroundTruthData}
-                />
+                <div className="mb-4">
+                    <Typography variant="h6" className="text-white">End Date</Typography>
+                    <StyledDatePicker
+                        value={dateEnd}
+                        onChange={onDateEndSelectionChange}
+                        minDate={endDateMinDate}
+                        maxDate={latestDayFromGroundTruthData}
+                    />
 
-                {/*<DatePicker
+                    {/*<DatePicker
                         value={dateEnd}
                         onChange={onDateEndSelectionChange}
                         minDate={endDateMinDate}
@@ -274,71 +275,71 @@ const FiltersPane: React.FC = () => {
                         dayClassName={() => "hover:bg-date-picker-accent hover:text-white"}
                         selectedDayClassName="bg-date-picker-accent text-white"
                     />*/}
-            </div>
-
-            <div className="mb-4">
-                <Typography variant="h6" className="text-white"> Horizon </Typography>
-                {[0, 1, 2, 3].map((value) => (<Radio
-                    key={value}
-                    name="weeksAheadRadioBtn"
-                    value={value.toString()}
-                    label={value.toString()}
-                    onChange={(e) => onNumOfWeeksAheadChange(e)}
-                    className="text-white"
-                    labelProps={{className: "text-white"}}
-                    defaultChecked={value === 3}
-                />))}
-            </div>
-            <div className="mb-4">
-                <Typography variant="h6" className="text-white">Y-axis scale</Typography>
-                {["linear", "log"].map((value) => (<Radio
-                    key={value}
-                    name="yAxisRadioBtn"
-                    value={value}
-                    label={value === "linear" ? "Linear" : "Logarithmic"}
-                    onChange={(e) => onYAxisScaleChange(e)}
-                    className="text-white"
-                    labelProps={{className: "text-white"}}
-                    defaultChecked={value === "linear"}
-                />))}
-            </div>
-
-            <div className="mb-4">
-                <Typography variant="h6" className="text-white">Confidence Interval</Typography>
-                <div className="flex flex-col">
-                    {["50%", "90%", "95%"].map((interval) => (
-                        <label key={interval} className="inline-flex items-center text-white">
-                            <input
-                                type="checkbox"
-                                className="form-checkbox text-blue-600"
-                                checked={confidenceInterval.includes(interval.split("%")[0])}
-                                onChange={(e) => onConfidenceIntervalChange(interval, e.target.checked)}
-                            />
-                            <span className="ml-2">{interval}</span>
-                        </label>))}
                 </div>
-                <button
-                    className={`px-4 py-2 rounded mt-2 ${confidenceInterval.length === 0 ? "bg-blue-500 text-white" : "bg-gray-200 text-gray-700"}`}
-                    onClick={() => dispatch(updateConfidenceInterval([]))}
-                >
-                    None
-                </button>
-            </div>
-            <div>
-                <Typography variant="h6" className="text-white">Display mode</Typography>
-                {["byDate", "byHorizon"].map((value) => (<Radio
-                    key={value}
-                    name="displayModeRadioBtn"
-                    value={value}
-                    label={value === "byDate" ? "By Date" : "By Horizon"}
-                    onChange={(e) => onDisplayModeChange(e)}
-                    className="text-white"
-                    labelProps={{className: "text-white"}}
-                    defaultChecked={value === "byDate"}
-                />))}
-            </div>
-        </CardBody>
-    </Card>);
+
+                <div className="mb-4">
+                    <Typography variant="h6" className="text-white"> Horizon </Typography>
+                    {[0, 1, 2, 3].map((value) => (<Radio
+                        key={value}
+                        name="weeksAheadRadioBtn"
+                        value={value.toString()}
+                        label={value.toString()}
+                        onChange={(e) => onNumOfWeeksAheadChange(e)}
+                        className="text-white"
+                        labelProps={{className: "text-white"}}
+                        defaultChecked={value === 3}
+                    />))}
+                </div>
+                <div className="mb-4">
+                    <Typography variant="h6" className="text-white">Y-axis scale</Typography>
+                    {["linear", "log"].map((value) => (<Radio
+                        key={value}
+                        name="yAxisRadioBtn"
+                        value={value}
+                        label={value === "linear" ? "Linear" : "Logarithmic"}
+                        onChange={(e) => onYAxisScaleChange(e)}
+                        className="text-white"
+                        labelProps={{className: "text-white"}}
+                        defaultChecked={value === "linear"}
+                    />))}
+                </div>
+
+                <div className="mb-4">
+                    <Typography variant="h6" className="text-white">Confidence Interval</Typography>
+                    <div className="flex flex-col">
+                        {["50%", "90%", "95%"].map((interval) => (
+                            <label key={interval} className="inline-flex items-center text-white">
+                                <input
+                                    type="checkbox"
+                                    className="form-checkbox text-blue-600"
+                                    checked={confidenceInterval.includes(interval.split("%")[0])}
+                                    onChange={(e) => onConfidenceIntervalChange(interval, e.target.checked)}
+                                />
+                                <span className="ml-2">{interval}</span>
+                            </label>))}
+                    </div>
+                    <button
+                        className={`px-4 py-2 rounded mt-2 ${confidenceInterval.length === 0 ? "bg-blue-500 text-white" : "bg-gray-200 text-gray-700"}`}
+                        onClick={() => dispatch(updateConfidenceInterval([]))}
+                    >
+                        None
+                    </button>
+                </div>
+                <div>
+                    <Typography variant="h6" className="text-white">Display mode</Typography>
+                    {["byDate", "byHorizon"].map((value) => (<Radio
+                        key={value}
+                        name="displayModeRadioBtn"
+                        value={value}
+                        label={value === "byDate" ? "By Date" : "By Horizon"}
+                        onChange={(e) => onDisplayModeChange(e)}
+                        className="text-white"
+                        labelProps={{className: "text-white"}}
+                        defaultChecked={value === "byDate"}
+                    />))}
+                </div>
+            </CardBody>
+        </Card>);
 }
 
 export default FiltersPane;
