@@ -13,8 +13,7 @@ const ForecastChart: React.FC = () => {
 
     const chartInfo = (
         <div>
-            <p>This chart displays the forecast for influenza hospitalizations.</p>
-            <p>The solid line represents historical data, while the dashed lines show predictions from different
+            <p>The solid line represents surveillance data, while the dashed lines show predictions from different
                 models.</p>
             <p>You can hover over the chart to see detailed information for each date.</p>
         </div>
@@ -36,6 +35,7 @@ const ForecastChart: React.FC = () => {
     const [userSelectedWeek, setUserSelectedWeek] = useState(new Date());
 
     // Set up size and margins
+    // TODO: Size will be dynamic after layout change
     const width = 1400;
     const height = 648;
     const marginTop = 30;
@@ -49,8 +49,6 @@ const ForecastChart: React.FC = () => {
     // Function to filter ground truth data by selected state and dates
     function filterGroundTruthData(data: DataPoint[], state: string, dateRange: [Date, Date]) {
         var filteredGroundTruthDataByState = data.filter((d) => d.stateNum === state);
-
-        console.log("DEBUG: ForecastChart.tsx: Before filtering using dateStart and dateEnd, the latest 5 ground truth data points are: ", filteredGroundTruthDataByState);
 
         // Filter data by extracting those entries that fall within the selected date range
         filteredGroundTruthDataByState = filteredGroundTruthDataByState.filter((d) => d.date >= dateRange[0] && d.date <= dateRange[1]);
@@ -742,7 +740,11 @@ const ForecastChart: React.FC = () => {
         const combinedData = createCombinedDataset(filteredGroundTruthData, processedPredictionData);
 
         const mouseFollowLine = createMouseFollowLine(svg, marginLeft, marginTop, height, marginBottom);
-        const { group: verticalIndicatorGroup, line: verticalIndicator, tooltip: lineTooltip } = renderVerticalIndicator(svg, xScale, marginLeft, marginTop, height, marginBottom);
+        const {
+            group: verticalIndicatorGroup,
+            line: verticalIndicator,
+            tooltip: lineTooltip
+        } = renderVerticalIndicator(svg, xScale, marginLeft, marginTop, height, marginBottom);
         const cornerTooltip = createCornerTooltip(svg, marginLeft, marginTop, chartWidth);
         const eventOverlay = createEventOverlay(svg, marginLeft, marginTop, chartWidth, chartHeight);
 
@@ -809,11 +811,12 @@ const ForecastChart: React.FC = () => {
             .on("mousedown", handleMouseDown)
             .on("mouseup", handleMouseUp);
 
-        return { mouseFollowLine, verticalIndicatorGroup, lineTooltip, cornerTooltip };
+        return {mouseFollowLine, verticalIndicatorGroup, lineTooltip, cornerTooltip};
     }
+
     function throttle(func: Function, limit: number) {
         let inThrottle: boolean;
-        return function(this: any, ...args: any[]) {
+        return function (this: any, ...args: any[]) {
             const context = this;
             if (!inThrottle) {
                 func.apply(context, args);
