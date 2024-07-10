@@ -25,6 +25,7 @@ const ForecastChart: React.FC = () => {
     // Get the ground and prediction data from store
     const groundTruthData = useAppSelector((state) => state.groundTruth.data);
     const predictionsData = useAppSelector((state) => state.predictions.data);
+
     // Get all settings variables from Redux
     const {
         USStateNum, forecastModel, numOfWeeksAhead, dateStart, dateEnd, yAxisScale, confidenceInterval, displayMode,
@@ -61,6 +62,8 @@ const ForecastChart: React.FC = () => {
         // Create an object to store the prediction data for each selected model
         let modelData = {};
 
+        // First check which models are selected by user
+        // Then filter the prediction data by state for each model
         selectedModels.forEach(modelName => {
             const modelPrediction = allPredictions.find(model => model.modelName === modelName);
             if (modelPrediction) {
@@ -135,7 +138,8 @@ const ForecastChart: React.FC = () => {
 
             return confidenceIntervalData;
         } else if (displayMode === "byHorizon") {
-            // TODO: S2: instead of rendering all models, calculate the confidence interval that should overlay on top of the userSelectedWeek
+            // TODO: instead of rendering all models, calculate the confidence interval that should overlay on top of every week for each model
+            //
             return {};
         }
     }
@@ -158,15 +162,15 @@ const ForecastChart: React.FC = () => {
             .range([0, chartWidth]);
 
         // Generate ticks for all Saturdays within the date range
-        const allSaturdays = d3.timeDay.range(dateStart, maxDate)
+        const allSaturdayTracker = d3.timeDay.range(dateStart, maxDate)
             .filter(d => d.getDay() === 6);
 
         // Determine the ideal number of ticks
-        const idealTickCount = Math.min(Math.max(10, allSaturdays.length), 20);
+        const idealTickCount = Math.min(Math.max(10, allSaturdayTracker.length), 20);
 
         // Select evenly spaced Saturdays
-        const tickInterval = Math.max(1, Math.floor(allSaturdays.length / idealTickCount));
-        const selectedTicks = allSaturdays.filter((_, i) => i % tickInterval === 0);
+        const tickInterval = Math.max(1, Math.floor(allSaturdayTracker.length / idealTickCount));
+        const selectedTicks = allSaturdayTracker.filter((_, i) => i % tickInterval === 0);
 
         const xAxis = d3.axisBottom(xScale)
             .tickValues(selectedTicks)
@@ -179,11 +183,7 @@ const ForecastChart: React.FC = () => {
                 return isNearYearChange ? `${year}\n${month}\n${day}` : `${month}\n${day}`;
             });
 
-        // Modify the xAxis to use multi-line labels
         xAxis.tickSize(18) // Increase tick size to accommodate multi-line labels
-
-        //TODO: wrap ticks into two lines
-
 
         // Initialize yScale with a default linear scale
         // Update yScale
@@ -362,7 +362,7 @@ const ForecastChart: React.FC = () => {
                             .y0(d => yScale(d.confidence_low))
                             .y1(d => yScale(d.confidence_high));
 
-                        const opacity = confidenceIntervalData.interval === "50" ? 0.32 : confidenceIntervalData.interval === "90" ? 0.2 : confidenceIntervalData.interval === "95" ? 0.1 : 1;
+                        const opacity = confidenceIntervalData.interval === "50" ? 0.4 : confidenceIntervalData.interval === "90" ? 0.2 : confidenceIntervalData.interval === "95" ? 0.1 : 1;
 
                         const color = d3.color(modelColor);
                         color.opacity = opacity;
@@ -453,8 +453,8 @@ const ForecastChart: React.FC = () => {
         // Background rectangle (we'll set its size after calculating content)
         const background = cornerTooltip.append("rect")
             .attr("fill", "rgba(40,5,5,0.8)")
-            .attr("rx", 5)
-            .attr("ry", 5);
+            .attr("rx", 5) // Rounded corners
+            .attr("ry", 5); // Rounded corners
 
         // Add admissions data
         const admissionsText = cornerTooltip.append("text")
@@ -464,6 +464,7 @@ const ForecastChart: React.FC = () => {
             .attr("font-weight", "bold")
             .text(`Admissions: ${data.admissions !== null && data.admissions !== -1 ? data.admissions : "N/A"}`);
 
+        console.log("AdmissionText Node: ", admissionsText.node());
         maxWidth = Math.max(maxWidth, admissionsText.node().getComputedTextLength());
         currentY += lineHeight;
 
@@ -500,14 +501,14 @@ const ForecastChart: React.FC = () => {
                 currentY += lineHeight;
 
                 confidenceInterval.forEach((interval) => {
-                    const lowKey = `confidence${interval === "50" ? "250" : interval === "90" ? "050" : "025"}`;
-                    const highKey = `confidence${interval === "50" ? "750" : interval === "90" ? "950" : "975"}`;
+                    const CILowKey = `confidence${interval === "50" ? "250" : interval === "90" ? "050" : "025"}`;
+                    const CIHighKey = `confidence${interval === "50" ? "750" : interval === "90" ? "950" : "975"}`;
 
                     const ciText = cornerTooltip.append("text")
                         .attr("x", padding + 15)
                         .attr("y", currentY)
                         .attr("fill", "white")
-                        .text(`${interval}% CI: [${modelData[lowKey].toFixed(2)}, ${modelData[highKey].toFixed(2)}]`);
+                        .text(`${interval}% CI: [${modelData[CILowKey].toFixed(2)}, ${modelData[CIHighKey].toFixed(2)}]`);
 
                     maxWidth = Math.max(maxWidth, ciText.node().getComputedTextLength() + 15);
                     currentY += lineHeight;
@@ -533,89 +534,16 @@ const ForecastChart: React.FC = () => {
             .style("opacity", 1);
     }
 
-    /*
-        function updatePredictionTooltip(data: any, xScale: d3.ScaleTime<number, number>, yScale: d3.ScaleLinear<number, number>, chartWidth: number, marginLeft: number, marginTop: number, tooltip: d3.Selection<SVGGElement, unknown, null, undefined>) {
-            const x = xScale(new Date(Object.values(data)[0].targetEndDate));
-            const y = yScale(Object.values(data)[0].confidence500);
-
-            tooltip.style("opacity", 1);
-            tooltip.attr("transform", `translate(${x}, ${y})`);
-
-            tooltip.selectAll("*").remove();
-
-            let currentY = 0;
-            const lineHeight = 20;
-            const tooltipWidth = 300;
-            const tooltipPadding = 10;
-            const lineGap = 10;
-
-            // Calculate the total height of the tooltip based on the number of models and confidence intervals
-            const totalLines = Object.keys(data).reduce((acc, modelName) => acc + confidenceInterval.length + 1, 0);
-            const tooltipHeight = totalLines * lineHeight + (Object.keys(data).length - 1) * lineGap + tooltipPadding * 2;
-
-            // Create a rectangular background for the tooltip
-            tooltip.append("rect")
-                .attr("x", -tooltipWidth / 2)
-                .attr("y", -tooltipPadding)
-                .attr("width", tooltipWidth)
-                .attr("height", tooltipHeight + tooltipPadding * 2)
-                .attr("fill", "white")
-                .attr("stroke", "black")
-                .attr("stroke-width", 1)
-                .attr("rx", 5)
-                .attr("ry", 5);
-
-            Object.entries(data).forEach(([modelName, modelData]: [string, any], index) => {
-                tooltip.append("text")
-                    .attr("x", -tooltipWidth / 2 + tooltipPadding)
-                    .attr("y", currentY + 5)
-                    .attr("font-size", "12px")
-                    .attr("font-weight", "bold")
-                    .text(`${modelName}`);
-                currentY += lineHeight;
-
-                tooltip.append("text")
-                    .attr("x", -tooltipWidth / 2 + tooltipPadding * 2)
-                    .attr("y", currentY)
-                    .attr("font-size", "12px")
-                    .text(`${modelData.confidence500.toFixed(2)}`);
-                currentY += lineHeight;
-
-                confidenceInterval.forEach((interval) => {
-                    const lowKey = `confidence${interval === "50" ? "250" : interval === "90" ? "050" : "025"}`;
-                    const highKey = `confidence${interval === "50" ? "750" : interval === "90" ? "950" : "975"}`;
-
-                    tooltip.append("text")
-                        .attr("x", -tooltipWidth / 2 + tooltipPadding * 3)
-                        .attr("y", currentY)
-                        .attr("font-size", "12px")
-                        .text(`${interval}% CI: [${modelData[lowKey].toFixed(2)}, ${modelData[highKey].toFixed(2)}]`);
-                    currentY += lineHeight;
-                });
-
-                if (index < Object.keys(data).length - 1) {
-                    currentY += lineGap;
-                }
-            });
-
-            const isLeftSide = x > chartWidth / 2;
-            const tooltipX = isLeftSide ? x - tooltipWidth - 10 : x + 10;
-            const tooltipY = y - tooltipHeight / 2;
-
-            tooltip.attr("transform", `translate(${tooltipX}, ${tooltipY})`);
-        }
-    */
-
 
     function findPredictionsForDate(predictionData: any, date: Date) {
-        const predictions = {};
+        const foundPredictions = {};
         Object.entries(predictionData).forEach(([modelName, modelPredictions]: [string, any]) => {
             const prediction = modelPredictions[0].data.find((p: any) => new Date(p.targetEndDate).getTime() === date.getTime());
             if (prediction) {
-                predictions[modelName] = prediction;
+                foundPredictions[modelName] = prediction;
             }
         });
-        return Object.keys(predictions).length > 0 ? predictions : null;
+        return Object.keys(foundPredictions).length > 0 ? foundPredictions : null;
     }
 
     function createEventOverlay(svg: d3.Selection<SVGSVGElement, unknown, null, undefined>, marginLeft: number, marginTop: number, chartWidth: number, chartHeight: number) {
@@ -716,18 +644,21 @@ const ForecastChart: React.FC = () => {
     }
 
     function createCombinedDataset(groundTruthData: DataPoint[], predictionData: any): DataPoint[] {
+        // First deconstruct the whole of ground truth data into a new array
         let combinedData = [...groundTruthData];
 
+        // Then iterate over each model's predictions
         Object.values(predictionData).forEach((modelPredictions: any) => {
+            // For each prediction, check if a data point already exists for that
             modelPredictions[0].data.forEach((prediction: any) => {
+
                 const existingPoint = combinedData.find(d => d.date.getTime() === new Date(prediction.targetEndDate).getTime());
                 if (!existingPoint) {
                     combinedData.push({
                         date: new Date(prediction.targetEndDate),
-                        admissions: null,
+                        admissions: -1,
                         stateNum: groundTruthData[0].stateNum,
                         stateName: groundTruthData[0].stateName,
-                        isPrediction: true
                     });
                 }
             });
@@ -814,42 +745,38 @@ const ForecastChart: React.FC = () => {
         return {mouseFollowLine, verticalIndicatorGroup, lineTooltip, cornerTooltip};
     }
 
-    function throttle(func: Function, limit: number) {
-        let inThrottle: boolean;
-        return function (this: any, ...args: any[]) {
-            const context = this;
-            if (!inThrottle) {
-                func.apply(context, args);
-                inThrottle = true;
-                setTimeout(() => inThrottle = false, limit);
-            }
-        }
-    }
-
-
     useEffect(() => {
-        console.log("DEBUG: ForecastChart useEffect executed.");
+        // console.log("DEBUG: ForecastChart useEffect executed.");
 
 
         if (svgRef.current && groundTruthData.length > 0) {
             const svg = d3.select(svgRef.current);
+
+            // Remove the existing chart elements
             svg.selectAll("*").remove();
 
             const filteredGroundTruthData = filterGroundTruthData(groundTruthData, USStateNum, [dateStart, dateEnd]);
 
+            // This works once for the first time the component is rendered to by default make the latest date as user-selected week
             if (!initialDataLoaded) {
                 const latestDate = d3.max(filteredGroundTruthData, d => d.date) as Date;
                 setUserSelectedWeek(latestDate);
                 setInitialDataLoaded(true);
             }
 
+            // Safety Check to see whether all surveillance data points within current date range, are placeholder points
             const allPlaceholders = filteredGroundTruthData.every(d => d.admissions === -1);
 
+
             if (allPlaceholders) {
+                // If so, render a message to inform the user
                 renderMessage(svg, "Not enough data loaded, please extend date range", chartWidth, chartHeight, marginLeft, marginTop);
+
             } else {
-                // TODO: instead of dateEnd, use the latest date in both ground truth and prediction data
+
+                // Safety Clamping for when date range is changed by user and userSelectedWeek falls out of the range as a result
                 if (userSelectedWeek < dateStart || userSelectedWeek > dateEnd) {
+                    // Re-find the nearest data point which should be new date range's endpoints
                     const closestDataPoint = findNearestDataPoint(filteredGroundTruthData, userSelectedWeek);
                     setUserSelectedWeek(closestDataPoint.date);
                 }

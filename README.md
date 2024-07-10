@@ -32,6 +32,7 @@ _Note_: The `--recurse-submodules` flag is used to clone the submodule, which is
 
 ### _Update_:
 
+- 2024-07-08: Layout Change and improvements to chart, settings, and map components; Added requirement for nowcast data visualization; Documentation structure update.
 - 2024-05-22: Updated README.md with instructions on how to run/dev project locally.
 - 2024-05-19:
     - **Line Chart Functionality Finished**, ready to move onto CSS update.
