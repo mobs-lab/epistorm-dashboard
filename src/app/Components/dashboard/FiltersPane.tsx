@@ -41,15 +41,17 @@ const FiltersPane: React.FC = () => {
         <p>You can also use the dropdown menu below to select a state.</p>
     </div>);
 
+    /* Redux-Managed State Variables */
     const dispatch = useAppDispatch();
     const groundTruthData = useAppSelector((state) => state.groundTruth.data);
     const locationData = useAppSelector((state) => state.location.data);
     const {
         USStateNum, forecastModel, dateStart, dateEnd, dateRange, confidenceInterval,
     } = useAppSelector((state) => state.filter);
+
+    /* Internal state variables for controlling options & displaying */
     const [seasonOptions, setSeasonOptions] = useState<SeasonOption[]>([]);
     const [selectedSeason, setSelectedSeason] = useState<string>("");
-
     const [startDateMaxDate, setStartDateMaxDate] = useState<Date | undefined>(dateEnd);
     const [endDateMinDate, setEndDateMinDate] = useState<Date | undefined>(dateStart);
 
