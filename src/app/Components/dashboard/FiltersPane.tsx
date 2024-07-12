@@ -52,6 +52,7 @@ const FiltersPane: React.FC = () => {
     /* Internal state variables for controlling options & displaying */
     const [seasonOptions, setSeasonOptions] = useState<SeasonOption[]>([]);
     const [selectedSeason, setSelectedSeason] = useState<string>("");
+
     const [startDateMaxDate, setStartDateMaxDate] = useState<Date | undefined>(dateEnd);
     const [endDateMinDate, setEndDateMinDate] = useState<Date | undefined>(dateStart);
 
@@ -83,14 +84,11 @@ const FiltersPane: React.FC = () => {
 
     const onDateEndSelectionChange = (date: Date | undefined) => {
         if (date && date >= dateStart && date <= latestDayFromGroundTruthData) {
-
             dispatch(updateDateEnd(date));
-
         }
     };
 
     const onSeasonSelectionChange = (displayValue: string) => {
-        console.log("Season selected:", displayValue); // Add this log
         setSelectedSeason(displayValue);
         const selectedOption = seasonOptions.find(option => option.displayString === displayValue);
         if (selectedOption) {
@@ -99,12 +97,14 @@ const FiltersPane: React.FC = () => {
         }
     };
 
+    //TODO: Keep track of current year and see whether prediction exist for after August 1st (meaning new season started) then "current-next" is default value, if not then "previous-current" is default
+    // And dynamically slice all date range into August 1st to July 31st
     const generateSeasonOptions = () => {
         const options: SeasonOption[] = [];
 
         for (let year = 2022; year <= 2023; year++) {
-            const seasonStart = new Date(year, 7, 2); // August 1st
-            const seasonEnd = new Date(year + 1, 7, 1); // July 31st of the following year
+            const seasonStart = new Date(year, 7, 1); // August 1st
+            const seasonEnd = new Date(year + 1, 6, 31); // July 31st of the following year
 
             options.push({
                 itemIndex: year,
@@ -120,6 +120,7 @@ const FiltersPane: React.FC = () => {
 
 
     useEffect(() => {
+        // TODO: remove this and change to accessing Redux state directly
         setStartDateMaxDate(dateEnd);
         setEndDateMinDate(dateStart);
     }, [dateEnd, dateStart]);
@@ -234,6 +235,8 @@ const FiltersPane: React.FC = () => {
                     </Select>
                 </div>
 
+                {/*TODO: Add a show-all-dates button*/}
+
                 <div className="mb-4">
                     <Typography variant="h6" className="text-white">Start Date</Typography>
                     <StyledDatePicker
@@ -278,6 +281,7 @@ const FiltersPane: React.FC = () => {
                         selectedDayClassName="bg-date-picker-accent text-white"
                     />*/}
                 </div>
+
 
                 <div className="mb-4">
                     <Typography variant="h6" className="text-white"> Horizon </Typography>
