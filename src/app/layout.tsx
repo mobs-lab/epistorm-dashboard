@@ -1,4 +1,4 @@
-// src/app/layout.tsx
+// File Path: src/app/layout.tsx
 'use client'
 
 import React from "react";
@@ -19,14 +19,15 @@ export default function RootLayout({
                                    }: {
     children: React.ReactNode
 }) {
-    return (<html lang="en">
-    <body className={"flex flex-col h-full bg-mobs-lab-color text-white"}>
-    <Header/>
-    <main className="flex-grow overflow-hidden p-4 w-full mx-auto h-full">
-        <div className="w-full h-full p-4">
-            <Provider store={store}>{children}</Provider>
-        </div>
-    </main>
-    </body>
-    </html>)
+    return (
+        <html lang="en">
+        <body className="flex flex-col h-screen bg-mobs-lab-color text-white">
+        <Header/>
+        <main className="flex-grow overflow-hidden">
+            <div className="w-full h-full">
+                <Provider store={store}>{children}</Provider>
+            </div>
+        </main>
+        </body>
+        </html>)
 }
