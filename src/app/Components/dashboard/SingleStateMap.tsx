@@ -1,17 +1,19 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import * as d3 from 'd3';
 import * as topojson from 'topojson-client';
-import { useAppSelector } from '../../store/hooks';
+import {useAppSelector} from '../../store/hooks';
 import InfoButton from './InfoButton';
 import RiskLevelThermometer from './RiskLevelThermometer';
 import RiskLevelGauge from './RiskLevelGauge';
-import { NowcastTrend } from "../../Interfaces/forecast-interfaces";
+import {NowcastTrend} from "../../Interfaces/forecast-interfaces";
 
 const shapeFile = '/states-10m.json';
 
 const SingleStateMap: React.FC = () => {
+    const containerRef = useRef<HTMLDivElement>(null);
     const svgRef = useRef<SVGSVGElement>(null);
-    const { selectedStateName, USStateNum } = useAppSelector((state) => state.filter);
+    const [dimensions, setDimensions] = useState({width: 0, height: 0});
+    const {selectedStateName, USStateNum} = useAppSelector((state) => state.filter);
     const [nowcastTrend, setNowcastTrend] = useState<NowcastTrend | null>(null);
 
     const mapInfo = (
@@ -21,6 +23,19 @@ const SingleStateMap: React.FC = () => {
             <p>The thermometer on the right shows the current risk level trend.</p>
         </div>
     );
+
+    useEffect(() => {
+        const updateDimensions = () => {
+            if (containerRef.current) {
+                const {width, height} = containerRef.current.getBoundingClientRect();
+                setDimensions({width: width * 0.8, height}); // 80% width for the map
+            }
+        };
+
+        updateDimensions();
+        window.addEventListener('resize', updateDimensions);
+        return () => window.removeEventListener('resize', updateDimensions);
+    }, []);
 
     useEffect(() => {
         const fetchNowcastTrend = async () => {
@@ -47,8 +62,8 @@ const SingleStateMap: React.FC = () => {
                 const svg = d3.select(svgRef.current);
                 svg.selectAll('*').remove();
 
-                const width = (svgRef.current?.clientWidth || 400) * 0.8;
-                const height = svgRef.current?.clientHeight || 300;
+                const width = dimensions.width * 0.8;
+                const height = dimensions.height * 0.7;
 
                 const path = d3.geoPath();
 
@@ -79,22 +94,23 @@ const SingleStateMap: React.FC = () => {
                             .attr('stroke', 'white');
                     }
                 }
+
             } catch (error) {
                 console.error('Error loading shapefile:', error);
             }
         };
 
         fetchData();
-    }, [selectedStateName]);
+    }, [dimensions, selectedStateName]);
 
     return (
-        <div className="text-white p-4 rounded relative h-full flex flex-col">
+        <div ref={containerRef} className="text-white p-4 rounded relative h-full flex flex-col">
             <div className="flex justify-between items-center mb-4">
                 <h2 className="text-3xl font-bold">{selectedStateName}</h2>
                 <InfoButton title="State Map Information" content={mapInfo}/>
             </div>
             <div className="flex items-stretch justify-between flex-grow">
-                <svg ref={svgRef} width="80%" height="100%"/>
+                <svg ref={svgRef} width={"100%"} height={"100%"} preserveAspectRatio={"xMidYMid meet"}/>
                 <RiskLevelThermometer nowcastTrend={nowcastTrend}/>
             </div>
         </div>

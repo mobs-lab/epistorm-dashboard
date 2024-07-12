@@ -20,7 +20,7 @@ def data_transformation(team_name):
 
     team_data_source_location = "./public/data/unprocessed/" + team_name + "/*" + team_name + ".csv"
     predictions_target_location = "./public/data/processed/" + team_name + "/predictions.csv"
-    trends_target_location = "./public/data/processed/nowcast_trends.csv"
+    trends_target_location = "./public/data/processed/"+ team_name + "/nowcast_trends.csv"
 
     # Load all CSV files in forecasts folder into a single data frame, ignore unneeded columns.
     team_data = pd.concat((pd.read_csv(f, usecols=['reference_date', 'target', 'target_end_date', 'location', 'output_type_id', 'value'],
@@ -48,7 +48,7 @@ def data_transformation(team_name):
 
     ### Hospitalization Rate Change Trends (for not-a-pie-chart)
     #Perform only for MOBS.
-    if team_name == "MOBS-GLEAM_FLUH":
+    if team_name in ("MOBS-GLEAM_FLUH", "MIGHTE-Nsemble", "CEPH-Rtrend_fluH"):
 
         # Retain only rate change trends.
         trends = team_data.drop(team_data[team_data.target != 'wk_flu_hosp_rate_change'].index, inplace=False)

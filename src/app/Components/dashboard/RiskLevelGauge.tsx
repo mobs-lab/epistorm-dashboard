@@ -1,4 +1,4 @@
-import React, {useEffect, useRef} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import * as d3 from 'd3';
 
 interface RiskLevelGaugeProps {
@@ -9,6 +9,20 @@ interface RiskLevelGaugeProps {
 
 const RiskLevelGauge: React.FC<RiskLevelGaugeProps> = ({riskLevel, subText, dateRange}) => {
     const svgRef = useRef<SVGSVGElement>(null);
+    const [dimensions, setDimensions] = useState({width: 0, height: 0});
+
+    useEffect(() => {
+        const updateDimensions = () => {
+            if (svgRef.current) {
+                const {width, height} = svgRef.current.getBoundingClientRect();
+                setDimensions({width, height});
+            }
+        };
+
+        updateDimensions();
+        window.addEventListener('resize', updateDimensions);
+        return () => window.removeEventListener('resize', updateDimensions);
+    }, []);
 
     useEffect(() => {
         if (!svgRef.current) return;
@@ -16,12 +30,12 @@ const RiskLevelGauge: React.FC<RiskLevelGaugeProps> = ({riskLevel, subText, date
         const svg = d3.select(svgRef.current);
         svg.selectAll('*').remove();
 
-        const width = 400;
-        const height = 280;
-        const margin = 20;
-        const thickness = 40;
+        const width = dimensions.width;
+        const height = dimensions.height;
+        const margin = Math.min(width, height) * 0.1;
+        const thickness = Math.min(width, height) * 0.15;
 
-        const radius = Math.min(width, height) / 2;
+        const radius = Math.min(width, height) / 2 - margin;
 
         const color = d3.scaleOrdinal<string>()
             .range(['#00a6e1', '#54d8d3', '#c9e799', '#6262e5']);
@@ -52,31 +66,31 @@ const RiskLevelGauge: React.FC<RiskLevelGaugeProps> = ({riskLevel, subText, date
         // Add text
         g.append('text')
             .attr('text-anchor', 'middle')
-            .attr('dy', '-3.5em')
-            .attr('font-size', '2.5em')
+            .attr('dy', `-${radius * 0.5}`)
+            .attr('font-size', `${radius * 0.2}px`)
             .attr('font-weight', 'bold')
             .attr('fill', 'white')
             .text(riskLevel);
 
         g.append('text')
             .attr('text-anchor', 'middle')
-            .attr('dy', '-1.5em')
-            .attr('font-size', '1.5em')
+            .attr('dy', `-${radius * 0.2}`)
+            .attr('font-size', `${radius * 0.12}px`)
             .attr('fill', 'white')
             .text(subText);
 
         g.append('text')
             .attr('text-anchor', 'middle')
-            .attr('dy', '0.5em')
-            .attr('font-size', '1.2em')
+            .attr('dy', `${radius * 0.1}`)
+            .attr('font-size', `${radius * 0.1}px`)
             .attr('fill', 'white')
             .text(dateRange);
 
-    }, [riskLevel, subText, dateRange]);
+    }, [dimensions, riskLevel, subText, dateRange]);
 
     return (
         <div className="w-full h-full flex items-center justify-center rounded-lg">
-            <svg ref={svgRef} width="100%" height="100%" viewBox="0 0 400 250" preserveAspectRatio="xMidYMid meet"/>
+            <svg ref={svgRef} width="100%" height="100%" preserveAspectRatio="xMidYMid meet"/>
         </div>
     );
 };
