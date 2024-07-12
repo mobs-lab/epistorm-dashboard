@@ -23,7 +23,7 @@ const ForecastChart: React.FC = () => {
     const svgRef = useRef(null);
 
     const chartRef = useRef<HTMLDivElement>(null);
-    const [chartDimensions, setChartDimensions] = useState({ width: 1400, height: 648 });
+    const [chartDimensions, setChartDimensions] = useState({width: 0, height: 0});
 
     // Get the ground and prediction data from store
     const groundTruthData = useAppSelector((state) => state.groundTruth.data);
@@ -38,14 +38,13 @@ const ForecastChart: React.FC = () => {
     const [initialDataLoaded, setInitialDataLoaded] = useState(false);
     const [userSelectedWeek, setUserSelectedWeek] = useState(new Date());
 
-    // Set up size and margins
-    // TODO: Size will be dynamic after layout change
-    const width = 1400;
-    const height = 648;
-    const marginTop = 30;
-    const marginBottom = 60;
-    const marginLeft = 30;
-    const marginRight = 50;
+    // Size set up using dynamic width and height
+    const width = chartDimensions.width;
+    const height = chartDimensions.height;
+    const marginTop = height * 0.05;
+    const marginBottom = height * 0.2;
+    const marginLeft = width * 0.05;
+    const marginRight = width * 0.05;
     const chartWidth = width - marginLeft - marginRight;
     const chartHeight = height - marginTop - marginBottom;
 
@@ -224,44 +223,6 @@ const ForecastChart: React.FC = () => {
             yAxis.ticks(10);
         }
 
-
-        /*let yScale: ScaleLogarithmic<number, number, never> | ScaleLinear<number, number, never>;
-        const maxGroundTruthValue = d3.max(ground.filter(d => d.admissions !== -1), d => d.admissions) as number;
-        let maxPredictionValue = 0;
-
-        if (predictions && Object.keys(predictions).length > 0) {
-            const predictionValues = Object.values(predictions)
-                .flatMap((modelData: any) => modelData[0]?.data || [])
-                .map((p: any) => p.confidence_high || p.confidence500);
-
-            maxPredictionValue = predictionValues.length > 0 ? d3.max(predictionValues) : 0;
-        }
-
-        const maxValue = Math.max(maxGroundTruthValue, maxPredictionValue);
-
-
-        if (yAxisScale === "linear") {
-            yScale = d3.scaleLinear()
-                .domain([0, maxValue * 1.1]) // Add 10% padding to the top
-                .range([chartHeight, 0]);
-        } else if (yAxisScale === "log") {
-            const minNonZeroValue = d3.min(ground.filter(d => d.admissions > 0), d => d.admissions) as number;
-            yScale = d3.scaleLog()
-                .domain([Math.max(0.5, minNonZeroValue / 2), maxValue * 1.05]) // Extend lower bound and add 10% padding to the top
-                .range([chartHeight, 0])
-                .nice();
-        }
-
-        // Create a smart tick generator for y-axis
-        const yAxis = d3.axisLeft(yScale)
-            .tickFormat(d3.format("~s"))
-            .tickSize(-chartWidth);
-
-        if (yAxisScale === "log") {
-            yAxis.ticks(10, ".0s");
-        }
-
-        */
         return {xScale, yScale, xAxis, yAxis};
     }
 
@@ -823,12 +784,12 @@ const ForecastChart: React.FC = () => {
 
 // Return the SVG object using reference
     return (
-        <div ref={chartRef} className="w-full h-full">
+        <div ref={chartRef} className="w-full h-full overflow-hidden">
             <div className="flex justify-between items-center mb-4">
                 <h2 className="text-2xl font-bold">Forecast Chart</h2>
                 <InfoButton title="Forecast Chart Information" content={chartInfo}/>
             </div>
-            <svg ref={svgRef} width={width} height={height}></svg>
+            <svg ref={svgRef} width={"100%"} height={"100%"} preserveAspectRatio="xMidYMid meet"></svg>
         </div>
     );
 };

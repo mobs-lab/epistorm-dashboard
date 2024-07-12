@@ -1,13 +1,28 @@
-import React, { useEffect, useRef } from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import * as d3 from 'd3';
-import { NowcastTrend } from "../../Interfaces/forecast-interfaces";
+import {NowcastTrend} from "../../Interfaces/forecast-interfaces";
 
 interface RiskLevelThermometerProps {
     nowcastTrend: NowcastTrend | null;
 }
 
-const RiskLevelThermometer: React.FC<RiskLevelThermometerProps> = ({ nowcastTrend }) => {
+const RiskLevelThermometer: React.FC<RiskLevelThermometerProps> = ({nowcastTrend}) => {
+    const containerRef = useRef<HTMLDivElement>(null);
     const svgRef = useRef<SVGSVGElement>(null);
+    const [dimensions, setDimensions] = useState({width: 0, height: 0});
+
+    useEffect(() => {
+        const updateDimensions = () => {
+            if (containerRef.current) {
+                const {width, height} = containerRef.current.getBoundingClientRect();
+                setDimensions({width, height});
+            }
+        };
+
+        updateDimensions();
+        window.addEventListener('resize', updateDimensions);
+        return () => window.removeEventListener('resize', updateDimensions);
+    }, []);
 
     useEffect(() => {
         if (!svgRef.current) return;
@@ -15,8 +30,8 @@ const RiskLevelThermometer: React.FC<RiskLevelThermometerProps> = ({ nowcastTren
         const svg = d3.select(svgRef.current);
         svg.selectAll('*').remove();
 
-        const width = 80;
-        const height = 200;
+        const width = dimensions.width;
+        const height = dimensions.height;
 
         // Create gradient
         const gradient = svg.append('defs')
@@ -82,28 +97,28 @@ const RiskLevelThermometer: React.FC<RiskLevelThermometerProps> = ({ nowcastTren
             .attr('d', 'M0,-5L10,0L0,5')
             .attr('fill', 'white');
 
-        // Add labels
+        // Update text positioning
         svg.append('text')
-            .attr('x', width + 5)
+            .attr('x', width + width * 0.1)
             .attr('y', height * 0.3)
             .attr('fill', 'white')
-            .attr('font-size', '12px')
+            .attr('font-size', `${height * 0.06}px`)
             .attr('alignment-baseline', 'middle')
             .text('High');
 
         svg.append('text')
-            .attr('x', width + 5)
+            .attr('x', width + width * 0.1)
             .attr('y', height * 0.7)
             .attr('fill', 'white')
-            .attr('font-size', '12px')
+            .attr('font-size', `${height * 0.06}px`)
             .attr('alignment-baseline', 'middle')
             .text('Low');
 
-    }, [nowcastTrend]);
+    }, [dimensions, nowcastTrend]);
 
     return (
-        <div className="w-1/5 h-full flex items-center justify-center">
-            <svg ref={svgRef} width="100%" height="100%" viewBox="0 0 80 200" preserveAspectRatio="xMidYMid meet"/>
+        <div ref={containerRef} className="w-1/5 h-full flex items-center justify-center">
+            <svg ref={svgRef} width="100%" height="100%" preserveAspectRatio="xMidYMid meet"/>
         </div>
     );
 };

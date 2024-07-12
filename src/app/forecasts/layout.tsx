@@ -8,7 +8,7 @@ export default function ForecastsLayout({
 }) {
 
     return (
-        <section>
+        <section className={"w-full h-full"}>
             {children}
         </section>
 

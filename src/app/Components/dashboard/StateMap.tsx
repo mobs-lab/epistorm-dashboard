@@ -1,33 +1,45 @@
-import React, {useEffect, useRef} from "react";
+import React, { useEffect, useRef, useState } from "react";
 import * as topojson from "topojson-client";
 import * as d3 from "d3";
-import {zoom, zoomIdentity} from "d3-zoom";
-import {useAppDispatch, useAppSelector} from '../../store/hooks';
-import {updateSelectedState} from '../../store/filterSlice';
+import { zoom, zoomIdentity } from "d3-zoom";
+import { useAppDispatch, useAppSelector } from '../../store/hooks';
+import { updateSelectedState } from '../../store/filterSlice';
 
 const usStateData = "/states-10m.json";
 
 const StateMap: React.FC = () => {
     const svgRef = useRef<SVGSVGElement>(null);
+    const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
     const dispatch = useAppDispatch();
-    const {selectedStateName} = useAppSelector((state) => state.filter);
+    const { selectedStateName } = useAppSelector((state) => state.filter);
     const locationData = useAppSelector((state) => state.location.data);
+
+    useEffect(() => {
+        const updateDimensions = () => {
+            if (svgRef.current) {
+                const { width, height } = svgRef.current.getBoundingClientRect();
+                setDimensions({ width, height });
+            }
+        };
+
+        updateDimensions();
+        window.addEventListener('resize', updateDimensions);
+        return () => window.removeEventListener('resize', updateDimensions);
+    }, []);
 
     const renderMap = () => {
         if (!svgRef.current) return;
 
         const svg = d3.select(svgRef.current)
-            .attr("viewBox", "0 0 960 600") // Adjusted viewBox to fit the aspect ratio
-            .attr("preserveAspectRatio", "xMidYMid meet") // Maintain aspect ratio
-            .attr("style", "max-width: 100%; height: auto;");
+            .attr("viewBox", `0 0 ${dimensions.width} ${dimensions.height}`)
+            .attr("preserveAspectRatio", "xMidYMid meet");
 
-        const projection = d3.geoAlbersUsa().fitSize([960, 600], {type: "Sphere"}); // Use Albers USA projection
+        svg.selectAll("*").remove(); // Clear previous content
+
+        const projection = d3.geoAlbersUsa().fitSize([dimensions.width, dimensions.height], { type: "Sphere" });
         const path = d3.geoPath().projection(projection);
 
-        let g = svg.select("g");
-        if (g.empty()) {
-            g = svg.append("g");
-        }
+        const g = svg.append("g");
 
         const zoomBehavior = zoom()
             .scaleExtent([1, 8])
@@ -52,8 +64,11 @@ const StateMap: React.FC = () => {
 
                 // Initial zoom and center
                 const [[x0, y0], [x1, y1]] = path.bounds(topojson.feature(us, us.objects.states));
-                const initialScale = Math.min(8, 0.9 / Math.max((x1 - x0) / 960, (y1 - y0) / 600));
-                const initialTranslate = [480 - initialScale * (x0 + x1) / 2, 300 - initialScale * (y0 + y1) / 2];
+                const initialScale = Math.min(8, 0.9 / Math.max((x1 - x0) / dimensions.width, (y1 - y0) / dimensions.height));
+                const initialTranslate = [
+                    dimensions.width / 2 - initialScale * (x0 + x1) / 2,
+                    dimensions.height / 2 - initialScale * (y0 + y1) / 2
+                ];
 
                 svg.call(zoomBehavior.transform, zoomIdentity.translate(initialTranslate[0], initialTranslate[1]).scale(initialScale));
             } catch (error) {
@@ -63,15 +78,18 @@ const StateMap: React.FC = () => {
 
         const handleClick = (event: any, d: any, path: any, zoomBehavior: any) => {
             const [[x0, y0], [x1, y1]] = path.bounds(d);
-            const scale = Math.max(1, Math.min(8, 0.9 / Math.max((x1 - x0) / 960, (y1 - y0) / 600)));
-            const translate = [480 - scale * (x0 + x1) / 2, 300 - scale * (y0 + y1) / 2];
+            const scale = Math.max(1, Math.min(8, 0.9 / Math.max((x1 - x0) / dimensions.width, (y1 - y0) / dimensions.height)));
+            const translate = [
+                dimensions.width / 2 - scale * (x0 + x1) / 2,
+                dimensions.height / 2 - scale * (y0 + y1) / 2
+            ];
 
             svg.transition().duration(750).call(
                 zoomBehavior.transform,
                 zoomIdentity.translate(translate[0], translate[1]).scale(scale)
             );
 
-            dispatch(updateSelectedState({stateName: d.properties.name, stateNum: d.id}));
+            dispatch(updateSelectedState({ stateName: d.properties.name, stateNum: d.id }));
 
             // Zoom out to the initial view after a certain duration
             setTimeout(() => {
@@ -83,10 +101,10 @@ const StateMap: React.FC = () => {
     };
 
     useEffect(() => {
-        if (locationData.length > 0) {
+        if (locationData.length > 0 && dimensions.width > 0 && dimensions.height > 0) {
             renderMap();
         }
-    }, [locationData]);
+    }, [locationData, dimensions]);
 
     useEffect(() => {
         if (svgRef.current) {
@@ -99,8 +117,7 @@ const StateMap: React.FC = () => {
         }
     }, [selectedStateName]);
 
-    return <svg ref={svgRef}/>;
+    return <svg ref={svgRef} width="100%" height="100%"/>;
 };
-
 
 export default StateMap;
