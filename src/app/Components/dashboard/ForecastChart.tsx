@@ -22,6 +22,9 @@ const ForecastChart: React.FC = () => {
     // reference to svg object
     const svgRef = useRef(null);
 
+    const chartRef = useRef<HTMLDivElement>(null);
+    const [chartDimensions, setChartDimensions] = useState({ width: 1400, height: 648 });
+
     // Get the ground and prediction data from store
     const groundTruthData = useAppSelector((state) => state.groundTruth.data);
     const predictionsData = useAppSelector((state) => state.predictions.data);
@@ -745,6 +748,22 @@ const ForecastChart: React.FC = () => {
         return {mouseFollowLine, verticalIndicatorGroup, lineTooltip, cornerTooltip};
     }
 
+    // Use Effect hook for getting the dimensions of chart
+    useEffect(() => {
+        const updateDimensions = () => {
+            if (chartRef.current) {
+                setChartDimensions({
+                    width: chartRef.current.clientWidth,
+                    height: chartRef.current.clientHeight,
+                });
+            }
+        };
+
+        updateDimensions();
+        window.addEventListener('resize', updateDimensions);
+        return () => window.removeEventListener('resize', updateDimensions);
+    }, []);
+
     useEffect(() => {
         // console.log("DEBUG: ForecastChart useEffect executed.");
 
@@ -804,7 +823,7 @@ const ForecastChart: React.FC = () => {
 
 // Return the SVG object using reference
     return (
-        <div className="relative">
+        <div ref={chartRef} className="w-full h-full">
             <div className="flex justify-between items-center mb-4">
                 <h2 className="text-2xl font-bold">Forecast Chart</h2>
                 <InfoButton title="Forecast Chart Information" content={chartInfo}/>

@@ -136,11 +136,12 @@ const Page: React.FC = () => {
                         <FiltersPane/>
                     </div>
                 </div>*/
-                <div>
+                <div className="dashboard-grid-layout w-full h-full">
                     <div className="forecast-state">
                         <SingleStateMap/>
                     </div>
                     <div className="vertical-separator"></div>
+
                     <div className="forecast-gauge">
                         <RiskLevelGauge riskLevel="Title"
                                         subText="paragraphs of text here"
