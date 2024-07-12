@@ -19,15 +19,16 @@ body {
 @layer utilities {
     .dashboard-grid-layout {
         display: grid;
-        width: 100%;
-        height: 100%;
-        gap: 20px;
-        grid-template-columns: 30% 1% 30% 29%;
-        grid-template-rows: minmax(0, 3fr) minmax(0, 1fr) minmax(0, 3fr);
+        width: 100vw;
+        height: 100vh;
+        gap: 2px;
+        grid-template-columns: 1fr 2px 1fr 1fr;
+        grid-template-rows: minmax(0, 2fr) 2px minmax(0, 5fr) 20px;
         grid-template-areas:
     "state verticalSeparator gauge settings"
     "separator separator separator settings"
-    "graph graph graph settings";
+    "graph graph graph settings"
+    "dragBar dragBar dragBar settings";
     }
 
     .white-separator {
@@ -48,28 +49,37 @@ body {
 
     .forecast-state {
         grid-area: state;
-        width: 100%;
-        height: 100%;
+    }
+
+    .vertical-separator {
+        grid-area: verticalSeparator;
+        background-color: white;
     }
 
     .forecast-gauge {
         grid-area: gauge;
-        width: 100%;
-        height: 100%;
-    }
-
-    .forecast-graph {
-        grid-area: graph;
-        width: 100%;
-        height: 100%;
     }
 
     .forecast-settings {
         grid-area: settings;
-        width: 100%;
-        height: 100%;
     }
 
+    .horizontal-separator {
+        grid-area: separator;
+        background-color: white;
+    }
+
+    .forecast-graph {
+        grid-area: graph;
+    }
+
+    .forecast-drag-bar {
+        grid-area: dragBar;
+        background-color: #333;
+    }
+
+    /*TODO: Below are for Evaluations Page
+        Implementing them next*/
     .evaluations-grid-layout {
         display: grid;
         column-gap: 10px;

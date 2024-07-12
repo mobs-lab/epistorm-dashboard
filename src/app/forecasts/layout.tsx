@@ -1,4 +1,4 @@
-// src/app/forecasts/layout.tsx
+// File Path: src/app/forecasts/layout.tsx
 import React from "react";
 
 export default function ForecastsLayout({
@@ -8,7 +8,7 @@ export default function ForecastsLayout({
 }) {
 
     return (
-        <section>
+        <section className="dashboard-grid-layout w-full h-full">
             {children}
         </section>
 

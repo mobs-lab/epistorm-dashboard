@@ -1,4 +1,4 @@
-// src/app/forecasts/page.tsx
+// File Path: src/app/forecasts/page.tsx
 
 'use client'
 
@@ -10,7 +10,7 @@ import {useAppDispatch} from '../store/hooks';
 import {setGroundTruthData} from '../store/groundTruthSlice';
 import {setPredictionsData} from '../store/predictionsSlice';
 import {setLocationData} from '../store/locationSlice';
-import { setNowcastTrendsData } from '../store/nowcastTrendsSlice';
+import {setNowcastTrendsData} from '../store/nowcastTrendsSlice';
 
 import * as d3 from "d3";
 
@@ -113,30 +113,58 @@ const Page: React.FC = () => {
         fetchData();
     }, [dispatch]);
 
-    return (<div className={"w-full h-full"}>
-        {dataLoaded ? (
-            <div className="dashboard-grid-layout w-full h-1/2">
-                <div className="forecast-state">
-                    <SingleStateMap/>
+    return (
+        <>
+            {dataLoaded ? (
+                /*<div className="dashboard-grid-layout w-full h-1/2">
+                    <div className="forecast-state">
+                        <SingleStateMap/>
+                    </div>
+                    <div className="forecast-gauge">
+                        {/!* Add your gauge component here *!/}
+                        <div>Gauge Placeholder</div>
+                        <RiskLevelGauge
+                            riskLevel="Title"
+                            subText="paragraphs of text here"
+                            dateRange="Jun 16-Jun 22, 2024"
+                        />
+                    </div>
+                    <div className="forecast-graph">
+                        <ForecastChart/>
+                    </div>
+                    <div className="forecast-settings">
+                        <FiltersPane/>
+                    </div>
+                </div>*/
+                <div>
+                    <div className="forecast-state">
+                        <SingleStateMap/>
+                    </div>
+                    <div className="vertical-separator"></div>
+                    <div className="forecast-gauge">
+                        <RiskLevelGauge riskLevel="Title"
+                                        subText="paragraphs of text here"
+                                        dateRange="Jun 16-Jun 22, 2024"
+                        />
+                    </div>
+                    <div className="forecast-settings">
+                        <FiltersPane/>
+                    </div>
+                    <div className="horizontal-separator"></div>
+
+                    <div className="forecast-graph">
+                        <ForecastChart/>
+                    </div>
+                    <div className="forecast-drag-bar"></div>
                 </div>
-                <div className="forecast-gauge">
-                    {/* Add your gauge component here */}
-                    <div>Gauge Placeholder</div>
-                    <RiskLevelGauge
-                        riskLevel="Title"
-                        subText="paragraphs of text here"
-                        dateRange="Jun 16-Jun 22, 2024"
-                    />
-                </div>
-                <div className="forecast-graph">
-                    <ForecastChart/>
-                </div>
-                <div className="forecast-settings">
-                    <FiltersPane/>
-                </div>
-            </div>
-        ) : (<div className={"mx-auto"}> Loading... </div>)}
-    </div>);
+
+
+            ) : (
+                <div className={"mx-auto"}> Loading...</div>
+            )
+            }
+        </>)
+        ;
 };
 
 function addBackEmptyDatesWithPrediction(groundTruthData: DataPoint[], predictionsData: ModelPrediction[]): DataPoint[] {
