@@ -81,7 +81,8 @@ body {
 
     .forecast-drag-bar {
         grid-area: dragBar;
-        background-color: #333;
+        background-color: #00505b;
+        border: 1px solid white;
     }
 
     /*TODO: Below are for Evaluations Page
