@@ -97,6 +97,15 @@ const FiltersPane: React.FC = () => {
         }
     };
 
+    const handleShowAllDates = () => {
+        if (groundTruthData.length > 0) {
+            const earliestDate = groundTruthData[groundTruthData.length - 1].date;
+            const latestDate = groundTruthData[0].date;
+            dispatch(updateDateStart(earliestDate));
+            dispatch(updateDateEnd(latestDate));
+        }
+    };
+
     //TODO: Keep track of current year and see whether prediction exist for after August 1st (meaning new season started) then "current-next" is default value, if not then "previous-current" is default
     // And dynamically slice all date range into August 1st to July 31st
     const generateSeasonOptions = () => {
@@ -236,8 +245,6 @@ const FiltersPane: React.FC = () => {
                     </Select>
                 </div>
 
-                {/*TODO: Add a show-all-dates button*/}
-
                 <div className="mb-4 flex justify-between">
                     <div>
                         <Typography variant="h6" className="text-white">Start Date</Typography>
@@ -257,6 +264,12 @@ const FiltersPane: React.FC = () => {
                             maxDate={latestDayFromGroundTruthData}
                         />
                     </div>
+                    <button
+                        className="ml-2 px-2 py-1 bg-blue-500 text-white rounded text-sm"
+                        onClick={handleShowAllDates}
+                    >
+                        Show All
+                    </button>
                 </div>
 
 

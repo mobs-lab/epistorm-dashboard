@@ -42,9 +42,9 @@ const ForecastChart: React.FC = () => {
     const width = chartDimensions.width;
     const height = chartDimensions.height;
     const marginTop = height * 0.05;
-    const marginBottom = height * 0.2;
-    const marginLeft = width * 0.05;
-    const marginRight = width * 0.05;
+    const marginBottom = height * 0.25;
+    const marginLeft = width * 0.02;
+    const marginRight = width * 0.02;
     const chartWidth = width - marginLeft - marginRight;
     const chartHeight = height - marginTop - marginBottom;
 
@@ -779,7 +779,7 @@ const ForecastChart: React.FC = () => {
                 updateVerticalIndicator(userSelectedWeek || filteredGroundTruthData[0].date, xScale, marginLeft, chartWidth, verticalIndicatorGroup, lineTooltip);
             }
         }
-    }, [groundTruthData, predictionsData, USStateNum, forecastModel, numOfWeeksAhead, dateStart, dateEnd, yAxisScale, confidenceInterval, displayMode, userSelectedWeek]);
+    }, [chartDimensions, groundTruthData, predictionsData, USStateNum, forecastModel, numOfWeeksAhead, dateStart, dateEnd, yAxisScale, confidenceInterval, displayMode, userSelectedWeek]);
 
 
 // Return the SVG object using reference
