@@ -11,7 +11,7 @@ input, textarea {
 }
 
 body {
-    background-color: #00505b;
+    background-color: #252a33;
     color: white;
 }
 
@@ -81,7 +81,6 @@ body {
 
     .forecast-drag-bar {
         grid-area: dragBar;
-        background-color: #00505b;
         border: 1px solid white;
     }
 

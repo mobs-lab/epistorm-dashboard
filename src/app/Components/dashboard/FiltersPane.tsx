@@ -117,7 +117,7 @@ const FiltersPane: React.FC = () => {
 
 
     return (
-        <Card className={"bg-[#005e6d] text-white fill-white w-full h-full overflow-auto"}>
+        <Card className={"bg-[#323944] text-white fill-white w-full h-full overflow-auto"}>
             <CardBody>
                 <h3> Select a location <InfoButton title="State Selection Information" content={stateMapInfo}/></h3>
 
@@ -201,7 +201,7 @@ const FiltersPane: React.FC = () => {
                         />
                     </div>
                     <button
-                        className="ml-2 px-2 py-1 bg-blue-500 text-white rounded text-sm"
+                        className="ml-2 px-2 py-1 bg-[#b2b2b2] text-white rounded text-sm"
                         onClick={handleShowAllDates}
                     >
                         Show All
