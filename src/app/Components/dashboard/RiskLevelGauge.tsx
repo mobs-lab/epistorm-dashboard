@@ -1,7 +1,7 @@
 import React, {useEffect, useRef, useState} from 'react';
 import * as d3 from 'd3';
 import {useAppSelector} from "../../store/hooks";
-import { format, subDays, parseISO } from 'date-fns';
+import {format, subDays, parseISO} from 'date-fns';
 
 interface RiskLevelGaugeProps {
     riskLevel: string;

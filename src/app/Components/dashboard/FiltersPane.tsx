@@ -19,6 +19,7 @@ import {
 } from '../../store/filterSlice';
 import StateMap from "./StateMap";
 import StyledDatePicker from "./StyledDatePicker";
+import Image from "next/image";
 
 
 const FiltersPane: React.FC = () => {
@@ -271,6 +272,10 @@ const FiltersPane: React.FC = () => {
                         defaultChecked={value === "byDate"}
                     />))}
                 </div>
+                <div>
+                    <Image src={"/epistorm-logo.png"} width={200} height={300} alt={"Epistorm Logo Picture Here"}/>
+                </div>
+
             </CardBody>
         </Card>)
         ;
