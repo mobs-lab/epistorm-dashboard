@@ -1,9 +1,9 @@
-import React, { useEffect, useRef, useState, useCallback } from "react";
+import React, {useEffect, useRef, useState, useCallback} from "react";
 import * as topojson from "topojson-client";
 import * as d3 from "d3";
-import { zoom, zoomIdentity, ZoomBehavior } from "d3-zoom";
-import { useAppDispatch, useAppSelector } from '../../store/hooks';
-import { updateSelectedState } from '../../store/filterSlice';
+import {zoom, zoomIdentity, ZoomBehavior} from "d3-zoom";
+import {useAppDispatch, useAppSelector} from '../../store/hooks';
+import {updateSelectedState} from '../../store/filterSlice';
 
 const usStateData = "/states-10m.json";
 
@@ -11,17 +11,17 @@ const StateMap: React.FC = () => {
     const svgRef = useRef<SVGSVGElement>(null);
     const gRef = useRef<SVGGElement>(null);
     const zoomBehaviorRef = useRef<ZoomBehavior<SVGSVGElement, unknown> | null>(null);
-    const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
+    const [dimensions, setDimensions] = useState({width: 0, height: 0});
     const dispatch = useAppDispatch();
-    const { selectedStateName } = useAppSelector((state) => state.filter);
+    const {selectedStateName} = useAppSelector((state) => state.filter);
     const locationData = useAppSelector((state) => state.location.data);
     const [initialTransform, setInitialTransform] = useState<d3.ZoomTransform | null>(null);
 
     useEffect(() => {
         const updateDimensions = () => {
             if (svgRef.current) {
-                const { width, height } = svgRef.current.getBoundingClientRect();
-                setDimensions({ width, height });
+                const {width, height} = svgRef.current.getBoundingClientRect();
+                setDimensions({width, height});
             }
         };
 
@@ -63,7 +63,7 @@ const StateMap: React.FC = () => {
         const g = d3.select(gRef.current);
         g.selectAll("*").remove(); // Clear previous content
 
-        const projection = d3.geoAlbersUsa().fitSize([dimensions.width, dimensions.height], { type: "Sphere" });
+        const projection = d3.geoAlbersUsa().fitSize([dimensions.width, dimensions.height], {type: "Sphere"});
         const path = d3.geoPath().projection(projection);
 
         initializeZoom();
@@ -74,8 +74,8 @@ const StateMap: React.FC = () => {
                 const states = g.selectAll("path")
                     .data(topojson.feature(us, us.objects.states).features)
                     .join("path")
-                    .attr("fill", "#00505b")
-                    .attr("stroke", "lightgray")
+                    .attr("fill", "#252a33")
+                    .attr("stroke", "#5c636b")
                     .attr("cursor", "pointer")
                     .on("click", (event, d) => handleClick(event, d, path))
                     .attr("d", path);
@@ -120,7 +120,7 @@ const StateMap: React.FC = () => {
             zoomIdentity.translate(translate[0], translate[1]).scale(scale)
         );
 
-        dispatch(updateSelectedState({ stateName: d.properties.name, stateNum: d.id }));
+        dispatch(updateSelectedState({stateName: d.properties.name, stateNum: d.id}));
 
         // Zoom out to the initial view after a certain duration
         setTimeout(() => {
@@ -161,7 +161,7 @@ const StateMap: React.FC = () => {
             </svg>
             <button
                 onClick={handleReset}
-                className="absolute top-2 right-2 bg-blue-500 text-white p-2 rounded"
+                className="absolute top-2 right-2 bg-[#b2b2b2] text-white p-2 rounded"
             >
                 Reset
             </button>

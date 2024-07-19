@@ -254,7 +254,7 @@ const ForecastChart: React.FC = () => {
             .attr("cy", d => d.admissions !== -1 ? yScale(d.admissions) : yScale.range()[0])
             .attr("r", 3)
             .attr("fill", d => d.admissions !== -1 ? "white" : "transparent")
-            .attr("stroke", d => d.admissions !== -1 ? "white" : "none")
+            .attr("stroke", d => d.admissions !== -1 ? "white" : "transparent")
             .attr("transform", `translate(${marginLeft}, ${marginTop})`);
     }
 

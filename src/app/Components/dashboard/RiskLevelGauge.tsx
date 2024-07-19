@@ -75,7 +75,7 @@ const RiskLevelGauge: React.FC<RiskLevelGaugeProps> = ({riskLevel}) => {
 
         const color = d3.scaleOrdinal<string>()
             .domain(['decrease', 'stable', 'increase'])
-            .range(['#00a6e1', '#54d8d3', '#c9e799']);
+            .range(['#478791', '#b9d6d6', '#eae78b']);
 
         const g = svg.append('g')
             .attr('transform', `translate(${width / 2},${height})`);
