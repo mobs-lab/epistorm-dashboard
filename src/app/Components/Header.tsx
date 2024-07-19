@@ -8,7 +8,7 @@ const Header: React.FC = () => {
                 <Link href="/" className="text-2xl font-bold">FluForecast</Link>
                 <nav className="flex space-x-6">
                     {[['Home', '/'], ['Forecasts', '/forecasts'], ['Evaluations', '/evaluations'], ['Background', '/background'], ['Contact', '/contact']].map(([title, url]) => (
-                        <Link key={title} href={url} className="text-teal-700 hover:text-teal-900">{title}</Link>
+                        <Link key={title} href={url} className="text-mobs-lab-color hover:text-teal-900">{title}</Link>
                     ))}
                 </nav>
             </div>
