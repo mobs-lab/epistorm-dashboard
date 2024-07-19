@@ -42,8 +42,13 @@ export interface NowcastTrend {
     stable: number;
 }
 
-export interface NowcastTrendsState {
+export interface NowcastTrendByModel {
+    modelName: string;
     data: NowcastTrend[];
+}
+
+export interface NowcastTrendsCollection{
+    allData: NowcastTrendByModel[];
 }
 
 export interface SeasonOption {

@@ -3,7 +3,7 @@
 'use client'
 
 import React, {useEffect, useState} from "react";
-import {DataPoint, ModelPrediction, SeasonOption} from "../Interfaces/forecast-interfaces";
+import {DataPoint, ModelPrediction, NowcastTrendByModel, SeasonOption} from "../Interfaces/forecast-interfaces";
 import ForecastChart from "../Components/dashboard/ForecastChart";
 import FiltersPane from "../Components/dashboard/FiltersPane";
 import SingleStateMap from "../Components/dashboard/SingleStateMap";
@@ -79,17 +79,24 @@ const Page: React.FC = () => {
                     stateNum: d.location, state: d.abbreviation, stateName: d.location_name,
                 }));
 
-                // Fetch nowcast trends data
-                const nowcastTrendsData = await d3.csv('/data/processed/nowcast_trends.csv');
-                const parsedNowcastTrendsData = nowcastTrendsData.map((d) => ({
-                    nowcast_date: d.nowcast_date,
-                    location: d.location,
-                    decrease: +d.decrease,
-                    increase: +d.increase,
-                    stable: +d.stable,
-                }));
+                // Fetch nowcast trends data for all models
+                const modelNames = ['MOBS-GLEAM_FLUH', 'CEPH-Rtrend_fluH', 'MIGHTE-Nsemble', 'NU_UCSD-GLEAM_AI_FLUH'];
+                const nowcastTrendsData: NowcastTrendByModel[] = await Promise.all(
+                    modelNames.map(async (modelName) => {
+                        const response = await d3.csv(`/data/processed/${modelName}/nowcast_trends.csv`);
+                        const parsedData = response.map((d) => ({
+                            nowcast_date: d.nowcast_date,
+                            location: d.location,
+                            decrease: +d.decrease,
+                            increase: +d.increase,
+                            stable: +d.stable,
+                        }));
+                        return {modelName, data: parsedData};
+                    })
+                );
 
-                console.log("DEBUG: page.tsx: Nowcast trends data loaded:", parsedNowcastTrendsData);
+
+                console.log("DEBUG: page.tsx: Nowcast trends data loaded:", nowcastTrendsData);
 
 
                 if (parsedGroundTruthData.length > 0 && predictionsData.length > 0 && parsedLocationData.length > 0) {
@@ -102,7 +109,7 @@ const Page: React.FC = () => {
                     dispatch(setGroundTruthData(groundTruthDataWithPredictions));
                     dispatch(setPredictionsData(predictionsData));
                     dispatch(setLocationData(parsedLocationData));
-                    dispatch(setNowcastTrendsData(parsedNowcastTrendsData));
+                    dispatch(setNowcastTrendsData(nowcastTrendsData));
                     dispatch(setSeasonOptions(seasonOptions));
 
                     setDataLoaded(true);
@@ -125,10 +132,7 @@ const Page: React.FC = () => {
                 <div className="vertical-separator"></div>
 
                 <div className="forecast-gauge">
-                    <RiskLevelGauge riskLevel="Title"
-                                    subText="paragraphs of text here"
-                                    dateRange="Jun 16-Jun 22, 2024"
-                    />
+                    <RiskLevelGauge riskLevel="US"/>
                 </div>
                 <div className="forecast-settings">
                     <FiltersPane/>
