@@ -22,7 +22,7 @@ body {
         width: 100vw;
         height: calc(100vh - 60px);
         gap: 2px;
-        grid-template-columns: 1.5fr 2px 1.5fr minmax(300px, 400px);
+        grid-template-columns: 1.5fr 2px 1.5fr 1fr;
         grid-template-rows: minmax(0, 1fr) 2px minmax(0, 1.5fr) 0.1fr;
         grid-template-areas:
     "state verticalSeparator gauge settings"

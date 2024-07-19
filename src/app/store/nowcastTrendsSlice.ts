@@ -1,17 +1,17 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { NowcastTrend, NowcastTrendsState } from '../Interfaces/forecast-interfaces';
+import {NowcastTrendByModel, NowcastTrendsCollection} from '../Interfaces/forecast-interfaces';
 
 
-const initialState: NowcastTrendsState = {
-    data: [],
+const initialState: NowcastTrendsCollection = {
+    allData: [],
 };
 
 const nowcastTrendsSlice = createSlice({
     name: 'nowcastTrends',
     initialState,
     reducers: {
-        setNowcastTrendsData: (state, action: PayloadAction<NowcastTrend[]>) => {
-            state.data = action.payload;
+        setNowcastTrendsData: (state, action: PayloadAction<NowcastTrendByModel[]>) => {
+            state.allData = action.payload;
         },
     },
 });
