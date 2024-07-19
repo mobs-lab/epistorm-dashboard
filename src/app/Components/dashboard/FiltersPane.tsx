@@ -5,16 +5,12 @@ import React, {useEffect, useState} from 'react';
 import {modelColorMap} from '../../Interfaces/modelColors';
 import {format} from 'date-fns';
 import InfoButton from './InfoButton';
-
-/*
-NOTE: Since using Next.js, these are from our own custom wrapper for required UI components
-    See import origin for detail
-    */
+import {SeasonOption} from '../../Interfaces/forecast-interfaces';
 import {Card, CardBody, Option, Radio, Select, Typography} from "../../CSS/material-tailwind-wrapper";
 import {useAppDispatch, useAppSelector} from '../../store/hooks';
 import {
     updateConfidenceInterval,
-    updateDateEnd,
+    updateDateEnd, updateDateRange,
     updateDateStart,
     updateForecastModel,
     updateNumOfWeeksAhead,
@@ -23,14 +19,6 @@ import {
 } from '../../store/filterSlice';
 import StateMap from "./StateMap";
 import StyledDatePicker from "./StyledDatePicker";
-
-interface SeasonOption {
-    itemIndex: number;
-    displayString: string;
-    timeValue: string;
-    startDate: Date;
-    endDate: Date;
-}
 
 
 const FiltersPane: React.FC = () => {
@@ -47,14 +35,11 @@ const FiltersPane: React.FC = () => {
     const locationData = useAppSelector((state) => state.location.data);
     const {
         USStateNum, forecastModel, dateStart, dateEnd, dateRange, confidenceInterval,
+        seasonOptions
     } = useAppSelector((state) => state.filter);
 
-    /* Internal state variables for controlling options & displaying */
-    const [seasonOptions, setSeasonOptions] = useState<SeasonOption[]>([]);
-    const [selectedSeason, setSelectedSeason] = useState<string>("");
-
-    const [startDateMaxDate, setStartDateMaxDate] = useState<Date | undefined>(dateEnd);
-    const [endDateMinDate, setEndDateMinDate] = useState<Date | undefined>(dateStart);
+    const earliestDayFromGroundTruthData = groundTruthData.length > 0 ? groundTruthData[groundTruthData.length - 1].date : undefined;
+    const latestDayFromGroundTruthData = groundTruthData.length > 0 ? groundTruthData[0].date : undefined;
 
     const onStateSelectionChange = (stateNum: string) => {
         const selectedState = locationData.find((state) => state.stateNum === stateNum);
@@ -71,7 +56,6 @@ const FiltersPane: React.FC = () => {
         }
     };
 
-
     const onNumOfWeeksAheadChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         dispatch(updateNumOfWeeksAhead(Number(event.target.value)));
     };
@@ -79,19 +63,23 @@ const FiltersPane: React.FC = () => {
     const onDateStartSelectionChange = (date: Date | undefined) => {
         if (date && date >= earliestDayFromGroundTruthData && date <= dateEnd) {
             dispatch(updateDateStart(date));
+        } else {
+            console.log("FiltersPane.tsx: Invalid dateStart selection");
         }
     };
 
     const onDateEndSelectionChange = (date: Date | undefined) => {
         if (date && date >= dateStart && date <= latestDayFromGroundTruthData) {
             dispatch(updateDateEnd(date));
+        } else {
+            console.log("FiltersPane.tsx: Invalid dateEnd selection");
         }
     };
 
-    const onSeasonSelectionChange = (displayValue: string) => {
-        setSelectedSeason(displayValue);
-        const selectedOption = seasonOptions.find(option => option.displayString === displayValue);
+    const onSeasonSelectionChange = (timeValue: string) => {
+        const selectedOption = seasonOptions.find(option => option.timeValue === timeValue);
         if (selectedOption) {
+            dispatch(updateDateRange(timeValue));
             dispatch(updateDateStart(selectedOption.startDate));
             dispatch(updateDateEnd(selectedOption.endDate));
         }
@@ -106,60 +94,6 @@ const FiltersPane: React.FC = () => {
         }
     };
 
-    //TODO: Keep track of current year and see whether prediction exist for after August 1st (meaning new season started) then "current-next" is default value, if not then "previous-current" is default
-    // And dynamically slice all date range into August 1st to July 31st
-    const generateSeasonOptions = () => {
-        const options: SeasonOption[] = [];
-
-        for (let year = 2022; year <= 2023; year++) {
-            const seasonStart = new Date(year, 7, 1); // August 1st
-            const seasonEnd = new Date(year + 1, 6, 31); // July 31st of the following year
-
-            options.push({
-                itemIndex: year,
-                displayString: `${year} to ${year + 1}`,
-                timeValue: `${format(seasonStart, 'yyyy-MM-dd')}/${format(seasonEnd, 'yyyy-MM-dd')}`,
-                startDate: seasonStart,
-                endDate: seasonEnd
-            });
-        }
-
-        return options;
-    };
-
-
-    useEffect(() => {
-        // TODO: remove this and change to accessing Redux state directly
-        setStartDateMaxDate(dateEnd);
-        setEndDateMinDate(dateStart);
-    }, [dateEnd, dateStart]);
-
-    useEffect(() => {
-        if (groundTruthData.length > 0) {
-            const options = generateSeasonOptions();
-            setSeasonOptions(options);
-
-            // Set initial selected season
-            if (options.length > 0) {
-                const initialSeason = options[0].displayString;
-                setSelectedSeason(initialSeason);
-                onSeasonSelectionChange(initialSeason);
-            }
-        }
-    }, [groundTruthData]);
-
-    useEffect(() => {
-        //     This useEffect is run just once when the component is mounted, to update the current dateEnd by checking the latest date from the groundTruthData to ensure that the datepicker receive a correct update for the maxDate
-        if (groundTruthData && groundTruthData.length > 0) {
-            const latestAvailableDate = groundTruthData[0].date;
-            dispatch(updateDateEnd(latestAvailableDate));
-        }
-    }, [])
-
-    const earliestDayFromGroundTruthData = groundTruthData.length > 0 ? groundTruthData[groundTruthData.length - 1].date : undefined;
-    const latestDayFromGroundTruthData = groundTruthData.length > 0 ? groundTruthData[0].date : undefined;
-
-    console.log("FiltersPane update: latestDayFromGroundTruthData: ", latestDayFromGroundTruthData);
 
     const onYAxisScaleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         console.log("FiltersPane update: Y-axis scale changed to: ", event.target.value);
@@ -229,22 +163,24 @@ const FiltersPane: React.FC = () => {
                     </div>
                 </div>
 
+                {/* TODO: Change up this to make season selector correctly work */}
                 <div className="mb-4 mt-4">
                     <Typography variant="h6" className="text-white">Dates</Typography>
                     <Select
                         label="Select a Season"
-                        value={selectedSeason}
+                        value={dateRange}
                         onChange={(value) => onSeasonSelectionChange(value as string)}
                         className="text-white border-white"
                     >
-                        {seasonOptions.map((option) => (
-                            <Option key={option.itemIndex} value={option.displayString} className="text-black">
+                        {seasonOptions.map((option: SeasonOption) => (
+                            <Option key={option.index} value={option.timeValue} className="text-black">
                                 {option.displayString}
                             </Option>
                         ))}
                     </Select>
                 </div>
 
+                {/*NOTE: Start date and end date selector, watch out for the conditional disabling of invalid date selections */}
                 <div className="mb-4 flex justify-between">
                     <div>
                         <Typography variant="h6" className="text-white">Start Date</Typography>
@@ -252,7 +188,7 @@ const FiltersPane: React.FC = () => {
                             value={dateStart}
                             onChange={onDateStartSelectionChange}
                             minDate={earliestDayFromGroundTruthData}
-                            maxDate={startDateMaxDate}
+                            maxDate={dateEnd}
                         />
                     </div>
                     <div>
@@ -260,7 +196,7 @@ const FiltersPane: React.FC = () => {
                         <StyledDatePicker
                             value={dateEnd}
                             onChange={onDateEndSelectionChange}
-                            minDate={endDateMinDate}
+                            minDate={dateStart}
                             maxDate={latestDayFromGroundTruthData}
                         />
                     </div>
@@ -336,7 +272,8 @@ const FiltersPane: React.FC = () => {
                     />))}
                 </div>
             </CardBody>
-        </Card>);
+        </Card>)
+        ;
 }
 
 export default FiltersPane;

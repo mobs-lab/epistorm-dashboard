@@ -3,19 +3,20 @@
 'use client'
 
 import React, {useEffect, useState} from "react";
+import {DataPoint, ModelPrediction, SeasonOption} from "../Interfaces/forecast-interfaces";
 import ForecastChart from "../Components/dashboard/ForecastChart";
 import FiltersPane from "../Components/dashboard/FiltersPane";
 import SingleStateMap from "../Components/dashboard/SingleStateMap";
+import RiskLevelGauge from "../Components/dashboard/RiskLevelGauge";
 import {useAppDispatch} from '../store/hooks';
 import {setGroundTruthData} from '../store/groundTruthSlice';
 import {setPredictionsData} from '../store/predictionsSlice';
 import {setLocationData} from '../store/locationSlice';
 import {setNowcastTrendsData} from '../store/nowcastTrendsSlice';
+import {setSeasonOptions, updateDateRange} from "../store/filterSlice";
 
 import * as d3 from "d3";
-
-import {DataPoint, ModelPrediction} from "../Interfaces/forecast-interfaces";
-import RiskLevelGauge from "../Components/dashboard/RiskLevelGauge";
+import {format} from "date-fns";
 
 
 const Page: React.FC = () => {
@@ -42,7 +43,6 @@ const Page: React.FC = () => {
                 const predictionsData = await Promise.all(['MOBS-GLEAM_FLUH', 'CEPH-Rtrend_fluH', 'MIGHTE-Nsemble', 'NU_UCSD-GLEAM_AI_FLUH'].map(async (team_model) => {
                     const newPredictions = await d3.csv(`/data/processed/${team_model}/predictions.csv`);
                     const oldPredictions = await d3.csv(`/data/processed/${team_model}/predictions_older.csv`);
-                    /*old predictions debug*/
 
                     const predictionData = [...newPredictions.map((d) => ({
                         referenceDate: new Date(d.reference_date.replace(/-/g, '\/')),
@@ -95,6 +95,7 @@ const Page: React.FC = () => {
                 if (parsedGroundTruthData.length > 0 && predictionsData.length > 0 && parsedLocationData.length > 0) {
                     // Use the ground truth data to add back empty dates with predictions
                     const groundTruthDataWithPredictions = addBackEmptyDatesWithPrediction(parsedGroundTruthData, predictionsData);
+                    const seasonOptions = generateSeasonOptions(groundTruthDataWithPredictions);
 
                     console.log("DEBUG: page.tsx: groundTruthDataWithPredictions: ", groundTruthDataWithPredictions);
 
@@ -102,6 +103,8 @@ const Page: React.FC = () => {
                     dispatch(setPredictionsData(predictionsData));
                     dispatch(setLocationData(parsedLocationData));
                     dispatch(setNowcastTrendsData(parsedNowcastTrendsData));
+                    dispatch(setSeasonOptions(seasonOptions));
+
                     setDataLoaded(true);
                 }
 
@@ -111,61 +114,36 @@ const Page: React.FC = () => {
         };
 
         fetchData();
+
     }, [dispatch]);
 
-    return (
-        <>
-            {dataLoaded ? (
-                /*<div className="dashboard-grid-layout w-full h-1/2">
-                    <div className="forecast-state">
-                        <SingleStateMap/>
-                    </div>
-                    <div className="forecast-gauge">
-                        {/!* Add your gauge component here *!/}
-                        <div>Gauge Placeholder</div>
-                        <RiskLevelGauge
-                            riskLevel="Title"
-                            subText="paragraphs of text here"
-                            dateRange="Jun 16-Jun 22, 2024"
-                        />
-                    </div>
-                    <div className="forecast-graph">
-                        <ForecastChart/>
-                    </div>
-                    <div className="forecast-settings">
-                        <FiltersPane/>
-                    </div>
-                </div>*/
-                <div className="dashboard-grid-layout w-full h-full">
-                    <div className="forecast-state">
-                        <SingleStateMap/>
-                    </div>
-                    <div className="vertical-separator"></div>
-
-                    <div className="forecast-gauge">
-                        <RiskLevelGauge riskLevel="Title"
-                                        subText="paragraphs of text here"
-                                        dateRange="Jun 16-Jun 22, 2024"
-                        />
-                    </div>
-                    <div className="forecast-settings">
-                        <FiltersPane/>
-                    </div>
-                    <div className="horizontal-separator"></div>
-
-                    <div className="forecast-graph">
-                        <ForecastChart/>
-                    </div>
-                    <div className="forecast-drag-bar"></div>
+    return (<>
+        {dataLoaded ? (<div className="dashboard-grid-layout w-full h-full">
+                <div className="forecast-state">
+                    <SingleStateMap/>
                 </div>
+                <div className="vertical-separator"></div>
+
+                <div className="forecast-gauge">
+                    <RiskLevelGauge riskLevel="Title"
+                                    subText="paragraphs of text here"
+                                    dateRange="Jun 16-Jun 22, 2024"
+                    />
+                </div>
+                <div className="forecast-settings">
+                    <FiltersPane/>
+                </div>
+                <div className="horizontal-separator"></div>
+
+                <div className="forecast-graph">
+                    <ForecastChart/>
+                </div>
+                <div className="forecast-drag-bar"></div>
+            </div>
 
 
-            ) : (
-                <div className={"mx-auto"}> Loading...</div>
-            )
-            }
-        </>)
-        ;
+        ) : (<div className={"mx-auto"}> Loading...</div>)}
+    </>);
 };
 
 function addBackEmptyDatesWithPrediction(groundTruthData: DataPoint[], predictionsData: ModelPrediction[]): DataPoint[] {
@@ -207,6 +185,70 @@ function addBackEmptyDatesWithPrediction(groundTruthData: DataPoint[], predictio
         });
     });
     return [...groundTruthData, ...placeholderData].sort((a, b) => b.date.getTime() - a.date.getTime());
+}
+
+function generateSeasonOptions(data: DataPoint[]): SeasonOption[] {
+    const options: SeasonOption[] = [];
+
+    if (data.length === 0) {
+        return options;
+    }
+
+    const earliestDate = new Date(Math.min(...data.map(d => d.date.getTime())));
+    const latestDate = new Date(Math.max(...data.map(d => d.date.getTime())));
+
+    const earliestYear = earliestDate.getFullYear();
+    const latestYear = latestDate.getFullYear();
+
+    // Handle partial season at the start
+    const firstSeasonStart = new Date(earliestYear, 7, 1); // August 1st of the earliest year
+    if (earliestDate < firstSeasonStart) {
+        options.push({
+            index: 0,
+            displayString: `Partial ${earliestYear - 1}-${earliestYear}`,
+            timeValue: `${format(earliestDate, 'yyyy-MM-dd')}/${format(new Date(earliestYear, 6, 31), 'yyyy-MM-dd')}`,
+            startDate: earliestDate,
+            endDate: new Date(earliestYear, 6, 31) // July 31st of the earliest year
+        });
+    }
+
+
+    let optionIndex = 1;
+    // Generate full seasons
+    for (let year = earliestYear; year <= latestYear; year++) {
+        const seasonStart = new Date(year, 7, 1); // August 1st
+        const seasonEnd = new Date(year + 1, 6, 31); // July 31st of the following year
+
+        // Adjust start and end dates if they're outside the data range
+        const adjustedStart = new Date(Math.max(seasonStart.getTime(), earliestDate.getTime()));
+        const adjustedEnd = new Date(Math.min(seasonEnd.getTime(), latestDate.getTime()));
+
+        // Only add the season if it's within the data range
+        if (adjustedStart < adjustedEnd) {
+            options.push({
+                index: optionIndex++,
+                displayString: `${year}-${year + 1}`,
+                timeValue: `${format(adjustedStart, 'yyyy-MM-dd')}/${format(adjustedEnd, 'yyyy-MM-dd')}`,
+                startDate: adjustedStart,
+                endDate: adjustedEnd
+            });
+        }
+    }
+
+    // Handle partial season at the end
+    const lastSeasonEnd = new Date(latestYear, 6, 31); // July 31st of the latest year
+    if (latestDate > lastSeasonEnd) {
+        options.push({
+            index: options.length,
+            displayString: `Partial ${latestYear}-${latestYear + 1}`,
+            timeValue: `${format(new Date(latestYear, 7, 1), 'yyyy-MM-dd')}/${format(latestDate, 'yyyy-MM-dd')}`,
+            startDate: new Date(latestYear, 7, 1), // August 1st of the latest year
+            endDate: latestDate
+        });
+    }
+
+    console.log("DEBUG: page.tsx: generateSeasonOptions: options: ", options)
+    return options;
 }
 
 export default Page;

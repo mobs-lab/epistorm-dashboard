@@ -45,3 +45,11 @@ export interface NowcastTrend {
 export interface NowcastTrendsState {
     data: NowcastTrend[];
 }
+
+export interface SeasonOption {
+    index: number;
+    displayString: string;
+    timeValue: string;
+    startDate: Date;
+    endDate: Date;
+}
