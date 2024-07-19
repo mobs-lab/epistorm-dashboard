@@ -1,5 +1,6 @@
 // src/app/store/filterSlice.ts
 import {createSlice, PayloadAction} from '@reduxjs/toolkit';
+import {SeasonOption} from '../Interfaces/forecast-interfaces';
 
 interface FilterState {
     selectedStateName: string;
@@ -12,6 +13,7 @@ interface FilterState {
     yAxisScale: string;
     confidenceInterval: string[];
     displayMode: string;
+    seasonOptions: SeasonOption[]; // Add this line
 }
 
 const initialState: FilterState = {
@@ -20,11 +22,12 @@ const initialState: FilterState = {
     forecastModel: ["MOBS-GLEAM_FLUH"],
     numOfWeeksAhead: 3,
     dateRange: "2023-2024",
-    dateStart: new Date("2023-06-01T00:00:00.000Z"),
-    dateEnd: new Date("2024-06-01T00:00:00.000Z"),
+    dateStart: new Date("2023-08-02T00:00:00.000Z"),
+    dateEnd: new Date("2024-08-01T00:00:00.000Z"),
     yAxisScale: "linear",
     confidenceInterval: ["90"],
     displayMode: "byDate",
+    seasonOptions: [], // Add this line
 };
 
 const filterSlice = createSlice({
@@ -56,6 +59,9 @@ const filterSlice = createSlice({
         updateDisplayMode: (state, action: PayloadAction<string>) => {
             state.displayMode = action.payload;
         },
+        setSeasonOptions: (state, action: PayloadAction<SeasonOption[]>) => {
+            state.seasonOptions = action.payload;
+        },
         updateDateRange: (state, action: PayloadAction<{ dateStart: Date; dateEnd: Date }>) => {
             state.dateStart = action.payload.dateStart;
             state.dateEnd = action.payload.dateEnd;
@@ -72,7 +78,8 @@ export const {
     updateYScale,
     updateConfidenceInterval,
     updateDisplayMode,
-    updateDateRange
+    updateDateRange,
+    setSeasonOptions
 } = filterSlice.actions;
 
 export default filterSlice.reducer;
