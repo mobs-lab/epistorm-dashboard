@@ -35,8 +35,8 @@ export interface ModelPrediction {
 }
 
 export interface NowcastTrend {
-    nowcast_date: string;
     location: string;
+    reference_date: Date;
     decrease: number;
     increase: number;
     stable: number;
@@ -47,7 +47,7 @@ export interface NowcastTrendByModel {
     data: NowcastTrend[];
 }
 
-export interface NowcastTrendsCollection{
+export interface NowcastTrendsCollection {
     allData: NowcastTrendByModel[];
 }
 
@@ -57,4 +57,11 @@ export interface SeasonOption {
     timeValue: string;
     startDate: Date;
     endDate: Date;
+}
+
+export interface StateThresholds {
+    location: string;
+    medium: number;
+    high: number;
+    veryHigh: number;
 }

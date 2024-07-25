@@ -1,7 +1,6 @@
 import React, {useEffect, useRef, useState} from 'react';
 import * as d3 from 'd3';
 import {useAppSelector} from "../../store/hooks";
-import {format, subDays, parseISO} from 'date-fns';
 
 interface RiskLevelGaugeProps {
     riskLevel: string;
@@ -11,8 +10,9 @@ const RiskLevelGauge: React.FC<RiskLevelGaugeProps> = ({riskLevel}) => {
     const svgRef = useRef<SVGSVGElement>(null);
     const [dimensions, setDimensions] = useState({width: 0, height: 0});
     const nowcastTrendsCollection = useAppSelector((state) => state.nowcastTrends.allData);
-    const selectedModel = useAppSelector((state) => state.filter.forecastModel[0]); /* TODO: There will be a dedicated variable to keep track of the model selected, only for the Risk-Level widgets */
-    const selectedUSStateNum = useAppSelector((state) => state.filter.USStateNum);
+
+    const {USStateNum, userSelectedRiskLevelModel, userSelectedWeek} = useAppSelector((state) => state.filter);
+
 
     useEffect(() => {
         const updateDimensions = () => {
@@ -38,24 +38,51 @@ const RiskLevelGauge: React.FC<RiskLevelGaugeProps> = ({riskLevel}) => {
 
         const radius = Math.min(width, height) * 0.8;
 
-        const modelData = nowcastTrendsCollection.find(model => model.modelName === selectedModel);
+        // Find matching model's nowcast trend data
+        const matchingModelNowcast = nowcastTrendsCollection.find(model => model.modelName === userSelectedRiskLevelModel);
+        // If no data, return
+        if (!matchingModelNowcast || !matchingModelNowcast.data.length) return;
 
-        if (!modelData || !modelData.data.length) return;
+        // Filter modelData by selected state
+        const modelData = matchingModelNowcast.data;
+        const matchingStateData = modelData
+            .filter(entry => entry.location === USStateNum);
+        // Convert userSelectedWeek to the start of the day to ensure consistent comparison
+        const userSelectedWeekStart = new Date(userSelectedWeek);
+        userSelectedWeekStart.setHours(0, 0, 0, 0);
 
-        /* Filter modelData to retrieve the entry that is in correct state */
-        const latestTrend = modelData.data
-            .filter(entry => entry.location === selectedUSStateNum)[0];
+        // Find the matching trend data
+        const latestTrend = matchingStateData.find(entry => {
+            const entryDate = new Date(entry.reference_date);
+            entryDate.setHours(0, 0, 0, 0);
+            return entryDate.getTime() === userSelectedWeekStart.getTime();
+        });
 
-        // Record the week info from latestTrend to be used in text display in the center of the half donut gauge, down to the exact day unit
-        const currentWeekDate: string = latestTrend.nowcast_date; // date format is yyyy-mm-dd
-        // TODO: calculate the last week date based on currentWeekDate and parse it back to string
-        const currentDate = parseISO(currentWeekDate);
-        const lastWeekDate = format(subDays(currentDate, 7), 'yyyy-MM-dd');
+        // If no exact match is found, use the latest available trend
+        let trendToUse;
+        if (!latestTrend) {
+            console.warn("No exact match found for userSelectedWeek. Using latest available trend.");
+            trendToUse = matchingStateData.reduce((acc, curr) => {
+                return acc.reference_date > curr.reference_date ? acc : curr;
+            });
+            console.log("No matching trend using selected Week. Falling back to latest from data.", trendToUse);
+        } else {
+            trendToUse = latestTrend;
+        }
 
-        // Format dates for display
-        const formattedCurrentWeekDate = format(currentDate, 'MMM d, yyyy');
-        const formattedLastWeekDate = format(parseISO(lastWeekDate), 'MMM d, yyyy');
+        // Ensure we have a trend to use before proceeding
+        if (!trendToUse) {
+            console.error("No trend data available for the selected state and date range");
+            return;
+        }
 
+        // Format dates
+        const formattedCurrentWeekDate = trendToUse.reference_date.toDateString();
+
+        // Calculate last week's date
+        const lastWeekDate = new Date(trendToUse.reference_date);
+        lastWeekDate.setDate(lastWeekDate.getDate() - 6);
+        const formattedLastWeekDate = lastWeekDate.toDateString();
 
         const pie = d3.pie<number>()
             .sort(null)
@@ -67,15 +94,15 @@ const RiskLevelGauge: React.FC<RiskLevelGaugeProps> = ({riskLevel}) => {
             .innerRadius(radius * 0.8)
             .outerRadius(radius);
 
-        const data = [
-            Math.max(0.002, latestTrend.decrease),
-            Math.max(0.002, latestTrend.stable),
-            Math.max(0.002, latestTrend.increase)
-        ];
-
         const color = d3.scaleOrdinal<string>()
             .domain(['decrease', 'stable', 'increase'])
             .range(['#478791', '#b9d6d6', '#eae78b']);
+
+        const data = [
+            Math.max(0.02, trendToUse.decrease),
+            Math.max(0.02, trendToUse.stable),
+            Math.max(0.02, trendToUse.increase)
+        ];
 
         const g = svg.append('g')
             .attr('transform', `translate(${width / 2},${height})`);
@@ -96,7 +123,7 @@ const RiskLevelGauge: React.FC<RiskLevelGaugeProps> = ({riskLevel}) => {
             .attr('fill', 'white')
             .text("Trend Forecast");
 
-        /* Display the last week - this week info here */
+        /!* Display the last week - this week info here *!/
         g.append('text')
             .attr('text-anchor', 'middle')
             .attr('dy', `-${radius * 0.4}`)
@@ -104,7 +131,9 @@ const RiskLevelGauge: React.FC<RiskLevelGaugeProps> = ({riskLevel}) => {
             .attr('fill', 'white')
             .text(`${formattedLastWeekDate} - ${formattedCurrentWeekDate}`);
 
-        g.append('text')
+        /*
+
+        /*g.append('text')
             .attr('text-anchor', 'middle')
             .attr('dy', `-${radius * 0.3}`)
             .attr('font-size', `14px`)
@@ -116,9 +145,9 @@ const RiskLevelGauge: React.FC<RiskLevelGaugeProps> = ({riskLevel}) => {
             .attr('dy', `-${radius * 0.2}`)
             .attr('font-size', `14px`)
             .attr('fill', 'white')
-            .text(`Increase: ${(latestTrend.increase * 100).toFixed(1)}%`);
+            .text(`Increase: ${(latestTrend.increase * 100).toFixed(1)}%`);*/
 
-    }, [dimensions, riskLevel, nowcastTrendsCollection, selectedModel, selectedUSStateNum]);
+    }, [dimensions, riskLevel, nowcastTrendsCollection, userSelectedRiskLevelModel, USStateNum, userSelectedWeek]);
 
     return (
         <div className="w-full h-full flex items-center justify-center rounded-lg">

@@ -2,11 +2,8 @@ import React, {useEffect, useRef, useState} from 'react';
 import * as d3 from 'd3';
 import {NowcastTrend} from "../../Interfaces/forecast-interfaces";
 
-interface RiskLevelThermometerProps {
-    nowcastTrend: NowcastTrend | null;
-}
 
-const RiskLevelThermometer: React.FC<RiskLevelThermometerProps> = ({nowcastTrend}) => {
+const RiskLevelThermometer: React.FC<> = () => {
     const containerRef = useRef<HTMLDivElement>(null);
     const svgRef = useRef<SVGSVGElement>(null);
     const [dimensions, setDimensions] = useState({width: 0, height: 0});
