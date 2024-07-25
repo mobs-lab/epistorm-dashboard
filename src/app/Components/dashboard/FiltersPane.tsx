@@ -32,8 +32,10 @@ const FiltersPane: React.FC = () => {
 
     /* Redux-Managed State Variables */
     const dispatch = useAppDispatch();
+
     const groundTruthData = useAppSelector((state) => state.groundTruth.data);
     const locationData = useAppSelector((state) => state.location.data);
+
     const {
         USStateNum, forecastModel, dateStart, dateEnd, dateRange, confidenceInterval,
         seasonOptions
@@ -45,6 +47,7 @@ const FiltersPane: React.FC = () => {
     const onStateSelectionChange = (stateNum: string) => {
         const selectedState = locationData.find((state) => state.stateNum === stateNum);
         if (selectedState) {
+            console.log("FiltersPane update: State selected: ", selectedState.stateName, " with stateNum: ", selectedState.stateNum);
             dispatch(updateSelectedState({stateName: selectedState.stateName, stateNum: selectedState.stateNum}));
         }
     };

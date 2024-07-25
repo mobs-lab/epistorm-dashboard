@@ -38,22 +38,6 @@ const SingleStateMap: React.FC = () => {
     }, []);
 
     useEffect(() => {
-        const fetchNowcastTrend = async () => {
-            try {
-                const response = await fetch('/data/processed/nowcast_trends.csv');
-                const csvData = await response.text();
-                const parsedData = d3.csvParse(csvData) as NowcastTrend[];
-                const stateData = parsedData.find(d => d.location === USStateNum);
-                setNowcastTrend(stateData || null);
-            } catch (error) {
-                console.error('Error loading nowcast data:', error);
-            }
-        };
-
-        fetchNowcastTrend();
-    }, [USStateNum]);
-
-    useEffect(() => {
         const fetchData = async () => {
             try {
                 const us: any = await d3.json(shapeFile);
@@ -111,7 +95,7 @@ const SingleStateMap: React.FC = () => {
             </div>
             <div className="flex items-stretch justify-between flex-grow">
                 <svg ref={svgRef} width={"100%"} height={"100%"} preserveAspectRatio={"xMidYMid meet"}/>
-                <RiskLevelThermometer nowcastTrend={nowcastTrend}/>
+                {/*<RiskLevelThermometer nowcastTrend={nowcastTrend}/>*/}
             </div>
         </div>
     );

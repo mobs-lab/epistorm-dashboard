@@ -76,7 +76,9 @@ const Page: React.FC = () => {
                 // Fetch location data
                 const locationData = await d3.csv('/data/locations.csv');
                 const parsedLocationData = locationData.map((d) => ({
-                    stateNum: d.location, state: d.abbreviation, stateName: d.location_name,
+                    stateNum: d.location,
+                    state: d.abbreviation,
+                    stateName: d.location_name,
                 }));
 
                 // Fetch nowcast trends data for all models
@@ -85,8 +87,8 @@ const Page: React.FC = () => {
                     modelNames.map(async (modelName) => {
                         const response = await d3.csv(`/data/processed/${modelName}/nowcast_trends.csv`);
                         const parsedData = response.map((d) => ({
-                            nowcast_date: d.nowcast_date,
                             location: d.location,
+                            reference_date: new Date(d.reference_date.replace(/-/g, '\/')),
                             decrease: +d.decrease,
                             increase: +d.increase,
                             stable: +d.stable,
@@ -95,17 +97,13 @@ const Page: React.FC = () => {
                     })
                 );
 
-
-                console.log("DEBUG: page.tsx: Nowcast trends data loaded:", nowcastTrendsData);
-
-
                 if (parsedGroundTruthData.length > 0 && predictionsData.length > 0 && parsedLocationData.length > 0) {
                     // Use the ground truth data to add back empty dates with predictions
                     const groundTruthDataWithPredictions = addBackEmptyDatesWithPrediction(parsedGroundTruthData, predictionsData);
                     const seasonOptions = generateSeasonOptions(groundTruthDataWithPredictions);
 
-                    console.log("DEBUG: page.tsx: groundTruthDataWithPredictions: ", groundTruthDataWithPredictions);
-
+                    console.log("Debug: page.tsx: fetchData: nowcastTrendsData: ", nowcastTrendsData);
+                    console.log("Debug: page.tsx: fetchData: locationData:", locationData);
                     dispatch(setGroundTruthData(groundTruthDataWithPredictions));
                     dispatch(setPredictionsData(predictionsData));
                     dispatch(setLocationData(parsedLocationData));
@@ -119,7 +117,6 @@ const Page: React.FC = () => {
                 console.error('Error fetching data:', error);
             }
         };
-
         fetchData();
 
     }, [dispatch]);
@@ -158,7 +155,6 @@ function addBackEmptyDatesWithPrediction(groundTruthData: DataPoint[], predictio
     groundTruthData.forEach((dataPoint) => {
         states.add(`${dataPoint.stateNum}-${dataPoint.stateName}`);
         if (dataPoint.date > mostRecentDate) {
-            console.log("DEBUG: page.tsx: addBackEmptyDatesWithPrediction: dataPoint.date: ", dataPoint.date);
             mostRecentDate = dataPoint.date;
         }
     });
@@ -250,8 +246,6 @@ function generateSeasonOptions(data: DataPoint[]): SeasonOption[] {
             endDate: latestDate
         });
     }
-
-    console.log("DEBUG: page.tsx: generateSeasonOptions: options: ", options)
     return options;
 }
 

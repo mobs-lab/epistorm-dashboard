@@ -13,7 +13,13 @@ interface FilterState {
     yAxisScale: string;
     confidenceInterval: string[];
     displayMode: string;
-    seasonOptions: SeasonOption[]; // Add this line
+    seasonOptions: SeasonOption[];
+
+//  New: For RiskLevel Visualization Widgets only, another variable to keep track of the selected Prediction model (a single one) that should only affects the RiskLevel Visualization Widgets themselves.
+    userSelectedRiskLevelModel: string;
+
+//  New: For ForecastChart to report back the userSelectedWeek to the whole page, for sibling components to use, for example the RiskLevelGauge and RiskLevelThermometer (inside SingleStateMap.tsx)
+    userSelectedWeek: Date;
 }
 
 const initialState: FilterState = {
@@ -27,7 +33,9 @@ const initialState: FilterState = {
     yAxisScale: "linear",
     confidenceInterval: ["90"],
     displayMode: "byDate",
-    seasonOptions: [], // Add this line
+    seasonOptions: [],
+    userSelectedRiskLevelModel: "MOBS-GLEAM_FLUH",
+    userSelectedWeek: new Date("2024-04-27T04:00:00.000Z")
 };
 
 const filterSlice = createSlice({
@@ -65,7 +73,14 @@ const filterSlice = createSlice({
         updateDateRange: (state, action: PayloadAction<{ dateStart: Date; dateEnd: Date }>) => {
             state.dateStart = action.payload.dateStart;
             state.dateEnd = action.payload.dateEnd;
+        },
+        updateUserSelectedRiskLevelModel: (state, action: PayloadAction<string>) => {
+            state.userSelectedRiskLevelModel = action.payload;
+        },
+        updateUserSelectedWeek: (state, action: PayloadAction<Date>) => {
+            state.userSelectedWeek = action.payload;
         }
+
     },
 });
 
@@ -79,7 +94,9 @@ export const {
     updateConfidenceInterval,
     updateDisplayMode,
     updateDateRange,
-    setSeasonOptions
+    setSeasonOptions,
+    updateUserSelectedRiskLevelModel,
+    updateUserSelectedWeek
 } = filterSlice.actions;
 
 export default filterSlice.reducer;
