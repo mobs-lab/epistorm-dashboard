@@ -1,25 +1,14 @@
-import React, {useEffect, useRef, useState} from 'react';
+import React, { useEffect, useRef } from 'react';
 import * as d3 from 'd3';
-import {NowcastTrend} from "../../Interfaces/forecast-interfaces";
+import { useAppSelector } from '../../store/hooks';
 
-
-const RiskLevelThermometer: React.FC<> = () => {
-    const containerRef = useRef<HTMLDivElement>(null);
+const RiskLevelThermometer: React.FC = () => {
     const svgRef = useRef<SVGSVGElement>(null);
-    const [dimensions, setDimensions] = useState({width: 0, height: 0});
-
-    useEffect(() => {
-        const updateDimensions = () => {
-            if (containerRef.current) {
-                const {width, height} = containerRef.current.getBoundingClientRect();
-                setDimensions({width, height});
-            }
-        };
-
-        updateDimensions();
-        window.addEventListener('resize', updateDimensions);
-        return () => window.removeEventListener('resize', updateDimensions);
-    }, []);
+    const { USStateNum, userSelectedRiskLevelModel, userSelectedWeek } = useAppSelector(state => state.filter);
+    const groundTruthData = useAppSelector(state => state.groundTruth.data);
+    const predictionsData = useAppSelector(state => state.predictions.data);
+    const locationData = useAppSelector(state => state.location.data);
+    const thresholdsData = useAppSelector(state => state.stateThresholds.data);
 
     useEffect(() => {
         if (!svgRef.current) return;
@@ -27,96 +16,122 @@ const RiskLevelThermometer: React.FC<> = () => {
         const svg = d3.select(svgRef.current);
         svg.selectAll('*').remove();
 
-        const width = dimensions.width;
-        const height = dimensions.height;
+        const width = svgRef.current.clientWidth;
+        const height = svgRef.current.clientHeight;
 
-        // Create gradient
-        const gradient = svg.append('defs')
-            .append('linearGradient')
-            .attr('id', 'thermometer-gradient')
-            .attr('gradientTransform', 'rotate(180)');
+        // Define risk levels and colors
+        const riskLevels = ['low', 'medium', 'high', 'very high'];
+        const riskColors = ['#7cd8c9', '#2bafe2', '#435fce', '#3939a8'];
 
-        gradient.append('stop')
-            .attr('offset', '0%')
-            .attr('stop-color', '#32bbe0');
+        // Get thresholds for the selected state
+        const stateThresholds = thresholdsData.find(t => t.location === USStateNum);
+        if (!stateThresholds) return;
 
-        gradient.append('stop')
-            .attr('offset', '100%')
-            .attr('stop-color', '#e25e6d');
+        // Create an arbitrary scale
+        const yScale = d3.scaleLinear()
+            .domain([0, 100])  // Arbitrary domain
+            .range([height, 0]);
 
-        // Draw thermometer rectangle
-        svg.append('rect')
-            .attr('x', 10)
-            .attr('y', 0)
-            .attr('width', width - 20)
-            .attr('height', height)
-            .attr('fill', 'url(#thermometer-gradient)');
+        // Define risk level positions
+        const riskPositions = [
+            { level: 'low', position: 0 },
+            { level: 'medium', position: 0.4 },
+            { level: 'high', position: 0.9 },
+            { level: 'very high', position: 0.975 },
+            { level: 'max', position: 1 }
+        ];
 
-        // Draw dotted line (bottom)
-        svg.append('line')
+        // Draw background rectangles
+        svg.selectAll('rect')
+            .data(riskLevels)
+            .enter()
+            .append('rect')
+            .attr('x', 0)
+            .attr('y', (d, i) => yScale(riskPositions[i + 1].position * 100))
+            .attr('width', width)
+            .attr('height', (d, i) => {
+                const start = riskPositions[i].position;
+                const end = riskPositions[i + 1].position;
+                return yScale(start * 100) - yScale(end * 100);
+            })
+            .attr('fill', (d, i) => riskColors[i]);
+
+        // Draw threshold lines
+        const thresholdLevels = [
+            { name: 'medium', value: stateThresholds.medium, position: 0.4 },
+            { name: 'high', value: stateThresholds.high, position: 0.9 },
+            { name: 'very high', value: stateThresholds.veryHigh, position: 0.975 }
+        ];
+
+        svg.selectAll('.threshold-line')
+            .data(thresholdLevels)
+            .enter()
+            .append('line')
+            .attr('class', 'threshold-line')
             .attr('x1', 0)
-            .attr('y1', height * 0.7)
             .attr('x2', width)
-            .attr('y2', height * 0.7)
-            .attr('stroke', 'white')
-            .attr('stroke-width', 1)
-            .attr('stroke-dasharray', '4');
+            .attr('y1', d => yScale(d.position * 100))
+            .attr('y2', d => yScale(d.position * 100))
+            .attr('stroke', 'black')
+            .attr('stroke-width', 2);
 
-        // Draw solid line (top)
-        svg.append('line')
-            .attr('x1', 0)
-            .attr('y1', height * 0.3)
-            .attr('x2', width)
-            .attr('y2', height * 0.3)
-            .attr('stroke', 'white')
-            .attr('stroke-width', 1);
+        // Calculate positions for dotted and solid lines
+        const latestGroundTruth = groundTruthData
+            .filter(d => d.stateNum === USStateNum && d.admissions !== -1)
+            .sort((a, b) => b.date.getTime() - a.date.getTime())[0];
 
-        // Draw arrow
-        svg.append('line')
-            .attr('x1', width / 2)
-            .attr('y1', height * 0.7)
-            .attr('x2', width / 2)
-            .attr('y2', height * 0.3)
-            .attr('stroke', 'white')
-            .attr('stroke-width', 2)
-            .attr('marker-end', 'url(#arrow)');
+        if (latestGroundTruth) {
+            const maxThreshold = Math.max(stateThresholds.medium, stateThresholds.high, stateThresholds.veryHigh);
+            const valueScale = d3.scaleLinear()
+                .domain([0, maxThreshold])
+                .range([0, 97.5]);  // Map to 0-97.5% of the thermometer
 
-        // Define arrow marker
-        svg.append('defs').append('marker')
-            .attr('id', 'arrow')
-            .attr('viewBox', '0 -5 10 10')
-            .attr('refX', 8)
-            .attr('refY', 0)
-            .attr('markerWidth', 6)
-            .attr('markerHeight', 6)
-            .attr('orient', 'auto')
-            .append('path')
-            .attr('d', 'M0,-5L10,0L0,5')
-            .attr('fill', 'white');
+            const dottedLineY = yScale(valueScale(latestGroundTruth.weeklyRate));
 
-        // Update text positioning
-        svg.append('text')
-            .attr('x', width + width * 0.1)
-            .attr('y', height * 0.3)
-            .attr('fill', 'white')
-            .attr('font-size', `${height * 0.06}px`)
-            .attr('alignment-baseline', 'middle')
-            .text('High');
+            // Draw dotted line
+            svg.append('line')
+                .attr('x1', 0)
+                .attr('x2', width)
+                .attr('y1', dottedLineY)
+                .attr('y2', dottedLineY)
+                .attr('stroke', 'white')
+                .attr('stroke-width', 4)
+                .attr('stroke-dasharray', '3,5');
 
-        svg.append('text')
-            .attr('x', width + width * 0.1)
-            .attr('y', height * 0.7)
-            .attr('fill', 'white')
-            .attr('font-size', `${height * 0.06}px`)
-            .attr('alignment-baseline', 'middle')
-            .text('Low');
+            // Calculate solid line position
+            const selectedModel = predictionsData.find(m => m.modelName === userSelectedRiskLevelModel);
+            if (selectedModel) {
+                const prediction = selectedModel.predictionData
+                    .filter(p => p.stateNum === USStateNum && p.referenceDate.getTime() === latestGroundTruth.date.getTime())
+                    .find(p => {
+                        const oneWeekLater = new Date(latestGroundTruth.date);
+                        oneWeekLater.setDate(oneWeekLater.getDate() + 7);
+                        return p.targetEndDate.getTime() === oneWeekLater.getTime();
+                    });
 
-    }, [dimensions, nowcastTrend]);
+                if (prediction) {
+                    const statePopulation = locationData.find(l => l.stateNum === USStateNum)?.population;
+                    if (statePopulation) {
+                        const solidLineValue = (prediction.confidence500 / statePopulation) * 1000;
+                        const solidLineY = yScale(valueScale(solidLineValue));
+
+                        // Draw solid line
+                        svg.append('line')
+                            .attr('x1', 0)
+                            .attr('x2', width)
+                            .attr('y1', solidLineY)
+                            .attr('y2', solidLineY)
+                            .attr('stroke', 'white')
+                            .attr('stroke-width', 6);
+                    }
+                }
+            }
+        }
+
+    }, [USStateNum, userSelectedRiskLevelModel, userSelectedWeek, groundTruthData, predictionsData, locationData, thresholdsData]);
 
     return (
-        <div ref={containerRef} className="w-1/5 h-full flex items-center justify-center">
-            <svg ref={svgRef} width="100%" height="100%" preserveAspectRatio="xMidYMid meet"/>
-        </div>
+        <svg ref={svgRef} width="70%" height="100%"/>
     );
 };
 

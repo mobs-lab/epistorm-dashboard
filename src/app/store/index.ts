@@ -4,6 +4,7 @@ import predictionsReducer from './predictionsSlice';
 import locationReducer from './locationSlice';
 import filterReducer from './filterSlice';
 import nowcastTrendsReducer from './nowcastTrendsSlice';
+import stateThresholdsReducer from "./stateThresholdsSlice";
 
 const store = configureStore({
     reducer: {
@@ -12,6 +13,7 @@ const store = configureStore({
         location: locationReducer,
         filter: filterReducer,
         nowcastTrends: nowcastTrendsReducer,
+        stateThresholds: stateThresholdsReducer,
     },
 });
 

@@ -8,6 +8,7 @@ export interface DataPoint {
     stateNum: string;
     stateName: string;
     admissions: number;
+    weeklyRate: number;
 }
 
 export interface PredictionDataPoint {
@@ -27,6 +28,7 @@ export interface LocationData {
     stateNum: string; // state numbers
     state: string; // state abbreviations
     stateName: string; // state full names
+    population: number;
 }
 
 export interface ModelPrediction {

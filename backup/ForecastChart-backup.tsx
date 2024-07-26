@@ -4,10 +4,10 @@
 import React, {useEffect, useRef, useState} from "react";
 import * as d3 from "d3";
 import {Axis, BaseType, NumberValue, ScaleLinear, ScaleLogarithmic, ScaleTime} from "d3";
-import {useAppSelector} from '../../store/hooks';
-import {modelColorMap} from '../../Interfaces/modelColors';
-import {DataPoint, ModelPrediction, PredictionDataPoint} from "../../Interfaces/forecast-interfaces";
-import InfoButton from "./InfoButton";
+import {useAppSelector} from '../src/app/store/hooks';
+import {modelColorMap} from '../src/app/Interfaces/modelColors';
+import {DataPoint, ModelPrediction, PredictionDataPoint} from "../src/app/Interfaces/forecast-interfaces";
+import InfoButton from "../src/app/Components/dashboard/InfoButton";
 
 const ForecastChart: React.FC = () => {
 
