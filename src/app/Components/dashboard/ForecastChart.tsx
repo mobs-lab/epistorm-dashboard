@@ -671,6 +671,7 @@ const ForecastChart: React.FC = () => {
                         admissions: -1,
                         stateNum: groundTruthData[0].stateNum,
                         stateName: groundTruthData[0].stateName,
+                        weeklyRate: 0,
                     });
                 }
             });
