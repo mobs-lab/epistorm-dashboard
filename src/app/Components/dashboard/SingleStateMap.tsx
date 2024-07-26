@@ -14,13 +14,7 @@ const SingleStateMap: React.FC = () => {
     const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
     const { selectedStateName, USStateNum } = useAppSelector((state) => state.filter);
 
-    const mapInfo = (
-        <div>
-            <p>This map shows the selected state or the entire US.</p>
-            <p>The map updates based on your state selection in the filters pane.</p>
-            <p>The thermometer on the right shows the current risk level trend.</p>
-        </div>
-    );
+
 
     useEffect(() => {
         const updateDimensions = () => {
@@ -87,13 +81,10 @@ const SingleStateMap: React.FC = () => {
 
     return (
         <div ref={containerRef} className="text-white p-4 rounded relative h-full flex flex-col">
-            <div className="flex justify-between items-center mb-4">
-                <h2 className="text-3xl font-bold">{selectedStateName}</h2>
-                <InfoButton title="State Map Information" content={mapInfo} />
-            </div>
+
             <div className="flex items-stretch justify-between flex-grow">
                 <div className="w-3/5">
-                    <svg ref={mapSvgRef} width="80%" height="80%" preserveAspectRatio="xMidYMid meet" />
+                    <svg ref={mapSvgRef} width="80%" height="100%" preserveAspectRatio="xMidYMid meet" />
                 </div>
                 <div className="w-2/5">
                     <RiskLevelThermometer />

@@ -23,8 +23,9 @@ body {
         height: calc(100vh - 60px);
         gap: 2px;
         grid-template-columns: 1.5fr 2px 1.5fr 1fr;
-        grid-template-rows: minmax(0, 1fr) 2px minmax(0, 1.5fr) 0.1fr;
+        grid-template-rows: minmax(0, 0.5fr) minmax(0, 1.2fr) 2px minmax(0, 2fr) 0.1fr;
         grid-template-areas:
+    "nowcastHeader nowcastHeader nowcastHeader settings"
     "state verticalSeparator gauge settings"
     "separator separator separator settings"
     "graph graph graph settings"

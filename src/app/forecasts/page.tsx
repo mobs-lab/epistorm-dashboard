@@ -24,6 +24,7 @@ import {setStateThresholdsData} from '../store/stateThresholdsSlice';
 
 import * as d3 from "d3";
 import {format} from "date-fns";
+import NowcastHeader from "../Components/dashboard/NowcastHeader";
 
 
 const Page: React.FC = () => {
@@ -146,6 +147,9 @@ const Page: React.FC = () => {
 
     return (<>
         {dataLoaded ? (<div className="dashboard-grid-layout w-full h-full">
+                <div className="nowcastTitle">
+                    <NowcastHeader/>
+                </div>
                 <div className="forecast-state">
                     <SingleStateMap/>
                 </div>
