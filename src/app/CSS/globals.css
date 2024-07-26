@@ -33,8 +33,7 @@ body {
     }
 
     .white-separator {
-        height: 1px;
-        background-color: white;
+        height: 4px;
         margin: 1rem 0;
     }
 
@@ -46,6 +45,10 @@ body {
     /* Remove focus outline */
     *:focus {
         outline: none;
+    }
+
+    .nowcast-header {
+        grid-area: nowcastHeader;
     }
 
     .forecast-state, .forecast-gauge, .forecast-settings, .forecast-graph {
