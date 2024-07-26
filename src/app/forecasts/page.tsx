@@ -3,7 +3,13 @@
 'use client'
 
 import React, {useEffect, useState} from "react";
-import {DataPoint, ModelPrediction, NowcastTrendByModel, SeasonOption} from "../Interfaces/forecast-interfaces";
+import {
+    DataPoint,
+    ModelPrediction,
+    NowcastTrendByModel,
+    SeasonOption,
+    StateThresholds
+} from "../Interfaces/forecast-interfaces";
 import ForecastChart from "../Components/dashboard/ForecastChart";
 import FiltersPane from "../Components/dashboard/FiltersPane";
 import SingleStateMap from "../Components/dashboard/SingleStateMap";
@@ -14,6 +20,7 @@ import {setPredictionsData} from '../store/predictionsSlice';
 import {setLocationData} from '../store/locationSlice';
 import {setNowcastTrendsData} from '../store/nowcastTrendsSlice';
 import {setSeasonOptions, updateDateRange} from "../store/filterSlice";
+import {setStateThresholdsData} from '../store/stateThresholdsSlice';
 
 import * as d3 from "d3";
 import {format} from "date-fns";
@@ -36,6 +43,8 @@ const Page: React.FC = () => {
                     stateNum: d.location,
                     stateName: d.location_name,
                     admissions: +d.value,
+                    weeklyRate: +d["weekly_rate"],
+
                 }));
 
 // Fetch predictions data
@@ -79,6 +88,7 @@ const Page: React.FC = () => {
                     stateNum: d.location,
                     state: d.abbreviation,
                     stateName: d.location_name,
+                    population: +d.population,
                 }));
 
                 // Fetch nowcast trends data for all models
@@ -97,18 +107,31 @@ const Page: React.FC = () => {
                     })
                 );
 
+                /* Load the Thresholds Data for RiskLevelThermometer */
+                const thresholdsData = await d3.csv('/data/thresholds.csv');
+                const parsedThresholdsData: StateThresholds[] = thresholdsData.map((d) => ({
+                    location: d.Location,
+                    medium: +d.Medium,
+                    high: +d.High,
+                    veryHigh: +d["Very High"],
+                }));
+
+
                 if (parsedGroundTruthData.length > 0 && predictionsData.length > 0 && parsedLocationData.length > 0) {
                     // Use the ground truth data to add back empty dates with predictions
                     const groundTruthDataWithPredictions = addBackEmptyDatesWithPrediction(parsedGroundTruthData, predictionsData);
                     const seasonOptions = generateSeasonOptions(groundTruthDataWithPredictions);
 
-                    console.log("Debug: page.tsx: fetchData: nowcastTrendsData: ", nowcastTrendsData);
-                    console.log("Debug: page.tsx: fetchData: locationData:", locationData);
+                    // console.log("Debug: page.tsx: fetchData: nowcastTrendsData: ", nowcastTrendsData);
+                    // console.log("Debug: page.tsx: fetchData: locationData:", locationData);
+                    console.log("Debug: page.tsx: fetchData: parsedThresholdsData:", parsedThresholdsData);
+
                     dispatch(setGroundTruthData(groundTruthDataWithPredictions));
                     dispatch(setPredictionsData(predictionsData));
                     dispatch(setLocationData(parsedLocationData));
                     dispatch(setNowcastTrendsData(nowcastTrendsData));
                     dispatch(setSeasonOptions(seasonOptions));
+                    dispatch(setStateThresholdsData(parsedThresholdsData));
 
                     setDataLoaded(true);
                 }
@@ -180,7 +203,7 @@ function addBackEmptyDatesWithPrediction(groundTruthData: DataPoint[], predictio
         states.forEach((stateString) => {
             const [stateNum, stateName] = stateString.split('-');
             placeholderData.push({
-                date, stateNum, stateName, admissions: -1 // Use -1 to indicate a placeholder
+                date, stateNum, stateName, admissions: -1, weeklyRate: 0 // Use -1 to indicate a placeholder for admission value
             });
         });
     });
