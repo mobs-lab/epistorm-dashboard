@@ -43,7 +43,7 @@ const SingleStateMap: React.FC = () => {
 
                 const path = d3.geoPath();
 
-                if (selectedStateName === 'US') {
+                if (USStateNum === 'US') {
                     const projection = d3.geoAlbersUsa().fitSize([width, height], states);
                     path.projection(projection);
 

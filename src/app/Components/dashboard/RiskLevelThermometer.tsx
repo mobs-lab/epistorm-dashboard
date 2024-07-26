@@ -114,6 +114,7 @@ const RiskLevelThermometer: React.FC = () => {
                     if (statePopulation) {
                         const solidLineValue = (prediction.confidence500 / statePopulation) * 1000;
                         const solidLineY = yScale(valueScale(solidLineValue));
+                        console.info("The solidLine Y value is: ", solidLineY);
 
                         // Draw solid line
                         svg.append('line')
