@@ -165,7 +165,7 @@ const RiskLevelGauge: React.FC<RiskLevelGaugeProps> = ({riskLevel}) => {
             .attr('fill', 'white')
             .attr('font-size', '12px');
 
-        paths.on('mouseover', function(event: MouseEvent, d) {
+        paths.on('mouseover', function (event: MouseEvent, d) {
             const [x, y] = d3.pointer(event);
             let label, value;
             if (d.index === 0) {
@@ -208,7 +208,7 @@ const RiskLevelGauge: React.FC<RiskLevelGaugeProps> = ({riskLevel}) => {
                 .attr('transform', `translate(${tooltipX}, ${tooltipY})`)
                 .style('opacity', 1);
         })
-            .on('mouseout', function() {
+            .on('mouseout', function () {
                 cornerTooltip.style('opacity', 0);
             });
 
