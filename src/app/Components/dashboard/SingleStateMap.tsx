@@ -1,7 +1,7 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import * as d3 from 'd3';
 import * as topojson from 'topojson-client';
-import { useAppSelector } from '../../store/hooks';
+import {useAppSelector} from '../../store/hooks';
 
 const shapeFile = '/states-10m.json';
 
@@ -9,8 +9,13 @@ const SingleStateMap: React.FC = () => {
     const containerRef = useRef<HTMLDivElement>(null);
     const mapSvgRef = useRef<SVGSVGElement>(null);
     const thermometerSvgRef = useRef<SVGSVGElement>(null);
-    const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
-    const { selectedStateName, USStateNum, userSelectedRiskLevelModel, userSelectedWeek } = useAppSelector((state) => state.filter);
+    const [dimensions, setDimensions] = useState({width: 0, height: 0});
+    const {
+        selectedStateName,
+        USStateNum,
+        userSelectedRiskLevelModel,
+        userSelectedWeek
+    } = useAppSelector((state) => state.filter);
     const groundTruthData = useAppSelector(state => state.groundTruth.data);
     const predictionsData = useAppSelector(state => state.predictions.data);
     const locationData = useAppSelector(state => state.location.data);
@@ -20,8 +25,8 @@ const SingleStateMap: React.FC = () => {
     useEffect(() => {
         const updateDimensions = () => {
             if (containerRef.current) {
-                const { width, height } = containerRef.current.getBoundingClientRect();
-                setDimensions({ width, height });
+                const {width, height} = containerRef.current.getBoundingClientRect();
+                setDimensions({width, height});
             }
         };
 
@@ -172,7 +177,7 @@ const SingleStateMap: React.FC = () => {
                 yPosition = yScale((riskPositions[0].position + fraction * (riskPositions[1].position - riskPositions[0].position)) * 100);
             }
 
-            return { riskLevel, yPosition };
+            return {riskLevel, yPosition};
         };
 
         // Calculate solid line position (predicted risk level trend)
@@ -188,7 +193,7 @@ const SingleStateMap: React.FC = () => {
                 const statePopulation = locationData.find(l => l.stateNum === USStateNum)?.population;
                 if (statePopulation) {
                     const solidLineValue = (prediction.confidence500 / statePopulation) * 100000;
-                    const { riskLevel, yPosition } = calculateLinePosition(solidLineValue);
+                    const {riskLevel, yPosition} = calculateLinePosition(solidLineValue);
 
                     // Draw solid line
                     svg.append('line')
@@ -213,7 +218,7 @@ const SingleStateMap: React.FC = () => {
         );
 
         if (groundTruthEntry) {
-            const { yPosition } = calculateLinePosition(groundTruthEntry.weeklyRate);
+            const {yPosition} = calculateLinePosition(groundTruthEntry.weeklyRate);
 
             // Draw dotted line
             svg.append('line')
@@ -233,7 +238,7 @@ const SingleStateMap: React.FC = () => {
         <div ref={containerRef} className="text-white p-4 rounded relative h-full flex flex-col">
             <div className="flex items-stretch justify-between flex-grow">
                 <div className="w-3/5">
-                    <svg ref={mapSvgRef} width="80%" height="100%" preserveAspectRatio="xMidYMid meet" />
+                    <svg ref={mapSvgRef} width="80%" height="100%" preserveAspectRatio="xMidYMid meet"/>
                 </div>
                 <div className="w-2/5">
                     <svg ref={thermometerSvgRef} width="70%" height="100%"/>
