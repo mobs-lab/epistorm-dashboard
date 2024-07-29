@@ -1,6 +1,7 @@
 import React, {useEffect, useRef, useState} from 'react';
 import * as d3 from 'd3';
 import {useAppSelector} from "../../store/hooks";
+import Tooltip from './Tooltip';
 
 interface RiskLevelGaugeProps {
     riskLevel: string;
@@ -11,6 +12,10 @@ const RiskLevelGauge: React.FC<RiskLevelGaugeProps> = ({riskLevel}) => {
     const [dimensions, setDimensions] = useState({width: 0, height: 0});
     const nowcastTrendsCollection = useAppSelector((state) => state.nowcastTrends.allData);
     const {USStateNum, userSelectedRiskLevelModel, userSelectedWeek} = useAppSelector((state) => state.filter);
+
+    /* For tooltip */
+    const [tooltipContent, setTooltipContent] = useState<React.ReactNode | null>(null);
+    const [tooltipPosition, setTooltipPosition] = useState({x: 0, y: 0});
 
     useEffect(() => {
         const updateDimensions = () => {
@@ -164,6 +169,7 @@ const RiskLevelGauge: React.FC<RiskLevelGaugeProps> = ({riskLevel}) => {
         const tooltipText = cornerTooltip.append('text')
             .attr('fill', 'white')
             .attr('font-size', '12px');
+
 
         paths.on('mouseover', function (event: MouseEvent, d) {
             const [x, y] = d3.pointer(event);
