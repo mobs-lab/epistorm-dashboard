@@ -85,7 +85,7 @@ body {
 
     .forecast-drag-bar {
         grid-area: dragBar;
-        border: 1px solid white;
+        /*border: 1px solid white;*/
     }
 
     /*NOTE: For `RiskLevelGauge` Component's popover tooltip*/
