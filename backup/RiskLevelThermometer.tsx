@@ -1,92 +1,23 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, {useEffect, useRef} from 'react';
 import * as d3 from 'd3';
-import * as topojson from 'topojson-client';
-import { useAppSelector } from '../../store/hooks';
+import {useAppSelector} from '../src/app/store/hooks';
 
-const shapeFile = '/states-10m.json';
-
-const SingleStateMap: React.FC = () => {
-    const containerRef = useRef<HTMLDivElement>(null);
-    const mapSvgRef = useRef<SVGSVGElement>(null);
-    const thermometerSvgRef = useRef<SVGSVGElement>(null);
-    const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
-    const { selectedStateName, USStateNum, userSelectedRiskLevelModel, userSelectedWeek } = useAppSelector((state) => state.filter);
+const RiskLevelThermometer: React.FC = () => {
+    const svgRef = useRef<SVGSVGElement>(null);
+    const {USStateNum, userSelectedRiskLevelModel, userSelectedWeek} = useAppSelector(state => state.filter);
     const groundTruthData = useAppSelector(state => state.groundTruth.data);
     const predictionsData = useAppSelector(state => state.predictions.data);
     const locationData = useAppSelector(state => state.location.data);
     const thresholdsData = useAppSelector(state => state.stateThresholds.data);
-    const [riskColor, setRiskColor] = useState('#7cd8c9'); // Default to low risk color
 
     useEffect(() => {
-        const updateDimensions = () => {
-            if (containerRef.current) {
-                const { width, height } = containerRef.current.getBoundingClientRect();
-                setDimensions({ width, height });
-            }
-        };
+        if (!svgRef.current) return;
 
-        updateDimensions();
-        window.addEventListener('resize', updateDimensions);
-        return () => window.removeEventListener('resize', updateDimensions);
-    }, []);
-
-    useEffect(() => {
-        const drawMap = async () => {
-            try {
-                const us: any = await d3.json(shapeFile);
-                const states = topojson.feature(us, us.objects.states);
-
-                const svg = d3.select(mapSvgRef.current);
-                svg.selectAll('*').remove();
-
-                const width = dimensions.width * 0.4;
-                const height = dimensions.height * 0.6;
-
-                const path = d3.geoPath();
-
-                if (USStateNum === 'US') {
-                    const projection = d3.geoAlbersUsa().fitSize([width, height], states);
-                    path.projection(projection);
-
-                    svg.selectAll('path')
-                        .data(states.features)
-                        .enter()
-                        .append('path')
-                        .attr('d', path)
-                        .attr('fill', riskColor)
-                        .attr('stroke', 'white');
-                } else {
-                    const selectedState = states.features.find(
-                        (feature) => feature.properties.name === selectedStateName
-                    );
-
-                    if (selectedState) {
-                        const projection = d3.geoAlbersUsa().fitSize([width, height], selectedState);
-                        path.projection(projection);
-
-                        svg.append('path')
-                            .datum(selectedState)
-                            .attr('d', path)
-                            .attr('fill', riskColor)
-                            .attr('stroke', 'white');
-                    }
-                }
-            } catch (error) {
-                console.error('Error loading shapefile:', error);
-            }
-        };
-
-        drawMap();
-    }, [dimensions, selectedStateName, riskColor]);
-
-    useEffect(() => {
-        if (!thermometerSvgRef.current) return;
-
-        const svg = d3.select(thermometerSvgRef.current);
+        const svg = d3.select(svgRef.current);
         svg.selectAll('*').remove();
 
-        const width = thermometerSvgRef.current.clientWidth;
-        const height = thermometerSvgRef.current.clientHeight;
+        const width = svgRef.current.clientWidth;
+        const height = svgRef.current.clientHeight;
 
         // Define risk levels and colors
         const riskLevels = ['low', 'medium', 'high', 'very high'];
@@ -151,6 +82,11 @@ const SingleStateMap: React.FC = () => {
         const relativeLastWeek = new Date(currentSelectedWeek);
         relativeLastWeek.setDate(relativeLastWeek.getDate() - 7);
 
+        const maxThreshold = Math.max(stateThresholds.medium, stateThresholds.high, stateThresholds.veryHigh);
+        const valueScale = d3.scaleLinear()
+            .domain([0, maxThreshold])
+            .range([0, 97.5]);  // Map to 0-97.5% of the thermometer
+
         // Function to calculate line position and risk level
         const calculateLinePosition = (value: number) => {
             let riskLevel = 'low';
@@ -187,21 +123,17 @@ const SingleStateMap: React.FC = () => {
             if (prediction) {
                 const statePopulation = locationData.find(l => l.stateNum === USStateNum)?.population;
                 if (statePopulation) {
-                    const solidLineValue = (prediction.confidence500 / statePopulation) * 100000;
-                    const { riskLevel, yPosition } = calculateLinePosition(solidLineValue);
+                    const solidLineValue = (prediction.confidence500 / statePopulation) * 100000; //NOTE: ask is it 1000 or 100000? 100000 seems more likely?
+                    const solidLineY = yScale(valueScale(solidLineValue));
 
                     // Draw solid line
                     svg.append('line')
                         .attr('x1', 0)
                         .attr('x2', width)
-                        .attr('y1', yPosition)
-                        .attr('y2', yPosition)
+                        .attr('y1', solidLineY)
+                        .attr('y2', solidLineY)
                         .attr('stroke', 'white')
                         .attr('stroke-width', 6);
-
-                    // Update risk color for the map
-                    const newRiskColor = riskColors[riskLevels.indexOf(riskLevel)];
-                    setRiskColor(newRiskColor);
                 }
             }
         }
@@ -213,34 +145,25 @@ const SingleStateMap: React.FC = () => {
         );
 
         if (groundTruthEntry) {
-            const { yPosition } = calculateLinePosition(groundTruthEntry.weeklyRate);
+            const dottedLineY = yScale(valueScale(groundTruthEntry.weeklyRate));
 
             // Draw dotted line
             svg.append('line')
                 .attr('x1', 0)
                 .attr('x2', width)
-                .attr('y1', yPosition)
-                .attr('y2', yPosition)
+                .attr('y1', dottedLineY)
+                .attr('y2', dottedLineY)
                 .attr('stroke', 'white')
                 .attr('stroke-width', 4)
                 .attr('stroke-dasharray', '3,5');
         }
 
+
     }, [USStateNum, userSelectedRiskLevelModel, userSelectedWeek, groundTruthData, predictionsData, locationData, thresholdsData]);
 
-
     return (
-        <div ref={containerRef} className="text-white p-4 rounded relative h-full flex flex-col">
-            <div className="flex items-stretch justify-between flex-grow">
-                <div className="w-3/5">
-                    <svg ref={mapSvgRef} width="80%" height="100%" preserveAspectRatio="xMidYMid meet" />
-                </div>
-                <div className="w-2/5">
-                    <svg ref={thermometerSvgRef} width="70%" height="100%"/>
-                </div>
-            </div>
-        </div>
+        <svg ref={svgRef} width="70%" height="100%"/>
     );
 };
 
-export default SingleStateMap;
+export default RiskLevelThermometer;
