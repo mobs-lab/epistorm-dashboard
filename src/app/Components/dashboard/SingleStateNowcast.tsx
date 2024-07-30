@@ -83,7 +83,6 @@ const SingleStateNowcast: React.FC = () => {
         drawMap();
     }, [dimensions, selectedStateName, riskColor]);
 
-    /*TODO: Update this useEffect hook*/
     useEffect(() => {
         if (!thermometerSvgRef.current || !tooltipRef.current) return;
 
