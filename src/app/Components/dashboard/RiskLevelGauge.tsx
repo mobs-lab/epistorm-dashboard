@@ -1,7 +1,6 @@
 import React, {useEffect, useRef, useState} from 'react';
 import * as d3 from 'd3';
 import {useAppSelector} from "../../store/hooks";
-import Tooltip from './Tooltip';
 
 interface RiskLevelGaugeProps {
     riskLevel: string;
@@ -12,10 +11,6 @@ const RiskLevelGauge: React.FC<RiskLevelGaugeProps> = ({riskLevel}) => {
     const [dimensions, setDimensions] = useState({width: 0, height: 0});
     const nowcastTrendsCollection = useAppSelector((state) => state.nowcastTrends.allData);
     const {USStateNum, userSelectedRiskLevelModel, userSelectedWeek} = useAppSelector((state) => state.filter);
-
-    /* For tooltip */
-    const [tooltipContent, setTooltipContent] = useState<React.ReactNode | null>(null);
-    const [tooltipPosition, setTooltipPosition] = useState({x: 0, y: 0});
 
     useEffect(() => {
         const updateDimensions = () => {
@@ -39,7 +34,7 @@ const RiskLevelGauge: React.FC<RiskLevelGaugeProps> = ({riskLevel}) => {
         const width = dimensions.width;
         const height = dimensions.height;
 
-        const radius = Math.min(width, height * 0.8) * 0.8;
+        const radius = Math.min(width, height * 0.7);
 
         const matchingModelNowcast = nowcastTrendsCollection.find(model => model.modelName === userSelectedRiskLevelModel);
         if (!matchingModelNowcast || !matchingModelNowcast.data.length) return;
@@ -83,7 +78,7 @@ const RiskLevelGauge: React.FC<RiskLevelGaugeProps> = ({riskLevel}) => {
             .endAngle(Math.PI / 2);
 
         const arc = d3.arc<d3.PieArcDatum<number>>()
-            .innerRadius(radius * 0.7)
+            .innerRadius(radius * 0.74)
             .outerRadius(radius);
 
         const color = d3.scaleOrdinal<string>()
@@ -124,52 +119,65 @@ const RiskLevelGauge: React.FC<RiskLevelGaugeProps> = ({riskLevel}) => {
             .attr('fill', 'white')
             .text(`${formattedLastWeekDate} - ${formattedCurrentWeekDate}`);
 
-
-        const legendX = (width - (radius * 2)) * 1.2;
-        // Legend should start at position, calculated by
+        // Legend
+        const legendWidth = radius * 2;
+        const legendX = width / 2 - radius;
         const legend = svg.append('g')
+            .attr('class', 'legend')
             .attr('transform', `translate(${legendX},${height * 0.9})`);
 
         const legendData = [
-            {label: 'Decrease', color: '#478791'},
-            {label: 'Stable', color: '#b9d6d6'},
-            {label: 'Increase', color: '#eae78b'}
+            {label: 'Decrease', color: '#478791', position: 'left'},
+            {label: 'Stable', color: '#b9d6d6', position: 'center'},
+            {label: 'Increase', color: '#eae78b', position: 'right'}
         ];
 
-        const legendItems = legend.selectAll('.legend-item')
-            .data(legendData)
-            .enter()
-            .append('g')
-            .attr('class', 'legend-item')
-            .attr('transform', (d, i) => `translate(${(i - 1) * 150}, 0)`);
+        legendData.forEach((item, index) => {
+            let legendX;
+            const legend = svg.append('g')
+                .attr('class', `legend-${item.position}`)
+                .attr('class', 'text-sm');
 
-        legendItems.append('rect')
-            .attr('width', 20)
-            .attr('height', 20)
-            .attr('fill', d => d.color)
-            .attr('stroke', '#333')
-            .attr('stroke-width', 1);
+            legend.append('rect')
+                .attr('width', 20)
+                .attr('height', 20)
+                .attr('fill', item.color)
+                .attr('stroke', '#333')
+                .attr('stroke-width', 1);
 
-        legendItems.append('text')
-            .attr('x', 25)
-            .attr('y', 16)
-            .attr('fill', 'white')
-            .text(d => d.label);
+            const text = legend.append('text')
+                .attr('x', 25)
+                .attr('y', 16)
+                .attr('fill', 'white')
+                .text(item.label);
 
-        // Create corner tooltip
-        const cornerTooltip = svg.append('g')
+            const legendWidth = legend.node().getBBox().width;
+
+            if (item.position === 'left') {
+                legendX = width / 2 - radius;
+            } else if (item.position === 'center') {
+                legendX = width / 2 - legendWidth / 2;
+            } else {
+                legendX = width / 2 + radius - legendWidth;
+            }
+
+            legend.attr('transform', `translate(${legendX},${height * 0.9})`);
+        });
+
+
+        // Create tooltip
+        const hovertooltip = svg.append('g')
             .attr('class', 'corner-tooltip')
             .style('opacity', 0);
 
-        const tooltipBackground = cornerTooltip.append('rect')
+        const tooltipBackground = hovertooltip.append('rect')
             .attr('fill', 'rgba(0, 0, 0, 0.7)')
             .attr('rx', 5)
             .attr('ry', 5);
 
-        const tooltipText = cornerTooltip.append('text')
+        const tooltipText = hovertooltip.append('text')
             .attr('fill', 'white')
-            .attr('font-size', '12px');
-
+            .attr('font-size', '14px');
 
         paths.on('mouseover', function (event: MouseEvent, d) {
             const [x, y] = d3.pointer(event);
@@ -185,11 +193,11 @@ const RiskLevelGauge: React.FC<RiskLevelGaugeProps> = ({riskLevel}) => {
                 value = trendToUse.increase;
             }
 
-            const tooltipContent = `${label}: ${value.toFixed(5)}`;
+            const tooltipContent = `${label}: ${value.toFixed(3)}`;
             tooltipText.text(tooltipContent);
 
             const textBBox = tooltipText.node().getBBox();
-            const padding = 5;
+            const padding = 10;
             tooltipBackground
                 .attr('width', textBBox.width + padding * 2)
                 .attr('height', textBBox.height + padding * 2);
@@ -200,7 +208,7 @@ const RiskLevelGauge: React.FC<RiskLevelGaugeProps> = ({riskLevel}) => {
             const tooltipHeight = textBBox.height + padding * 2;
 
             let tooltipX = x + width / 2 - tooltipWidth / 2;
-            let tooltipY = y + height * 0.5 - tooltipHeight - 10;
+            let tooltipY = y + height * 0.5 - tooltipHeight - 5;
 
             // Adjust position if it goes out of bounds
             if (tooltipX + tooltipWidth > width) {
@@ -210,12 +218,12 @@ const RiskLevelGauge: React.FC<RiskLevelGaugeProps> = ({riskLevel}) => {
                 tooltipY = 10;
             }
 
-            cornerTooltip
+            hovertooltip
                 .attr('transform', `translate(${tooltipX}, ${tooltipY})`)
                 .style('opacity', 1);
         })
             .on('mouseout', function () {
-                cornerTooltip.style('opacity', 0);
+                hovertooltip.style('opacity', 0);
             });
 
     }, [dimensions, riskLevel, nowcastTrendsCollection, userSelectedRiskLevelModel, USStateNum, userSelectedWeek]);

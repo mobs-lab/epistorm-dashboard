@@ -12,7 +12,7 @@ import {
 } from "../Interfaces/forecast-interfaces";
 import ForecastChart from "../Components/dashboard/ForecastChart";
 import FiltersPane from "../Components/dashboard/FiltersPane";
-import SingleStateMap from "../Components/dashboard/SingleStateMap";
+import SingleStateNowcast from "../Components/dashboard/SingleStateNowcast";
 import RiskLevelGauge from "../Components/dashboard/RiskLevelGauge";
 import {useAppDispatch} from '../store/hooks';
 import {setGroundTruthData} from '../store/groundTruthSlice';
@@ -151,7 +151,7 @@ const Page: React.FC = () => {
                     <NowcastHeader/>
                 </div>
                 <div className="forecast-state">
-                    <SingleStateMap/>
+                    <SingleStateNowcast/>
                 </div>
                 <div className="vertical-separator"></div>
 
@@ -166,7 +166,7 @@ const Page: React.FC = () => {
                 <div className="forecast-graph">
                     <ForecastChart/>
                 </div>
-                <div className="forecast-drag-bar"></div>
+                {/*<div className="forecast-drag-bar"></div>*/}
             </div>
 
 

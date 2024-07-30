@@ -15,10 +15,9 @@ interface FilterState {
     displayMode: string;
     seasonOptions: SeasonOption[];
 
-//  New: For RiskLevel Visualization Widgets only, another variable to keep track of the selected Prediction model (a single one) that should only affects the RiskLevel Visualization Widgets themselves.
+//  Note: For RiskLevel Visualization Widgets only, another variable to keep track of the selected Prediction model (a single one) that should only affects the RiskLevel Visualization Widgets themselves.
     userSelectedRiskLevelModel: string;
-
-//  New: For ForecastChart to report back the userSelectedWeek to the whole page, for sibling components to use, for example the RiskLevelGauge and RiskLevelThermometer (inside SingleStateMap.tsx)
+//  Note: For ForecastChart to report back the userSelectedWeek to the whole page, for sibling components to use, for example the RiskLevelGauge and RiskLevelThermometer (inside SingleStateNowcast.tsx)
     userSelectedWeek: Date;
 }
 

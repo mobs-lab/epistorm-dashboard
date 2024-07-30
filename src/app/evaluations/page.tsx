@@ -1,5 +1,5 @@
 import React from "react";
-import StateDetail from "../Components/dashboard/SingleStateMap";
+import StateDetail from "../Components/dashboard/SingleStateNowcast";
 import RiskLevelGauge from "../Components/dashboard/RiskLevelGauge";
 import ForecastChart from "../Components/dashboard/ForecastChart";
 import StateMapWithFilters from "../Components/dashboard/FiltersPane";
