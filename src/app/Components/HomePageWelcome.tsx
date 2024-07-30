@@ -3,7 +3,7 @@ import Link from "next/link";
 
 const HomePageWelcome: React.FC = () => {
     return (
-        <div className="flex flex-col h-4/5 justify-between"> {/* Full screen height and flex container */}
+        <div className="flex flex-col flex-grow w-full min-h-full justify-between"> {/* Full screen height and flex container */}
             <div
                 className="flex-grow flex items-center justify-center"> {/* Centering text vertically and horizontally */}
                 <p className="text-xl text-center">Welcome to Epistorm Dashboard!</p>
