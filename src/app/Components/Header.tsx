@@ -4,7 +4,7 @@ import React from "react";
 const Header: React.FC = () => {
     return (
         <header className="bg-white text-mobs-lab-color shadow-md w-full">
-            <div className="container mx-auto min-w-[94vw] px-4 py-3 flex w-full justify-between items-center">
+            <div className="container mx-auto min-w-[100vw] px-4 py-3 flex w-full justify-between items-center">
                 <div className="flex items-center">
                     <Link href="/" className="text-2xl font-bold mr-6">FluForecast</Link>
                 </div>

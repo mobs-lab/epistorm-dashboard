@@ -25,6 +25,9 @@ const ForecastChart: React.FC = () => {
         <p>
             You can hover over the chart to see detailed information for each date.
         </p>
+        <p>
+            Use the Settings Panel on the right to adjust how you want the chart to display.
+        </p>
     </div>);
 
     // reference to svg object
@@ -61,8 +64,8 @@ const ForecastChart: React.FC = () => {
     // Size set up using dynamic width and height
     const width = chartDimensions.width;
     const height = chartDimensions.height;
-    const marginTop = height * 0.05;
-    const marginBottom = height * 0.25;
+    const marginTop = height * 0.02;
+    const marginBottom = height * 0.2;
     const marginLeft = width * 0.02;
     const marginRight = width * 0.02;
     const chartWidth = width - marginLeft - marginRight;

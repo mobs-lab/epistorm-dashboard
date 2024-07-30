@@ -14,9 +14,11 @@ const NowcastHeader: React.FC = () => {
 
     const mapInfo = (
         <div>
-            <p>The map shows the selected state or the entire US. Their color is mapped to their respective risk level.</p>
+            <p>The map shows the selected state or the entire US. Their color is mapped to their respective risk
+                level.</p>
             <p>The map updates based on your state selection in the filters pane.</p>
-            <p>The thermometer on the right shows the current risk level trend, as well as surveillance risk level trend.</p>
+            <p>The thermometer on the right shows the current risk level trend, as well as surveillance risk level
+                trend.</p>
             <p>Hover your mouse over the thermometer to see more detail.</p>
         </div>
     );
@@ -31,7 +33,7 @@ const NowcastHeader: React.FC = () => {
             <div className="w-full h-px bg-white my-2"></div>
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between w-full">
                 <div className="flex items-center mb-2 sm:mb-0">
-                    <h2 className="text-xl mr-2 sm:text-lg md:text-xl">Nowcast Influenza Hospitalizations</h2>
+                    <h2 className="text-xl mr-2 sm:text-lg md:text-xl">Influenza Hospitalization Activity</h2>
                     <InfoButton title="State Map Information" content={mapInfo}/>
                 </div>
                 <div className="flex items-center w-full sm:w-auto">

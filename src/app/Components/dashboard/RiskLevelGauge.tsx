@@ -86,9 +86,9 @@ const RiskLevelGauge: React.FC<RiskLevelGaugeProps> = ({riskLevel}) => {
             .range(['#478791', '#b9d6d6', '#eae78b']);
 
         const data = [
-            Math.max(0.02, trendToUse.decrease),
-            Math.max(0.02, trendToUse.stable),
-            Math.max(0.02, trendToUse.increase)
+            Math.max(0.001, trendToUse.decrease),
+            Math.max(0.001, trendToUse.stable),
+            Math.max(0.001, trendToUse.increase)
         ];
 
         const g = svg.append('g')

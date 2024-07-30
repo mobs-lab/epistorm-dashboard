@@ -13,8 +13,8 @@ input, textarea {
 body {
     background-color: #252a33;
     color: white;
-}
 
+}
 
 @layer utilities {
     .dashboard-grid-layout {
@@ -51,7 +51,7 @@ body {
 
     }
 
-    .forecast-state, .forecast-gauge, .forecast-settings, .forecast-graph{
+    .forecast-state, .forecast-gauge, .forecast-settings, .forecast-graph {
         width: 100%;
         height: 100%;
         overflow: hidden;
