@@ -10,14 +10,12 @@ const SingleStateNowcast: React.FC = () => {
     const containerRef = useRef<HTMLDivElement>(null);
     const mapSvgRef = useRef<SVGSVGElement>(null);
     const thermometerSvgRef = useRef<SVGSVGElement>(null);
+    const tooltipRef = useRef<HTMLDivElement>(null);
     const currentWeekRef = useRef<HTMLSpanElement>(null);
     const previousWeekRef = useRef<HTMLSpanElement>(null);
     const [dimensions, setDimensions] = useState({width: 0, height: 0});
     const {
-        selectedStateName,
-        USStateNum,
-        userSelectedRiskLevelModel,
-        userSelectedWeek
+        selectedStateName, USStateNum, userSelectedRiskLevelModel, userSelectedWeek
     } = useAppSelector((state) => state.filter);
     const groundTruthData = useAppSelector(state => state.groundTruth.data);
     const predictionsData = useAppSelector(state => state.predictions.data);
@@ -64,9 +62,7 @@ const SingleStateNowcast: React.FC = () => {
                         .attr('fill', riskColor)
                         .attr('stroke', 'white');
                 } else {
-                    const selectedState = states.features.find(
-                        (feature) => feature.properties.name === selectedStateName
-                    );
+                    const selectedState = states.features.find((feature) => feature.properties.name === selectedStateName);
 
                     if (selectedState) {
                         const projection = d3.geoAlbersUsa().fitSize([width, height], selectedState);
@@ -87,14 +83,16 @@ const SingleStateNowcast: React.FC = () => {
         drawMap();
     }, [dimensions, selectedStateName, riskColor]);
 
+    /*TODO: Update this useEffect hook*/
     useEffect(() => {
-        if (!thermometerSvgRef.current) return;
+        if (!thermometerSvgRef.current || !tooltipRef.current) return;
 
         const svg = d3.select(thermometerSvgRef.current);
         svg.selectAll('*').remove();
 
-        const width = thermometerSvgRef.current.clientWidth;
-        const height = thermometerSvgRef.current.clientHeight;
+        const width = thermometerSvgRef.current.clientWidth - 20;
+        const height = thermometerSvgRef.current.clientHeight - 5;
+        const tooltip = d3.select(tooltipRef.current);
 
         // Define risk levels and colors
         const riskLevels = ['low', 'medium', 'high', 'very high'];
@@ -104,60 +102,38 @@ const SingleStateNowcast: React.FC = () => {
         const stateThresholds = thresholdsData.find(t => t.location === USStateNum);
         if (!stateThresholds) return;
 
-        // Create an arbitrary scale
+        // Create scale
         const yScale = d3.scaleLinear()
-            .domain([0, 100])  // Arbitrary domain
+            .domain([0, 100])
             .range([height, 0]);
 
         // Define risk level positions
-        const riskPositions = [
-            {level: 'low', position: 0},
-            {level: 'medium', position: 0.4},
-            {level: 'high', position: 0.9},
-            {level: 'very high', position: 0.975},
-            {level: 'max', position: 1}
-        ];
-
-        // Draw background rectangles
-        svg.selectAll('rect')
-            .data(riskLevels)
-            .enter()
-            .append('rect')
-            .attr('x', 0)
-            .attr('y', (d, i) => yScale(riskPositions[i + 1].position * 100))
-            .attr('width', width)
-            .attr('height', (d, i) => {
-                const start = riskPositions[i].position;
-                const end = riskPositions[i + 1].position;
-                return yScale(start * 100) - yScale(end * 100);
-            })
-            .attr('fill', (d, i) => riskColors[i])
-            .attr('stroke', 'white')
-            .attr('stroke-width', 2);
-
-        // Draw threshold lines
-        const thresholdLevels = [
-            {name: 'medium', value: stateThresholds.medium, position: 0.4},
-            {name: 'high', value: stateThresholds.high, position: 0.9},
-            {name: 'very high', value: stateThresholds.veryHigh, position: 0.975}
-        ];
-
-        svg.selectAll('.threshold-line')
-            .data(thresholdLevels)
-            .enter()
-            .append('line')
-            .attr('class', 'threshold-line')
-            .attr('x1', 0)
-            .attr('x2', width)
-            .attr('y1', d => yScale(d.position * 100))
-            .attr('y2', d => yScale(d.position * 100))
-            .attr('stroke', 'black')
-            .attr('stroke-width', 2);
+        const riskPositions = [{level: 'low', position: 0}, {level: 'medium', position: 0.4}, {
+            level: 'high',
+            position: 0.9
+        }, {level: 'very high', position: 0.975}, {level: 'max', position: 1}];
 
         // Calculate relative last week and current selected week
         const currentSelectedWeek = new Date(userSelectedWeek);
         const relativeLastWeek = new Date(currentSelectedWeek);
         relativeLastWeek.setDate(relativeLastWeek.getDate() - 7);
+
+        // Get ground truth value
+        const groundTruthEntry = groundTruthData.find(d => d.stateNum === USStateNum && d.date.getTime() === relativeLastWeek.getTime());
+        const groundTruthValue = groundTruthEntry ? groundTruthEntry.weeklyRate : 0;
+
+        // Get predicted value
+        let predictedValue = 0;
+        const selectedModel = predictionsData.find(m => m.modelName === userSelectedRiskLevelModel);
+        if (selectedModel) {
+            const prediction = selectedModel.predictionData.find(p => p.stateNum === USStateNum && p.referenceDate.getTime() === relativeLastWeek.getTime() && p.targetEndDate.getTime() === currentSelectedWeek.getTime());
+            if (prediction) {
+                const statePopulation = locationData.find(l => l.stateNum === USStateNum)?.population;
+                if (statePopulation) {
+                    predictedValue = (prediction.confidence500 / statePopulation) * 100000;
+                }
+            }
+        }
 
         // Function to calculate line position and risk level
         const calculateLinePosition = (value: number) => {
@@ -183,56 +159,125 @@ const SingleStateNowcast: React.FC = () => {
             return {riskLevel, yPosition};
         };
 
-        // Calculate solid line position (predicted risk level trend)
-        const selectedModel = predictionsData.find(m => m.modelName === userSelectedRiskLevelModel);
-        if (selectedModel) {
-            const prediction = selectedModel.predictionData.find(p =>
-                p.stateNum === USStateNum &&
-                p.referenceDate.getTime() === relativeLastWeek.getTime() &&
-                p.targetEndDate.getTime() === currentSelectedWeek.getTime()
-            );
+        // Calculate positions for ground truth and predicted lines
+        const groundTruthPosition = calculateLinePosition(groundTruthValue);
+        const predictedPosition = calculateLinePosition(predictedValue);
 
-            if (prediction) {
-                const statePopulation = locationData.find(l => l.stateNum === USStateNum)?.population;
-                if (statePopulation) {
-                    const solidLineValue = (prediction.confidence500 / statePopulation) * 100000;
-                    const {riskLevel, yPosition} = calculateLinePosition(solidLineValue);
+        // Helper functions for tooltip
+        const formatNumber = (num: number) => num.toLocaleString('en-US', {maximumFractionDigits: 2});
+        const getRangeString = (level: string, value: number, nextValue: number | null) => {
+            if (level === 'low') return `[0, ${formatNumber(stateThresholds.medium)}]`;
+            if (level === 'very high') return `[${formatNumber(stateThresholds.veryHigh)}, ∞)`;
+            return `[${formatNumber(value)}, ${formatNumber(nextValue!)}]`;
+        };
 
-                    // Draw solid line
-                    svg.append('line')
-                        .attr('x1', 0)
-                        .attr('x2', width)
-                        .attr('y1', yPosition)
-                        .attr('y2', yPosition)
-                        .attr('stroke', 'white')
-                        .attr('stroke-width', 6);
+        // Helper function to get page coordinates
+        const getPageCoordinates = (event: MouseEvent) => {
+            const svgElement = thermometerSvgRef.current;
+            if (!svgElement) return {x: 0, y: 0};
 
-                    // Update risk color for the map
-                    const newRiskColor = riskColors[riskLevels.indexOf(riskLevel)];
-                    setRiskColor(newRiskColor);
+            const svgRect = svgElement.getBoundingClientRect();
+            return {
+                x: event.clientX - svgRect.left,
+                y: event.clientY - svgRect.top
+            };
+        };
+
+        // Draw background rectangles with tooltips
+        svg.selectAll('rect')
+            .data(riskLevels)
+            .enter()
+            .append('rect')
+            .attr('x', 0)
+            .attr('y', (d, i) => yScale(riskPositions[i + 1].position * 100))
+            .attr('width', width)
+            .attr('height', (d, i) => {
+                const start = riskPositions[i].position;
+                const end = riskPositions[i + 1].position;
+                return yScale(start * 100) - yScale(end * 100);
+            })
+            .attr('fill', (d, i) => riskColors[i])
+            .attr('stroke', 'lightgray')
+            .attr('stroke-width', 2)
+            .on('mouseover', function (event, d) {
+                const level = d;
+                const levelIndex = riskLevels.indexOf(level);
+                const value = level === 'low' ? 0 : stateThresholds[level === 'medium' ? 'medium' : level === 'high' ? 'high' : 'veryHigh'];
+                const nextValue = level === 'very high' ? null : stateThresholds[level === 'low' ? 'medium' : level === 'medium' ? 'high' : 'veryHigh'];
+
+                tooltip.html(`
+                    <div style="display: flex; align-items: center; margin-bottom: 5px;">
+                        <div style="width: 12px; height: 12px; background-color: ${riskColors[levelIndex]}; margin-right: 5px;"></div>
+                        <span>${level.charAt(0).toUpperCase() + level.slice(1)}: ${getRangeString(level, value, nextValue)}</span>
+                    </div>
+                    <div>Surveillance: ${formatNumber(groundTruthValue)}</div>
+                    <div>Predicted: ${formatNumber(predictedValue)}</div>
+                `);
+
+                const tooltipNode = tooltip.node();
+                if (tooltipNode) {
+                    const {x, y} = getPageCoordinates(event);
+                    const tooltipWidth = tooltipNode.offsetWidth;
+                    const tooltipHeight = tooltipNode.offsetHeight;
+
+                    const containerRect = containerRef.current?.getBoundingClientRect();
+                    const thermometerRect = thermometerSvgRef.current?.getBoundingClientRect();
+
+                    if (containerRect && thermometerRect) {
+                        const left = thermometerRect.left - containerRect.left + x - tooltipWidth - 10;
+                        const top = thermometerRect.top - containerRect.top + y - tooltipHeight / 2;
+
+
+                        tooltip.style('left', `${left}px`)
+                            .style('top', `${top}px`)
+                            .style('display', 'block');
+                    }
                 }
-            }
-        }
+            })
+            .on('mousemove', function (event) {
+                const tooltipNode = tooltip.node();
+                if (tooltipNode) {
+                    const {x, y} = getPageCoordinates(event);
+                    const tooltipWidth = tooltipNode.offsetWidth;
+                    const tooltipHeight = tooltipNode.offsetHeight;
 
-        // Calculate dotted line position (ground truth risk level trend)
-        const groundTruthEntry = groundTruthData.find(d =>
-            d.stateNum === USStateNum &&
-            d.date.getTime() === relativeLastWeek.getTime()
-        );
+                    const containerRect = containerRef.current?.getBoundingClientRect();
+                    const thermometerRect = thermometerSvgRef.current?.getBoundingClientRect();
 
-        if (groundTruthEntry) {
-            const {yPosition} = calculateLinePosition(groundTruthEntry.weeklyRate);
+                    if (containerRect && thermometerRect) {
+                        const left = thermometerRect.left - containerRect.left + x - tooltipWidth - 10;
+                        const top = thermometerRect.top - containerRect.top + y - tooltipHeight / 2;
 
-            // Draw dotted line
-            svg.append('line')
-                .attr('x1', 0)
-                .attr('x2', width)
-                .attr('y1', yPosition)
-                .attr('y2', yPosition)
-                .attr('stroke', 'white')
-                .attr('stroke-width', 4)
-                .attr('stroke-dasharray', '3,5');
-        }
+                        tooltip.style('left', `${left}px`)
+                            .style('top', `${top}px`);
+                    }
+                }
+            })
+            .on('mouseout', () => {
+                tooltip.style('display', 'none');
+            });
+
+        // Draw ground truth line (dotted)
+        svg.append('line')
+            .attr('x1', 0)
+            .attr('x2', width)
+            .attr('y1', groundTruthPosition.yPosition)
+            .attr('y2', groundTruthPosition.yPosition)
+            .attr('stroke', 'white')
+            .attr('stroke-width', 4)
+            .attr('stroke-dasharray', '3,5');
+
+        // Draw predicted line (solid)
+        svg.append('line')
+            .attr('x1', 0)
+            .attr('x2', width)
+            .attr('y1', predictedPosition.yPosition)
+            .attr('y2', predictedPosition.yPosition)
+            .attr('stroke', 'white')
+            .attr('stroke-width', 6);
+
+        // Update risk color for the map
+        setRiskColor(riskColors[riskLevels.indexOf(predictedPosition.riskLevel)]);
 
     }, [dimensions, USStateNum, userSelectedRiskLevelModel, userSelectedWeek, groundTruthData, predictionsData, locationData, thresholdsData]);
 
@@ -250,33 +295,34 @@ const SingleStateNowcast: React.FC = () => {
         previousWeekRef.current.textContent = `${formatDate(dateC)}–${formatDate(dateD)}`;
     }, [userSelectedWeek]);
 
-    return (
-        <div ref={containerRef} className="text-white pl-10 pr-10 pt-6 rounded relative h-full flex flex-col">
-            <div className="flex items-stretch justify-between flex-grow mb-4">
-                <div className="w-[82%]">
-                    <svg ref={mapSvgRef} width="100%" height="100%" preserveAspectRatio="xMidYMid meet"/>
-                </div>
-                <div className="w-[18%]">
-                    <svg ref={thermometerSvgRef} width="100%" height="100%" preserveAspectRatio={"xMidYMid meet"}/>
-                </div>
+    return (<div ref={containerRef} className="text-white pl-10 pr-10 pt-5 rounded relative h-full flex flex-col">
+        <div className="flex items-stretch justify-between flex-grow mb-4">
+            <div className="w-[82%]">
+                <svg ref={mapSvgRef} width="100%" height="100%" preserveAspectRatio="xMidYMid meet"/>
             </div>
-            <div className="w-full h-8 flex justify-between items-center text-sm">
-                <div className="legend-activity "><b>Activity level</b></div>
-                <div className="legend-current flex items-center">
-                    <svg width="16" height="2" className="mr-2">
-                        <line x1="0" y1="1" x2="16" y2="1" stroke="white" strokeWidth="2"/>
-                    </svg>
-                    <span ref={currentWeekRef}></span>
-                </div>
-                <div className="legend-previous flex items-center">
-                    <svg width="16" height="2" className="mr-2">
-                        <line x1="0" y1="1" x2="16" y2="1" stroke="white" strokeWidth="2" strokeDasharray="2,2"/>
-                    </svg>
-                    <span ref={previousWeekRef}></span>
-                </div>
+            <div className="w-[18%]">
+                <svg ref={thermometerSvgRef} width="100%" height="100%" preserveAspectRatio={"xMidYMid meet"}/>
+                <div ref={tooltipRef}
+                     className="absolute hidden bg-white text-black p-2 rounded shadow-md text-sm"
+                     style={{pointerEvents: 'none', zIndex: 10}}></div>
             </div>
         </div>
-    );
+        <div className="w-full h-8 flex justify-between items-center text-sm">
+            <div className="legend-activity "><b>Activity level</b></div>
+            <div className="legend-current flex items-center">
+                <svg width="16" height="2" className="mr-2">
+                    <line x1="0" y1="1" x2="16" y2="1" stroke="white" strokeWidth="2"/>
+                </svg>
+                <span ref={currentWeekRef}></span>
+            </div>
+            <div className="legend-previous flex items-center">
+                <svg width="16" height="2" className="mr-2">
+                    <line x1="0" y1="1" x2="16" y2="1" stroke="white" strokeWidth="2" strokeDasharray="2,2"/>
+                </svg>
+                <span ref={previousWeekRef}></span>
+            </div>
+        </div>
+    </div>);
 };
 
 export default SingleStateNowcast;

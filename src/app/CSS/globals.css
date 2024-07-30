@@ -48,7 +48,7 @@ body {
 
     .nowcast-header {
         grid-area: nowcastHeader;
-        overflow: scroll;
+        overflow: auto;
     }
 
     .forecast-state, .forecast-gauge, .forecast-settings, .forecast-graph{

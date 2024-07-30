@@ -100,7 +100,7 @@ const RiskLevelGauge: React.FC<RiskLevelGaugeProps> = ({riskLevel}) => {
             .append('path')
             .attr('d', arc)
             .attr('fill', (_, i) => color(i.toString()))
-            .attr('stroke', '#333')
+            .attr('stroke', 'lightgray')
             .attr('stroke-width', 2);
 
         // Add text
@@ -171,13 +171,15 @@ const RiskLevelGauge: React.FC<RiskLevelGaugeProps> = ({riskLevel}) => {
             .style('opacity', 0);
 
         const tooltipBackground = hovertooltip.append('rect')
-            .attr('fill', 'rgba(0, 0, 0, 0.7)')
-            .attr('rx', 5)
-            .attr('ry', 5);
+            .attr('fill', 'white')  // Changed to white background
+            .attr('stroke', 'lightgray')  // Added light gray border
+            .attr('stroke-width', 1)
+            .attr('rx', 4)
+            .attr('ry', 4);
 
         const tooltipText = hovertooltip.append('text')
-            .attr('fill', 'white')
-            .attr('font-size', '14px');
+            .attr('fill', 'black')
+            .attr('font-size', '12px');
 
         paths.on('mouseover', function (event: MouseEvent, d) {
             const [x, y] = d3.pointer(event);
@@ -197,12 +199,12 @@ const RiskLevelGauge: React.FC<RiskLevelGaugeProps> = ({riskLevel}) => {
             tooltipText.text(tooltipContent);
 
             const textBBox = tooltipText.node().getBBox();
-            const padding = 10;
+            const padding = 8;  // Slightly reduced padding
             tooltipBackground
                 .attr('width', textBBox.width + padding * 2)
                 .attr('height', textBBox.height + padding * 2);
 
-            tooltipText.attr('transform', `translate(${padding}, ${textBBox.height + padding})`);
+            tooltipText.attr('transform', `translate(${padding}, ${textBBox.height + padding - 2})`);
 
             const tooltipWidth = textBBox.width + padding * 2;
             const tooltipHeight = textBBox.height + padding * 2;
