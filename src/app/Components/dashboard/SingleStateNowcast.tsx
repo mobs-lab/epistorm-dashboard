@@ -2,13 +2,16 @@ import React, {useEffect, useRef, useState} from 'react';
 import * as d3 from 'd3';
 import * as topojson from 'topojson-client';
 import {useAppSelector} from '../../store/hooks';
+import {format, subDays} from "date-fns";
 
 const shapeFile = '/states-10m.json';
 
-const SingleStateMap: React.FC = () => {
+const SingleStateNowcast: React.FC = () => {
     const containerRef = useRef<HTMLDivElement>(null);
     const mapSvgRef = useRef<SVGSVGElement>(null);
     const thermometerSvgRef = useRef<SVGSVGElement>(null);
+    const currentWeekRef = useRef<HTMLSpanElement>(null);
+    const previousWeekRef = useRef<HTMLSpanElement>(null);
     const [dimensions, setDimensions] = useState({width: 0, height: 0});
     const {
         selectedStateName,
@@ -44,8 +47,8 @@ const SingleStateMap: React.FC = () => {
                 const svg = d3.select(mapSvgRef.current);
                 svg.selectAll('*').remove();
 
-                const width = dimensions.width * 0.4;
-                const height = dimensions.height * 0.6;
+                const width = dimensions.width * 0.6;
+                const height = dimensions.height * 0.7;
 
                 const path = d3.geoPath();
 
@@ -231,21 +234,49 @@ const SingleStateMap: React.FC = () => {
                 .attr('stroke-dasharray', '3,5');
         }
 
-    }, [USStateNum, userSelectedRiskLevelModel, userSelectedWeek, groundTruthData, predictionsData, locationData, thresholdsData]);
+    }, [dimensions, USStateNum, userSelectedRiskLevelModel, userSelectedWeek, groundTruthData, predictionsData, locationData, thresholdsData]);
 
+    useEffect(() => {
+        if (!currentWeekRef.current || !previousWeekRef.current) return;
+
+        const dateB = new Date(userSelectedWeek);
+        const dateA = subDays(dateB, 6);
+        const dateD = subDays(dateB, 7);
+        const dateC = subDays(dateD, 6);
+
+        const formatDate = (date: Date) => format(date, 'MMM d');
+
+        currentWeekRef.current.textContent = `${formatDate(dateA)}–${formatDate(dateB)}`;
+        previousWeekRef.current.textContent = `${formatDate(dateC)}–${formatDate(dateD)}`;
+    }, [userSelectedWeek]);
 
     return (
-        <div ref={containerRef} className="text-white p-4 rounded relative h-full flex flex-col">
-            <div className="flex items-stretch justify-between flex-grow">
-                <div className="w-3/5">
-                    <svg ref={mapSvgRef} width="80%" height="100%" preserveAspectRatio="xMidYMid meet"/>
+        <div ref={containerRef} className="text-white pl-10 pr-10 pt-6 rounded relative h-full flex flex-col">
+            <div className="flex items-stretch justify-between flex-grow mb-4">
+                <div className="w-[82%]">
+                    <svg ref={mapSvgRef} width="100%" height="100%" preserveAspectRatio="xMidYMid meet"/>
                 </div>
-                <div className="w-2/5">
-                    <svg ref={thermometerSvgRef} width="70%" height="100%"/>
+                <div className="w-[18%]">
+                    <svg ref={thermometerSvgRef} width="100%" height="100%" preserveAspectRatio={"xMidYMid meet"}/>
+                </div>
+            </div>
+            <div className="w-full h-8 flex justify-between items-center text-sm">
+                <div className="legend-activity "><b>Activity level</b></div>
+                <div className="legend-current flex items-center">
+                    <svg width="16" height="2" className="mr-2">
+                        <line x1="0" y1="1" x2="16" y2="1" stroke="white" strokeWidth="2"/>
+                    </svg>
+                    <span ref={currentWeekRef}></span>
+                </div>
+                <div className="legend-previous flex items-center">
+                    <svg width="16" height="2" className="mr-2">
+                        <line x1="0" y1="1" x2="16" y2="1" stroke="white" strokeWidth="2" strokeDasharray="2,2"/>
+                    </svg>
+                    <span ref={previousWeekRef}></span>
                 </div>
             </div>
         </div>
     );
 };
 
-export default SingleStateMap;
+export default SingleStateNowcast;
