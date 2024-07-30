@@ -22,7 +22,7 @@ interface FilterState {
 }
 
 const initialState: FilterState = {
-    selectedStateName: "US",
+    selectedStateName: "United States",
     USStateNum: "US",
     forecastModel: ["MOBS-GLEAM_FLUH"],
     numOfWeeksAhead: 3,
