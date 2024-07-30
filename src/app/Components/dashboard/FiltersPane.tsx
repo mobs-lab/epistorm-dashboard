@@ -123,14 +123,14 @@ const FiltersPane: React.FC = () => {
     return (
         <Card className={"bg-[#323944] text-white fill-white w-full h-full overflow-auto"}>
             <CardBody>
-                <h3> Select a location <InfoButton title="State Selection Information" content={stateMapInfo}/></h3>
+                <h2> Select a location <InfoButton title="State Selection Information" content={stateMapInfo}/></h2>
 
                 <div className="mb-4 items-center justify-center style={{ maxHeight: '600px', overflow: 'hidden' }}">
                     <StateMap/>
                 </div>
 
                 <div className="mb-4">
-                    <Typography variant="h6">Select a State</Typography>
+                    {/*<b>Select a State</b>*/}
                     <Select
                         value={USStateNum}
                         onChange={(value) => onStateSelectionChange(value as string)}

@@ -65,9 +65,9 @@ const ForecastChart: React.FC = () => {
     const width = chartDimensions.width;
     const height = chartDimensions.height;
     const marginTop = height * 0.02;
-    const marginBottom = height * 0.2;
-    const marginLeft = width * 0.02;
-    const marginRight = width * 0.02;
+    const marginBottom = height * 0.22;
+    const marginLeft = width * 0.025;
+    const marginRight = width * 0.01;
     const chartWidth = width - marginLeft - marginRight;
     const chartHeight = height - marginTop - marginBottom;
 
@@ -207,7 +207,7 @@ const ForecastChart: React.FC = () => {
                 return isNearYearChange ? `${year}\n${month}\n${day}` : `${month}\n${day}`;
             });
 
-        xAxis.tickSize(18); // Increase tick size to accommodate multi-line labels
+        xAxis.tickSize(12); // Increase tick size to accommodate multi-line labels
 
         // Initialize yScale with a default linear scale
         // Update yScale
@@ -582,10 +582,11 @@ const ForecastChart: React.FC = () => {
             .attr("transform", `translate(${marginLeft}, ${chartHeight + marginTop})`)
             .call(xAxis);
 
+
         function wrap(text, width) {
             text.each(function () {
                 var text = d3.select(this), words = text.text().split(/\n+/).reverse(), word, line = [], lineNumber = 0,
-                    lineHeight = 1.1, // ems
+                    lineHeight = 1.0, // ems
                     y = text.attr("y"), dy = parseFloat(text.attr("dy")), tspan = text
                         .text(null)
                         .append("tspan")
@@ -615,7 +616,8 @@ const ForecastChart: React.FC = () => {
             .selectAll(".tick text")
             .style("text-anchor", "middle")
             .attr("dy", "1em")
-            .call(wrap, 25); // 30 is the maximum width for the text, adjust as needed
+            .style('font-size', '14px')
+            .call(wrap, 32); // 32 is the minimum width to accommodate year number at 1080p 100% zoom view environment, adjust as needed
 
         // Add year labels if the date range is more than a year
         const timeDiff = dateEnd.getTime() - dateStart.getTime();
@@ -638,15 +640,21 @@ const ForecastChart: React.FC = () => {
         }
 
         // Append y-axis
-        svg
+        const yAxisGroup = svg
             .append("g")
             .attr("transform", `translate(${marginLeft}, ${marginTop})`)
             .call(yAxis)
-            .call((g) => g.select(".domain").remove()) // Remove the y-axis line
+            .call((g) => g.select(".domain").remove())
             .call((g) => g
                 .selectAll(".tick line")
                 .attr("stroke-opacity", 0.5)
-                .attr("stroke-dasharray", "2,2"),);
+                .attr("stroke-dasharray", "2,2"));
+
+        // Style y-axis ticks
+        yAxisGroup
+            .selectAll(".tick text")
+            .style("font-size", "14px"); // Increase font size
+
     }
 
     function findNearestDataPoint(data: DataPoint[], targetDate: Date,): DataPoint {
