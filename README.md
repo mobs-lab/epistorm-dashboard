@@ -36,7 +36,7 @@ _Note_: The `--recurse-submodules` flag is used to clone the submodule, which is
 - 2024-05-22: Updated README.md with instructions on how to run/dev project locally.
 - 2024-05-19:
     - **Line Chart Functionality Finished**, ready to move onto CSS update.
-    - Added comments for FiltersPane, ForecastChart, and StateMap.
+    - Added comments for SettingsPanel, ForecastChart, and StateMap.
 - 2024-04-25: Finished line chart update and introduced **material-tailwind** lib for date picker in settings panel.
     - Also merged back y-axis log scale and ticks update.
 - 2024-04-08: Moving onto finish up functionalities of line chart, focusing on interactivity and Settings panel correcly

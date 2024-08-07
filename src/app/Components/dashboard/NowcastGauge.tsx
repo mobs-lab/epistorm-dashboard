@@ -6,7 +6,7 @@ interface RiskLevelGaugeProps {
     riskLevel: string;
 }
 
-const RiskLevelGauge: React.FC<RiskLevelGaugeProps> = ({riskLevel}) => {
+const NowcastGauge: React.FC<RiskLevelGaugeProps> = ({riskLevel}) => {
     const svgRef = useRef<SVGSVGElement>(null);
     const [dimensions, setDimensions] = useState({width: 0, height: 0});
     const nowcastTrendsCollection = useAppSelector((state) => state.nowcastTrends.allData);
@@ -237,4 +237,4 @@ const RiskLevelGauge: React.FC<RiskLevelGaugeProps> = ({riskLevel}) => {
     );
 };
 
-export default RiskLevelGauge;
+export default NowcastGauge;

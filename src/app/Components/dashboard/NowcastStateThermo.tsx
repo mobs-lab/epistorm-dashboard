@@ -6,7 +6,7 @@ import {format, subDays} from "date-fns";
 
 const shapeFile = '/states-10m.json';
 
-const SingleStateNowcast: React.FC = () => {
+const NowcastStateThermo: React.FC = () => {
     const containerRef = useRef<HTMLDivElement>(null);
     const mapSvgRef = useRef<SVGSVGElement>(null);
     const thermometerSvgRef = useRef<SVGSVGElement>(null);
@@ -324,4 +324,4 @@ const SingleStateNowcast: React.FC = () => {
     </div>);
 };
 
-export default SingleStateNowcast;
+export default NowcastStateThermo;

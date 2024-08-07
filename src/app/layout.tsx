@@ -33,7 +33,7 @@ export default function RootLayout({
         <body className="flex flex-col min-h-screen bg-mobs-lab-color text-white">
         <Header/>
         <main className="flex-grow overflow-hidden">
-            <div className="w-full min-h-full">
+            <div className="w-full h-full">
                 <Provider store={store}>{children}</Provider>
             </div>
         </main>
