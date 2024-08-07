@@ -11,9 +11,9 @@ import {
     StateThresholds
 } from "../Interfaces/forecast-interfaces";
 import ForecastChart from "../Components/dashboard/ForecastChart";
-import FiltersPane from "../Components/dashboard/FiltersPane";
-import SingleStateNowcast from "../Components/dashboard/SingleStateNowcast";
-import RiskLevelGauge from "../Components/dashboard/RiskLevelGauge";
+import SettingsPanel from "../Components/dashboard/SettingsPanel";
+import NowcastStateThermo from "../Components/dashboard/NowcastStateThermo";
+import NowcastGauge from "../Components/dashboard/NowcastGauge";
 import {useAppDispatch} from '../store/hooks';
 import {setGroundTruthData} from '../store/groundTruthSlice';
 import {setPredictionsData} from '../store/predictionsSlice';
@@ -25,6 +25,7 @@ import {setStateThresholdsData} from '../store/stateThresholdsSlice';
 import * as d3 from "d3";
 import {format} from "date-fns";
 import NowcastHeader from "../Components/dashboard/NowcastHeader";
+import ForecastChartHeader from "../Components/dashboard/ForecastChartHeader";
 
 
 const Page: React.FC = () => {
@@ -146,23 +147,26 @@ const Page: React.FC = () => {
     }, [dispatch]);
 
     return (<>
-        {dataLoaded ? (<div className="dashboard-grid-layout w-full h-full">
-                <div className="nowcast-header w-full h-full">
+        {dataLoaded ? (
+            <div className="dashboard-grid-layout w-full h-full">
+                <div className="nowcast-header">
                     <NowcastHeader/>
                 </div>
                 <div className="forecast-state">
-                    <SingleStateNowcast/>
+                    <NowcastStateThermo/>
                 </div>
                 <div className="vertical-separator"></div>
 
                 <div className="forecast-gauge">
-                    <RiskLevelGauge riskLevel="US"/>
+                    <NowcastGauge riskLevel="US"/>
                 </div>
                 <div className="forecast-settings">
-                    <FiltersPane/>
+                    <SettingsPanel/>
                 </div>
                 <div className="horizontal-separator"></div>
-
+                <div className="chart-header">
+                    <ForecastChartHeader/>
+                </div>
                 <div className="forecast-graph">
                     <ForecastChart/>
                 </div>

@@ -9,7 +9,7 @@ interface ChartRangeSelectorProps {
     onRangeChange: (start: Date, end: Date) => void;
 }
 
-const ChartRangeSelector: React.FC<ChartRangeSelectorProps> = ({
+const ForecastChartRangeSelector: React.FC<ChartRangeSelectorProps> = ({
                                                                    width,
                                                                    height,
                                                                    dateRange,
@@ -74,4 +74,4 @@ const ChartRangeSelector: React.FC<ChartRangeSelectorProps> = ({
     );
 };
 
-export default ChartRangeSelector;
+export default ForecastChartRangeSelector;

@@ -17,18 +17,7 @@ import {
 import InfoButton from "./InfoButton";
 
 const ForecastChart: React.FC = () => {
-    const chartInfo = (<div>
-        <p>
-            The solid line represents surveillance data, while the dashed lines show
-            predictions from different models.
-        </p>
-        <p>
-            You can hover over the chart to see detailed information for each date.
-        </p>
-        <p>
-            Use the Settings Panel on the right to adjust how you want the chart to display.
-        </p>
-    </div>);
+
 
     // reference to svg object
     const svgRef = useRef(null);
@@ -52,7 +41,7 @@ const ForecastChart: React.FC = () => {
         dateEnd,
         yAxisScale,
         confidenceInterval,
-        displayMode,
+        historicalDataMode,
     } = useAppSelector((state) => state.filter);
 
     const dispatch = useAppDispatch();
@@ -65,7 +54,7 @@ const ForecastChart: React.FC = () => {
     const width = chartDimensions.width;
     const height = chartDimensions.height;
     const marginTop = height * 0.02;
-    const marginBottom = height * 0.22;
+    const marginBottom = height * 0.15;
     const marginLeft = width * 0.025;
     const marginRight = width * 0.01;
     const chartWidth = width - marginLeft - marginRight;
@@ -81,7 +70,7 @@ const ForecastChart: React.FC = () => {
         return filteredGroundTruthDataByState;
     }
 
-    function processPredictionData(allPredictions: ModelPrediction[], selectedModels: string[], state: string, selectedWeek: any, weeksAhead: number, confidenceIntervals: string[], displayMode: string,) {
+    function processPredictionData(allPredictions: ModelPrediction[], selectedModels: string[], state: string, selectedWeek: any, weeksAhead: number, confidenceIntervals: string[], historicalDataMode: boolean,) {
         // Create an object to store the prediction data for each selected model
         let modelData = {};
 
@@ -96,7 +85,7 @@ const ForecastChart: React.FC = () => {
             }
         });
 
-        if (displayMode === "byDate") {
+        if (!historicalDataMode) {
             // First extract the entries with referenceDate that matches userSelectedWeek, but referenceDate is in string format
             // Filter the prediction data by referenceDate and targetEndDate for each model
             let filteredModelData = {};
@@ -159,7 +148,7 @@ const ForecastChart: React.FC = () => {
             },);
 
             return confidenceIntervalData;
-        } else if (displayMode === "byHorizon") {
+        } else {
             // TODO: instead of rendering all models, calculate the confidence interval that should overlay on top of every week for each model
             //
             return {};
@@ -836,7 +825,7 @@ const ForecastChart: React.FC = () => {
                     bubbleUserSelectedWeek(closestDataPoint.date);
                 }
 
-                const processedPredictionData = processPredictionData(predictionsData, forecastModel, USStateNum, userSelectedWeek, numOfWeeksAhead, confidenceInterval, displayMode,);
+                const processedPredictionData = processPredictionData(predictionsData, forecastModel, USStateNum, userSelectedWeek, numOfWeeksAhead, confidenceInterval, historicalDataMode,);
 
                 const {
                     xScale,
@@ -856,15 +845,15 @@ const ForecastChart: React.FC = () => {
                 updateVerticalIndicator(userSelectedWeek || filteredGroundTruthData[0].date, xScale, marginLeft, chartWidth, verticalIndicatorGroup, lineTooltip,);
             }
         }
-    }, [chartDimensions, groundTruthData, predictionsData, USStateNum, forecastModel, numOfWeeksAhead, dateStart, dateEnd, yAxisScale, confidenceInterval, displayMode, userSelectedWeek,]);
+    }, [chartDimensions, groundTruthData, predictionsData, USStateNum, forecastModel, numOfWeeksAhead, dateStart, dateEnd, yAxisScale, confidenceInterval, historicalDataMode, userSelectedWeek,]);
 
     // Return the SVG object using reference
     return (
         <div ref={chartRef} className="w-full h-full overflow-hidden">
-            <div className="flex justify-start items-center mb-4">
+            {/*<div className="flex justify-start items-center mb-4">
                 <h2 className="mx-5 text-2xl font-bold">Forecast Chart</h2>
                 <InfoButton title="Forecast Chart Information" content={chartInfo}/>
-            </div>
+            </div>*/}
             <svg
                 ref={svgRef}
                 width={"100%"}

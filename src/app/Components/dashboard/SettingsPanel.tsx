@@ -1,4 +1,4 @@
-// components/FiltersPane.tsx
+// components/SettingsPanel.tsx
 "use client"
 
 import React, {useEffect, useState} from 'react';
@@ -22,7 +22,7 @@ import StyledDatePicker from "./StyledDatePicker";
 import Image from "next/image";
 
 
-const FiltersPane: React.FC = () => {
+const SettingsPanel: React.FC = () => {
 
     const stateMapInfo = (<div>
         <p>Use this map to select a specific state for your forecast.</p>
@@ -47,7 +47,7 @@ const FiltersPane: React.FC = () => {
     const onStateSelectionChange = (stateNum: string) => {
         const selectedState = locationData.find((state) => state.stateNum === stateNum);
         if (selectedState) {
-            console.log("FiltersPane update: State selected: ", selectedState.stateName, " with stateNum: ", selectedState.stateNum);
+            console.log("SettingsPanel update: State selected: ", selectedState.stateName, " with stateNum: ", selectedState.stateNum);
             dispatch(updateSelectedState({stateName: selectedState.stateName, stateNum: selectedState.stateNum}));
         }
     };
@@ -68,7 +68,7 @@ const FiltersPane: React.FC = () => {
         if (date && date >= earliestDayFromGroundTruthData && date <= dateEnd) {
             dispatch(updateDateStart(date));
         } else {
-            console.log("FiltersPane.tsx: Invalid dateStart selection");
+            console.log("SettingsPanel.tsx: Invalid dateStart selection");
         }
     };
 
@@ -76,7 +76,7 @@ const FiltersPane: React.FC = () => {
         if (date && date >= dateStart && date <= latestDayFromGroundTruthData) {
             dispatch(updateDateEnd(date));
         } else {
-            console.log("FiltersPane.tsx: Invalid dateEnd selection");
+            console.log("SettingsPanel.tsx: Invalid dateEnd selection");
         }
     };
 
@@ -100,7 +100,7 @@ const FiltersPane: React.FC = () => {
 
 
     const onYAxisScaleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-        console.log("FiltersPane update: Y-axis scale changed to: ", event.target.value);
+        console.log("SettingsPanel update: Y-axis scale changed to: ", event.target.value);
         dispatch(updateYScale(event.target.value));
     };
 
@@ -112,7 +112,7 @@ const FiltersPane: React.FC = () => {
         } else {
             dispatch(updateConfidenceInterval(confidenceInterval.filter((model) => model !== interval)));
         }
-        console.log("FiltersPane update: Confidence Interval changed to: ", confidenceInterval);
+        console.log("SettingsPanel update: Confidence Interval changed to: ", confidenceInterval);
     };
 
     const onDisplayModeChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -284,4 +284,4 @@ const FiltersPane: React.FC = () => {
         ;
 }
 
-export default FiltersPane;
+export default SettingsPanel;
