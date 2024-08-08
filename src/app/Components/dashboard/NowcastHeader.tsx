@@ -30,7 +30,7 @@ const NowcastHeader: React.FC = () => {
     return (
         <div className="w-full h-full flex flex-col justify-between p-4">
             <h1 className="text-3xl font-bold mb-2 sm:mb-0 sm:text-2xl md:text-3xl">{stateName}</h1>
-            <div className="w-full h-px bg-white my-2"></div>
+            <div className="w-full h-px bg-[#4e585e] my-2"></div>
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between w-full">
                 <div className="flex items-center mb-2 sm:mb-0">
                     <h2 className="text-xl mr-2 sm:text-lg md:text-xl">Influenza Hospitalization Activity</h2>

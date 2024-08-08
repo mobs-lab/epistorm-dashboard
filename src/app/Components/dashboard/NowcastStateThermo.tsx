@@ -6,13 +6,101 @@ import {format, subDays} from "date-fns";
 
 const shapeFile = '/states-10m.json';
 
+/* Color legend boxes */
+const ThermoLegendBoxes: React.FC = () => {
+    const riskLevels = ['Low', 'Medium', 'High', 'Very high'];
+    const riskColors = ['#7cd8c9', '#2bafe2', '#435fce', '#3939a8'];
+
+    return (
+        <div className="flex justify-around items-end space-x-4 h-full px-10">
+            {riskLevels.map((level, index) => (
+                <div key={level} className="flex items-center">
+                    <div
+                        className="w-5 h-5"
+                        style={{backgroundColor: riskColors[index]}}
+                    ></div>
+                    <span className="text-sm mx-2">{level}</span>
+                </div>
+            ))}
+        </div>
+    );
+};
+
+/* Bigger legend area for lines */
+const ThermoLegendArea: React.FC<{
+    currentWeek: string,
+    previousWeek: string,
+    currentRiskLevel: string,
+    previousRiskLevel: string
+}> = ({currentWeek, previousWeek, currentRiskLevel, previousRiskLevel}) => {
+
+    console.log('Rendering ThermoLegendArea', {currentWeek, previousWeek, currentRiskLevel, previousRiskLevel});
+
+    const getRiskColor = (riskLevel: string) => {
+        switch (riskLevel.toLowerCase()) {
+            case 'low':
+                return '#7cd8c9';
+            case 'medium':
+                return '#2bafe2';
+            case 'high':
+                return '#435fce';
+            case 'very high':
+                return '#3939a8';
+            default:
+                return '#7cd8c9';
+        }
+    };
+
+    return (
+        <div
+            className="flex flex-col flex-shrink h-full justify-between bg-mobs-lab-color-filterspane p-4 rounded mx-4">
+            <div className="text-lg font-bold">Activity level</div>
+            <div className="flex flex-col space-y-2">
+                <div className="flex flex-col">
+                    <div className="flex items-center">
+                        <svg width="16" height="2" className="mr-2">
+                            <line x1="0" y1="1" x2="16" y2="1" stroke="white" strokeWidth="2"/>
+                        </svg>
+                        <span>Forecasted week</span>
+                    </div>
+                    <div className="ml-6 font-bold">{currentWeek}</div>
+                    <div className="ml-6 flex items-center mt-1">
+                        <div
+                            className="w-full h-6 flex items-center justify-center text-sm"
+                            style={{backgroundColor: getRiskColor(currentRiskLevel)}}
+                        >
+                            {currentRiskLevel}
+                        </div>
+                    </div>
+                </div>
+                <div className="border-t border-gray-300 my-2"></div>
+                <div className="flex flex-col">
+                    <div className="flex items-center">
+                        <svg width="16" height="2" className="mr-2">
+                            <line x1="0" y1="1" x2="16" y2="1" stroke="white" strokeWidth="2" strokeDasharray="2,2"/>
+                        </svg>
+                        <span>Previous week</span>
+                    </div>
+                    <div className="ml-6 font-bold">{previousWeek}</div>
+                    <div className="ml-6 flex items-center mt-1">
+                        <div
+                            className="w-full h-6 flex items-center justify-center text-sm"
+                            style={{backgroundColor: getRiskColor(previousRiskLevel)}}
+                        >
+                            {previousRiskLevel}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 const NowcastStateThermo: React.FC = () => {
     const containerRef = useRef<HTMLDivElement>(null);
     const mapSvgRef = useRef<SVGSVGElement>(null);
     const thermometerSvgRef = useRef<SVGSVGElement>(null);
     const tooltipRef = useRef<HTMLDivElement>(null);
-    const currentWeekRef = useRef<HTMLSpanElement>(null);
-    const previousWeekRef = useRef<HTMLSpanElement>(null);
     const [dimensions, setDimensions] = useState({width: 0, height: 0});
     const {
         selectedStateName, USStateNum, userSelectedRiskLevelModel, userSelectedWeek
@@ -22,6 +110,12 @@ const NowcastStateThermo: React.FC = () => {
     const locationData = useAppSelector(state => state.location.data);
     const thresholdsData = useAppSelector(state => state.stateThresholds.data);
     const [riskColor, setRiskColor] = useState('#7cd8c9'); // Default to low risk color
+
+    const [currentRiskLevel, setCurrentRiskLevel] = useState('Low');
+    const [previousRiskLevel, setPreviousRiskLevel] = useState('Low');
+
+    const [currentWeek, setCurrentWeek] = useState('');
+    const [previousWeek, setPreviousWeek] = useState('');
 
     useEffect(() => {
         const updateDimensions = () => {
@@ -45,8 +139,8 @@ const NowcastStateThermo: React.FC = () => {
                 const svg = d3.select(mapSvgRef.current);
                 svg.selectAll('*').remove();
 
-                const width = dimensions.width * 0.6;
-                const height = dimensions.height * 0.7;
+                const width = mapSvgRef.current?.clientWidth || 0;
+                const height = mapSvgRef.current?.clientHeight || 0;
 
                 const path = d3.geoPath();
 
@@ -75,8 +169,13 @@ const NowcastStateThermo: React.FC = () => {
                             .attr('stroke', 'white');
                     }
                 }
+                svg.attr('width', '100%')
+                    .attr('height', '100%')
+                    .attr('viewBox', `0 0 ${width} ${height}`)
+                    .attr('preserveAspectRatio', 'xMidYMid meet');
+
             } catch (error) {
-                console.error('Error loading shapefile:', error);
+                console.error('Error loading shapefile to display map:', error);
             }
         };
 
@@ -89,9 +188,21 @@ const NowcastStateThermo: React.FC = () => {
         const svg = d3.select(thermometerSvgRef.current);
         svg.selectAll('*').remove();
 
-        const width = thermometerSvgRef.current.clientWidth - 20;
-        const height = thermometerSvgRef.current.clientHeight - 5;
+        const width = thermometerSvgRef.current.clientWidth;
+        const height = thermometerSvgRef.current.clientHeight;
         const tooltip = d3.select(tooltipRef.current);
+
+        const margin = {top: 10, right: width * 0.3, bottom: 10, left: width * 0.3};
+        const thermoWidth = width - margin.left - margin.right;
+        const thermoHeight = height - margin.top - margin.bottom;
+
+        svg.attr('width', '100%')
+            .attr('height', '100%')
+            .attr('viewBox', `0 0 ${width} ${height}`)
+            .attr('preserveAspectRatio', 'xMidYMid meet');
+
+        const thermoGroup = svg.append('g')
+            .attr('transform', `translate(${margin.left},${margin.top})`);
 
         // Define risk levels and colors
         const riskLevels = ['low', 'medium', 'high', 'very high'];
@@ -104,7 +215,7 @@ const NowcastStateThermo: React.FC = () => {
         // Create scale
         const yScale = d3.scaleLinear()
             .domain([0, 100])
-            .range([height, 0]);
+            .range([thermoHeight, 0]);
 
         // Define risk level positions
         const riskPositions = [{level: 'low', position: 0}, {level: 'medium', position: 0.4}, {
@@ -162,6 +273,10 @@ const NowcastStateThermo: React.FC = () => {
         const groundTruthPosition = calculateLinePosition(groundTruthValue);
         const predictedPosition = calculateLinePosition(predictedValue);
 
+        // Update risk levels
+        setPreviousRiskLevel(groundTruthPosition.riskLevel.charAt(0).toUpperCase() + groundTruthPosition.riskLevel.slice(1));
+        setCurrentRiskLevel(predictedPosition.riskLevel.charAt(0).toUpperCase() + predictedPosition.riskLevel.slice(1));
+
         // Helper functions for tooltip
         const formatNumber = (num: number) => num.toLocaleString('en-US', {maximumFractionDigits: 2});
         const getRangeString = (level: string, value: number, nextValue: number | null) => {
@@ -183,13 +298,13 @@ const NowcastStateThermo: React.FC = () => {
         };
 
         // Draw background rectangles with tooltips
-        svg.selectAll('rect')
+        thermoGroup.selectAll('rect')
             .data(riskLevels)
             .enter()
             .append('rect')
             .attr('x', 0)
             .attr('y', (d, i) => yScale(riskPositions[i + 1].position * 100))
-            .attr('width', width)
+            .attr('width', thermoWidth)
             .attr('height', (d, i) => {
                 const start = riskPositions[i].position;
                 const end = riskPositions[i + 1].position;
@@ -257,9 +372,9 @@ const NowcastStateThermo: React.FC = () => {
             });
 
         // Draw ground truth line (dotted)
-        svg.append('line')
+        thermoGroup.append('line')
             .attr('x1', 0)
-            .attr('x2', width)
+            .attr('x2', thermoWidth)
             .attr('y1', groundTruthPosition.yPosition)
             .attr('y2', groundTruthPosition.yPosition)
             .attr('stroke', 'white')
@@ -267,9 +382,9 @@ const NowcastStateThermo: React.FC = () => {
             .attr('stroke-dasharray', '3,5');
 
         // Draw predicted line (solid)
-        svg.append('line')
+        thermoGroup.append('line')
             .attr('x1', 0)
-            .attr('x2', width)
+            .attr('x2', thermoWidth)
             .attr('y1', predictedPosition.yPosition)
             .attr('y2', predictedPosition.yPosition)
             .attr('stroke', 'white')
@@ -281,47 +396,53 @@ const NowcastStateThermo: React.FC = () => {
     }, [dimensions, USStateNum, userSelectedRiskLevelModel, userSelectedWeek, groundTruthData, predictionsData, locationData, thresholdsData]);
 
     useEffect(() => {
-        if (!currentWeekRef.current || !previousWeekRef.current) return;
-
         const dateB = new Date(userSelectedWeek);
         const dateA = subDays(dateB, 6);
         const dateD = subDays(dateB, 7);
         const dateC = subDays(dateD, 6);
 
-        const formatDate = (date: Date) => format(date, 'MMM d');
+        const formatDate = (date: Date) => format(date, 'MMM dd');
 
-        currentWeekRef.current.textContent = `${formatDate(dateA)}–${formatDate(dateB)}`;
-        previousWeekRef.current.textContent = `${formatDate(dateC)}–${formatDate(dateD)}`;
+        const currentWeekText = `${formatDate(dateA)} to ${formatDate(dateB)}`;
+        const previousWeekText = `${formatDate(dateC)} to ${formatDate(dateD)}`;
+
+        console.log('Date strings calculated:', {currentWeekText, previousWeekText});
+
+        // Update state variables to trigger re-render of ThermoLegendArea
+        setCurrentWeek(currentWeekText);
+        setPreviousWeek(previousWeekText);
+
+        console.log('State updated:', {currentWeek, previousWeek});
     }, [userSelectedWeek]);
 
-    return (<div ref={containerRef} className="text-white pl-10 pr-10 pt-5 rounded relative h-full flex flex-col">
-        <div className="flex items-stretch justify-between flex-grow mb-4">
-            <div className="w-[82%]">
+    console.log('Rendering NowcastStateThermo', {currentWeek, previousWeek});
+
+    return (
+        <div ref={containerRef}
+             className="nowcast-state-thermo-grid-layout text-white rounded relative h-full flex flex-col m-auto">
+            <div className="map-svg">
                 <svg ref={mapSvgRef} width="100%" height="100%" preserveAspectRatio="xMidYMid meet"/>
             </div>
-            <div className="w-[18%]">
-                <svg ref={thermometerSvgRef} width="100%" height="100%" preserveAspectRatio={"xMidYMid meet"}/>
+            <div className="thermometer">
+                <svg ref={thermometerSvgRef} width="100%" height="100%" preserveAspectRatio="xMidYMid meet"/>
                 <div ref={tooltipRef}
                      className="absolute hidden bg-white text-black p-2 rounded shadow-md text-sm"
                      style={{pointerEvents: 'none', zIndex: 10}}></div>
             </div>
-        </div>
-        <div className="w-full h-8 flex justify-between items-center text-sm">
-            <div className="legend-activity "><b>Activity level</b></div>
-            <div className="legend-current flex items-center">
-                <svg width="16" height="2" className="mr-2">
-                    <line x1="0" y1="1" x2="16" y2="1" stroke="white" strokeWidth="2"/>
-                </svg>
-                <span ref={currentWeekRef}></span>
+            <div className="thermo-legend-area">
+                <ThermoLegendArea
+                    currentWeek={currentWeek}
+                    previousWeek={previousWeek}
+                    currentRiskLevel={currentRiskLevel}
+                    previousRiskLevel={previousRiskLevel}
+                />
             </div>
-            <div className="legend-previous flex items-center">
-                <svg width="16" height="2" className="mr-2">
-                    <line x1="0" y1="1" x2="16" y2="1" stroke="white" strokeWidth="2" strokeDasharray="2,2"/>
-                </svg>
-                <span ref={previousWeekRef}></span>
+            <div className="thermo-legend-boxes">
+                <ThermoLegendBoxes/>
             </div>
         </div>
-    </div>);
+    );
+
 };
 
 export default NowcastStateThermo;
