@@ -1,35 +1,56 @@
 import InfoButton from "./InfoButton";
 import React from "react";
+import {Switch} from "../../CSS/material-tailwind-wrapper";
+import {useAppDispatch, useAppSelector} from '../../store/hooks';
+import {updateHistoricalDataMode} from '../../store/filterSlice';
 
 
 const ForecastChartHeader: React.FC = () => {
-
+    const dispatch = useAppDispatch();
+    const historicalDataMode = useAppSelector((state) => state.filter.historicalDataMode);
 
     const chartInfo = (<div>
         <p>
-            The solid line represents surveillance data, while the dashed lines show
+            The solid white line represents surveillance data (ground truth data), while the colored lines show
             predictions from different models.
         </p>
         <p>
-            You can hover over the chart to see detailed information for each date.
+            You can hover over the chart to see various information regarding each date's forecast and surveillance.
+            Click on a the chart to select a week and anchor it.
         </p>
         <p>
             Use the Settings Panel on the right to adjust how you want the chart to display.
         </p>
+        <p>
+            Use the toggle button on the upper-right corner to turn on/off historical surveillance data viewing mode.
+        </p>
+        <p>
+            when this mode is activated, chart will display surveillance data that actually were available for the
+            chosen date, instead of the current, most up-to-date version.
+        </p>
     </div>);
 
+    const handleHistoricalDataModeToggle = () => {
+        dispatch(updateHistoricalDataMode(!historicalDataMode));
+    };
+
+
     return (
-        <div className={"w-full h-full flex justify-between"}>
+        <div className="w-full h-full flex justify-between items-center">
             <div className="flex justify-start items-center">
                 <h2 className="mx-5 text-2xl font-bold">Forecast Chart</h2>
                 <InfoButton title="Forecast Chart Information" content={chartInfo}/>
             </div>
-            <div className={"flex justify-end items-center"}>
-                {/*TODO: add a checkbox for toggling on/off the "historical surveillance data viewing mode", which is managed by Redux's filtersSlice to determine whether the chart should now display historical  */}
-
+            <div className="flex justify-end items-center">
+                <span className="mr-2 text-sm">Historical Data Mode</span>
+                <Switch
+                    checked={historicalDataMode}
+                    onChange={handleHistoricalDataModeToggle}
+                    color="blue"
+                    label={historicalDataMode ? "On" : "Off"}
+                />
             </div>
         </div>
-    )
-
-}
+    );
+};
 export default ForecastChartHeader;

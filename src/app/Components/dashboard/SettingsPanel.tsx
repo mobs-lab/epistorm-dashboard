@@ -1,16 +1,16 @@
 // components/SettingsPanel.tsx
 "use client"
 
-import React, {useEffect, useState} from 'react';
+import React from 'react';
 import {modelColorMap} from '../../Interfaces/modelColors';
-import {format} from 'date-fns';
 import InfoButton from './InfoButton';
 import {SeasonOption} from '../../Interfaces/forecast-interfaces';
 import {Card, CardBody, Option, Radio, Select, Typography} from "../../CSS/material-tailwind-wrapper";
 import {useAppDispatch, useAppSelector} from '../../store/hooks';
 import {
     updateConfidenceInterval,
-    updateDateEnd, updateDateRange,
+    updateDateEnd,
+    updateDateRange,
     updateDateStart,
     updateForecastModel,
     updateNumOfWeeksAhead,
@@ -169,9 +169,8 @@ const SettingsPanel: React.FC = () => {
 
                 {/* TODO: Change up this to make season selector correctly work */}
                 <div className="mb-4 mt-4">
-                    <Typography variant="h6" className="text-white">Dates</Typography>
+                    <Typography variant="h6" className="text-white">Season</Typography>
                     <Select
-                        label="Select a Season"
                         value={dateRange}
                         onChange={(value) => onSeasonSelectionChange(value as string)}
                         className="text-white border-white"
@@ -184,8 +183,7 @@ const SettingsPanel: React.FC = () => {
                     </Select>
                 </div>
 
-                {/*NOTE: Start date and end date selector, watch out for the conditional disabling of invalid date selections */}
-                <div className="mb-4 flex justify-between">
+                <div className="mb-4 flex-col justify-between">
                     <div>
                         <Typography variant="h6" className="text-white">Start Date</Typography>
                         <StyledDatePicker
@@ -205,7 +203,7 @@ const SettingsPanel: React.FC = () => {
                         />
                     </div>
                     <button
-                        className="ml-2 px-2 py-1 bg-[#b2b2b2] text-white rounded text-sm"
+                        className="my-2 px-2 bg-[#b2b2b2] text-white rounded text-sm"
                         onClick={handleShowAllDates}
                     >
                         Show All
@@ -262,7 +260,7 @@ const SettingsPanel: React.FC = () => {
                         </button>
                     </div>
                 </div>
-                <div>
+                {/*<div>
                     <Typography variant="h6" className="text-white">Display mode</Typography>
                     {["byDate", "byHorizon"].map((value) => (<Radio
                         key={value}
@@ -274,9 +272,9 @@ const SettingsPanel: React.FC = () => {
                         labelProps={{className: "text-white"}}
                         defaultChecked={value === "byDate"}
                     />))}
-                </div>
+                </div>*/}
                 <div>
-                    <Image src={"/epistorm-logo.png"} width={200} height={300} alt={"Epistorm Logo Picture Here"}/>
+                    <Image src={"/epistorm-logo.png"} width={200} height={300} alt={"Epistorm Logo"}/>
                 </div>
 
             </CardBody>
