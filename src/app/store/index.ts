@@ -5,6 +5,7 @@ import locationReducer from './locationSlice';
 import filterReducer from './filterSlice';
 import nowcastTrendsReducer from './nowcastTrendsSlice';
 import stateThresholdsReducer from "./stateThresholdsSlice";
+import historicalGroundTruthReducer from './historicalGroundTruthSlice';
 
 const store = configureStore({
     reducer: {
@@ -14,6 +15,7 @@ const store = configureStore({
         filter: filterReducer,
         nowcastTrends: nowcastTrendsReducer,
         stateThresholds: stateThresholdsReducer,
+        historicalGroundTruth: historicalGroundTruthReducer,
     },
 });
 

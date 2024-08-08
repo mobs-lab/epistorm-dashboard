@@ -27,11 +27,16 @@ import {format} from "date-fns";
 import NowcastHeader from "../Components/dashboard/NowcastHeader";
 import ForecastChartHeader from "../Components/dashboard/ForecastChartHeader";
 
+import {setHistoricalGroundTruthData, HistoricalDataEntry} from '../store/historicalGroundTruthSlice';
+import fs from 'fs';
+import path from 'path';
+
 
 const Page: React.FC = () => {
 
     const dispatch = useAppDispatch();
     const [dataLoaded, setDataLoaded] = useState(false);
+
 
     useEffect(() => {
         console.log("DEBUG: page.tsx: useEffect called");
@@ -134,6 +139,7 @@ const Page: React.FC = () => {
                     dispatch(setNowcastTrendsData(nowcastTrendsData));
                     dispatch(setSeasonOptions(seasonOptions));
                     dispatch(setStateThresholdsData(parsedThresholdsData));
+                    // dispatch(setHistoricalGroundTruthData(historicalData));
 
                     setDataLoaded(true);
                 }
@@ -143,7 +149,6 @@ const Page: React.FC = () => {
             }
         };
         fetchData();
-
     }, [dispatch]);
 
     return (<>

@@ -426,7 +426,7 @@ const ForecastChart: React.FC = () => {
 
     function createCornerTooltip(svg: d3.Selection<SVGSVGElement, unknown, null, undefined>, marginLeft: number, marginTop: number, chartWidth: number,) {
 
-        console.log('Initial tooltip position:', marginLeft + 20, marginTop + 20);
+        // console.log('DEBUG: Initial tooltip position:', marginLeft + 20, marginTop + 20);
         return svg
             .append("g")
             .attr("class", "corner-tooltip")
@@ -530,10 +530,10 @@ const ForecastChart: React.FC = () => {
         const tooltipX = shouldShowOnRightSide ? chartWidth - maxWidth - padding * 2 : 40;
         const tooltipY = marginTop;
 
-        console.log('Updating tooltip position:', tooltipX, tooltipY);
+        /*console.log('Updating tooltip position:', tooltipX, tooltipY);
         console.log('Chart width:', chartWidth);
         console.log('Corner Tooltip on upper-right:', shouldShowOnRightSide);
-        console.log('Max width:', maxWidth);
+        console.log('Max width:', maxWidth);*/
 
         cornerTooltip
             .attr('transform', `translate(${tooltipX}, ${tooltipY})`)
@@ -786,7 +786,7 @@ const ForecastChart: React.FC = () => {
     }, []);
 
     function bubbleUserSelectedWeek(date: Date) {
-        console.log("DEBUG: ForecastChart: bubbleUserSelectedWeek(): date: ", date);
+        // console.log("DEBUG: ForecastChart: bubbleUserSelectedWeek(): date: ", date);
         dispatch(updateUserSelectedWeek(date));
     }
 

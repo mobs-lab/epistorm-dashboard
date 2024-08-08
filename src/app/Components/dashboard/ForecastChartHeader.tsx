@@ -42,7 +42,7 @@ const ForecastChartHeader: React.FC = () => {
                 <InfoButton title="Forecast Chart Information" content={chartInfo}/>
             </div>
             <div className="flex justify-end items-center">
-                <span className="mr-2 text-sm">Historical Data Mode</span>
+                <span className="mr-2 text-sm">Show data available at time of forecast</span>
                 <Switch
                     checked={historicalDataMode}
                     onChange={handleHistoricalDataModeToggle}
