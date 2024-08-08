@@ -63,7 +63,7 @@ const filterSlice = createSlice({
         updateConfidenceInterval: (state, action: PayloadAction<string[]>) => {
             state.confidenceInterval = action.payload;
         },
-        updateDisplayMode: (state, action: PayloadAction<boolean>) => {
+        updateHistoricalDataMode: (state, action: PayloadAction<boolean>) => {
             state.historicalDataMode = action.payload;
         },
         setSeasonOptions: (state, action: PayloadAction<SeasonOption[]>) => {
@@ -91,7 +91,7 @@ export const {
     updateDateEnd,
     updateYScale,
     updateConfidenceInterval,
-    updateDisplayMode,
+    updateHistoricalDataMode,
     updateDateRange,
     setSeasonOptions,
     updateUserSelectedRiskLevelModel,

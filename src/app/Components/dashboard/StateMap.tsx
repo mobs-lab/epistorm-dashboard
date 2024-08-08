@@ -161,7 +161,7 @@ const StateMap: React.FC = () => {
             </svg>
             <button
                 onClick={handleReset}
-                className="absolute top-2 right-2 bg-[#b2b2b2] text-white p-2 rounded"
+                className="absolute top-2 right-2 bg-[#b2b2b2] text-white text-sm p-0.5 rounded"
             >
                 Reset
             </button>
