@@ -55,7 +55,7 @@ const ThermoLegendArea: React.FC<{
         <div
             className="flex flex-col flex-shrink h-full justify-between bg-mobs-lab-color-filterspane p-4 rounded mx-4">
             <div className="text-lg font-bold">Activity level</div>
-            <div className="flex flex-col space-y-2">
+            <div className=" h-full w-full flex flex-col space-y-2">
                 <div className="flex flex-col">
                     <div className="flex items-center">
                         <svg width="16" height="2" className="mr-2">
@@ -154,7 +154,7 @@ const NowcastStateThermo: React.FC = () => {
                         .append('path')
                         .attr('d', path)
                         .attr('fill', riskColor)
-                        .attr('stroke', 'white');
+                        .attr('stroke', riskColor);
                 } else {
                     const selectedState = states.features.find((feature) => feature.properties.name === selectedStateName);
 

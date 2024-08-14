@@ -200,7 +200,7 @@ const ForecastChart: React.FC = () => {
 
         // Initialize yScale with a default linear scale
         // Update yScale
-        let yScale: d3.ScaleSymlog<number, number> | d3.ScaleLinear<number, number>;
+        let yScale: d3.ScaleSymLog<number, number> | d3.ScaleLinear<number, number>;
         const maxGroundTruthValue = d3.max(ground.filter((d) => d.admissions !== -1), (d) => d.admissions,) as number;
         let maxPredictionValue = 0;
 
@@ -234,7 +234,7 @@ const ForecastChart: React.FC = () => {
             .tickSize(-chartWidth);
 
         if (yAxisScale === "log") {
-            yAxis.ticks(10);
+            yAxis.ticks(10, "~s");
         }
 
         return {xScale, yScale, xAxis, yAxis};
