@@ -87,74 +87,70 @@ const ForecastChart: React.FC = () => {
             }
         });
 
-        if (!historicalDataMode) {
-            // First extract the entries with referenceDate that matches userSelectedWeek, but referenceDate is in string format
-            // Filter the prediction data by referenceDate and targetEndDate for each model
-            let filteredModelData = {};
-            Object.entries(modelData).forEach(([modelName, predictionData]) => {
-                let filteredByReferenceDate = predictionData.filter((d) => d.referenceDate.getFullYear() === selectedWeek.getFullYear() && d.referenceDate.getMonth() === selectedWeek.getMonth() && d.referenceDate.getDate() === selectedWeek.getDate(),);
 
-                let filteredByTargetEndDate = filteredByReferenceDate.filter((d) => {
-                    let targetWeek = new Date(selectedWeek);
-                    targetWeek.setDate(targetWeek.getDate() + weeksAhead * 7);
-                    return (d.targetEndDate >= d.referenceDate && d.targetEndDate <= targetWeek);
-                });
-                filteredModelData[modelName] = filteredByTargetEndDate;
+        // First extract the entries with referenceDate that matches userSelectedWeek, but referenceDate is in string format
+        // Filter the prediction data by referenceDate and targetEndDate for each model
+        let filteredModelData = {};
+        Object.entries(modelData).forEach(([modelName, predictionData]) => {
+            let filteredByReferenceDate = predictionData.filter((d) => d.referenceDate.getFullYear() === selectedWeek.getFullYear() && d.referenceDate.getMonth() === selectedWeek.getMonth() && d.referenceDate.getDate() === selectedWeek.getDate(),);
+
+            let filteredByTargetEndDate = filteredByReferenceDate.filter((d) => {
+                let targetWeek = new Date(selectedWeek);
+                targetWeek.setDate(targetWeek.getDate() + weeksAhead * 7);
+                return (d.targetEndDate >= d.referenceDate && d.targetEndDate <= targetWeek);
             });
+            filteredModelData[modelName] = filteredByTargetEndDate;
+        });
 
-            // Create an object to store the confidence interval data for each model
-            let confidenceIntervalData = {};
+        // Create an object to store the confidence interval data for each model
+        let confidenceIntervalData = {};
 
-            // Iterate over each model's predictions
-            Object.entries(filteredModelData).forEach(([modelName, modelPredictions]) => {
-                confidenceIntervalData[modelName] = [];
+        // Iterate over each model's predictions
+        Object.entries(filteredModelData).forEach(([modelName, modelPredictions]) => {
+            confidenceIntervalData[modelName] = [];
 
-                // Check if any confidence intervals are selected
-                if (confidenceIntervals.length > 0) {
-                    // Iterate over each confidence interval
-                    confidenceIntervals.forEach((interval) => {
-                        var confidenceIntervalPredictions = modelPredictions.map((d) => {
-                            var confidenceLow, confidenceHigh;
-                            if (interval === "50") {
-                                confidenceLow = d.confidence250;
-                                confidenceHigh = d.confidence750;
-                            } else if (interval === "90") {
-                                confidenceLow = d.confidence050;
-                                confidenceHigh = d.confidence950;
-                            } else if (interval === "95") {
-                                confidenceLow = d.confidence025;
-                                confidenceHigh = d.confidence975;
-                            }
-                            return {
-                                ...d,
-                                confidence_low: confidenceLow,
-                                confidence_high: confidenceHigh,
-                                referenceDate: d.referenceDate, // Convert referenceDate to Date object
-                                targetEndDate: d.targetEndDate, // Convert targetEndDate to Date object
-                            };
-                        });
-
-                        confidenceIntervalData[modelName].push({
-                            interval: interval, data: confidenceIntervalPredictions,
-                        });
-                    });
-                } else {
-                    // No confidence intervals selected, use the original prediction data
-                    confidenceIntervalData[modelName].push({
-                        interval: "", data: modelPredictions.map((d) => ({
-                            ...d, referenceDate: d.referenceDate, // Convert referenceDate to Date object
+            // Check if any confidence intervals are selected
+            if (confidenceIntervals.length > 0) {
+                // Iterate over each confidence interval
+                confidenceIntervals.forEach((interval) => {
+                    var confidenceIntervalPredictions = modelPredictions.map((d) => {
+                        var confidenceLow, confidenceHigh;
+                        if (interval === "50") {
+                            confidenceLow = d.confidence250;
+                            confidenceHigh = d.confidence750;
+                        } else if (interval === "90") {
+                            confidenceLow = d.confidence050;
+                            confidenceHigh = d.confidence950;
+                        } else if (interval === "95") {
+                            confidenceLow = d.confidence025;
+                            confidenceHigh = d.confidence975;
+                        }
+                        return {
+                            ...d,
+                            confidence_low: confidenceLow,
+                            confidence_high: confidenceHigh,
+                            referenceDate: d.referenceDate, // Convert referenceDate to Date object
                             targetEndDate: d.targetEndDate, // Convert targetEndDate to Date object
-                        })),
+                        };
                     });
-                }
-            },);
 
-            return confidenceIntervalData;
-        } else {
-            // TODO: instead of rendering all models, calculate the confidence interval that should overlay on top of every week for each model
-            //
-            return {};
-        }
+                    confidenceIntervalData[modelName].push({
+                        interval: interval, data: confidenceIntervalPredictions,
+                    });
+                });
+            } else {
+                // No confidence intervals selected, use the original prediction data
+                confidenceIntervalData[modelName].push({
+                    interval: "", data: modelPredictions.map((d) => ({
+                        ...d, referenceDate: d.referenceDate, // Convert referenceDate to Date object
+                        targetEndDate: d.targetEndDate, // Convert targetEndDate to Date object
+                    })),
+                });
+            }
+        },);
+
+        return confidenceIntervalData;
+
     }
 
     function createScalesAndAxes(ground: DataPoint[], predictions: any, chartWidth: number, chartHeight: number, yAxisScale: string,) {
@@ -335,7 +331,6 @@ const ForecastChart: React.FC = () => {
         console.log("DEBUG: ForecastChart: Historical Data Difference:", matchingHistoricalData.historicalData.filter(d => d.admissions !== -1 && !isNaN(d.admissions)).filter((d, i) => d.admissions !== matchingHistoricalData.historicalData[i].admissions));
 
     }
-
 
     function renderPredictionData(svg: d3.Selection<null, unknown, null, undefined>, predictionData: {}, xScale: d3.ScaleTime<number, number, never>, yScale: d3.ScaleLinear<number, number, never>, marginLeft: number, marginTop: number, confidenceInterval: string[], isGroundTruthDataPlaceHolderOnly: boolean,) {
         // Remove existing prediction data paths and circles
