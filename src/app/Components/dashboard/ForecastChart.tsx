@@ -286,9 +286,10 @@ const ForecastChart: React.FC = () => {
         console.log("DEBUG: ForecastChart: Rendering historical data:", historicalData);
         console.log("DEBUG: ForecastChart: User selected week:", userSelectedWeek);
 
+        // Find the historical data file that is 1 week before the user selected week
         const matchingHistoricalData = historicalData.find(
             (entry) => entry.associatedDate instanceof Date &&
-                entry.associatedDate.getTime() === userSelectedWeek.getTime()
+                entry.associatedDate.getTime() === (userSelectedWeek.getTime() - 7 * 24 * 60 * 60 * 1000)
         );
 
         if (!matchingHistoricalData) {
