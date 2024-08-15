@@ -194,7 +194,7 @@ const NowcastStateThermo: React.FC = () => {
         const height = thermometerSvgRef.current.clientHeight;
         const tooltip = d3.select(tooltipRef.current);
 
-        const margin = {top: 10, right: width * 0.3, bottom: 10, left: width * 0.3};
+        const margin = {top: 0, right: width * 0.32, bottom: 0, left: width * 0.32};
         const thermoWidth = width - margin.left - margin.right;
         const thermoHeight = height - margin.top - margin.bottom;
 
@@ -295,7 +295,7 @@ const NowcastStateThermo: React.FC = () => {
             const svgRect = svgElement.getBoundingClientRect();
             return {
                 x: event.clientX - svgRect.left,
-                y: event.clientY - svgRect.top
+                y: event.clientY
             };
         };
 
@@ -322,12 +322,14 @@ const NowcastStateThermo: React.FC = () => {
                 const nextValue = level === 'very high' ? null : stateThresholds[level === 'low' ? 'medium' : level === 'medium' ? 'high' : 'veryHigh'];
 
                 tooltip.html(`
-                    <div style="display: flex; align-items: center; margin-bottom: 5px;">
+                <div style="font-size: 14px">
+                    <div style="display: flex; align-items: center; margin: 5px;">
                         <div style="width: 12px; height: 12px; background-color: ${riskColors[levelIndex]}; margin-right: 5px;"></div>
                         <span>${level.charAt(0).toUpperCase() + level.slice(1)}: ${getRangeString(level, value, nextValue)}</span>
                     </div>
-                    <div>Surveillance: ${formatNumber(groundTruthValue)}</div>
-                    <div>Predicted: ${formatNumber(predictedValue)}</div>
+                    <div style="margin: 10px;">Surveillance: ${formatNumber(groundTruthValue)}</div>
+                    <div style="margin: 10px;">Predicted: ${formatNumber(predictedValue)}</div>
+                    </div>
                 `);
 
                 const tooltipNode = tooltip.node();

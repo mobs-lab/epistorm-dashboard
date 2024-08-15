@@ -26,7 +26,7 @@ body {
         width: 100vw;
         height: calc(100vh - var(--header-height));
         gap: 2px;
-        grid-template-columns: 2.4fr 2px 1.6fr 1.0fr;
+        grid-template-columns: 2.6fr 2px 1.4fr 1fr;
         grid-template-rows: minmax(0, 0.6fr) minmax(0, 1.1fr) 2px minmax(20px, 0.2fr) minmax(0, 2fr);
         grid-template-areas:
     "nowcastHeader nowcastHeader nowcastHeader settings"
@@ -72,7 +72,9 @@ body {
 
     .vertical-separator {
         grid-area: verticalSeparator;
-        background-color: white;
+        display: flex;
+        justify-content: center;
+        align-items: center;
     }
 
     .forecast-gauge {
@@ -81,11 +83,15 @@ body {
 
     .forecast-settings {
         grid-area: settings;
+        display: flex;
+        flex-direction: column;
     }
 
     .horizontal-separator {
         grid-area: separator;
-        background-color: white;
+        display: flex;
+        justify-content: center;
+        align-items: center;
     }
 
     .chart-header {
@@ -172,5 +178,16 @@ body {
 
     .gauge-legend {
         grid-area: gauge-legend;
+    }
+
+    /*CSS for Styled Date Picker's Components*/
+    .styled-date-picker .react-datepicker-wrapper,
+    .styled-date-picker .react-datepicker__input-container {
+        display: block;
+        width: 100%;
+    }
+
+    .styled-date-picker .react-datepicker__input-container input {
+        width: 100%;
     }
 }

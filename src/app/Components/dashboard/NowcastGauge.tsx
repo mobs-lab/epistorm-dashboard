@@ -102,8 +102,8 @@ const NowcastGauge: React.FC<RiskLevelGaugeProps> = ({riskLevel}) => {
             .endAngle(Math.PI / 2);
 
         const arc = d3.arc<d3.PieArcDatum<number>>()
-            .innerRadius(radius * 0.8)
-            .outerRadius(radius * 1.1);
+            .innerRadius(radius * 0.9)
+            .outerRadius(radius * 1.14);
 
         const color = d3.scaleOrdinal<string>()
             .domain(['decrease', 'stable', 'increase'])
@@ -131,15 +131,15 @@ const NowcastGauge: React.FC<RiskLevelGaugeProps> = ({riskLevel}) => {
         g.append('text')
             .attr('text-anchor', 'middle')
             .attr('dy', `-${radius * 0.3}`)
-            .attr('font-size', `24px`)
+            .attr('font-size', `32px`)
             .attr('font-weight', 'bold')
             .attr('fill', 'white')
             .text("Trend forecast");
 
         g.append('text')
             .attr('text-anchor', 'middle')
-            .attr('dy', `-${radius * 0.1}`)
-            .attr('font-size', `16px`)
+            .attr('dy', `-${radius * 0.05}`)
+            .attr('font-size', `20px`)
             .attr('fill', 'white')
             .text(`${formattedLastWeekDate} - ${formattedCurrentWeekDate}`);
 

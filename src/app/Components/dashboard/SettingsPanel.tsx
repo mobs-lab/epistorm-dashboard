@@ -121,11 +121,12 @@ const SettingsPanel: React.FC = () => {
 
 
     return (
-        <Card className={"bg-[#323944] text-white fill-white w-full h-full overflow-auto"}>
-            <CardBody>
+        <Card className={"bg-mobs-lab-color-filterspane text-white fill-white h-full flex flex-col flex-nowrap"}>
+            <CardBody className="overflow-y-auto overflow-x-hidden flex-grow">
                 <h2> Select a location <InfoButton title="State Selection Information" content={stateMapInfo}/></h2>
 
-                <div className="mb-4 w-full items-center justify-center style={{ maxHeight: '600px', overflow: 'hidden' }}">
+                <div
+                    className="mb-4 w-full items-center justify-center style={{ maxHeight: '600px', overflow: 'hidden' }}">
                     <StateMap/>
                 </div>
 
@@ -183,33 +184,32 @@ const SettingsPanel: React.FC = () => {
                     </Select>
                 </div>
 
-                <div className="mb-4 flex-col justify-between">
-                    <div>
-                        <Typography variant="h6" className="text-white">Start Date</Typography>
-                        <StyledDatePicker
-                            value={dateStart}
-                            onChange={onDateStartSelectionChange}
-                            minDate={earliestDayFromGroundTruthData}
-                            maxDate={dateEnd}
-                        />
-                    </div>
-                    <div>
-                        <Typography variant="h6" className="text-white">End Date</Typography>
-                        <StyledDatePicker
-                            value={dateEnd}
-                            onChange={onDateEndSelectionChange}
-                            minDate={dateStart}
-                            maxDate={latestDayFromGroundTruthData}
-                        />
-                    </div>
-                    <button
-                        className="my-2 px-2 bg-[#b2b2b2] text-white rounded text-sm"
-                        onClick={handleShowAllDates}
-                    >
-                        Show All
-                    </button>
+                <div className="mb-4 w-full">
+                    <Typography variant="h6" className="text-white">Start Date</Typography>
+                    <StyledDatePicker
+                        value={dateStart}
+                        onChange={onDateStartSelectionChange}
+                        minDate={earliestDayFromGroundTruthData}
+                        maxDate={dateEnd}
+                        className="w-full"
+                    />
                 </div>
-
+                <div className="mb-4 w-full">
+                    <Typography variant="h6" className="text-white">End Date</Typography>
+                    <StyledDatePicker
+                        value={dateEnd}
+                        onChange={onDateEndSelectionChange}
+                        minDate={dateStart}
+                        maxDate={latestDayFromGroundTruthData}
+                        className="w-full"
+                    />
+                </div>
+                <button
+                    className="my-2 px-2 bg-[#b2b2b2] text-white rounded text-sm w-full"
+                    onClick={handleShowAllDates}
+                >
+                    Show All
+                </button>
 
                 <div className="mb-4">
                     <Typography variant="h6" className="text-white"> Horizon </Typography>
@@ -260,24 +260,10 @@ const SettingsPanel: React.FC = () => {
                         </button>
                     </div>
                 </div>
-                {/*<div>
-                    <Typography variant="h6" className="text-white">Display mode</Typography>
-                    {["byDate", "byHorizon"].map((value) => (<Radio
-                        key={value}
-                        name="displayModeRadioBtn"
-                        value={value}
-                        label={value === "byDate" ? "By Date" : "By Horizon"}
-                        onChange={(e) => onDisplayModeChange(e)}
-                        className="text-white"
-                        labelProps={{className: "text-white"}}
-                        defaultChecked={value === "byDate"}
-                    />))}
-                </div>*/}
-                <div>
-                    <Image src={"/epistorm-logo.png"} width={200} height={300} alt={"Epistorm Logo"}/>
-                </div>
-
             </CardBody>
+            <div className="mt-auto p-4">
+                <Image src="/epistorm-logo.png" width={9999} height={100} alt="Epistorm Logo"/>
+            </div>
         </Card>)
         ;
 }
