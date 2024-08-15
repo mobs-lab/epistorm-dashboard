@@ -34,7 +34,7 @@ const ThermoLegendArea: React.FC<{
     previousRiskLevel: string
 }> = ({currentWeek, previousWeek, currentRiskLevel, previousRiskLevel}) => {
 
-    console.log('Rendering ThermoLegendArea', {currentWeek, previousWeek, currentRiskLevel, previousRiskLevel});
+    // console.log('DEBUG: Rendering ThermoLegendArea', {currentWeek, previousWeek, currentRiskLevel, previousRiskLevel});
 
     const getRiskColor = (riskLevel: string) => {
         switch (riskLevel.toLowerCase()) {
@@ -410,16 +410,16 @@ const NowcastStateThermo: React.FC = () => {
         const currentWeekText = `${formatDate(dateA)} to ${formatDate(dateB)}`;
         const previousWeekText = `${formatDate(dateC)} to ${formatDate(dateD)}`;
 
-        console.log('Date strings calculated:', {currentWeekText, previousWeekText});
+        // console.log('DEBUG: Date strings calculated:', {currentWeekText, previousWeekText});
 
         // Update state variables to trigger re-render of ThermoLegendArea
         setCurrentWeek(currentWeekText);
         setPreviousWeek(previousWeekText);
 
-        console.log('State updated:', {currentWeek, previousWeek});
+        // console.log('DEBUG: State updated:', {currentWeek, previousWeek});
     }, [userSelectedWeek]);
 
-    console.log('Rendering NowcastStateThermo', {currentWeek, previousWeek});
+    // console.log('DEBUG: Rendering NowcastStateThermo', {currentWeek, previousWeek});
 
     return (
         <div ref={containerRef}

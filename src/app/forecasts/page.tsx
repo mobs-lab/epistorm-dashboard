@@ -8,7 +8,7 @@ import {
     ModelPrediction,
     NowcastTrendByModel,
     SeasonOption,
-    StateThresholds
+    StateThresholds, HistoricalDataEntry
 } from "../Interfaces/forecast-interfaces";
 import ForecastChart from "../Components/dashboard/ForecastChart";
 import SettingsPanel from "../Components/dashboard/SettingsPanel";
@@ -27,9 +27,7 @@ import {format} from "date-fns";
 import NowcastHeader from "../Components/dashboard/NowcastHeader";
 import ForecastChartHeader from "../Components/dashboard/ForecastChartHeader";
 
-import {setHistoricalGroundTruthData, HistoricalDataEntry} from '../store/historicalGroundTruthSlice';
-import fs from 'fs';
-import path from 'path';
+import {setHistoricalGroundTruthData} from '../store/historicalGroundTruthSlice';
 
 
 const Page: React.FC = () => {
@@ -46,13 +44,15 @@ const Page: React.FC = () => {
                 const groundTruthData = await d3.csv("/data/ground-truth/target-hospital-admissions.csv");
                 const parsedGroundTruthData = groundTruthData.map((d) => ({
 
-                    date: new Date(d.date.replace(/-/g, '\/')),
+                    date: new Date(d.date + 'T00:00:00Z'), // Ensure UTC
                     stateNum: d.location,
                     stateName: d.location_name,
                     admissions: +d.value,
                     weeklyRate: +d["weekly_rate"],
 
                 }));
+
+                console.log("DEBUG: page.tsx: fetchData: parsedGroundTruthData: ", parsedGroundTruthData);
 
 // Fetch predictions data
                 // Fetch predictions data (new and old)
@@ -61,8 +61,8 @@ const Page: React.FC = () => {
                     const oldPredictions = await d3.csv(`/data/processed/${team_model}/predictions_older.csv`);
 
                     const predictionData = [...newPredictions.map((d) => ({
-                        referenceDate: new Date(d.reference_date.replace(/-/g, '\/')),
-                        targetEndDate: new Date(d.target_end_date.replace(/-/g, '\/')),
+                        referenceDate: new Date(d.reference_date + 'T00:00:00Z'),
+                        targetEndDate: new Date(d.target_end_date + 'T00:00:00Z'),
                         stateNum: d.location,
                         confidence025: +d['0.025'],
                         confidence050: +d['0.05'],
@@ -73,8 +73,8 @@ const Page: React.FC = () => {
                         confidence975: +d['0.975'],
                         isOld: false, // Add a flag to identify new predictions
                     })), ...oldPredictions.map((d) => ({
-                        referenceDate: new Date(d.reference_date.replace(/-/g, '\/')),
-                        targetEndDate: new Date(d.target_end_date.replace(/-/g, '\/')),
+                        referenceDate: new Date(d.reference_date + 'T00:00:00Z'), // Ensure UTC
+                        targetEndDate: new Date(d.target_end_date + 'T00:00:00Z'),
                         stateNum: d.location,
                         confidence025: +d['0.025'],
                         confidence050: +d['0.05'],
@@ -124,6 +124,32 @@ const Page: React.FC = () => {
                 }));
 
 
+                const historicalData: HistoricalDataEntry[] = [];
+                const startDate = new Date('2023-09-23T00:00:00Z');
+                const endDate = new Date('2024-04-27T00:00:00Z');
+
+                for (let date = new Date(startDate); date <= endDate; date.setUTCDate(date.getUTCDate() + 7)) {
+                    const fileName = `target-hospital-admissions_${date.toISOString().split('T')[0]}.csv`;
+                    const filePath = `/data/ground-truth/historical-data/${fileName}`;
+
+                    try {
+                        const fileContent = await d3.csv(filePath);
+                        historicalData.push({
+                            associatedDate: new Date(date.toISOString()),
+                            historicalData: fileContent.map(record => ({
+                                date: new Date(record.date + 'T00:00:00Z'),
+                                stateNum: record.location ?? record['location'],
+                                stateName: record.location_name ?? record['location_name'],
+                                admissions: +(record.value ?? record['value']),
+                                weeklyRate: +(record.weekly_rate ?? record['weekly_rate']),
+                            }))
+                        });
+                    } catch (error) {
+                        console.warn(`File not found or error parsing: ${fileName}`, error);
+                        // Continue to the next date if file is not found or there's an error
+                    }
+                }
+
                 if (parsedGroundTruthData.length > 0 && predictionsData.length > 0 && parsedLocationData.length > 0) {
                     // Use the ground truth data to add back empty dates with predictions
                     const groundTruthDataWithPredictions = addBackEmptyDatesWithPrediction(parsedGroundTruthData, predictionsData);
@@ -131,7 +157,9 @@ const Page: React.FC = () => {
 
                     // console.log("Debug: page.tsx: fetchData: nowcastTrendsData: ", nowcastTrendsData);
                     // console.log("Debug: page.tsx: fetchData: locationData:", locationData);
-                    console.log("Debug: page.tsx: fetchData: parsedThresholdsData:", parsedThresholdsData);
+                    // console.log("Debug: page.tsx: fetchData: parsedThresholdsData:", parsedThresholdsData);
+                    console.log("Debug: page.tsx: fetchData: historicalData:", historicalData);
+                    console.log("Debug: page.tsx: fetchData: groundTruthDataWithPredictions:", groundTruthDataWithPredictions);
 
                     dispatch(setGroundTruthData(groundTruthDataWithPredictions));
                     dispatch(setPredictionsData(predictionsData));
@@ -139,9 +167,10 @@ const Page: React.FC = () => {
                     dispatch(setNowcastTrendsData(nowcastTrendsData));
                     dispatch(setSeasonOptions(seasonOptions));
                     dispatch(setStateThresholdsData(parsedThresholdsData));
-                    // dispatch(setHistoricalGroundTruthData(historicalData));
+                    dispatch(setHistoricalGroundTruthData(historicalData));
 
                     setDataLoaded(true);
+                    console.warn("DEBUG: page.tsx: fetchData: dataLoaded: ", dataLoaded);
                 }
 
             } catch (error) {
