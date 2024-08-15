@@ -1,10 +1,6 @@
-import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { DataPoint } from '../Interfaces/forecast-interfaces';
+import {createSlice, PayloadAction} from '@reduxjs/toolkit';
+import { HistoricalDataEntry} from '../Interfaces/forecast-interfaces';
 
-export interface HistoricalDataEntry {
-    associatedDate: Date;
-    historicalData: DataPoint[];
-}
 
 interface HistoricalGroundTruthState {
     data: HistoricalDataEntry[];
@@ -24,6 +20,6 @@ const historicalGroundTruthSlice = createSlice({
     },
 });
 
-export const { setHistoricalGroundTruthData } = historicalGroundTruthSlice.actions;
+export const {setHistoricalGroundTruthData} = historicalGroundTruthSlice.actions;
 
 export default historicalGroundTruthSlice.reducer;

@@ -67,3 +67,8 @@ export interface StateThresholds {
     high: number;
     veryHigh: number;
 }
+
+export interface HistoricalDataEntry{
+    associatedDate: Date;
+    historicalData: DataPoint[];
+}

@@ -34,7 +34,7 @@ const initialState: FilterState = {
     historicalDataMode: false,
     seasonOptions: [],
     userSelectedRiskLevelModel: "MOBS-GLEAM_FLUH",
-    userSelectedWeek: new Date("2024-04-27T04:00:00.000Z")
+    userSelectedWeek: new Date("2024-04-27T00:00:00.000Z")
 };
 
 const filterSlice = createSlice({
@@ -77,7 +77,7 @@ const filterSlice = createSlice({
             state.userSelectedRiskLevelModel = action.payload;
         },
         updateUserSelectedWeek: (state, action: PayloadAction<Date>) => {
-            state.userSelectedWeek = action.payload;
+            state.userSelectedWeek = new Date(action.payload.toISOString()); // Ensure UTC
         }
 
     },

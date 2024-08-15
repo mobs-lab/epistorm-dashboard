@@ -3,18 +3,17 @@
 
 import React, {useEffect, useRef, useState} from "react";
 import * as d3 from "d3";
-import {
-    Axis, BaseType, dispatch, NumberValue, ScaleLinear, ScaleLogarithmic, ScaleTime,
-} from "d3";
+import {Axis, BaseType, NumberValue, ScaleLinear, ScaleLogarithmic, ScaleTime} from "d3";
 import {useAppDispatch, useAppSelector} from "../../store/hooks";
 import {updateUserSelectedWeek} from "../../store/filterSlice";
 
 import {modelColorMap} from "../../Interfaces/modelColors";
 import {
-    DataPoint, ModelPrediction, PredictionDataPoint,
+    DataPoint,
+    ModelPrediction,
+    PredictionDataPoint,
+    HistoricalDataEntry
 } from "../../Interfaces/forecast-interfaces";
-
-import InfoButton from "./InfoButton";
 
 const ForecastChart: React.FC = () => {
 
@@ -30,6 +29,9 @@ const ForecastChart: React.FC = () => {
     // Get the ground and prediction data from store
     const groundTruthData = useAppSelector((state) => state.groundTruth.data);
     const predictionsData = useAppSelector((state) => state.predictions.data);
+
+    // Historical Ground Truth Data (Preloaded by `forecasts/page.tsx`)
+    const historicalGroundTruthData = useAppSelector((state) => state.historicalGroundTruth.data);
 
     // Get all settings variables from Redux
     const {
@@ -85,74 +87,70 @@ const ForecastChart: React.FC = () => {
             }
         });
 
-        if (!historicalDataMode) {
-            // First extract the entries with referenceDate that matches userSelectedWeek, but referenceDate is in string format
-            // Filter the prediction data by referenceDate and targetEndDate for each model
-            let filteredModelData = {};
-            Object.entries(modelData).forEach(([modelName, predictionData]) => {
-                let filteredByReferenceDate = predictionData.filter((d) => d.referenceDate.getFullYear() === selectedWeek.getFullYear() && d.referenceDate.getMonth() === selectedWeek.getMonth() && d.referenceDate.getDate() === selectedWeek.getDate(),);
 
-                let filteredByTargetEndDate = filteredByReferenceDate.filter((d) => {
-                    let targetWeek = new Date(selectedWeek);
-                    targetWeek.setDate(targetWeek.getDate() + weeksAhead * 7);
-                    return (d.targetEndDate >= d.referenceDate && d.targetEndDate <= targetWeek);
-                });
-                filteredModelData[modelName] = filteredByTargetEndDate;
+        // First extract the entries with referenceDate that matches userSelectedWeek, but referenceDate is in string format
+        // Filter the prediction data by referenceDate and targetEndDate for each model
+        let filteredModelData = {};
+        Object.entries(modelData).forEach(([modelName, predictionData]) => {
+            let filteredByReferenceDate = predictionData.filter((d) => d.referenceDate.getFullYear() === selectedWeek.getFullYear() && d.referenceDate.getMonth() === selectedWeek.getMonth() && d.referenceDate.getDate() === selectedWeek.getDate(),);
+
+            let filteredByTargetEndDate = filteredByReferenceDate.filter((d) => {
+                let targetWeek = new Date(selectedWeek);
+                targetWeek.setDate(targetWeek.getDate() + weeksAhead * 7);
+                return (d.targetEndDate >= d.referenceDate && d.targetEndDate <= targetWeek);
             });
+            filteredModelData[modelName] = filteredByTargetEndDate;
+        });
 
-            // Create an object to store the confidence interval data for each model
-            let confidenceIntervalData = {};
+        // Create an object to store the confidence interval data for each model
+        let confidenceIntervalData = {};
 
-            // Iterate over each model's predictions
-            Object.entries(filteredModelData).forEach(([modelName, modelPredictions]) => {
-                confidenceIntervalData[modelName] = [];
+        // Iterate over each model's predictions
+        Object.entries(filteredModelData).forEach(([modelName, modelPredictions]) => {
+            confidenceIntervalData[modelName] = [];
 
-                // Check if any confidence intervals are selected
-                if (confidenceIntervals.length > 0) {
-                    // Iterate over each confidence interval
-                    confidenceIntervals.forEach((interval) => {
-                        var confidenceIntervalPredictions = modelPredictions.map((d) => {
-                            var confidenceLow, confidenceHigh;
-                            if (interval === "50") {
-                                confidenceLow = d.confidence250;
-                                confidenceHigh = d.confidence750;
-                            } else if (interval === "90") {
-                                confidenceLow = d.confidence050;
-                                confidenceHigh = d.confidence950;
-                            } else if (interval === "95") {
-                                confidenceLow = d.confidence025;
-                                confidenceHigh = d.confidence975;
-                            }
-                            return {
-                                ...d,
-                                confidence_low: confidenceLow,
-                                confidence_high: confidenceHigh,
-                                referenceDate: d.referenceDate, // Convert referenceDate to Date object
-                                targetEndDate: d.targetEndDate, // Convert targetEndDate to Date object
-                            };
-                        });
-
-                        confidenceIntervalData[modelName].push({
-                            interval: interval, data: confidenceIntervalPredictions,
-                        });
-                    });
-                } else {
-                    // No confidence intervals selected, use the original prediction data
-                    confidenceIntervalData[modelName].push({
-                        interval: "", data: modelPredictions.map((d) => ({
-                            ...d, referenceDate: d.referenceDate, // Convert referenceDate to Date object
+            // Check if any confidence intervals are selected
+            if (confidenceIntervals.length > 0) {
+                // Iterate over each confidence interval
+                confidenceIntervals.forEach((interval) => {
+                    var confidenceIntervalPredictions = modelPredictions.map((d) => {
+                        var confidenceLow, confidenceHigh;
+                        if (interval === "50") {
+                            confidenceLow = d.confidence250;
+                            confidenceHigh = d.confidence750;
+                        } else if (interval === "90") {
+                            confidenceLow = d.confidence050;
+                            confidenceHigh = d.confidence950;
+                        } else if (interval === "95") {
+                            confidenceLow = d.confidence025;
+                            confidenceHigh = d.confidence975;
+                        }
+                        return {
+                            ...d,
+                            confidence_low: confidenceLow,
+                            confidence_high: confidenceHigh,
+                            referenceDate: d.referenceDate, // Convert referenceDate to Date object
                             targetEndDate: d.targetEndDate, // Convert targetEndDate to Date object
-                        })),
+                        };
                     });
-                }
-            },);
 
-            return confidenceIntervalData;
-        } else {
-            // TODO: instead of rendering all models, calculate the confidence interval that should overlay on top of every week for each model
-            //
-            return {};
-        }
+                    confidenceIntervalData[modelName].push({
+                        interval: interval, data: confidenceIntervalPredictions,
+                    });
+                });
+            } else {
+                // No confidence intervals selected, use the original prediction data
+                confidenceIntervalData[modelName].push({
+                    interval: "", data: modelPredictions.map((d) => ({
+                        ...d, referenceDate: d.referenceDate, // Convert referenceDate to Date object
+                        targetEndDate: d.targetEndDate, // Convert targetEndDate to Date object
+                    })),
+                });
+            }
+        },);
+
+        return confidenceIntervalData;
+
     }
 
     function createScalesAndAxes(ground: DataPoint[], predictions: any, chartWidth: number, chartHeight: number, yAxisScale: string,) {
@@ -274,6 +272,65 @@ const ForecastChart: React.FC = () => {
             .attr("fill", (d) => (d.admissions !== -1 ? "white" : "transparent"))
             .attr("stroke", (d) => (d.admissions !== -1 ? "white" : "transparent"))
             .attr("transform", `translate(${marginLeft}, ${marginTop})`);
+    }
+
+    function renderHistoricalData(
+        svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
+        historicalData: HistoricalDataEntry[],
+        xScale: d3.ScaleTime<number, number>,
+        yScale: d3.ScaleLinear<number, number> | d3.ScaleLogarithmic<number, number>,
+        marginLeft: number,
+        marginTop: number
+    ) {
+
+        console.log("DEBUG: ForecastChart: Rendering historical data:", historicalData);
+        console.log("DEBUG: ForecastChart: User selected week:", userSelectedWeek);
+
+        // Find the historical data file that is 1 week before the user selected week
+        const matchingHistoricalData = historicalData.find(
+            (entry) => entry.associatedDate instanceof Date &&
+                entry.associatedDate.getTime() === (userSelectedWeek.getTime() - 7 * 24 * 60 * 60 * 1000)
+        );
+
+        if (!matchingHistoricalData) {
+            console.log("No matching historical data found for:", userSelectedWeek.toISOString());
+            return;
+        }
+
+        console.log("Matching historical data:", matchingHistoricalData);
+
+        const historicalLine = d3
+            .line<DataPoint>()
+            .defined((d) => d.admissions !== -1 && !isNaN(d.admissions))
+            .x((d) => xScale(d.date))
+            .y((d) => yScale(d.admissions));
+
+        svg
+            .append("path")
+            .datum(matchingHistoricalData.historicalData.filter(d => d.admissions !== -1 && !isNaN(d.admissions) && d.stateNum === USStateNum))
+            .attr("class", "historical-ground-truth-path")
+            .attr("fill", "none")
+            .attr("stroke", "#FFA500") // Orange color for historical data
+            .attr("stroke-width", 1.5)
+            .attr("d", historicalLine)
+            .attr("transform", `translate(${marginLeft}, ${marginTop})`);
+
+        svg
+            .selectAll(".historical-ground-truth-dot")
+            .data(matchingHistoricalData.historicalData.filter(d => d.admissions !== -1 && !isNaN(d.admissions) && d.stateNum === USStateNum))
+            .enter()
+            .append("circle")
+            .attr("class", "historical-ground-truth-dot")
+            .attr("cx", (d) => xScale(d.date))
+            .attr("cy", (d) => yScale(d.admissions))
+            .attr("r", 2.5) // Slightly smaller than current ground truth dots
+            .attr("fill", "#FFA500")
+            .attr("transform", `translate(${marginLeft}, ${marginTop})`);
+
+        //     Debug output to calculate the difference between the actual ground truth and the historical ground truth data points value; to save resource we only display ones that are different
+        console.log("jfkj");
+        console.log("DEBUG: ForecastChart: Historical Data Difference:", matchingHistoricalData.historicalData.filter(d => d.admissions !== -1 && !isNaN(d.admissions)).filter((d, i) => d.admissions !== matchingHistoricalData.historicalData[i].admissions));
+
     }
 
     function renderPredictionData(svg: d3.Selection<null, unknown, null, undefined>, predictionData: {}, xScale: d3.ScaleTime<number, number, never>, yScale: d3.ScaleLinear<number, number, never>, marginLeft: number, marginTop: number, confidenceInterval: string[], isGroundTruthDataPlaceHolderOnly: boolean,) {
@@ -656,6 +713,7 @@ const ForecastChart: React.FC = () => {
         });
     }
 
+
     function renderMessage(svg: d3.Selection<null, unknown, null, undefined>, message: string, chartWidth: number, chartHeight: number, marginLeft: number, marginTop: number,) {
         svg.selectAll(".message").remove();
 
@@ -772,6 +830,11 @@ const ForecastChart: React.FC = () => {
         };
     }
 
+    function bubbleUserSelectedWeek(date: Date) {
+        console.log("Bubbling user selected week:", date.toISOString());
+        dispatch(updateUserSelectedWeek(new Date(date.toISOString()))); // Ensure UTC
+    }
+
     // Use Effect hook for getting the dimensions of chart
     useEffect(() => {
         const updateDimensions = () => {
@@ -787,10 +850,6 @@ const ForecastChart: React.FC = () => {
         return () => window.removeEventListener("resize", updateDimensions);
     }, []);
 
-    function bubbleUserSelectedWeek(date: Date) {
-        // console.log("DEBUG: ForecastChart: bubbleUserSelectedWeek(): date: ", date);
-        dispatch(updateUserSelectedWeek(date));
-    }
 
     useEffect(() => {
         // console.log("DEBUG: ForecastChart useEffect executed.");
@@ -808,8 +867,11 @@ const ForecastChart: React.FC = () => {
             // This works once for the first time the component is rendered to by default make the latest date as user-selected week
             if (!initialDataLoaded) {
                 const filteredGroundTruthDataWithoutPlaceholders = filteredGroundTruthData.filter((d) => d.admissions !== -1,);
+                console.log("DEBUG: ForecastChart: Initial data loaded, setting user selected week to latest date:", filteredGroundTruthDataWithoutPlaceholders);
                 const latestDate = d3.max(filteredGroundTruthDataWithoutPlaceholders, (d) => d.date,) as Date;
-                bubbleUserSelectedWeek(latestDate);
+                // ensure latestDate is UTC
+                const latestDateUTC = new Date(latestDate.toISOString());
+                bubbleUserSelectedWeek(latestDateUTC);
                 setInitialDataLoaded(true);
             }
 
@@ -824,20 +886,27 @@ const ForecastChart: React.FC = () => {
                 if (userSelectedWeek < dateStart || userSelectedWeek > dateEnd) {
                     // Re-find the nearest data point which should be new date range's endpoints
                     const closestDataPoint = findNearestDataPoint(filteredGroundTruthData, userSelectedWeek,);
-                    bubbleUserSelectedWeek(closestDataPoint.date);
+                    // bubbleUserSelectedWeek(new Date(closestDataPoint.date.toISOString()));
                 }
 
                 const processedPredictionData = processPredictionData(predictionsData, forecastModel, USStateNum, userSelectedWeek, numOfWeeksAhead, confidenceInterval, historicalDataMode,);
 
                 const {
-                    xScale,
-                    yScale,
-                    xAxis,
-                    yAxis
+                    xScale, yScale, xAxis, yAxis
                 } = createScalesAndAxes(filteredGroundTruthData, processedPredictionData, chartWidth, chartHeight, yAxisScale,);
 
                 renderGroundTruthData(svg, filteredGroundTruthData, xScale, yScale, marginLeft, marginTop,);
                 renderPredictionData(svg, processedPredictionData, xScale, yScale, marginLeft, marginTop, confidenceInterval, false,);
+                if (historicalDataMode) {
+                    renderHistoricalData(
+                        svg,
+                        historicalGroundTruthData,
+                        xScale,
+                        yScale,
+                        marginLeft,
+                        marginTop
+                    );
+                }
                 appendAxes(svg, xAxis, yAxis, xScale, marginLeft, marginTop, chartWidth, chartHeight, dateStart, dateEnd,);
 
                 const {
@@ -847,22 +916,24 @@ const ForecastChart: React.FC = () => {
                 updateVerticalIndicator(userSelectedWeek || filteredGroundTruthData[0].date, xScale, marginLeft, chartWidth, verticalIndicatorGroup, lineTooltip,);
             }
         }
-    }, [chartDimensions, groundTruthData, predictionsData, USStateNum, forecastModel, numOfWeeksAhead, dateStart, dateEnd, yAxisScale, confidenceInterval, historicalDataMode, userSelectedWeek,]);
+    }, [chartDimensions, groundTruthData, predictionsData, USStateNum, forecastModel, numOfWeeksAhead, dateStart, dateEnd, yAxisScale, confidenceInterval, historicalDataMode, userSelectedWeek, historicalDataMode,
+        historicalGroundTruthData]);
 
     // Return the SVG object using reference
-    return (
-        <div ref={chartRef} className="w-full h-full">
-            {/*<div className="flex justify-start items-center mb-4">
+    return (<div ref={chartRef} className="w-full h-full">
+        {/*<div className="flex justify-start items-center mb-4">
                 <h2 className="mx-5 text-2xl font-bold">Forecast Chart</h2>
                 <InfoButton title="Forecast Chart Information" content={chartInfo}/>
             </div>*/}
-            <svg
-                ref={svgRef}
-                width={"100%"}
-                height={"100%"}
-                preserveAspectRatio="xMidYMid meet"
-            ></svg>
-        </div>);
+        <svg
+            ref={svgRef}
+            width={"100%"}
+            height={"100%"}
+            preserveAspectRatio="xMidYMid meet"
+        ></svg>
+    </div>);
+
+
 };
 
 export default ForecastChart;
