@@ -107,7 +107,7 @@ const NowcastGauge: React.FC<RiskLevelGaugeProps> = ({riskLevel}) => {
         g.append('text')
             .attr('text-anchor', 'middle')
             .attr('dy', `-${radius * 0.3}`)
-            .attr('font-size', `24px`)
+            .attr('font-size', `28px`)
             .attr('font-weight', 'bold')
             .attr('fill', 'white')
             .text("Trend forecast");
@@ -115,7 +115,7 @@ const NowcastGauge: React.FC<RiskLevelGaugeProps> = ({riskLevel}) => {
         g.append('text')
             .attr('text-anchor', 'middle')
             .attr('dy', `-${radius * 0.12}`)
-            .attr('font-size', `16px`)
+            .attr('font-size', `18px`)
             .attr('fill', 'white')
             .text(`${formattedLastWeekDate} - ${formattedCurrentWeekDate}`);
 
@@ -124,7 +124,7 @@ const NowcastGauge: React.FC<RiskLevelGaugeProps> = ({riskLevel}) => {
         const legendX = width / 2 - radius;
         const legend = svg.append('g')
             .attr('class', 'legend')
-            .attr('transform', `translate(${legendX},${height * 0.9})`);
+            .attr('transform', `translate(${legendX},${height})`);
 
         const legendData = [
             {label: 'Decrease', color: '#478791', position: 'left'},

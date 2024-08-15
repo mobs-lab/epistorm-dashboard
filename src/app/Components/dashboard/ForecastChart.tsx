@@ -223,7 +223,7 @@ const ForecastChart: React.FC = () => {
             const minPositiveValue = d3.min(ground.filter((d) => d.admissions > 0), (d) => d.admissions,) || 1;
             yScale = d3
                 .scaleSymlog()
-                .domain([0, maxValue * 1.1])
+                .domain([0, maxValue * 1.2])
                 .constant(minPositiveValue / 2)
                 .range([chartHeight, 0]);
         }
@@ -234,7 +234,8 @@ const ForecastChart: React.FC = () => {
             .tickSize(-chartWidth);
 
         if (yAxisScale === "log") {
-            yAxis.ticks(10, "~s");
+            yAxis.ticks(6, "~s");
+            //  Make y-axis label bigger
         }
 
         return {xScale, yScale, xAxis, yAxis};
@@ -642,7 +643,8 @@ const ForecastChart: React.FC = () => {
         // Style y-axis ticks
         yAxisGroup
             .selectAll(".tick text")
-            .style("font-size", "14px"); // Increase font size
+            //     Make the font size always as big as possible
+            .style("font-size", "18px");
 
     }
 

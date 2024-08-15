@@ -153,7 +153,7 @@ const Page: React.FC = () => {
 
     return (<>
         {dataLoaded ? (
-            <div className="dashboard-grid-layout w-full h-full">
+            <div className="dashboard-grid-layout w-full h-full pl-4">
                 <div className="nowcast-header">
                     <NowcastHeader/>
                 </div>

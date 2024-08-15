@@ -125,7 +125,7 @@ const SettingsPanel: React.FC = () => {
             <CardBody>
                 <h2> Select a location <InfoButton title="State Selection Information" content={stateMapInfo}/></h2>
 
-                <div className="mb-4 items-center justify-center style={{ maxHeight: '600px', overflow: 'hidden' }}">
+                <div className="mb-4 w-full items-center justify-center style={{ maxHeight: '600px', overflow: 'hidden' }}">
                     <StateMap/>
                 </div>
 

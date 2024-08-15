@@ -53,9 +53,9 @@ const ThermoLegendArea: React.FC<{
 
     return (
         <div
-            className="flex flex-col flex-shrink h-full justify-between bg-mobs-lab-color-filterspane p-4 rounded mx-4">
+            className="flex flex-row h-full justify-stretch align-middle bg-mobs-lab-color-filterspane p-4 rounded mx-4 mb-4">
             <div className="text-lg font-bold">Activity level</div>
-            <div className=" h-full w-full flex flex-col space-y-2">
+            <div className="h-full w-full flex flex-col space-y-2">
                 <div className="flex flex-col">
                     <div className="flex items-center">
                         <svg width="16" height="2" className="mr-2">
@@ -419,16 +419,19 @@ const NowcastStateThermo: React.FC = () => {
 
     return (
         <div ref={containerRef}
-             className="nowcast-state-thermo-grid-layout text-white rounded relative h-full flex flex-col m-auto">
+             className="nowcast-state-thermo-grid-layout text-white w-min-full h-min-full flex flex-col">
+
             <div className="map-svg">
                 <svg ref={mapSvgRef} width="100%" height="100%" preserveAspectRatio="xMidYMid meet"/>
             </div>
+
             <div className="thermometer">
                 <svg ref={thermometerSvgRef} width="100%" height="100%" preserveAspectRatio="xMidYMid meet"/>
                 <div ref={tooltipRef}
-                     className="absolute hidden bg-white text-black p-2 rounded shadow-md text-sm"
+                     className="absolute hidden bg-white text-black rounded shadow-md text-sm"
                      style={{pointerEvents: 'none', zIndex: 10}}></div>
             </div>
+
             <div className="thermo-legend-area">
                 <ThermoLegendArea
                     currentWeek={currentWeek}
@@ -437,6 +440,7 @@ const NowcastStateThermo: React.FC = () => {
                     previousRiskLevel={previousRiskLevel}
                 />
             </div>
+
             <div className="thermo-legend-boxes">
                 <ThermoLegendBoxes/>
             </div>

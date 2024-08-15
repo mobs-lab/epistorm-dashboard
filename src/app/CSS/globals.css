@@ -147,8 +147,9 @@ body {
     "thermo-legend-boxes thermo-legend-boxes thermo-legend-area";
         grid-template-columns: 3fr 1fr 2fr;
         grid-template-rows: 4fr 1fr;
-        gap: 10px;
-        padding: 10px;
+        gap: 5px;
+        padding-bottom: 10px;
+
     }
 
     .nowcast-state-thermo-grid-layout > div {
