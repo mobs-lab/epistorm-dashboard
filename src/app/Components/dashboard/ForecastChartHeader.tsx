@@ -36,9 +36,9 @@ const ForecastChartHeader: React.FC = () => {
 
 
     return (
-        <div className="w-full h-full flex justify-between items-center">
+        <div className="w-full h-full flex justify-between items-center px-4">
             <div className="flex justify-start items-center">
-                <h2 className="mx-5 text-2xl font-bold">Forecast Chart</h2>
+                <h2 className="text-3xl font-bold mr-4">Forecast Chart</h2>
                 <InfoButton title="Forecast Chart Information" content={chartInfo}/>
             </div>
             <div className="flex justify-end items-center">

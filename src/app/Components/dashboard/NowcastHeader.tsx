@@ -29,11 +29,16 @@ const NowcastHeader: React.FC = () => {
 
     return (
         <div className="w-full h-full flex flex-col justify-between p-4">
-            <h1 className="text-3xl font-bold mb-2 sm:mb-0 sm:text-2xl md:text-3xl">{stateName}</h1>
-            <div className="w-full h-px bg-[#4e585e] my-2"></div>
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between w-full">
-                <div className="flex items-center mb-2 sm:mb-0">
-                    <h2 className="text-xl mr-2 sm:text-lg md:text-xl">Influenza Hospitalization Activity</h2>
+            <h1 className="text-5xl font-light mt-1 mb-1 sm:mb-2">{stateName}</h1>
+            <div className="w-full bg-[#4e585e] mb-2">
+                {/*    Use Svg to draw a very thin light gray horizontal line to use as separator. */}
+                <svg className="w-full h-0.5" xmlns="http://www.w3.org/2000/svg">
+                    <line x1="0" y1="0" x2="100%" y2="0" stroke="#d1d5db" strokeWidth="1"/>
+                </svg>
+            </div>
+            <div className="flex flex-row items-center justify-between w-full mb-3">
+                <div className="flex items-center mb-1 sm:mb-0">
+                    <h2 className="text-3xl font-bold mr-4">Influenza Hospitalization Activity</h2>
                     <InfoButton title="State Map Information" content={mapInfo}/>
                 </div>
                 <div className="flex items-center w-full sm:w-auto">
@@ -41,7 +46,7 @@ const NowcastHeader: React.FC = () => {
                     <select
                         value={userSelectedRiskLevelModel}
                         onChange={handleModelChange}
-                        className="bg-gray-800 text-white border border-gray-700 rounded px-2 py-1 w-full sm:w-auto text-sm sm:text-base"
+                        className="bg-mobs-lab-color text-white border border-gray-700 rounded px-2 py-1 w-full sm:w-auto text-sm sm:text-base"
                     >
                         {modelOptions.map((model) => (
                             <option key={model} value={model}>

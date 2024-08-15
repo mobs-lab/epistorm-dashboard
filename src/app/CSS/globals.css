@@ -26,8 +26,8 @@ body {
         width: 100vw;
         height: calc(100vh - var(--header-height));
         gap: 2px;
-        grid-template-columns: 2.4fr 2px 1.6fr 1.0fr;
-        grid-template-rows: minmax(0, 0.5fr) minmax(0, 1.2fr) 2px minmax(20px, 0.2fr) minmax(0, 2fr);
+        grid-template-columns: 2.6fr 2px 1.4fr 1fr;
+        grid-template-rows: minmax(0, 0.6fr) minmax(0, 1.1fr) 2px minmax(20px, 0.2fr) minmax(0, 2fr);
         grid-template-areas:
     "nowcastHeader nowcastHeader nowcastHeader settings"
     "state verticalSeparator gauge settings"
@@ -56,7 +56,11 @@ body {
 
     }
 
-    .forecast-state, .forecast-gauge, .forecast-settings, .forecast-graph {
+    .forecast-graph {
+        overflow: hidden;
+    }
+
+    .forecast-state, .forecast-gauge, .forecast-settings {
         width: 100%;
         height: 100%;
         overflow: hidden;
@@ -68,7 +72,9 @@ body {
 
     .vertical-separator {
         grid-area: verticalSeparator;
-        background-color: white;
+        display: flex;
+        justify-content: center;
+        align-items: center;
     }
 
     .forecast-gauge {
@@ -77,11 +83,15 @@ body {
 
     .forecast-settings {
         grid-area: settings;
+        display: flex;
+        flex-direction: column;
     }
 
     .horizontal-separator {
         grid-area: separator;
-        background-color: white;
+        display: flex;
+        justify-content: center;
+        align-items: center;
     }
 
     .chart-header {
@@ -108,34 +118,6 @@ body {
         pointer-events: none;
     }
 
-    /*TODO: Below are for Evaluations Page
-        Implementing them next*/
-    .evaluations-grid-layout {
-        display: grid;
-        column-gap: 10px;
-        row-gap: 20px;
-        grid:
-            [row1-left]"title title settings" minmax(200px, auto) [row1-right]
-            [row2-left]"graph score settings" minmax(500px, auto) [row2-right]
-            / minmax(150px, auto) minmax(150px, auto) minmax(100px, auto);
-    }
-
-    .evaluations-title {
-        grid-area: title;
-    }
-
-    .evaluations-graph {
-        grid-area: graph;
-    }
-
-    .evaluations-score {
-        grid-area: score;
-    }
-
-    .evaluations-settings {
-        grid-area: settings;
-    }
-
 
     /*NOTE: Below are for NowcastStateThermo Component*/
     .nowcast-state-thermo-grid-layout {
@@ -147,8 +129,9 @@ body {
     "thermo-legend-boxes thermo-legend-boxes thermo-legend-area";
         grid-template-columns: 3fr 1fr 2fr;
         grid-template-rows: 4fr 1fr;
-        gap: 10px;
-        padding: 10px;
+        gap: 5px;
+        padding-bottom: 10px;
+
     }
 
     .nowcast-state-thermo-grid-layout > div {
@@ -171,4 +154,40 @@ body {
         grid-area: thermo-legend-boxes;
     }
 
+
+    /*NOTE: Below are for NowcastGauge Component*/
+    .nowcast-gauge-grid-layout {
+        display: grid;
+        width: 100%;
+        height: 100%;
+        grid-template-areas:
+            "gauge-chart"
+            "gauge-legend";
+        grid-template-columns: 1fr;
+        grid-template-rows: 5fr 1fr;
+        padding-bottom: 10px;
+    }
+
+    .nowcast-gauge-grid-layout > div {
+        overflow: hidden;
+    }
+
+    .gauge-chart {
+        grid-area: gauge-chart;
+    }
+
+    .gauge-legend {
+        grid-area: gauge-legend;
+    }
+
+    /*CSS for Styled Date Picker's Components*/
+    .styled-date-picker .react-datepicker-wrapper,
+    .styled-date-picker .react-datepicker__input-container {
+        display: block;
+        width: 100%;
+    }
+
+    .styled-date-picker .react-datepicker__input-container input {
+        width: 100%;
+    }
 }

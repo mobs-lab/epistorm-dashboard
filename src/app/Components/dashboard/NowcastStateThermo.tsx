@@ -53,9 +53,9 @@ const ThermoLegendArea: React.FC<{
 
     return (
         <div
-            className="flex flex-col flex-shrink h-full justify-between bg-mobs-lab-color-filterspane p-4 rounded mx-4">
-            <div className="text-lg font-bold">Activity level</div>
-            <div className=" h-full w-full flex flex-col space-y-2">
+            className="flex flex-col h-full flex-nowrap justify-between items-center bg-mobs-lab-color-filterspane p-4 rounded mx-4 mb-4">
+            <div className="text-2xl font-bold">Activity level</div>
+            <div className="h-full w-full flex flex-col justify-around space-y-2">
                 <div className="flex flex-col">
                     <div className="flex items-center">
                         <svg width="16" height="2" className="mr-2">
@@ -182,6 +182,8 @@ const NowcastStateThermo: React.FC = () => {
         drawMap();
     }, [dimensions, selectedStateName, riskColor]);
 
+
+    /* NOTE: Use Effect that draws the Thermometer */
     useEffect(() => {
         if (!thermometerSvgRef.current || !tooltipRef.current) return;
 
@@ -192,7 +194,7 @@ const NowcastStateThermo: React.FC = () => {
         const height = thermometerSvgRef.current.clientHeight;
         const tooltip = d3.select(tooltipRef.current);
 
-        const margin = {top: 10, right: width * 0.3, bottom: 10, left: width * 0.3};
+        const margin = {top: 0, right: width * 0.32, bottom: 0, left: width * 0.32};
         const thermoWidth = width - margin.left - margin.right;
         const thermoHeight = height - margin.top - margin.bottom;
 
@@ -293,7 +295,7 @@ const NowcastStateThermo: React.FC = () => {
             const svgRect = svgElement.getBoundingClientRect();
             return {
                 x: event.clientX - svgRect.left,
-                y: event.clientY - svgRect.top
+                y: event.clientY
             };
         };
 
@@ -320,12 +322,14 @@ const NowcastStateThermo: React.FC = () => {
                 const nextValue = level === 'very high' ? null : stateThresholds[level === 'low' ? 'medium' : level === 'medium' ? 'high' : 'veryHigh'];
 
                 tooltip.html(`
-                    <div style="display: flex; align-items: center; margin-bottom: 5px;">
+                <div style="font-size: 14px">
+                    <div style="display: flex; align-items: center; margin: 5px;">
                         <div style="width: 12px; height: 12px; background-color: ${riskColors[levelIndex]}; margin-right: 5px;"></div>
                         <span>${level.charAt(0).toUpperCase() + level.slice(1)}: ${getRangeString(level, value, nextValue)}</span>
                     </div>
-                    <div>Surveillance: ${formatNumber(groundTruthValue)}</div>
-                    <div>Predicted: ${formatNumber(predictedValue)}</div>
+                    <div style="margin: 10px;">Surveillance: ${formatNumber(groundTruthValue)}</div>
+                    <div style="margin: 10px;">Predicted: ${formatNumber(predictedValue)}</div>
+                    </div>
                 `);
 
                 const tooltipNode = tooltip.node();
@@ -419,16 +423,19 @@ const NowcastStateThermo: React.FC = () => {
 
     return (
         <div ref={containerRef}
-             className="nowcast-state-thermo-grid-layout text-white rounded relative h-full flex flex-col m-auto">
+             className="nowcast-state-thermo-grid-layout text-white w-min-full h-min-full">
+
             <div className="map-svg">
                 <svg ref={mapSvgRef} width="100%" height="100%" preserveAspectRatio="xMidYMid meet"/>
             </div>
+
             <div className="thermometer">
                 <svg ref={thermometerSvgRef} width="100%" height="100%" preserveAspectRatio="xMidYMid meet"/>
                 <div ref={tooltipRef}
-                     className="absolute hidden bg-white text-black p-2 rounded shadow-md text-sm"
+                     className="absolute hidden bg-white text-black rounded shadow-md text-sm"
                      style={{pointerEvents: 'none', zIndex: 10}}></div>
             </div>
+
             <div className="thermo-legend-area">
                 <ThermoLegendArea
                     currentWeek={currentWeek}
@@ -437,6 +444,7 @@ const NowcastStateThermo: React.FC = () => {
                     previousRiskLevel={previousRiskLevel}
                 />
             </div>
+
             <div className="thermo-legend-boxes">
                 <ThermoLegendBoxes/>
             </div>
