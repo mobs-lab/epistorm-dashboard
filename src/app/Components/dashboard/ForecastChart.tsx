@@ -48,7 +48,6 @@ const ForecastChart: React.FC = () => {
 
     // State Variables that only the component itself needs to keep track of selected week and whether it is loaded
     const [initialDataLoaded, setInitialDataLoaded] = useState(false);
-    // const [userSelectedWeek, setUserSelectedWeek] = useState(new Date());
 
     // Size set up using dynamic width and height
     const width = chartDimensions.width;
@@ -59,6 +58,7 @@ const ForecastChart: React.FC = () => {
     const marginRight = width * 0.01;
     const chartWidth = width - marginLeft - marginRight;
     const chartHeight = height - marginTop - marginBottom;
+
 
     // Function to filter ground truth data by selected state and dates
     function filterGroundTruthData(data: DataPoint[], state: string, dateRange: [Date, Date],) {
@@ -851,7 +851,7 @@ const ForecastChart: React.FC = () => {
 
     // Return the SVG object using reference
     return (
-        <div ref={chartRef} className="w-full h-full overflow-hidden">
+        <div ref={chartRef} className="w-full h-full">
             {/*<div className="flex justify-start items-center mb-4">
                 <h2 className="mx-5 text-2xl font-bold">Forecast Chart</h2>
                 <InfoButton title="Forecast Chart Information" content={chartInfo}/>

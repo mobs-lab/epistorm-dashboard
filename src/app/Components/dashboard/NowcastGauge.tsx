@@ -6,6 +6,30 @@ interface RiskLevelGaugeProps {
     riskLevel: string;
 }
 
+
+const LegendBoxes: React.FC = () => {
+    const legendData = [
+        {label: 'Decrease', color: '#478791'},
+        {label: 'Stable', color: '#b9d6d6'},
+        {label: 'Increase', color: '#eae78b'}
+    ];
+
+    return (
+        <div className="flex justify-around items-end space-x-4 h-full px-10">
+            {legendData.map((item) => (
+                <div key={item.label} className="flex items-center">
+                    <div
+                        className="w-5 h-5"
+                        style={{backgroundColor: item.color}}
+                    ></div>
+                    <span className="text-sm mx-2 text-white">{item.label}</span>
+                </div>
+            ))}
+        </div>
+    );
+};
+
+
 const NowcastGauge: React.FC<RiskLevelGaugeProps> = ({riskLevel}) => {
     const svgRef = useRef<SVGSVGElement>(null);
     const [dimensions, setDimensions] = useState({width: 0, height: 0});
@@ -34,7 +58,7 @@ const NowcastGauge: React.FC<RiskLevelGaugeProps> = ({riskLevel}) => {
         const width = dimensions.width;
         const height = dimensions.height;
 
-        const radius = Math.min(width, height * 0.7);
+        const radius = Math.min(width, height * 0.85);
 
         const matchingModelNowcast = nowcastTrendsCollection.find(model => model.modelName === userSelectedRiskLevelModel);
         if (!matchingModelNowcast || !matchingModelNowcast.data.length) return;
@@ -78,8 +102,8 @@ const NowcastGauge: React.FC<RiskLevelGaugeProps> = ({riskLevel}) => {
             .endAngle(Math.PI / 2);
 
         const arc = d3.arc<d3.PieArcDatum<number>>()
-            .innerRadius(radius * 0.74)
-            .outerRadius(radius);
+            .innerRadius(radius * 0.8)
+            .outerRadius(radius * 1.1);
 
         const color = d3.scaleOrdinal<string>()
             .domain(['decrease', 'stable', 'increase'])
@@ -92,7 +116,7 @@ const NowcastGauge: React.FC<RiskLevelGaugeProps> = ({riskLevel}) => {
         ];
 
         const g = svg.append('g')
-            .attr('transform', `translate(${width / 2},${height * 0.8})`);
+            .attr('transform', `translate(${width / 2},${height})`);
 
         const paths = g.selectAll('path')
             .data(pie(data))
@@ -107,63 +131,17 @@ const NowcastGauge: React.FC<RiskLevelGaugeProps> = ({riskLevel}) => {
         g.append('text')
             .attr('text-anchor', 'middle')
             .attr('dy', `-${radius * 0.3}`)
-            .attr('font-size', `28px`)
+            .attr('font-size', `24px`)
             .attr('font-weight', 'bold')
             .attr('fill', 'white')
             .text("Trend forecast");
 
         g.append('text')
             .attr('text-anchor', 'middle')
-            .attr('dy', `-${radius * 0.12}`)
-            .attr('font-size', `18px`)
+            .attr('dy', `-${radius * 0.1}`)
+            .attr('font-size', `16px`)
             .attr('fill', 'white')
             .text(`${formattedLastWeekDate} - ${formattedCurrentWeekDate}`);
-
-        // Legend
-        const legendWidth = radius * 2;
-        const legendX = width / 2 - radius;
-        const legend = svg.append('g')
-            .attr('class', 'legend')
-            .attr('transform', `translate(${legendX},${height})`);
-
-        const legendData = [
-            {label: 'Decrease', color: '#478791', position: 'left'},
-            {label: 'Stable', color: '#b9d6d6', position: 'center'},
-            {label: 'Increase', color: '#eae78b', position: 'right'}
-        ];
-
-        legendData.forEach((item, index) => {
-            let legendX;
-            const legend = svg.append('g')
-                .attr('class', `legend-${item.position}`)
-                .attr('class', 'text-sm');
-
-            legend.append('rect')
-                .attr('width', 20)
-                .attr('height', 20)
-                .attr('fill', item.color)
-                .attr('stroke', '#333')
-                .attr('stroke-width', 1);
-
-            const text = legend.append('text')
-                .attr('x', 25)
-                .attr('y', 16)
-                .attr('fill', 'white')
-                .text(item.label);
-
-            const legendWidth = legend.node().getBBox().width;
-
-            if (item.position === 'left') {
-                legendX = width / 2 - radius;
-            } else if (item.position === 'center') {
-                legendX = width / 2 - legendWidth / 2;
-            } else {
-                legendX = width / 2 + radius - legendWidth;
-            }
-
-            legend.attr('transform', `translate(${legendX},${height * 0.9})`);
-        });
-
 
         // Create tooltip
         const hovertooltip = svg.append('g')
@@ -231,8 +209,13 @@ const NowcastGauge: React.FC<RiskLevelGaugeProps> = ({riskLevel}) => {
     }, [dimensions, riskLevel, nowcastTrendsCollection, userSelectedRiskLevelModel, USStateNum, userSelectedWeek]);
 
     return (
-        <div className="w-full h-full flex items-center justify-center rounded-lg">
-            <svg ref={svgRef} width="100%" height="100%" preserveAspectRatio="xMidYMid meet"/>
+        <div className="nowcast-gauge-grid-layout text-white w-min-full h-min-full">
+            <div className="gauge-chart">
+                <svg ref={svgRef} width="100%" height="100%" preserveAspectRatio="xMidYMid meet"/>
+            </div>
+            <div className="gauge-legend">
+                <LegendBoxes/>
+            </div>
         </div>
     );
 };
