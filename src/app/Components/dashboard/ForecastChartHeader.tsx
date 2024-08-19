@@ -47,8 +47,7 @@ const ForecastChartHeader: React.FC = () => {
                     checked={historicalDataMode}
                     onChange={handleHistoricalDataModeToggle}
                     color="blue"
-                    label={historicalDataMode ? "On" : "Off"}
-                />
+                    label={historicalDataMode ? "On" : "Off"} crossOrigin={undefined}                />
             </div>
         </div>
     );

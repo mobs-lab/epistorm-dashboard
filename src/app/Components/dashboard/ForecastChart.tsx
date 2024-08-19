@@ -10,9 +10,9 @@ import {updateUserSelectedWeek} from "../../store/filterSlice";
 import {modelColorMap} from "../../Interfaces/modelColors";
 import {
     DataPoint,
+    HistoricalDataEntry,
     ModelPrediction,
-    PredictionDataPoint,
-    HistoricalDataEntry
+    PredictionDataPoint
 } from "../../Interfaces/forecast-interfaces";
 
 const ForecastChart: React.FC = () => {
@@ -74,12 +74,13 @@ const ForecastChart: React.FC = () => {
 
     function processPredictionData(allPredictions: ModelPrediction[], selectedModels: string[], state: string, selectedWeek: any, weeksAhead: number, confidenceIntervals: string[], historicalDataMode: boolean,) {
         // Create an object to store the prediction data for each selected model
-        let modelData = {};
+        let modelData: any = {};
 
         // First check which models are selected by user
         // Then filter the prediction data by state for each model
         selectedModels.forEach((modelName) => {
-            const modelPrediction = allPredictions.find((model) => model.modelName === modelName,);
+            const modelPrediction = allPredictions.find((model) => model.modelName === modelName);
+
             if (modelPrediction) {
                 modelData[modelName] = modelPrediction.predictionData.filter((d) => d.stateNum === state,);
             } else {
@@ -92,6 +93,7 @@ const ForecastChart: React.FC = () => {
         // Filter the prediction data by referenceDate and targetEndDate for each model
         let filteredModelData = {};
         Object.entries(modelData).forEach(([modelName, predictionData]) => {
+
             let filteredByReferenceDate = predictionData.filter((d) => d.referenceDate.getFullYear() === selectedWeek.getFullYear() && d.referenceDate.getMonth() === selectedWeek.getMonth() && d.referenceDate.getDate() === selectedWeek.getDate(),);
 
             let filteredByTargetEndDate = filteredByReferenceDate.filter((d) => {
@@ -99,6 +101,7 @@ const ForecastChart: React.FC = () => {
                 targetWeek.setDate(targetWeek.getDate() + weeksAhead * 7);
                 return (d.targetEndDate >= d.referenceDate && d.targetEndDate <= targetWeek);
             });
+
             filteredModelData[modelName] = filteredByTargetEndDate;
         });
 
@@ -107,12 +110,14 @@ const ForecastChart: React.FC = () => {
 
         // Iterate over each model's predictions
         Object.entries(filteredModelData).forEach(([modelName, modelPredictions]) => {
+
             confidenceIntervalData[modelName] = [];
 
             // Check if any confidence intervals are selected
             if (confidenceIntervals.length > 0) {
                 // Iterate over each confidence interval
                 confidenceIntervals.forEach((interval) => {
+
                     var confidenceIntervalPredictions = modelPredictions.map((d) => {
                         var confidenceLow, confidenceHigh;
                         if (interval === "50") {
@@ -134,12 +139,15 @@ const ForecastChart: React.FC = () => {
                         };
                     });
 
+
                     confidenceIntervalData[modelName].push({
                         interval: interval, data: confidenceIntervalPredictions,
                     });
                 });
             } else {
                 // No confidence intervals selected, use the original prediction data
+
+
                 confidenceIntervalData[modelName].push({
                     interval: "", data: modelPredictions.map((d) => ({
                         ...d, referenceDate: d.referenceDate, // Convert referenceDate to Date object
@@ -185,7 +193,7 @@ const ForecastChart: React.FC = () => {
         const xAxis = d3
             .axisBottom(xScale)
             .tickValues(selectedTicks)
-            .tickFormat((d: Date) => {
+            .tickFormat((d) => {
                 const month = d3.timeFormat("%b")(d);
                 const day = d3.timeFormat("%d")(d);
                 const year = d.getFullYear();
@@ -274,23 +282,13 @@ const ForecastChart: React.FC = () => {
             .attr("transform", `translate(${marginLeft}, ${marginTop})`);
     }
 
-    function renderHistoricalData(
-        svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
-        historicalData: HistoricalDataEntry[],
-        xScale: d3.ScaleTime<number, number>,
-        yScale: d3.ScaleLinear<number, number> | d3.ScaleLogarithmic<number, number>,
-        marginLeft: number,
-        marginTop: number
-    ) {
+    function renderHistoricalData(svg: d3.Selection<SVGSVGElement, unknown, null, undefined>, historicalData: HistoricalDataEntry[], xScale: d3.ScaleTime<number, number>, yScale: d3.ScaleLinear<number, number> | d3.ScaleLogarithmic<number, number>, marginLeft: number, marginTop: number) {
 
         console.log("DEBUG: ForecastChart: Rendering historical data:", historicalData);
         console.log("DEBUG: ForecastChart: User selected week:", userSelectedWeek);
 
         // Find the historical data file that is 1 week before the user selected week
-        const matchingHistoricalData = historicalData.find(
-            (entry) => entry.associatedDate instanceof Date &&
-                entry.associatedDate.getTime() === (userSelectedWeek.getTime() - 7 * 24 * 60 * 60 * 1000)
-        );
+        const matchingHistoricalData = historicalData.find((entry) => entry.associatedDate instanceof Date && entry.associatedDate.getTime() === (userSelectedWeek.getTime() - 7 * 24 * 60 * 60 * 1000));
 
         if (!matchingHistoricalData) {
             console.log("No matching historical data found for:", userSelectedWeek.toISOString());
@@ -898,14 +896,7 @@ const ForecastChart: React.FC = () => {
                 renderGroundTruthData(svg, filteredGroundTruthData, xScale, yScale, marginLeft, marginTop,);
                 renderPredictionData(svg, processedPredictionData, xScale, yScale, marginLeft, marginTop, confidenceInterval, false,);
                 if (historicalDataMode) {
-                    renderHistoricalData(
-                        svg,
-                        historicalGroundTruthData,
-                        xScale,
-                        yScale,
-                        marginLeft,
-                        marginTop
-                    );
+                    renderHistoricalData(svg, historicalGroundTruthData, xScale, yScale, marginLeft, marginTop);
                 }
                 appendAxes(svg, xAxis, yAxis, xScale, marginLeft, marginTop, chartWidth, chartHeight, dateStart, dateEnd,);
 
@@ -916,8 +907,7 @@ const ForecastChart: React.FC = () => {
                 updateVerticalIndicator(userSelectedWeek || filteredGroundTruthData[0].date, xScale, marginLeft, chartWidth, verticalIndicatorGroup, lineTooltip,);
             }
         }
-    }, [chartDimensions, groundTruthData, predictionsData, USStateNum, forecastModel, numOfWeeksAhead, dateStart, dateEnd, yAxisScale, confidenceInterval, historicalDataMode, userSelectedWeek, historicalDataMode,
-        historicalGroundTruthData]);
+    }, [chartDimensions, groundTruthData, predictionsData, USStateNum, forecastModel, numOfWeeksAhead, dateStart, dateEnd, yAxisScale, confidenceInterval, historicalDataMode, userSelectedWeek, historicalDataMode, historicalGroundTruthData]);
 
     // Return the SVG object using reference
     return (<div ref={chartRef} className="w-full h-full">
