@@ -1,0 +1,267 @@
+---
+title: "Intensity Thresholds"
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r import, message=FALSE}
+library(tidyverse, quietly=T)
+library(magrittr, quietly=T)
+library(mem, quietly=T)
+```
+
+# Prepare Data
+
+## Load from Files
+
+Location codes are shared with the main project. HHS data is surveillance data from main project. We also look at 2016-2024 FluSurvNet data for available states, treating the entire network catchment area as representative of the US.
+
+```{r load, message=FALSE}
+locations <- read_csv('../public/data/locations.csv', col_select=c(location, location_name, population))
+
+hhs <- read_csv('../public/data/ground-truth/target-hospital-admissions.csv', col_select = c(date, location, value, weekly_rate))
+# insert epiweek, year, and location code columns
+hhs %<>% mutate(week = epiweek(hhs$date))
+hhs %<>% mutate(year = year(date)) 
+hhs <- inner_join(locations, hhs, by='location')
+
+fsn <- read_csv('./flusurvnet_data.csv', na=c("", "NA", "null")) %>%
+  # filter for desired data
+  filter(`AGE CATEGORY`=='Overall' & `SEX CATEGORY`=='Overall' & `RACE CATEGORY`=='Overall') %>%
+  select(1, 3:5, 10) %>%
+  drop_na() 
+fsn <- fsn %>%
+  # treat entire network as US, add location codes
+  mutate(CATCHMENT=case_match(fsn$CATCHMENT, 'Entire Network'~'United States', .default=fsn$CATCHMENT)) %>%
+  inner_join(locations, by=join_by('CATCHMENT'=='location_name')) %>%
+  rename(c(location_name='CATCHMENT', year='MMWR-YEAR', week='MMWR-WEEK', weekly_rate='WEEKLY RATE'))
+#fsn %<>% mutate(date = as.Date(str_c(fsn$year,fsn$week,'1'), '%Y%U%u'))
+```
+
+## Sanity Check
+
+Do weekly rates from HHS surveillance file match per-100,000 pop rates calculated from raw incidence values?
+(Raw incidence values unavailable for FSN)
+
+```{r sanity, results='hold'}
+hhs %<>% 
+  mutate(calculated_rate = 100000 * (value / population)) 
+hhs %<>%
+  mutate(sanity_check = near(weekly_rate, calculated_rate, tol=0.00000001))
+
+hhs$sanity_check %>% has_element(FALSE) %>% cat('Do any rows fail the sanity check?')
+```
+
+# Calculate Thresholds
+
+Define a function to calculate thresholds for a single given location and surveillance dataset, optionally using Bracher's suggestion to limit the number of included observations per season to 1. Default (`use_bracher=FALSE`) sets the included observations per season to `n = 30/m` where `m` is the number of seasons available. See https://doi.org/10.1101/2021.06.22.21259305 for details.
+
+
+```{r threshold_func, results='hide'}
+#' Get MEM intensity thresholds
+#'
+#' Calculate thresholds for a single given location and surveillance dataset, optionally using Bracher's suggestion to limit the number of included observations per season to 1. Default (`use_bracher=FALSE`) sets the included observations per season to `n = 30/m` where `m` is the number of seasons available. See https://doi.org/10.1101/2021.06.22.21259305 for details.
+#' @param loc chr: Standardized US location code.
+#' @param data tibble: HHS or FSN data as transformed above.
+#' @param use_bracher lgl: Whether to use `i.n.max=1` in call to `memmodel`.
+#' @return Returns a tibble row with thresholds and location.
+
+get_thresholds <- function(loc, data, use_bracher=FALSE) {
+  # Transform data for memmodel.
+  transformed <- data %>%
+    filter(location == loc) %>%
+    select(c(year, week, weekly_rate)) %>%
+    transformdata(i.name='weekly_rate', i.range.x=c(40,20))
+  
+  # Calculate thresholds.
+  if (use_bracher) {
+    model_output <- transformed$data %>% memmodel(i.n.max=1)
+  } else {
+    model_output <- transformed$data %>% memmodel()
+  }
+  thresholds <- model_output %>% memintensity()
+  thresholds <- thresholds$intensity.thresholds[1,]
+  thresholds %<>% append(list(location=loc))
+  
+  return(as_tibble_row(thresholds))
+}
+```
+
+## Generate Threshold Tables
+
+```{r thresholds}
+# Calculate thresholds for all locations in HHS data.
+hhs_thresholds <- locations$location %>%
+  map(\(x) get_thresholds(x, hhs)) %>%
+  bind_rows() %>%
+  column_to_rownames('location')
+hhs_thresholds_bracher <- locations$location %>%
+  map(\(x) get_thresholds(x, hhs, T)) %>%
+  bind_rows() %>%
+  column_to_rownames('location')
+
+# Calculate thresholds based on US FSN data.
+fsn_thresholds <- get_thresholds('US', fsn)[1:4]
+fsn_thresholds_bracher <- get_thresholds('US', fsn, T)[1:4]
+```
+
+# Check Percentage of Observations Exceeding Thresholds
+
+MEM calculates thresholds such that, nominally, we should expect 60% of observations to exceed the Medium threshold, 10% to exceed the High threshold, and 2.5% to exceed the Very High threshold. Here's a function to see what these percentages actually are in our data.
+
+```{r check_pct_func, results='hide'}
+#' Check percentage of observations exceeding thresholds
+#' 
+#' For a given location and dataset, calculate the percentage of observations which cross the specified thresholds. When using FSN thresholds, which are only calculated for the total catchment area (treated as representative of the US), compare the given state's data to those US FSN-based thresholds. When using HHS thresholds, compare to the HHS-based thresholds for the given location.
+#' @param loc chr: Standardized US location code.
+#' @param data tibble: HHS or FSN data as transformed above, weekly observed rates from supplied data are compared to specified thresholds.
+#' @param thresholds chr: Dataset used to calculate thresholds, either `'hhs'` or `'fsn'`. Default `'hhs'`.
+#' @param use_bracher lgl: Whether default or Bracher parameters are used to calculate thresholds. Default `FALSE`.
+#' @return Returns a tibble row with location and percentage of observations exceeding medium, high, and very high thresholds.
+check_pct_exceed_thres <- function(loc, data, thresholds='hhs', use_bracher=FALSE) {
+  if (thresholds=='hhs') {
+    thres_loc = loc
+    if (use_bracher) {thres=hhs_thresholds_bracher} else {thres=hhs_thresholds}
+  } else if (thresholds=='fsn') {
+    thres_loc = 1
+    if (use_bracher) {thres=fsn_thresholds_bracher} else {thres=fsn_thresholds}
+  }
+  
+  state_data <- data %>%
+    filter(location == loc) %>%
+    select(c(location, year, week, weekly_rate)) %>%
+    mutate(cross_med = weekly_rate >= thres[[thres_loc,2]]) %>%
+    mutate(cross_hi = weekly_rate >= thres[[thres_loc,3]]) %>%
+    mutate(cross_vhi = weekly_rate >= thres[[thres_loc,4]])
+  
+  pct_med <- length(state_data$cross_med[state_data$cross_med == T]) / length(state_data$cross_med)
+  pct_hi <- length(state_data$cross_hi[state_data$cross_hi == T]) / length(state_data$cross_hi)
+  pct_vhi <- length(state_data$cross_vhi[state_data$cross_vhi == T]) / length(state_data$cross_vhi)
+  
+  return(as_tibble_row(list('location'=loc, 'med'=pct_med, 'hi'=pct_hi, 'vhi'=pct_vhi)))
+}
+```
+
+## Generate Exceedance Percentage Tables
+
+```{r calc_pct_exceed}
+# Percentage of observations crossing HHS thresholds in HHS data.
+pct_hhs_exceed_hhs_thres <- locations$location %>%
+  map(\(x) check_pct_exceed_thres(x, hhs, 'hhs', F)) %>%
+  bind_rows()
+
+# Percentage of observations crossing Bracher HHS thresholds in HHS data.
+pct_hhs_exceed_hhs_thres_bracher <- locations$location %>%
+  map(\(x) check_pct_exceed_thres(x, hhs, 'hhs', T)) %>%
+  bind_rows()
+
+# Percentage of observations crossing HHS thresholds in FSN data.
+pct_fsn_exceed_hhs_thres <- locations$location %>%
+  map(\(x) check_pct_exceed_thres(x, fsn, 'hhs', F)) %>%
+  bind_rows() %>%
+  drop_na()
+
+# Percentage of observations crossing Bracher HHS thresholds in FSN data.
+pct_fsn_exceed_hhs_thres_bracher <- locations$location %>%
+  map(\(x) check_pct_exceed_thres(x, fsn, 'hhs', T)) %>%
+  bind_rows() %>%
+  drop_na()
+
+# Percentage of observations crossing FSN thresholds in HHS data.
+pct_hhs_exceed_fsn_thres <- locations$location %>%
+  map(\(x) check_pct_exceed_thres(x, hhs, 'fsn', F)) %>%
+  bind_rows()
+
+# Percentage of observations crossing Bracher FSN thresholds in HHS data.
+pct_hhs_exceed_fsn_thres_bracher <- locations$location %>%
+  map(\(x) check_pct_exceed_thres(x, hhs, 'fsn', T)) %>%
+  bind_rows()
+
+# All exceedances.
+exceedances <- list(pct_hhs_exceed_hhs_thres, pct_hhs_exceed_hhs_thres_bracher, pct_fsn_exceed_hhs_thres, pct_fsn_exceed_hhs_thres_bracher, pct_hhs_exceed_fsn_thres, pct_hhs_exceed_fsn_thres_bracher)
+```
+
+## Examine Results
+
+```{r summary_exceed, echo=FALSE}
+summary_exceed <- tibble(
+  observations = c('HHS', 'HHS', 'FSN', 'FSN', 'HHS', 'HHS'),
+  thresholds = c('HHS', 'HHS Bracher', 'HHS', 'HHS Bracher', 'FSN', 'FSN Bracher'),
+  num_locs_cross_med = exceedances %>% map_int(\(x) x %>% filter(med > 0) %>% count() %>% unlist()),
+  num_locs_cross_hi = exceedances %>% map_int(\(x) x %>% filter(hi > 0) %>% count() %>% unlist()),
+  num_locs_cross_vhi = exceedances %>% map_int(\(x) x %>% filter(vhi > 0) %>% count() %>% unlist()),
+  num_locs = c(53, 53, 15, 15, 53, 53)
+)
+
+summary_exceed %>% knitr::kable(caption='Summary of Threshold Exceedance')
+```
+
+```{r examine_exceed, eval=FALSE, include=FALSE, results='hold'}
+### NOT RUN: LOOK AT STATES WITH ANY OBSERVATIONS EXCEEDING VHI THRESHOLD
+
+# SPECIFY AN EXCEEDANCE PERCENTAGE TABLE HERE
+TABLE <- pct_hhs_exceed_hhs_thres
+
+TABLE %>% filter(vhi > 0) %>%
+  inner_join(locations, by='location') %>% 
+  select(2:5) %>%
+  knitr::kable()
+```
+
+# Plots
+
+Plots are saved in `./memseries/`. Only HHS time series is plotted in comparison with thresholds.
+
+```{r plot_func}
+#' Plot weekly 
+plot_series <- function(loc, thresholds) {
+  hhs_transformed <- hhs %>%
+    filter(location == loc) %>%
+    select(c(year, week, weekly_rate)) %>%
+    transformdata(i.name='weekly_rate', i.range.x=c(40,20))
+  
+  if (thresholds=='hhs') {
+    thres <- NA
+    i_n_max <- -1
+  } else if (thresholds=='hhs_bracher') {
+    thres <- NA
+    i_n_max <- 1
+  } else if (thresholds=='fsn') {
+    thres <- fsn_thresholds %>% unlist()
+    i_n_max <- NA
+  } else if (thresholds=='fsn_bracher') {
+    thres <- fsn_thresholds_bracher %>% unlist()
+    i_n_max <- NA
+  }
+  
+  loc_name <- locations %>% filter(location==loc) %>% select(location_name)
+  full.series.graph(hhs_transformed$data, i.graph.file.name=paste0('memseries/', thresholds, '/', thresholds, '_thres_', loc_name[[1]]), 
+                    i.graph.title=loc_name[[1]], i.graph.subtitle=paste0('hhs surveillance data w/ ', thresholds, ' thresholds'),
+                    i.alternative.thresholds=thres, i.plot.intensity=T, i.mem.info=F, i.n.max=i_n_max)
+}
+```
+
+```{r generate_plots, eval=FALSE}
+locations$location %>%
+  walk(\(x) plot_series(x, 'hhs'))
+
+locations$location %>%
+  walk(\(x) plot_series(x, 'hhs_bracher'))
+
+locations$location %>%
+  walk(\(x) plot_series(x, 'fsn'))
+
+locations$location %>%
+  walk(\(x) plot_series(x, 'fsn_bracher'))
+```
+
+
+
+
+
+
+
+
+
+
