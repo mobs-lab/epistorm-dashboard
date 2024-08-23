@@ -324,3 +324,4 @@ cython_debug/
 #.idea/
 
 .zed/
+.Rproj.user
