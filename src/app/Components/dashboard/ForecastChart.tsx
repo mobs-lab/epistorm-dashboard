@@ -174,7 +174,7 @@ const ForecastChart: React.FC = () => {
         const maxDate = d3.max([maxGroundTruthDate, maxPredictionDate]) as Date;
 
         const xScale = d3
-            .scaleTime()
+            .scaleUtc()
             .domain([dateStart, maxDate])
             .range([0, chartWidth]);
 
@@ -458,12 +458,13 @@ const ForecastChart: React.FC = () => {
         tooltip
             .attr("x", isLeftSide ? 5 : -5)
             .attr("text-anchor", isLeftSide ? "start" : "end")
-            .text(`${date.toLocaleDateString()} (Week ${epiweek})`)
+            // .text(`${date.toLocaleDateString()} (Week ${epiweek})`)
+            .text(`${date.toUTCString().slice(0, 16)} (Week ${epiweek})`)
             .attr("fill", "white");
     }
 
     function getEpiweek(date: Date): number {
-        const startOfYear = new Date(date.getFullYear(), 0, 1);
+        const startOfYear = new Date(date.getUTCFullYear(), 0, 1);
         const days = Math.floor((date.getTime() - startOfYear.getTime()) / (24 * 60 * 60 * 1000),);
         return Math.ceil((days + startOfYear.getDay() + 1) / 7);
     }

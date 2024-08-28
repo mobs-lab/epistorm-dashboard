@@ -42,6 +42,8 @@ const SettingsPanel: React.FC = () => {
 
     const earliestDayFromGroundTruthData = groundTruthData.length > 0 ? groundTruthData[groundTruthData.length - 1].date : undefined;
     const latestDayFromGroundTruthData = groundTruthData.length > 0 ? groundTruthData[0].date : undefined;
+    console.log("DEBUG: earliestDayFromGroundTruthData: ", earliestDayFromGroundTruthData);
+    console.log("DEBUG: latestDayFromGroundTruthData: ", latestDayFromGroundTruthData);
 
     const onStateSelectionChange = (stateNum: string) => {
         const selectedState = locationData.find((state) => state.stateNum === stateNum);
