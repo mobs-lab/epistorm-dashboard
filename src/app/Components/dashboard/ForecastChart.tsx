@@ -174,7 +174,7 @@ const ForecastChart: React.FC = () => {
         const maxDate = d3.max([maxGroundTruthDate, maxPredictionDate]) as Date;
 
         const xScale = d3
-            .scaleTime()
+            .scaleUtc()
             .domain([dateStart, maxDate])
             .range([0, chartWidth]);
 
@@ -458,12 +458,13 @@ const ForecastChart: React.FC = () => {
         tooltip
             .attr("x", isLeftSide ? 5 : -5)
             .attr("text-anchor", isLeftSide ? "start" : "end")
-            .text(`${date.toLocaleDateString()} (Week ${epiweek})`)
+            // .text(`${date.toLocaleDateString()} (Week ${epiweek})`)
+            .text(`${date.toUTCString().slice(0, 16)} (Week ${epiweek})`)
             .attr("fill", "white");
     }
 
     function getEpiweek(date: Date): number {
-        const startOfYear = new Date(date.getFullYear(), 0, 1);
+        const startOfYear = new Date(date.getUTCFullYear(), 0, 1);
         const days = Math.floor((date.getTime() - startOfYear.getTime()) / (24 * 60 * 60 * 1000),);
         return Math.ceil((days + startOfYear.getDay() + 1) / 7);
     }
@@ -505,18 +506,29 @@ const ForecastChart: React.FC = () => {
             .attr('rx', 8) // Larger rounded corners
             .attr('ry', 8);
 
-        // Add admissions data
-        const admissionsText = cornerTooltip
+        // Add Date Information
+        const dateText = cornerTooltip
             .append('text')
             .attr('x', padding)
             .attr('y', currentY)
             .attr('fill', 'white')
             .attr('font-weight', 'bold')
             .attr('font-size', '14px') // Increased font size
+            .text(`Date: ${data.date.toUTCString().slice(0, 16)}`);
+
+
+        // Add admissions data
+        const admissionsText = cornerTooltip
+            .append('text')
+            .attr('x', padding)
+            .attr('y', currentY + lineHeight)
+            .attr('fill', 'white')
+            .attr('font-weight', 'bold')
+            .attr('font-size', '14px') // Increased font size
             .text(`Admissions: ${data.admissions !== null && data.admissions !== -1 ? data.admissions : 'N/A'}`);
 
-        maxWidth = Math.max(maxWidth, admissionsText.node().getComputedTextLength());
-        currentY += lineHeight + 8; // Extra space after admissions
+        maxWidth = Math.max(maxWidth, dateText.node().getComputedTextLength());
+        currentY += lineHeight + 2 * padding; // Extra space after admissions
 
         // Find prediction data for the current date
         const currentPredictions = findPredictionsForDate(predictionData, data.date);

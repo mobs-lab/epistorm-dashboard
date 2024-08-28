@@ -8,8 +8,8 @@ const shapeFile = '/states-10m.json';
 
 /* Color legend boxes */
 const ThermoLegendBoxes: React.FC = () => {
-    const riskLevels = ['Low', 'Medium', 'High', 'Very high'];
-    const riskColors = ['#7cd8c9', '#2bafe2', '#435fce', '#3939a8'];
+    const riskLevels = ['Low', 'Medium', 'High'];
+    const riskColors = ['#7cd8c9', '#2bafe2', '#435fce'];
 
     return (
         <div className="flex justify-around items-end space-x-4 h-full px-10">
@@ -44,8 +44,8 @@ const ThermoLegendArea: React.FC<{
                 return '#2bafe2';
             case 'high':
                 return '#435fce';
-            case 'very high':
-                return '#3939a8';
+            /*case 'very high':
+                return '#3939a8';*/
             default:
                 return '#7cd8c9';
         }
@@ -207,8 +207,8 @@ const NowcastStateThermo: React.FC = () => {
             .attr('transform', `translate(${margin.left},${margin.top})`);
 
         // Define risk levels and colors
-        const riskLevels = ['low', 'medium', 'high', 'very high'];
-        const riskColors = ['#7cd8c9', '#2bafe2', '#435fce', '#3939a8'];
+        const riskLevels = ['low', 'medium', 'high'];
+        const riskColors = ['#7cd8c9', '#2bafe2', '#435fce'];
 
         // Get thresholds for the selected state
         const stateThresholds = thresholdsData.find(t => t.location === USStateNum);
@@ -223,7 +223,7 @@ const NowcastStateThermo: React.FC = () => {
         const riskPositions = [{level: 'low', position: 0}, {level: 'medium', position: 0.4}, {
             level: 'high',
             position: 0.9
-        }, {level: 'very high', position: 0.975}, {level: 'max', position: 1}];
+        }, {level: 'max', position: 1}];
 
         // Calculate relative last week and current selected week
         const currentSelectedWeek = new Date(userSelectedWeek);
@@ -252,10 +252,12 @@ const NowcastStateThermo: React.FC = () => {
             let riskLevel = 'low';
             let yPosition = 0;
 
-            if (value >= stateThresholds.veryHigh) {
+            /*if (value >= stateThresholds.veryHigh) {
                 riskLevel = 'very high';
                 yPosition = yScale(riskPositions[3].position * 100);
-            } else if (value >= stateThresholds.high) {
+            } else*/
+
+            if (value >= stateThresholds.high) {
                 riskLevel = 'high';
                 const fraction = (value - stateThresholds.high) / (stateThresholds.veryHigh - stateThresholds.high);
                 yPosition = yScale((riskPositions[2].position + fraction * (riskPositions[3].position - riskPositions[2].position)) * 100);
@@ -283,7 +285,7 @@ const NowcastStateThermo: React.FC = () => {
         const formatNumber = (num: number) => num.toLocaleString('en-US', {maximumFractionDigits: 2});
         const getRangeString = (level: string, value: number, nextValue: number | null) => {
             if (level === 'low') return `[0, ${formatNumber(stateThresholds.medium)}]`;
-            if (level === 'very high') return `[${formatNumber(stateThresholds.veryHigh)}, ∞)`;
+            /*if (level === 'very high') return `[${formatNumber(stateThresholds.veryHigh)}, ∞)`;*/
             return `[${formatNumber(value)}, ${formatNumber(nextValue!)}]`;
         };
 
@@ -318,7 +320,7 @@ const NowcastStateThermo: React.FC = () => {
             .on('mouseover', function (event, d) {
                 const level = d;
                 const levelIndex = riskLevels.indexOf(level);
-                const value = level === 'low' ? 0 : stateThresholds[level === 'medium' ? 'medium' : level === 'high' ? 'high' : 'veryHigh'];
+                const value = level === 'low' ? 0 : stateThresholds[level === 'medium' ? 'medium' : level === 'high' ? 'high' : "veryHigh"];
                 const nextValue = level === 'very high' ? null : stateThresholds[level === 'low' ? 'medium' : level === 'medium' ? 'high' : 'veryHigh'];
 
                 tooltip.html(`

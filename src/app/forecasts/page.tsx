@@ -105,7 +105,8 @@ const Page: React.FC = () => {
                         const response = await d3.csv(`/data/processed/${modelName}/nowcast_trends.csv`);
                         const parsedData = response.map((d) => ({
                             location: d.location,
-                            reference_date: new Date(d.reference_date.replace(/-/g, '\/')),
+                            // reference_date: new Date(d.reference_date.replace(/-/g, '\/')),
+                            reference_date: new Date(d.reference_date + 'T00:00:00Z'),
                             decrease: +d.decrease,
                             increase: +d.increase,
                             stable: +d.stable,
