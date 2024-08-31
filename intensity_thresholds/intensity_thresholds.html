@@ -1627,6 +1627,7 @@ display: none;
 <pre class="r"><code>library(tidyverse, quietly=T)
 library(magrittr, quietly=T)
 library(mem, quietly=T)</code></pre>
+<p>Last updated 30 Aug 2024</p>
 <div id="prepare-data" class="section level1">
 <h1>Prepare Data</h1>
 <div id="load-from-files" class="section level2">
@@ -1911,6 +1912,15 @@ locations$location %&gt;%
 
 locations$location %&gt;%
   walk(\(x) plot_series(x, &#39;fsn_bracher&#39;))</code></pre>
+</div>
+<div id="save-final-thresholds-to-file" class="section level1">
+<h1>Save Final Thresholds to File</h1>
+<p>Thresholds generated with the standard MEM on HHS data look most
+promising so these are saved to file for use in the dashboard.</p>
+<pre class="r"><code>hhs_thresholds %&gt;% 
+  rownames_to_column() %&gt;% 
+  `colnames&lt;-`(c(&#39;Location&#39;, &#39;Epidemic&#39;, &#39;Medium&#39;, &#39;High&#39;, &#39;Very High&#39;)) %&gt;% 
+  write_csv(&#39;../public/data/thresholds.csv&#39;)</code></pre>
 </div>
 
 

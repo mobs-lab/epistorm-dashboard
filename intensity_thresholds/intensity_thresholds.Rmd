@@ -11,6 +11,8 @@ library(magrittr, quietly=T)
 library(mem, quietly=T)
 ```
 
+Last updated 30 Aug 2024
+
 # Prepare Data
 
 ## Load from Files
@@ -256,8 +258,16 @@ locations$location %>%
   walk(\(x) plot_series(x, 'fsn_bracher'))
 ```
 
+# Save Final Thresholds to File
 
+Thresholds generated with the standard MEM on HHS data look most promising so these are saved to file for use in the dashboard.
 
+```{r save, eval=FALSE}
+hhs_thresholds %>% 
+  rownames_to_column() %>% 
+  `colnames<-`(c('Location', 'Epidemic', 'Medium', 'High', 'Very High')) %>% 
+  write_csv('../public/data/thresholds.csv')
+```
 
 
 
