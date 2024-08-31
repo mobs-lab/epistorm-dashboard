@@ -156,15 +156,15 @@ const StateMap: React.FC = () => {
 
     return (
         <div className="relative w-full h-full">
-            <svg ref={svgRef} width="100%" height="100%">
-                <g ref={gRef}></g>
-            </svg>
             <button
                 onClick={handleReset}
-                className="absolute top-2 right-2 bg-[#b2b2b2] text-white text-sm p-0.5 rounded"
+                className="absolute top-2 right-100 bg-[#b2b2b2] text-white text-sm p-0.5 rounded"
             >
                 Reset
             </button>
+            <svg ref={svgRef} width="100%" height="100%">
+                <g ref={gRef}></g>
+            </svg>
         </div>
     );
 };
