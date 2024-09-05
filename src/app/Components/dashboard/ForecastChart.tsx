@@ -56,7 +56,7 @@ const ForecastChart: React.FC = () => {
     const height = chartDimensions.height;
     const marginTop = height * 0.02;
     const marginBottom = height * 0.15;
-    const marginLeft = width * 0.025;
+    const marginLeft = width * 0.035;
     const marginRight = width * 0.025;
     const chartWidth = width - marginLeft - marginRight;
     const chartHeight = height - marginTop - marginBottom;
@@ -100,7 +100,7 @@ const ForecastChart: React.FC = () => {
                 let targetWeek = new Date(selectedWeek.getTime());
                 targetWeek.setDate(targetWeek.getDate() + weeksAhead * 7);
 
-                // Add a 2-hour buffer to account for DST transitions
+                // NOTE: Added a 2-hour buffer to account for DST transitions
                 const bufferMs = 2 * 60 * 60 * 1000; // 2 hours in milliseconds
 
                 return (d.targetEndDate >= d.referenceDate &&

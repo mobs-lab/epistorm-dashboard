@@ -28,8 +28,8 @@ const NowcastHeader: React.FC = () => {
     };
 
     return (
-        <div className="w-full h-full flex flex-col justify-between p-4">
-            <h1 className="text-5xl font-light mt-1 mb-1 sm:mb-2">{stateName}</h1>
+        <div className="w-full h-full flex flex-col justify-between p-4 mb-4">
+            <h1 className="text-4xl font-light mt-1 mb-1 sm:mb-2">{stateName}</h1>
             <div className="w-full bg-[#4e585e] mb-2">
                 {/*    Use Svg to draw a very thin light gray horizontal line to use as separator. */}
                 <svg className="w-full h-0.5" xmlns="http://www.w3.org/2000/svg">
@@ -38,7 +38,7 @@ const NowcastHeader: React.FC = () => {
             </div>
             <div className="flex flex-row items-center justify-between w-full mb-3">
                 <div className="flex items-center mb-1 sm:mb-0">
-                    <h2 className="text-3xl font-bold mr-4">Hospitalization Activity Forecast</h2>
+                    <h2 className="text-2xl font-bold mr-4">Hospitalization Activity Forecast</h2>
                     <InfoButton title="State Map Information" content={mapInfo}/>
                 </div>
                 <div className="flex items-center w-full sm:w-auto">

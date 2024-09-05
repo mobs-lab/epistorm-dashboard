@@ -258,8 +258,7 @@ function addBackEmptyDatesWithPrediction(groundTruthData: DataPoint[], predictio
             });
         });
     });
-    return [...groundTruthData, ...placeholderData];
-    // .sort((a, b) => b.date.getTime() - a.date.getTime());
+    return [...groundTruthData, ...placeholderData].sort((a, b) => b.date.getTime() - a.date.getTime());
 }
 
 function generateSeasonOptions(data: DataPoint[]): SeasonOption[] {
@@ -269,8 +268,14 @@ function generateSeasonOptions(data: DataPoint[]): SeasonOption[] {
         return options;
     }
 
-    const earliestDate = new Date(Math.min(...data.map(d => d.date.getTime())));
-    const latestDate = new Date(Math.max(...data.map(d => d.date.getTime())));
+    let earliestDate = data[0].date;
+    let latestDate = data[0].date;
+
+    // Find earliest and latest dates without using spread operator
+    for (let i = 1; i < data.length; i++) {
+        if (data[i].date < earliestDate) earliestDate = data[i].date;
+        if (data[i].date > latestDate) latestDate = data[i].date;
+    }
 
     const earliestYear = earliestDate.getFullYear();
     const latestYear = latestDate.getFullYear();
