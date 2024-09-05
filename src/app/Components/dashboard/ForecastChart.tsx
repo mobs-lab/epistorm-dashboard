@@ -56,8 +56,8 @@ const ForecastChart: React.FC = () => {
     const height = chartDimensions.height;
     const marginTop = height * 0.02;
     const marginBottom = height * 0.15;
-    const marginLeft = width * 0.025;
-    const marginRight = width * 0.01;
+    const marginLeft = width * 0.035;
+    const marginRight = width * 0.025;
     const chartWidth = width - marginLeft - marginRight;
     const chartHeight = height - marginTop - marginBottom;
 
@@ -89,17 +89,22 @@ const ForecastChart: React.FC = () => {
         });
 
 
-        // First extract the entries with referenceDate that matches userSelectedWeek, but referenceDate is in string format
         // Filter the prediction data by referenceDate and targetEndDate for each model
         let filteredModelData = {};
         Object.entries(modelData).forEach(([modelName, predictionData]) => {
-
-            let filteredByReferenceDate = predictionData.filter((d) => d.referenceDate.getFullYear() === selectedWeek.getFullYear() && d.referenceDate.getMonth() === selectedWeek.getMonth() && d.referenceDate.getDate() === selectedWeek.getDate(),);
+            let filteredByReferenceDate = predictionData.filter((d) =>
+                d.referenceDate.getTime() === selectedWeek.getTime()
+            );
 
             let filteredByTargetEndDate = filteredByReferenceDate.filter((d) => {
-                let targetWeek = new Date(selectedWeek);
+                let targetWeek = new Date(selectedWeek.getTime());
                 targetWeek.setDate(targetWeek.getDate() + weeksAhead * 7);
-                return (d.targetEndDate >= d.referenceDate && d.targetEndDate <= targetWeek);
+
+                // NOTE: Added a 2-hour buffer to account for DST transitions
+                const bufferMs = 2 * 60 * 60 * 1000; // 2 hours in milliseconds
+
+                return (d.targetEndDate >= d.referenceDate &&
+                    d.targetEndDate.getTime() <= targetWeek.getTime() + bufferMs);
             });
 
             filteredModelData[modelName] = filteredByTargetEndDate;

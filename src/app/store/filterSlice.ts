@@ -27,14 +27,14 @@ const initialState: FilterState = {
     forecastModel: ["MOBS-GLEAM_FLUH"],
     numOfWeeksAhead: 3,
     dateRange: "2023-2024",
-    dateStart: new Date("2023-08-02T00:00:00.000Z"),
-    dateEnd: new Date("2024-08-01T00:00:00.000Z"),
+    dateStart: new Date("2023-08-02T12:00:00Z"),
+    dateEnd: new Date("2024-08-01T12:00:00Z"),
     yAxisScale: "linear",
     confidenceInterval: ["90"],
     historicalDataMode: false,
     seasonOptions: [],
     userSelectedRiskLevelModel: "MOBS-GLEAM_FLUH",
-    userSelectedWeek: new Date("2024-04-27T00:00:00.000Z")
+    userSelectedWeek: new Date("2024-05-04T12:00:00.000Z")
 };
 
 const filterSlice = createSlice({
@@ -70,6 +70,7 @@ const filterSlice = createSlice({
             state.seasonOptions = action.payload;
         },
         updateDateRange: (state, action: PayloadAction<{ dateStart: Date; dateEnd: Date }>) => {
+            console.log("updateDateRange", action.payload);
             state.dateStart = action.payload.dateStart;
             state.dateEnd = action.payload.dateEnd;
         },
@@ -77,7 +78,7 @@ const filterSlice = createSlice({
             state.userSelectedRiskLevelModel = action.payload;
         },
         updateUserSelectedWeek: (state, action: PayloadAction<Date>) => {
-            state.userSelectedWeek = new Date(action.payload.toISOString()); // Ensure UTC
+            state.userSelectedWeek = action.payload;
         }
 
     },

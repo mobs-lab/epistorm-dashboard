@@ -1,7 +1,7 @@
 // components/SettingsPanel.tsx
 "use client"
 
-import React from 'react';
+import React, {useMemo} from 'react';
 import {modelColorMap} from '../../Interfaces/modelColors';
 import InfoButton from './InfoButton';
 import {SeasonOption} from '../../Interfaces/forecast-interfaces';
@@ -40,8 +40,22 @@ const SettingsPanel: React.FC = () => {
         USStateNum, forecastModel, dateStart, dateEnd, dateRange, confidenceInterval, seasonOptions
     } = useAppSelector((state) => state.filter);
 
-    const earliestDayFromGroundTruthData = groundTruthData.length > 0 ? groundTruthData[groundTruthData.length - 1].date : undefined;
-    const latestDayFromGroundTruthData = groundTruthData.length > 0 ? groundTruthData[0].date : undefined;
+
+    const {earliestDayFromGroundTruthData, latestDayFromGroundTruthData} = useMemo(() => {
+        if (groundTruthData.length === 0) {
+            return {
+                earliestDayFromGroundTruthData: new Date("2022-08-23T12:00:00.000Z"),
+                latestDayFromGroundTruthData: new Date("2024-05-24T12:00:00.000Z")
+            };
+        }
+
+        const sortedData = [...groundTruthData].sort((a, b) => a.date.getTime() - b.date.getTime());
+        return {
+            earliestDayFromGroundTruthData: sortedData[0].date,
+            latestDayFromGroundTruthData: sortedData[sortedData.length - 1].date
+        };
+    }, [groundTruthData]);
+
     console.log("DEBUG: earliestDayFromGroundTruthData: ", earliestDayFromGroundTruthData);
     console.log("DEBUG: latestDayFromGroundTruthData: ", latestDayFromGroundTruthData);
 
@@ -91,12 +105,9 @@ const SettingsPanel: React.FC = () => {
     };
 
     const handleShowAllDates = () => {
-        if (groundTruthData.length > 0) {
-            const earliestDate = groundTruthData[groundTruthData.length - 1].date;
-            const latestDate = groundTruthData[0].date;
-            dispatch(updateDateStart(earliestDate));
-            dispatch(updateDateEnd(latestDate));
-        }
+        //TODO: Implement this again now that earliest and latest dates are calculated using useMemo
+        dispatch(updateDateStart(earliestDayFromGroundTruthData));
+        dispatch(updateDateEnd(latestDayFromGroundTruthData));
     };
 
 
@@ -114,10 +125,6 @@ const SettingsPanel: React.FC = () => {
             dispatch(updateConfidenceInterval(confidenceInterval.filter((model) => model !== interval)));
         }
         console.log("SettingsPanel update: Confidence Interval changed to: ", confidenceInterval);
-    };
-
-    const onDisplayModeChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-        //TODO: This controls "By Date" or "By Horizon" display mode
     };
 
 

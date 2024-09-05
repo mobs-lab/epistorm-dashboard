@@ -25,7 +25,7 @@ body {
         display: grid;
         width: 100vw;
         height: calc(100vh - var(--header-height));
-        gap: 2px;
+        gap: 10px;
         grid-template-columns: 2.6fr 2px 1.4fr 1fr;
         grid-template-rows: minmax(0, 0.6fr) minmax(0, 1.1fr) 2px minmax(20px, 0.2fr) minmax(0, 2fr);
         grid-template-areas:
