@@ -38,7 +38,7 @@ const NowcastHeader: React.FC = () => {
             </div>
             <div className="flex flex-row items-center justify-between w-full mb-3">
                 <div className="flex items-center mb-1 sm:mb-0">
-                    <h2 className="text-3xl font-bold mr-4">Influenza Hospitalization Activity</h2>
+                    <h2 className="text-3xl font-bold mr-4">Hospitalization Activity Forecast</h2>
                     <InfoButton title="State Map Information" content={mapInfo}/>
                 </div>
                 <div className="flex items-center w-full sm:w-auto">

@@ -44,25 +44,23 @@ const Page: React.FC = () => {
                 const groundTruthData = await d3.csv("/data/ground-truth/target-hospital-admissions.csv");
                 const parsedGroundTruthData = groundTruthData.map((d) => ({
 
-                    date: new Date(d.date + 'T00:00:00Z'), // Ensure UTC
+                    date: new Date(d.date + "T12:00:00Z"), // Ensure UTC
                     stateNum: d.location,
                     stateName: d.location_name,
                     admissions: +d.value,
                     weeklyRate: +d["weekly_rate"],
-
                 }));
 
                 console.log("DEBUG: page.tsx: fetchData: parsedGroundTruthData: ", parsedGroundTruthData);
 
-// Fetch predictions data
                 // Fetch predictions data (new and old)
                 const predictionsData = await Promise.all(['MOBS-GLEAM_FLUH', 'CEPH-Rtrend_fluH', 'MIGHTE-Nsemble', 'NU_UCSD-GLEAM_AI_FLUH'].map(async (team_model) => {
                     const newPredictions = await d3.csv(`/data/processed/${team_model}/predictions.csv`);
                     const oldPredictions = await d3.csv(`/data/processed/${team_model}/predictions_older.csv`);
 
                     const predictionData = [...newPredictions.map((d) => ({
-                        referenceDate: new Date(d.reference_date + 'T00:00:00Z'),
-                        targetEndDate: new Date(d.target_end_date + 'T00:00:00Z'),
+                        referenceDate: new Date(d.reference_date + "T12:00:00Z"),
+                        targetEndDate: new Date(d.target_end_date + "T12:00:00Z"),
                         stateNum: d.location,
                         confidence025: +d['0.025'],
                         confidence050: +d['0.05'],
@@ -73,8 +71,8 @@ const Page: React.FC = () => {
                         confidence975: +d['0.975'],
                         isOld: false, // Add a flag to identify new predictions
                     })), ...oldPredictions.map((d) => ({
-                        referenceDate: new Date(d.reference_date + 'T00:00:00Z'), // Ensure UTC
-                        targetEndDate: new Date(d.target_end_date + 'T00:00:00Z'),
+                        referenceDate: new Date(d.reference_date + "T12:00:00Z"), // Ensure UTC
+                        targetEndDate: new Date(d.target_end_date + "T12:00:00Z"),
                         stateNum: d.location,
                         confidence025: +d['0.025'],
                         confidence050: +d['0.05'],
@@ -106,7 +104,7 @@ const Page: React.FC = () => {
                         const parsedData = response.map((d) => ({
                             location: d.location,
                             // reference_date: new Date(d.reference_date.replace(/-/g, '\/')),
-                            reference_date: new Date(d.reference_date + 'T00:00:00Z'),
+                            reference_date: new Date(d.reference_date + "T12:00:00Z"),
                             decrease: +d.decrease,
                             increase: +d.increase,
                             stable: +d.stable,
@@ -126,8 +124,8 @@ const Page: React.FC = () => {
 
 
                 const historicalData: HistoricalDataEntry[] = [];
-                const startDate = new Date('2023-09-23T00:00:00Z');
-                const endDate = new Date('2024-04-27T00:00:00Z');
+                const startDate = new Date('2023-09-23T12:00:00Z');
+                const endDate = new Date('2024-04-27T12:00:00Z');
 
                 for (let date = new Date(startDate); date <= endDate; date.setUTCDate(date.getUTCDate() + 7)) {
                     const fileName = `target-hospital-admissions_${date.toISOString().split('T')[0]}.csv`;
@@ -138,7 +136,7 @@ const Page: React.FC = () => {
                         historicalData.push({
                             associatedDate: new Date(date.toISOString()),
                             historicalData: fileContent.map(record => ({
-                                date: new Date(record.date + 'T00:00:00Z'),
+                                date: new Date(record.date + "T12:00:00Z"),
                                 stateNum: record.location ?? record['location'],
                                 stateName: record.location_name ?? record['location_name'],
                                 admissions: +(record.value ?? record['value']),
@@ -233,24 +231,26 @@ function addBackEmptyDatesWithPrediction(groundTruthData: DataPoint[], predictio
         }
     });
 
-    const newerDates = new Set<string>();
+    const newerDates = new Set<Date>();
 
     // Step 2: Find dates in prediction data that are newer than the most recent ground truth date
     predictionsData.forEach((model) => {
         model.predictionData.forEach((dataPoint) => {
             if (dataPoint.referenceDate > mostRecentDate) {
-                newerDates.add(dataPoint.referenceDate.toISOString());
+                newerDates.add(dataPoint.referenceDate);
             } else if (dataPoint.targetEndDate > mostRecentDate) {
-                newerDates.add(dataPoint.targetEndDate.toISOString());
+                newerDates.add(dataPoint.targetEndDate);
             }
         });
     });
 
+    console.log("DEBUG: page.tsx: addBackEmptyDatesWithPrediction: newerDates: ", newerDates);
+
     const placeholderData: DataPoint[] = [];
 
     // Step 3: Create placeholder data for each distinct state and newer date
-    newerDates.forEach((dateString) => {
-        const date = new Date(dateString);
+    newerDates.forEach((newDate) => {
+        const date = newDate;
         states.forEach((stateString) => {
             const [stateNum, stateName] = stateString.split('-');
             placeholderData.push({
@@ -258,7 +258,8 @@ function addBackEmptyDatesWithPrediction(groundTruthData: DataPoint[], predictio
             });
         });
     });
-    return [...groundTruthData, ...placeholderData].sort((a, b) => b.date.getTime() - a.date.getTime());
+    return [...groundTruthData, ...placeholderData];
+    // .sort((a, b) => b.date.getTime() - a.date.getTime());
 }
 
 function generateSeasonOptions(data: DataPoint[]): SeasonOption[] {
