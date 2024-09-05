@@ -15,6 +15,11 @@ import {
     PredictionDataPoint
 } from "../../Interfaces/forecast-interfaces";
 
+const predefinedTicks = [
+    0, 1, 5, 10, 25, 50, 75, 100, 300, 500, 750, 1000, 3000, 5000, 7500,
+    10000, 15000, 30000, 50000, 75000, 100000, 300000, 500000, 750000, 1000000
+];
+
 const ForecastChart: React.FC = () => {
 
 
@@ -225,6 +230,7 @@ const ForecastChart: React.FC = () => {
 
         const maxValue = Math.max(maxGroundTruthValue, maxPredictionValue);
 
+        /*TODO: Refine Y-axis Logarithmic mode ticks display.*/
         if (yAxisScale === "linear") {
             yScale = d3
                 .scaleLinear()
@@ -235,21 +241,62 @@ const ForecastChart: React.FC = () => {
             yScale = d3
                 .scaleSymlog()
                 .domain([0, maxValue * 1.2])
-                .constant(minPositiveValue / 2)
+                .constant(1)
                 .range([chartHeight, 0]);
+
+            /*.scaleSymlog()
+            .domain([0, maxValue * 1.2])
+            .constant(minPositiveValue / 2)
+            .range([chartHeight, 0]);*/
         }
 
-        const yAxis = d3
-            .axisLeft(yScale)
-            .tickFormat(d3.format("~s"))
-            .tickSize(-chartWidth);
+        const yAxis = d3.axisLeft(yScale);
 
         if (yAxisScale === "log") {
-            yAxis.ticks(6, "~s");
-            //  Make y-axis label bigger
+            const customTicks = selectCustomTicks(maxValue);
+            yAxis.tickValues(customTicks)
+                .tickFormat(d => d === 0 ? "0" : d3.format(".2~s")(d));
+        } else {
+            yAxis.tickFormat(d3.format("~s"));
         }
 
+        yAxis.tickSize(-chartWidth);
+
         return {xScale, yScale, xAxis, yAxis};
+    }
+
+    function selectCustomTicks(maxValue: number): number[] {
+        const applicableTicks = predefinedTicks.filter(tick => tick <= maxValue);
+
+        if (applicableTicks.length <= 4) return applicableTicks;  // For very small ranges
+
+        const minTicks = 4;
+        const maxTicks = 8;
+        let step = Math.max(1, Math.floor(applicableTicks.length / maxTicks));
+
+        let selectedTicks = applicableTicks.filter((_, index) => index % step === 0);
+
+        // Ensure we always include the maximum applicable tick
+        if (selectedTicks[selectedTicks.length - 1] !== applicableTicks[applicableTicks.length - 1]) {
+            selectedTicks.push(applicableTicks[applicableTicks.length - 1]);
+        }
+
+        // Adjust if we have too few ticks
+        while (selectedTicks.length < minTicks && step > 1) {
+            step--;
+            selectedTicks = applicableTicks.filter((_, index) => index % step === 0);
+            if (selectedTicks[selectedTicks.length - 1] !== applicableTicks[applicableTicks.length - 1]) {
+                selectedTicks.push(applicableTicks[applicableTicks.length - 1]);
+            }
+        }
+
+        // Trim if we have too many ticks
+        if (selectedTicks.length > maxTicks) {
+            const exceededBy = selectedTicks.length - maxTicks;
+            selectedTicks.splice(Math.floor(maxTicks / 2), exceededBy);
+        }
+
+        return selectedTicks;
     }
 
     function renderGroundTruthData(svg: Selection<BaseType, unknown, HTMLElement, any>, surveillanceData: DataPoint[], xScale: ScaleTime<number, number, never>, yScale: | ScaleLogarithmic<number, number, never> | ScaleLinear<number, number, never>, marginLeft: number, marginTop: number,) {
