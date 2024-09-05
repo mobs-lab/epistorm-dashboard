@@ -54,7 +54,7 @@ const ThermoLegendArea: React.FC<{
     return (
         <div
             className="flex flex-col h-full flex-nowrap justify-between items-center bg-mobs-lab-color-filterspane p-4 rounded mx-4 mb-4">
-            <div className="text-2xl font-bold">Activity level</div>
+            <div className="text-xl font-bold">Activity level</div>
             <div className="h-full w-full flex flex-col justify-around space-y-2">
                 <div className="flex flex-col">
                     <div className="flex items-center">
