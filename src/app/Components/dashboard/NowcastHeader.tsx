@@ -28,32 +28,33 @@ const NowcastHeader: React.FC = () => {
     };
 
     return (
-        <div className="w-full h-full flex flex-col justify-between p-4 mb-4">
-            <h1 className="text-4xl font-light mt-1 mb-1 sm:mb-2">{stateName}</h1>
-            <div className="w-full bg-[#4e585e] mb-2">
+        <div className="w-full h-full flex flex-col justify-between px-4 py-2">
+            <h1 className="text-4xl font-light">
+                {stateName}</h1>
+            <div className="w-full bg-[#4e585e] my-0.5">
                 {/*    Use Svg to draw a very thin light gray horizontal line to use as separator. */}
                 <svg className="w-full h-0.5" xmlns="http://www.w3.org/2000/svg">
                     <line x1="0" y1="0" x2="100%" y2="0" stroke="#d1d5db" strokeWidth="1"/>
                 </svg>
             </div>
-            <div className="flex flex-row items-center justify-between w-full mb-3">
-                <div className="flex items-center mb-1 sm:mb-0">
-                    <h2 className="text-2xl font-bold mr-4">Hospitalization Activity Forecast</h2>
+            <div className="flex flex-row justify-between">
+                <div className="flex">
+                    <h2 className="text-xl font-bold mr-2">Hospitalization Activity Forecast</h2>
                     <InfoButton title="State Map Information" content={mapInfo}/>
                 </div>
-                <div className="flex items-center w-full sm:w-auto">
-                    <span className="mr-2 whitespace-nowrap text-sm sm:text-base">Change model: </span>
-                    <select
+                <div className="flex items-center justify-between">
+                    <div><span className="text-sm">Change model:</span></div>
+                    <div><select
                         value={userSelectedRiskLevelModel}
                         onChange={handleModelChange}
-                        className="bg-mobs-lab-color text-white border border-gray-700 rounded px-2 py-1 w-full sm:w-auto text-sm sm:text-base"
+                        className="bg-mobs-lab-color text-white text-xs font-light border rounded-md my-1 ml-1 px-1"
                     >
                         {modelOptions.map((model) => (
                             <option key={model} value={model}>
                                 {model}
                             </option>
                         ))}
-                    </select>
+                    </select></div>
                 </div>
             </div>
         </div>

@@ -185,7 +185,7 @@ const Page: React.FC = () => {
                 <div className="nowcast-header">
                     <NowcastHeader/>
                 </div>
-                <div className="forecast-state pr-8">
+                <div className="forecast-state">
                     <NowcastStateThermo/>
                 </div>
                 <div className="vertical-separator">
@@ -211,7 +211,6 @@ const Page: React.FC = () => {
                 <div className="forecast-graph">
                     <ForecastChart/>
                 </div>
-                {/*<div className="forecast-drag-bar"></div>*/}
             </div>
 
 

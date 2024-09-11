@@ -83,8 +83,6 @@ body {
 
     .forecast-settings {
         grid-area: settings;
-        display: flex;
-        flex-direction: column;
     }
 
     .horizontal-separator {
