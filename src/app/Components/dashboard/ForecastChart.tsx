@@ -51,12 +51,38 @@ const ForecastChart: React.FC = () => {
     // Size set up using dynamic width and height
     const width = chartDimensions.width;
     const height = chartDimensions.height;
-    const marginTop = height * 0.02;
-    const marginBottom = height * 0.15;
-    const marginLeft = width * 0.035;
-    const marginRight = width * 0.025;
-    const chartWidth = width - marginLeft - marginRight;
-    const chartHeight = height - marginTop - marginBottom;
+
+    const [zoomLevel, setZoomLevel] = useState(1);
+
+    // Function to detect zoom level
+    const detectZoomLevel = () => {
+        const scale = window.devicePixelRatio || 1;
+        setZoomLevel(scale);
+    };
+
+    /* NOTE: Fine-Tune this to change how it responds to size changes in the future */
+    const calculateMargins = () => {
+        const zoomFactor = Math.max(1, zoomLevel);
+
+        const baseMarginTop = Math.max(25 - (zoomFactor * 12), height * 0.02);
+        const baseMarginBottom = Math.max(60 - (zoomFactor * 12), height * 0.15);
+        const baseMarginLeft = Math.max(20 + (zoomFactor * 5), width * 0.03);
+        const baseMarginRight = Math.max(20 - (zoomFactor * 12), width * 0.02);
+
+
+        return {
+            marginTop: baseMarginTop * zoomFactor,
+            marginBottom: baseMarginBottom * zoomFactor,
+            marginLeft: baseMarginLeft * zoomFactor,
+            marginRight: baseMarginRight * zoomFactor,
+        };
+    };
+
+    useEffect(() => {
+        detectZoomLevel();
+        window.addEventListener('resize', detectZoomLevel);
+        return () => window.removeEventListener('resize', detectZoomLevel);
+    }, []);
 
 
     // Function to filter ground truth data by selected state and dates
@@ -346,11 +372,14 @@ const ForecastChart: React.FC = () => {
         const matchingHistoricalData = historicalData.find((entry) => entry.associatedDate instanceof Date && entry.associatedDate.getTime() === (userSelectedWeek.getTime() - 7 * 24 * 60 * 60 * 1000));
 
         if (!matchingHistoricalData) {
-            console.log("No matching historical data found for:", userSelectedWeek.toISOString());
+            // console.log("DEBUG: No matching historical data found for:", userSelectedWeek.toISOString());
             return;
         }
 
-        console.log("Matching historical data:", matchingHistoricalData);
+        // console.log("DEBUG: Matching historical data:", matchingHistoricalData);
+
+        /*Ensure the historical data to be drawn is cutoff before dateStart*/
+        const historicalDataToDraw = matchingHistoricalData.historicalData.filter((d) => d.date >= dateStart);
 
         const historicalLine = d3
             .line<DataPoint>()
@@ -360,29 +389,28 @@ const ForecastChart: React.FC = () => {
 
         svg
             .append("path")
-            .datum(matchingHistoricalData.historicalData.filter(d => d.admissions !== -1 && !isNaN(d.admissions) && d.stateNum === USStateNum))
+            .datum(historicalDataToDraw.filter(d => d.admissions !== -1 && !isNaN(d.admissions) && d.stateNum === USStateNum))
             .attr("class", "historical-ground-truth-path")
             .attr("fill", "none")
             .attr("stroke", "#FFA500") // Orange color for historical data
-            .attr("stroke-width", 1.5)
+            .attr("stroke-width", 3)
             .attr("d", historicalLine)
             .attr("transform", `translate(${marginLeft}, ${marginTop})`);
 
         svg
             .selectAll(".historical-ground-truth-dot")
-            .data(matchingHistoricalData.historicalData.filter(d => d.admissions !== -1 && !isNaN(d.admissions) && d.stateNum === USStateNum))
+            .data(historicalDataToDraw.filter(d => d.admissions !== -1 && !isNaN(d.admissions) && d.stateNum === USStateNum))
             .enter()
             .append("circle")
             .attr("class", "historical-ground-truth-dot")
             .attr("cx", (d) => xScale(d.date))
             .attr("cy", (d) => yScale(d.admissions))
-            .attr("r", 2.5) // Slightly smaller than current ground truth dots
+            .attr("r", 6) // Slightly larger than current ground truth dots
             .attr("fill", "#FFA500")
             .attr("transform", `translate(${marginLeft}, ${marginTop})`);
 
         //     Debug output to calculate the difference between the actual ground truth and the historical ground truth data points value; to save resource we only display ones that are different
-        console.log("jfkj");
-        console.log("DEBUG: ForecastChart: Historical Data Difference:", matchingHistoricalData.historicalData.filter(d => d.admissions !== -1 && !isNaN(d.admissions)).filter((d, i) => d.admissions !== matchingHistoricalData.historicalData[i].admissions));
+        // console.log("DEBUG: ForecastChart: Historical Data Difference:", matchingHistoricalData.historicalData.filter(d => d.admissions !== -1 && !isNaN(d.admissions)).filter((d, i) => d.admissions !== matchingHistoricalData.historicalData[i].admissions));
 
     }
 
@@ -496,7 +524,10 @@ const ForecastChart: React.FC = () => {
             .attr("fill", "white")
             .attr("font-size", 12)
             .attr("text-anchor", "end")
-            .attr("y", marginTop + 5);
+            .style("font-family", 'var(--font-dm-sans)').attr("y", marginTop + 5);
+
+        /* Change the accompaning tooltip text to DM Sans*/
+
 
         return {group, line, tooltip};
     }
@@ -515,7 +546,8 @@ const ForecastChart: React.FC = () => {
             .attr("text-anchor", isLeftSide ? "start" : "end")
             // .text(`${date.toLocaleDateString()} (Week ${epiweek})`)
             .text(`${date.toUTCString().slice(0, 16)} (Week ${epiweek})`)
-            .attr("fill", "white");
+            .attr("fill", "white")
+            .style("font-family", 'var(--font-dm-sans), sans-serif');
     }
 
     function getEpiweek(date: Date): number {
@@ -557,7 +589,7 @@ const ForecastChart: React.FC = () => {
         // Background rectangle (we'll set its size after calculating content)
         const background = cornerTooltip
             .append('rect')
-            .attr('fill', 'rgba(30, 30, 30, 0.9)') // Darker, more opaque background
+            .attr('fill', '#333943') // Darker, more opaque background
             .attr('rx', 8) // Larger rounded corners
             .attr('ry', 8);
 
@@ -568,6 +600,7 @@ const ForecastChart: React.FC = () => {
             .attr('y', currentY)
             .attr('fill', 'white')
             .attr('font-weight', 'bold')
+            .style("font-family", 'var(--font-dm-sans), sans-serif')
             .attr('font-size', '14px') // Increased font size
             .text(`Date: ${data.date.toUTCString().slice(0, 16)}`);
 
@@ -579,6 +612,7 @@ const ForecastChart: React.FC = () => {
             .attr('y', currentY + lineHeight)
             .attr('fill', 'white')
             .attr('font-weight', 'bold')
+            .style("font-family", "var(--font-dm-sans)")
             .attr('font-size', '14px') // Increased font size
             .text(`Admissions: ${data.admissions !== null && data.admissions !== -1 ? data.admissions : 'N/A'}`);
 
@@ -605,7 +639,8 @@ const ForecastChart: React.FC = () => {
                     .attr('y', currentY)
                     .attr('fill', 'white')
                     .attr('font-weight', 'bold')
-                    .attr('font-size', '14px') // Increased font size
+                    .style("font-family", "var(--font-dm-sans)")
+                    .attr('font-size', `14px`) // Increased font size
                     .text(modelName);
 
                 maxWidth = Math.max(maxWidth, modelText.node().getComputedTextLength() + 18);
@@ -617,6 +652,7 @@ const ForecastChart: React.FC = () => {
                     .attr('y', currentY)
                     .attr('fill', 'white')
                     .attr('font-size', '12px')
+                    .style("font-family", "var(--font-dm-sans)")
                     .text(`Median: ${modelData.confidence500.toFixed(2)}`);
 
                 maxWidth = Math.max(maxWidth, medianText.node().getComputedTextLength() + 18);
@@ -632,6 +668,7 @@ const ForecastChart: React.FC = () => {
                         .attr('y', currentY)
                         .attr('fill', 'white')
                         .attr('font-size', '12px')
+                        .style("font-family", "var(--font-dm-sans)")
                         .text(`${interval}% CI: [${modelData[CILowKey].toFixed(2)}, ${modelData[CIHighKey].toFixed(2)}]`);
 
                     maxWidth = Math.max(maxWidth, ciText.node().getComputedTextLength() + 18);
@@ -692,6 +729,7 @@ const ForecastChart: React.FC = () => {
         const xAxisGroup = svg
             .append("g")
             .attr("transform", `translate(${marginLeft}, ${chartHeight + marginTop})`)
+            .style("font-family", "var(--font-dm-sans)")
             .call(xAxis);
 
 
@@ -728,7 +766,7 @@ const ForecastChart: React.FC = () => {
             .selectAll(".tick text")
             .style("text-anchor", "middle")
             .attr("dy", "1em")
-            .style('font-size', '14px')
+            .style('font-size', '13px')
             .call(wrap, 32); // 32 is the minimum width to accommodate year number at 1080p 100% zoom view environment, adjust as needed
 
         // Add year labels if the date range is more than a year
@@ -755,6 +793,8 @@ const ForecastChart: React.FC = () => {
         const yAxisGroup = svg
             .append("g")
             .attr("transform", `translate(${marginLeft}, ${marginTop})`)
+            .style("font-family", "var(--font-dm-sans)")
+
             .call(yAxis)
             .call((g) => g.select(".domain").remove())
             .call((g) => g
@@ -765,8 +805,9 @@ const ForecastChart: React.FC = () => {
         // Style y-axis ticks
         yAxisGroup
             .selectAll(".tick text")
-            //     Make the font size always as big as possible
+            //Make the font size always as big as possible
             .style("font-size", "18px");
+
 
     }
 
@@ -785,6 +826,7 @@ const ForecastChart: React.FC = () => {
         svg
             .append("text")
             .attr("class", "message")
+            .style("font-family", 'var(--font-dm-sans)')
             .attr("x", chartWidth / 2 + marginLeft)
             .attr("y", chartHeight / 2 + marginTop)
             .attr("text-anchor", "middle")
@@ -925,6 +967,11 @@ const ForecastChart: React.FC = () => {
             // Remove the existing chart elements
             svg.selectAll("*").remove();
 
+            const {marginTop, marginBottom, marginLeft, marginRight} = calculateMargins();
+
+            const chartWidth = width - marginLeft - marginRight;
+            const chartHeight = height - marginTop - marginBottom;
+
             const filteredGroundTruthData = filterGroundTruthData(groundTruthData, USStateNum, [dateStart, dateEnd],);
 
             // Further filter the data to exclude placeholder points
@@ -959,12 +1006,12 @@ const ForecastChart: React.FC = () => {
                 const {
                     xScale, yScale, xAxis, yAxis
                 } = createScalesAndAxes(filteredGroundTruthData, processedPredictionData, chartWidth, chartHeight, yAxisScale,);
-
-                renderGroundTruthData(svg, filteredGroundTruthData, xScale, yScale, marginLeft, marginTop,);
-                renderPredictionData(svg, processedPredictionData, xScale, yScale, marginLeft, marginTop, confidenceInterval, false,);
                 if (historicalDataMode) {
                     renderHistoricalData(svg, historicalGroundTruthData, xScale, yScale, marginLeft, marginTop);
                 }
+                renderGroundTruthData(svg, filteredGroundTruthData, xScale, yScale, marginLeft, marginTop,);
+                renderPredictionData(svg, processedPredictionData, xScale, yScale, marginLeft, marginTop, confidenceInterval, false,);
+
                 appendAxes(svg, xAxis, yAxis, xScale, marginLeft, marginTop, chartWidth, chartHeight, dateStart, dateEnd,);
 
                 const {
@@ -977,8 +1024,7 @@ const ForecastChart: React.FC = () => {
     }, [chartDimensions, groundTruthData, predictionsData, USStateNum, forecastModel, numOfWeeksAhead, dateStart, dateEnd, yAxisScale, confidenceInterval, historicalDataMode, userSelectedWeek, historicalDataMode, historicalGroundTruthData]);
 
     // Return the SVG object using reference
-    return (
-        <div ref={chartRef} className="flex w-full h-full">
+    return (<div ref={chartRef} className="flex w-full h-full">
         {/*<div className="flex justify-start items-center mb-4">
                 <h2 className="mx-5 text-2xl font-bold">Forecast Chart</h2>
                 <InfoButton title="Forecast Chart Information" content={chartInfo}/>
@@ -988,6 +1034,7 @@ const ForecastChart: React.FC = () => {
             width={"100%"}
             height={"100%"}
             preserveAspectRatio="xMidYMid meet"
+            fontStyle={{fontFamily: "var(--font-dm-sans)"}}
         ></svg>
     </div>);
 
