@@ -129,7 +129,7 @@ const SettingsPanel: React.FC = () => {
 
 
     return (
-        <Card className={"bg-mobs-lab-color-filterspane text-white fill-white h-full flex flex-col flex-nowrap"}>
+        <Card className={"bg-mobs-lab-color-filterspane text-white fill-white flex flex-col flex-nowrap"}>
             <CardBody className="overflow-y-auto overflow-x-hidden flex-grow">
                 <h2> Select a location <InfoButton title="State Selection Information" content={stateMapInfo}/></h2>
 

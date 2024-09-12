@@ -209,7 +209,7 @@ const NowcastGauge: React.FC<RiskLevelGaugeProps> = ({riskLevel}) => {
     }, [dimensions, riskLevel, nowcastTrendsCollection, userSelectedRiskLevelModel, USStateNum, userSelectedWeek]);
 
     return (
-        <div className="nowcast-gauge-grid-layout text-white w-min-full h-min-full">
+        <div className="layout-grid-nowcast-gauge text-white w-min-full h-min-full">
             <div className="gauge-chart">
                 <svg ref={svgRef} width="100%" height="100%" preserveAspectRatio="xMidYMid meet"/>
             </div>

@@ -181,11 +181,11 @@ const Page: React.FC = () => {
 
     return (<>
         {dataLoaded ? (
-            <div className="dashboard-grid-layout w-full h-full pl-4">
+            <div className="layout-grid-forecasts-page w-full h-full pl-4">
                 <div className="nowcast-header">
                     <NowcastHeader/>
                 </div>
-                <div className="forecast-state">
+                <div className="nowcast-thermo">
                     <NowcastStateThermo/>
                 </div>
                 <div className="vertical-separator">
@@ -194,10 +194,10 @@ const Page: React.FC = () => {
                     </svg>
                 </div>
 
-                <div className="forecast-gauge">
+                <div className="nowcast-gauge">
                     <NowcastGauge riskLevel="US"/>
                 </div>
-                <div className="forecast-settings">
+                <div className="settings-panel">
                     <SettingsPanel/>
                 </div>
                 <div className="horizontal-separator">

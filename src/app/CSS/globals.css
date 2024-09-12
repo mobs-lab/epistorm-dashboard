@@ -20,25 +20,21 @@ body {
     --header-height: 0px;
 }
 
+
 @layer utilities {
-    .dashboard-grid-layout {
-        display: grid;
-        width: 100vw;
-        height: calc(100vh - var(--header-height));
-        gap: 10px;
-        grid-template-columns: 2.6fr 2px 1.4fr 1fr;
-        grid-template-rows: minmax(0, 0.6fr) minmax(0, 1.1fr) 2px minmax(20px, 0.2fr) minmax(0, 2fr);
-        grid-template-areas:
-    "nowcastHeader nowcastHeader nowcastHeader settings"
-    "state verticalSeparator gauge settings"
-    "separator separator separator settings"
-    "chartHeader chartHeader chartHeader settings"
-    "graph graph graph settings";
+
+    /*For Texts*/
+    .util-text-limit {
+        max-font-size: var(--max-font-size);
+        --max-font-size: 1rem; /* roughly 20px */
+        text-overflow: ellipsis;
+        white-space: nowrap;
     }
 
-    .white-separator {
-        height: 4px;
-        margin: 1rem 0;
+    /* For Setting Scrollbar width to none*/
+    .util-no-sb-length {
+        scrollbar-gutter: auto;
+        scrollbar-width: none;
     }
 
     /* Prevent text selection */
@@ -51,23 +47,41 @@ body {
         outline: none;
     }
 
+    .layout-grid-forecasts-page {
+        display: grid;
+        width: 100vw;
+        height: calc(100vh - var(--header-height));
+        gap: 0.5rem;
+        grid-template-columns: 2.6fr 2px 1.4fr 1fr;
+        grid-template-rows: minmax(0, 0.6fr) minmax(0, 1.1fr) 2px minmax(20px, 0.2fr) minmax(0, 2fr);
+        grid-template-areas:
+    "nowcastHeader nowcastHeader nowcastHeader settings"
+    "nowcastThermo verticalSeparator nowcastGauge settings"
+    "separator separator separator settings"
+    "chartHeader chartHeader chartHeader settings"
+    "graph graph graph settings";
+    }
+
     .nowcast-header {
         grid-area: nowcastHeader;
-
+        scrollbar-gutter: auto;
+        scrollbar-width: none;
     }
 
     .forecast-graph {
-        overflow: hidden;
+        overflow: scroll;
+        scrollbar-gutter: auto;
+        scrollbar-width: none;
     }
 
-    .forecast-state, .forecast-gauge, .forecast-settings {
+    .nowcast-thermo, .nowcast-gauge, .settings-panel {
         width: 100%;
         height: 100%;
         overflow: hidden;
     }
 
-    .forecast-state {
-        grid-area: state;
+    .nowcast-thermo {
+        grid-area: nowcastThermo;
     }
 
     .vertical-separator {
@@ -77,11 +91,11 @@ body {
         align-items: center;
     }
 
-    .forecast-gauge {
-        grid-area: gauge;
+    .nowcast-gauge {
+        grid-area: nowcastGauge;
     }
 
-    .forecast-settings {
+    .settings-panel {
         grid-area: settings;
     }
 
@@ -146,6 +160,7 @@ body {
 
     .thermo-legend-area {
         grid-area: thermo-legend-area;
+
     }
 
     .thermo-legend-boxes {
@@ -154,7 +169,7 @@ body {
 
 
     /*NOTE: Below are for NowcastGauge Component*/
-    .nowcast-gauge-grid-layout {
+    .layout-grid-nowcast-gauge {
         display: grid;
         width: 100%;
         height: 100%;
@@ -166,7 +181,7 @@ body {
         padding-bottom: 10px;
     }
 
-    .nowcast-gauge-grid-layout > div {
+    .layout-grid-nowcast-gauge > div {
         overflow: hidden;
     }
 

@@ -977,7 +977,8 @@ const ForecastChart: React.FC = () => {
     }, [chartDimensions, groundTruthData, predictionsData, USStateNum, forecastModel, numOfWeeksAhead, dateStart, dateEnd, yAxisScale, confidenceInterval, historicalDataMode, userSelectedWeek, historicalDataMode, historicalGroundTruthData]);
 
     // Return the SVG object using reference
-    return (<div ref={chartRef} className="w-full h-full">
+    return (
+        <div ref={chartRef} className="flex w-full h-full">
         {/*<div className="flex justify-start items-center mb-4">
                 <h2 className="mx-5 text-2xl font-bold">Forecast Chart</h2>
                 <InfoButton title="Forecast Chart Information" content={chartInfo}/>

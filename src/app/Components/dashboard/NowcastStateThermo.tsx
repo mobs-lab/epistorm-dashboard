@@ -12,11 +12,11 @@ const ThermoLegendBoxes: React.FC = () => {
     const riskColors = ['#7cd8c9', '#2bafe2', '#435fce'];
 
     return (
-        <div className="flex justify-around items-end space-x-4 h-full px-10">
+        <div className="flex flex-grow justify-evenly items-end h-full">
             {riskLevels.map((level, index) => (
                 <div key={level} className="flex items-center">
                     <div
-                        className="w-5 h-5"
+                        className="w-[1em] h-[1em]"
                         style={{backgroundColor: riskColors[index]}}
                     ></div>
                     <span className="text-sm mx-2">{level}</span>
@@ -53,9 +53,9 @@ const ThermoLegendArea: React.FC<{
 
     return (
         <div
-            className="flex flex-col h-full flex-nowrap justify-between items-center bg-mobs-lab-color-filterspane p-4 rounded mx-4 mb-4">
-            <div className="text-xl font-bold">Activity level</div>
-            <div className="h-full w-full flex flex-col justify-around space-y-2">
+            className="flex flex-col h-full justify-stretch items-stretch overflow-scroll util-no-sb-length bg-mobs-lab-color-filterspane p-2 rounded mx-4 mb-4" >
+            <div className="text-lg font-bold text-center ">Activity level</div>
+            <div className="flex flex-col justify-stretch items-stretch space-y-2">
                 <div className="flex flex-col">
                     <div className="flex items-center">
                         <svg width="16" height="2" className="mr-2">
@@ -425,7 +425,7 @@ const NowcastStateThermo: React.FC = () => {
 
     return (
         <div ref={containerRef}
-             className="nowcast-state-thermo-grid-layout text-white w-min-full h-min-full">
+             className="nowcast-state-thermo-grid-layout text-white w-min-full h-min-full py-2">
 
             <div className="map-svg">
                 <svg ref={mapSvgRef} width="100%" height="100%" preserveAspectRatio="xMidYMid meet"/>
