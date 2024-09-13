@@ -31,6 +31,10 @@ body {
         white-space: nowrap;
     }
 
+    .util-responsive-text {
+        @apply sm:text-xs md:text-base lg:text-lg xl:text-lg
+    }
+
     /* For Setting Scrollbar width to none*/
     .util-no-sb-length {
         scrollbar-gutter: auto;

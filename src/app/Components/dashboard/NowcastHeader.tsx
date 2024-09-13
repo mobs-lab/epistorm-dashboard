@@ -26,7 +26,7 @@ const NowcastHeader: React.FC = () => {
     };
 
     return (<div
-        className="w-full h-full text-nowrap flex flex-shrink flex-col justify-evenly flex-nowrap px-4 pt-2 pb-4 overflow-scroll util-no-sb-length">
+        className="w-full h-full text-nowrap flex flex-shrink flex-col justify-evenly flex-nowrap px-4 pt-2 pb-4 overflow-scroll util-no-sb-length util-responsive-text">
         <h1 className="sm:text-xl md:text-2xl lg:text-3xl xl:text-4xl 2xl:text-4xl font-light util-text-limit ">
             {stateName}</h1>
         <div className="w-full bg-[#5d636a]">
@@ -35,17 +35,17 @@ const NowcastHeader: React.FC = () => {
                 <line x1="0" y1="0" x2="100%" y2="0" stroke="#5d636a" strokeWidth="1"/>
             </svg>
         </div>
-        <div className="flex flex-row justify-between ">
-            <div className="flex ">
-                <h2 className="text-xl font-bold mr-2">Hospitalization Activity Forecast</h2>
+        <div className="flex flex-row justify-between items-center">
+            <div className="flex">
+                <h2 className="util-responsive-text font-bold mr-2">Hospitalization Activity Forecast</h2>
                 <InfoButton title="State Map Information" content={mapInfo}/>
             </div>
             <div className="flex items-center justify-between">
-                <div><span className="text-sm">Change model:</span></div>
+                <div><span className="text-base">Change model:</span></div>
                 <div><select
                     value={userSelectedRiskLevelModel}
                     onChange={handleModelChange}
-                    className="bg-mobs-lab-color text-white text-xs font-light border-[#5d636a] border-2 rounded-md my-1 ml-1 px-1"
+                    className="bg-mobs-lab-color text-white text-sm font-light border-[#5d636a] border-2 rounded-md my-1 ml-1 px-1 py-1"
                 >
                     {modelOptions.map((model) => (<option key={model} value={model}>
                         {model}
