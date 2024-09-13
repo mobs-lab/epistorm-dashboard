@@ -69,10 +69,9 @@ const filterSlice = createSlice({
         setSeasonOptions: (state, action: PayloadAction<SeasonOption[]>) => {
             state.seasonOptions = action.payload;
         },
-        updateDateRange: (state, action: PayloadAction<{ dateStart: Date; dateEnd: Date }>) => {
-            console.log("updateDateRange", action.payload);
-            state.dateStart = action.payload.dateStart;
-            state.dateEnd = action.payload.dateEnd;
+        updateDateRange: (state, action: PayloadAction<string>) => {
+            // console.log("updateDateRange", action.payload);
+            state.dateRange = action.payload;
         },
         updateUserSelectedRiskLevelModel: (state, action: PayloadAction<string>) => {
             state.userSelectedRiskLevelModel = action.payload;

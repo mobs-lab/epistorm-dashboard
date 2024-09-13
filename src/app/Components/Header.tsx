@@ -20,7 +20,7 @@ const Header: React.FC = () => {
 
     return (
         <header ref={headerRef} className="bg-white text-mobs-lab-color shadow-md w-full">
-            <div className="container min-w-[100vw] px-4 py-3 flex w-full justify-between items-center">
+            <div className="container min-w-[100vw] px-4 py-3 flex w-full justify-between items-center max-h-[8vh]">
                 <div className="flex items-center">
                     <Link href="/" className="text-5xl font-bold mr-6 ml-4">Flu<span
                         className={"font-light text-5xl"}>Forecast</span></Link>
@@ -29,9 +29,9 @@ const Header: React.FC = () => {
                     <Link href="/forecasts/"
                           className="text-2xl text-mobs-lab-color hover:text-teal-900">Forecasts</Link>
                     {/*<Link href="/evaluations/"
-                          className="text-2xl text-mobs-lab-color hover:text-teal-900">Evaluations</Link>
+                          className="text-2xl text-mobs-lab-color hover:text-teal-900">Evaluations</Link> */}
                     <Link href="/background/"
-                          className="text-2xl text-mobs-lab-color hover:text-teal-900">Background</Link>*/}
+                          className="text-2xl text-mobs-lab-color hover:text-teal-900">Background</Link>
                 </nav>
             </div>
         </header>

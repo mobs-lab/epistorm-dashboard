@@ -181,28 +181,28 @@ const Page: React.FC = () => {
 
     return (<>
         {dataLoaded ? (
-            <div className="dashboard-grid-layout w-full h-full pl-4">
+            <div className="layout-grid-forecasts-page w-full h-full pl-4">
                 <div className="nowcast-header">
                     <NowcastHeader/>
                 </div>
-                <div className="forecast-state pr-8">
+                <div className="nowcast-thermo">
                     <NowcastStateThermo/>
                 </div>
                 <div className="vertical-separator">
                     <svg width="100%" height="100%">
-                        <line x1="50%" y1="0" x2="50%" y2="100%" stroke="lightgray" strokeWidth="1"/>
+                        <line x1="50%" y1="0" x2="50%" y2="100%" stroke="#5d636a" strokeWidth="1"/>
                     </svg>
                 </div>
 
-                <div className="forecast-gauge">
+                <div className="nowcast-gauge">
                     <NowcastGauge riskLevel="US"/>
                 </div>
-                <div className="forecast-settings">
+                <div className="settings-panel">
                     <SettingsPanel/>
                 </div>
                 <div className="horizontal-separator">
                     <svg width="100%" height="100%">
-                        <line x1="0" y1="50%" x2="100%" y2="50%" stroke="lightgray" strokeWidth="1"/>
+                        <line x1="0" y1="50%" x2="100%" y2="50%" stroke="#5d636a" strokeWidth="1"/>
                     </svg>
                 </div>
                 <div className="chart-header">
@@ -211,7 +211,6 @@ const Page: React.FC = () => {
                 <div className="forecast-graph">
                     <ForecastChart/>
                 </div>
-                {/*<div className="forecast-drag-bar"></div>*/}
             </div>
 
 

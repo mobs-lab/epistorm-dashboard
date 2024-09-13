@@ -8,29 +8,43 @@ import {updateSelectedState} from '../../store/filterSlice';
 const usStateData = "/states-10m.json";
 
 const StateMap: React.FC = () => {
+    const containerRef = useRef<HTMLDivElement>(null);
     const svgRef = useRef<SVGSVGElement>(null);
     const gRef = useRef<SVGGElement>(null);
     const zoomBehaviorRef = useRef<ZoomBehavior<SVGSVGElement, unknown> | null>(null);
     const [dimensions, setDimensions] = useState({width: 0, height: 0});
+    const [zoomLevel, setZoomLevel] = useState(1);
     const dispatch = useAppDispatch();
     const {selectedStateName} = useAppSelector((state) => state.filter);
     const locationData = useAppSelector((state) => state.location.data);
     const [initialTransform, setInitialTransform] = useState<d3.ZoomTransform | null>(null);
 
-    useEffect(() => {
-        const updateDimensions = () => {
-            if (svgRef.current) {
-                const {width, height} = svgRef.current.getBoundingClientRect();
-                setDimensions({width, height});
-            }
-        };
-
-        updateDimensions();
-        window.addEventListener('resize', updateDimensions);
-        return () => window.removeEventListener('resize', updateDimensions);
+    const updateDimensions = useCallback(() => {
+        if (containerRef.current) {
+            const {width, height} = containerRef.current.getBoundingClientRect();
+            setDimensions({width, height});
+        }
     }, []);
 
-    const initializeZoom = useCallback(() => {
+    useEffect(() => {
+        updateDimensions();
+        window.addEventListener('resize', updateDimensions);
+
+        const detectZoomLevel = () => {
+            const newZoomLevel = window.devicePixelRatio || 1;
+            setZoomLevel(newZoomLevel);
+        };
+
+        detectZoomLevel();
+        window.addEventListener('resize', detectZoomLevel);
+
+        return () => {
+            window.removeEventListener('resize', updateDimensions);
+            window.removeEventListener('resize', detectZoomLevel);
+        };
+    }, [updateDimensions]);
+
+    /*const initializeZoom = useCallback(() => {
         if (!svgRef.current || !gRef.current) return;
 
         const svg = d3.select(svgRef.current);
@@ -51,7 +65,22 @@ const StateMap: React.FC = () => {
             });
 
         svg.call(zoomBehaviorRef.current);
-    }, [dimensions]);
+    }, [dimensions]);*/
+
+    const initializeZoom = useCallback(() => {
+        if (!svgRef.current || !gRef.current) return;
+
+        const svg = d3.select(svgRef.current);
+        const g = d3.select(gRef.current);
+
+        zoomBehaviorRef.current = zoom<SVGSVGElement, unknown>()
+            .scaleExtent([1, 8])
+            .on("zoom", (event) => {
+                g.attr("transform", event.transform);
+            });
+
+        svg.call(zoomBehaviorRef.current);
+    }, []);
 
     const renderMap = useCallback(() => {
         if (!svgRef.current || !gRef.current) return;
@@ -150,23 +179,29 @@ const StateMap: React.FC = () => {
     const handleReset = () => {
         if (svgRef.current && initialTransform && zoomBehaviorRef.current) {
             const svg = d3.select(svgRef.current);
+            /*Note: Change reset delay here*/
             svg.transition().duration(750).call(zoomBehaviorRef.current.transform, initialTransform);
         }
     };
 
+
     return (
-        <div className="relative w-full h-full">
+        <div ref={containerRef} className="w-full h-full relative" style={{minHeight: '240px', maxHeight: '420px'}}>
             <button
                 onClick={handleReset}
-                className="absolute top-2 right-100 bg-[#b2b2b2] text-white text-sm p-0.5 rounded"
+                className="absolute top-2 left-2 bg-[#5d636a] text-white text-xs p-1 rounded z-10"
             >
                 Reset
             </button>
-            <svg ref={svgRef} width="100%" height="100%">
+            <svg
+                ref={svgRef}
+                width="100%"
+                height="100%"
+                style={{minHeight: '240px', maxHeight: '420px'}}
+            >
                 <g ref={gRef}></g>
             </svg>
         </div>
     );
 };
-
 export default StateMap;
