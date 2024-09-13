@@ -24,6 +24,7 @@ const StyledDatePicker: React.FC<StyledDatePickerProps> = ({value, onChange, min
                 className="custom-date-picker"
                 calendarClassName="custom-calendar"
                 clearIcon={null}
+                calendarIcon={null}
             />
         </div>
     );
