@@ -129,7 +129,7 @@ const SettingsPanel: React.FC = () => {
 
 
     return (<div
-        className={"bg-mobs-lab-color-filterspane text-white fill-white flex flex-col flex-wrap justify-between items-stretch p-4 rounded-md overflow:clip sm:text-xs md:text-xs lg:text-lg"}>
+        className={"bg-mobs-lab-color-filterspane text-white fill-white flex flex-col flex-wrap justify-between items-stretch p-4 rounded-md overflow:clip util-responsive-text"}>
 
         <div className={"flex flex-col flex-wrap justify-stretch items-start h-full w-full"}>
             <h2> Select a location <InfoButton title="State Selection Information" content={stateMapInfo}/></h2>

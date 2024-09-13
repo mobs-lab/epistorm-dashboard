@@ -1,12 +1,11 @@
-import InfoPage from "../Components/InfoPage";
+`use client`
+
+import BackgroundInfoContent from "../Components/BackgroundInfoContent";
 
 export default function Page() {
-
     return (
-        <div>
-            <h1> Background </h1>
-            <hr/>
-            <InfoPage/>
-        </div>
-    )
+        <>
+            {/*<BackgroundInfoContent />*/}
+        </>
+    );
 }

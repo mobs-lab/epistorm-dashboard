@@ -65,16 +65,16 @@ const ForecastChart: React.FC = () => {
         const zoomFactor = Math.max(1, zoomLevel);
 
         const baseMarginTop = Math.max(25 - (zoomFactor * 12), height * 0.02);
-        const baseMarginBottom = Math.max(20 - (zoomFactor * 60), height * 0.15);
-        const baseMarginLeft = Math.max(60 - (zoomFactor * 25), width * 0.03);
+        const baseMarginBottom = Math.max(20 + (zoomFactor * 20), height * 0.2);
+        const baseMarginLeft = Math.max(20 + (zoomFactor * 20), width * 0.03);
         const baseMarginRight = Math.max(20 - (zoomFactor * 12), width * 0.02);
 
 
         return {
-            marginTop: baseMarginTop * zoomFactor,
-            marginBottom: baseMarginBottom * zoomFactor,
-            marginLeft: baseMarginLeft * zoomFactor,
-            marginRight: baseMarginRight * zoomFactor,
+            marginTop: baseMarginTop,
+            marginBottom: baseMarginBottom,
+            marginLeft: baseMarginLeft,
+            marginRight: baseMarginRight,
         };
     };
 
@@ -1024,7 +1024,7 @@ const ForecastChart: React.FC = () => {
     }, [chartDimensions, groundTruthData, predictionsData, USStateNum, forecastModel, numOfWeeksAhead, dateStart, dateEnd, yAxisScale, confidenceInterval, historicalDataMode, userSelectedWeek, historicalDataMode, historicalGroundTruthData]);
 
     // Return the SVG object using reference
-    return (<div ref={chartRef} className="flex w-full h-full sm:text-xs md:text-base lg:text-lg xl:text-lg">
+    return (<div ref={chartRef} className="flex w-full h-full util-responsive-text">
         <svg
             ref={svgRef}
             width={"100%"}
