@@ -1,5 +1,5 @@
 import React from 'react';
-import {useAppSelector, useAppDispatch} from '../../store/hooks';
+import {useAppDispatch, useAppSelector} from '../../store/hooks';
 import {updateUserSelectedRiskLevelModel} from '../../store/filterSlice';
 import InfoButton from './InfoButton';
 
@@ -12,53 +12,49 @@ const NowcastHeader: React.FC = () => {
     const selectedState = locationData.find(location => location.stateNum === USStateNum);
     const stateName = selectedState ? selectedState.stateName.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ') : 'United States';
 
-    const mapInfo = (
-        <div>
-            <p>The map shows the selected state or the entire US. Their color is mapped to their respective risk
-                level.</p>
-            <p>The map updates based on your state selection in the filters pane.</p>
-            <p>The thermometer on the right shows the current risk level trend, as well as surveillance risk level
-                trend.</p>
-            <p>Hover your mouse over the thermometer to see more detail.</p>
-        </div>
-    );
+    const mapInfo = (<div>
+        <p>The map shows the selected state or the entire US. Their color is mapped to their respective risk
+            level.</p>
+        <p>The map updates based on your state selection in the filters pane.</p>
+        <p>The thermometer on the right shows the current risk level trend, as well as surveillance risk level
+            trend.</p>
+        <p>Hover your mouse over the thermometer to see more detail.</p>
+    </div>);
 
     const handleModelChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
         dispatch(updateUserSelectedRiskLevelModel(event.target.value));
     };
 
-    return (
-        <div className="w-full h-full text-nowrap flex flex-shrink flex-col justify-evenly flex-nowrap px-4 pt-2 pb-4">
-            <h1 className="text-4xl font-light util-text-limit">
-                {stateName}</h1>
-            <div className="w-full bg-[#4e585e]">
-                {/*    Use Svg to draw a very thin light gray horizontal line to use as separator. */}
-                <svg className="w-full h-0.5">
-                    <line x1="0" y1="0" x2="100%" y2="0" stroke="#d1d5db" strokeWidth="1"/>
-                </svg>
+    return (<div
+        className="w-full h-full text-nowrap flex flex-shrink flex-col justify-evenly flex-nowrap px-4 pt-2 pb-4 overflow-scroll util-no-sb-length">
+        <h1 className="sm:text-xl md:text-2xl lg:text-3xl xl:text-4xl 2xl:text-4xl font-light util-text-limit ">
+            {stateName}</h1>
+        <div className="w-full bg-[#5d636a]">
+            {/*    Use Svg to draw a very thin light gray horizontal line to use as separator. */}
+            <svg className="w-full h-0.5">
+                <line x1="0" y1="0" x2="100%" y2="0" stroke="#5d636a" strokeWidth="1"/>
+            </svg>
+        </div>
+        <div className="flex flex-row justify-between ">
+            <div className="flex ">
+                <h2 className="text-xl font-bold mr-2">Hospitalization Activity Forecast</h2>
+                <InfoButton title="State Map Information" content={mapInfo}/>
             </div>
-            <div className="flex flex-row justify-between overflow-scroll util-no-sb-length">
-                <div className="flex ">
-                    <h2 className="text-xl font-bold mr-2">Hospitalization Activity Forecast</h2>
-                    <InfoButton title="State Map Information" content={mapInfo}/>
-                </div>
-                <div className="flex items-center justify-between">
-                    <div><span className="text-sm">Change model:</span></div>
-                    <div><select
-                        value={userSelectedRiskLevelModel}
-                        onChange={handleModelChange}
-                        className="bg-mobs-lab-color text-white text-xs font-light border rounded-md my-1 ml-1 px-1"
-                    >
-                        {modelOptions.map((model) => (
-                            <option key={model} value={model}>
-                                {model}
-                            </option>
-                        ))}
-                    </select></div>
+            <div className="flex items-center justify-between">
+                <div><span className="text-sm">Change model:</span></div>
+                <div><select
+                    value={userSelectedRiskLevelModel}
+                    onChange={handleModelChange}
+                    className="bg-mobs-lab-color text-white text-xs font-light border-[#5d636a] border-2 rounded-md my-1 ml-1 px-1"
+                >
+                    {modelOptions.map((model) => (<option key={model} value={model}>
+                        {model}
+                    </option>))}
+                </select>
                 </div>
             </div>
         </div>
-    );
+    </div>);
 };
 
 export default NowcastHeader;

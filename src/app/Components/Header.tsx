@@ -22,8 +22,8 @@ const Header: React.FC = () => {
         <header ref={headerRef} className="bg-white text-mobs-lab-color shadow-md w-full">
             <div className="container min-w-[100vw] px-4 py-3 flex w-full justify-between items-center max-h-[8vh]">
                 <div className="flex items-center">
-                    <Link href="/" className="text-4xl font-bold mr-6 ml-4">Flu<span
-                        className={"font-light text-4xl"}>Forecast</span></Link>
+                    <Link href="/" className="text-5xl font-bold mr-6 ml-4">Flu<span
+                        className={"font-light text-5xl"}>Forecast</span></Link>
                 </div>
                 <nav className="flex space-x-6 pr-4">
                     <Link href="/forecasts/"

@@ -6,7 +6,6 @@ interface RiskLevelGaugeProps {
     riskLevel: string;
 }
 
-
 const LegendBoxes: React.FC = () => {
     const legendData = [
         {label: 'Decrease', color: '#478791'},
@@ -15,31 +14,44 @@ const LegendBoxes: React.FC = () => {
     ];
 
     return (
-        <div className="flex justify-around items-end space-x-4 h-full px-10">
+        <div className="flex flex-row justify-evenly items-end h-full w-full">
             {legendData.map((item) => (
                 <div key={item.label} className="flex items-center">
                     <div
-                        className="w-5 h-5"
+                        className="w-[1em] h-[1em]"
                         style={{backgroundColor: item.color}}
                     ></div>
-                    <span className="text-sm mx-2 text-white">{item.label}</span>
+                    <span className="text-xs mx-1">{item.label}</span>
                 </div>
             ))}
         </div>
     );
 };
 
-
 const NowcastGauge: React.FC<RiskLevelGaugeProps> = ({riskLevel}) => {
     const svgRef = useRef<SVGSVGElement>(null);
+    const containerRef = useRef<HTMLDivElement>(null);
     const [dimensions, setDimensions] = useState({width: 0, height: 0});
     const nowcastTrendsCollection = useAppSelector((state) => state.nowcastTrends.allData);
     const {USStateNum, userSelectedRiskLevelModel, userSelectedWeek} = useAppSelector((state) => state.filter);
 
+    const [zoomLevel, setZoomLevel] = useState(1);
+
+    useEffect(() => {
+        const detectZoomLevel = () => {
+            const scale = window.devicePixelRatio || 1;
+            setZoomLevel(scale);
+        };
+
+        detectZoomLevel();
+        window.addEventListener('resize', detectZoomLevel);
+        return () => window.removeEventListener('resize', detectZoomLevel);
+    }, []);
+
     useEffect(() => {
         const updateDimensions = () => {
-            if (svgRef.current) {
-                const {width, height} = svgRef.current.getBoundingClientRect();
+            if (containerRef.current) {
+                const {width, height} = containerRef.current.getBoundingClientRect();
                 setDimensions({width, height});
             }
         };
@@ -58,7 +70,13 @@ const NowcastGauge: React.FC<RiskLevelGaugeProps> = ({riskLevel}) => {
         const width = dimensions.width;
         const height = dimensions.height;
 
-        const radius = Math.min(width, height * 0.85);
+        // Define margins
+        const margin = {top: 30, right: 20, bottom: 30, left: 20};
+        const chartWidth = (width - margin.left - margin.right) - 10 * zoomLevel;
+        const chartHeight = (height - margin.top - margin.bottom) - 10 * zoomLevel;
+
+        // Calculate radius considering margins
+        const radius = Math.min(chartWidth, chartHeight);
 
         const matchingModelNowcast = nowcastTrendsCollection.find(model => model.modelName === userSelectedRiskLevelModel);
         if (!matchingModelNowcast || !matchingModelNowcast.data.length) return;
@@ -103,7 +121,7 @@ const NowcastGauge: React.FC<RiskLevelGaugeProps> = ({riskLevel}) => {
 
         const arc = d3.arc<d3.PieArcDatum<number>>()
             .innerRadius(radius * 0.9)
-            .outerRadius(radius * 1.14);
+            .outerRadius(radius * 1.2);
 
         const color = d3.scaleOrdinal<string>()
             .domain(['decrease', 'stable', 'increase'])
@@ -115,10 +133,11 @@ const NowcastGauge: React.FC<RiskLevelGaugeProps> = ({riskLevel}) => {
             Math.max(0.001, trendToUse.increase)
         ];
 
-        const g = svg.append('g')
-            .attr('transform', `translate(${width / 2},${height})`);
+        // Create a group for the entire chart and position it
+        const chartGroup = svg.append('g')
+            .attr('transform', `translate(${width / 2}, ${height - margin.bottom})`);
 
-        const paths = g.selectAll('path')
+        const paths = chartGroup.selectAll('path')
             .data(pie(data))
             .enter()
             .append('path')
@@ -127,37 +146,43 @@ const NowcastGauge: React.FC<RiskLevelGaugeProps> = ({riskLevel}) => {
             .attr('stroke', 'lightgray')
             .attr('stroke-width', 2);
 
+        const calculateFontSize = (baseSize: number) => {
+            const baseFontSize = 16;  // Adjust this value to change the overall text size
+            const zoomFactor = 1 / Math.max(1, zoomLevel);  // Inverse relationship with zoom
+            return Math.max(13, Math.min(baseSize * zoomFactor, baseFontSize));
+        };
+
         // Add text
-        g.append('text')
+        chartGroup.append('text')
             .attr('text-anchor', 'middle')
-            .attr('dy', `-${radius * 0.3}`)
-            .attr('font-size', `32px`)
+            .attr('dy', `-${radius * 0.6}`)
+            .attr('font-size', `${calculateFontSize(24)}px`)
             .attr('font-weight', 'bold')
             .attr('fill', 'white')
             .text("Trend forecast");
 
-        g.append('text')
+        chartGroup.append('text')
             .attr('text-anchor', 'middle')
-            .attr('dy', `-${radius * 0.05}`)
-            .attr('font-size', `20px`)
+            .attr('dy', `-${radius * 0.3}`)
+            .attr('font-size', `${calculateFontSize(16)}px`)
             .attr('fill', 'white')
             .text(`${formattedLastWeekDate} - ${formattedCurrentWeekDate}`);
 
         // Create tooltip
-        const hovertooltip = svg.append('g')
+        const hovertooltip = chartGroup.append('g')
             .attr('class', 'corner-tooltip')
             .style('opacity', 0);
 
         const tooltipBackground = hovertooltip.append('rect')
-            .attr('fill', 'white')  // Changed to white background
-            .attr('stroke', 'lightgray')  // Added light gray border
+            .attr('fill', 'white')
+            .attr('stroke', 'lightgray')
             .attr('stroke-width', 1)
             .attr('rx', 4)
             .attr('ry', 4);
 
         const tooltipText = hovertooltip.append('text')
             .attr('fill', 'black')
-            .attr('font-size', '12px');
+            .attr('font-size', `${calculateFontSize(12)}px`);
 
         paths.on('mouseover', function (event: MouseEvent, d) {
             const [x, y] = d3.pointer(event);
@@ -176,8 +201,8 @@ const NowcastGauge: React.FC<RiskLevelGaugeProps> = ({riskLevel}) => {
             const tooltipContent = `${label}: ${value.toFixed(3)}`;
             tooltipText.text(tooltipContent);
 
-            const textBBox = tooltipText.node().getBBox();
-            const padding = 8;  // Slightly reduced padding
+            const textBBox = tooltipText.node()!.getBBox();
+            const padding = 8;
             tooltipBackground
                 .attr('width', textBBox.width + padding * 2)
                 .attr('height', textBBox.height + padding * 2);
@@ -187,15 +212,18 @@ const NowcastGauge: React.FC<RiskLevelGaugeProps> = ({riskLevel}) => {
             const tooltipWidth = textBBox.width + padding * 2;
             const tooltipHeight = textBBox.height + padding * 2;
 
-            let tooltipX = x + width / 2 - tooltipWidth / 2;
-            let tooltipY = y + height * 0.5 - tooltipHeight - 5;
+            let tooltipX = x - tooltipWidth / 2;
+            let tooltipY = y - tooltipHeight - 10;
 
             // Adjust position if it goes out of bounds
-            if (tooltipX + tooltipWidth > width) {
-                tooltipX = width - tooltipWidth - 10;
+            if (tooltipX + tooltipWidth > width / 2) {
+                tooltipX = width / 2 - tooltipWidth - 10;
             }
-            if (tooltipY < 0) {
-                tooltipY = 10;
+            if (tooltipX < -width / 2) {
+                tooltipX = -width / 2 + 10;
+            }
+            if (tooltipY < -height + margin.top) {
+                tooltipY = -height + margin.top + 10;
             }
 
             hovertooltip
@@ -206,11 +234,12 @@ const NowcastGauge: React.FC<RiskLevelGaugeProps> = ({riskLevel}) => {
                 hovertooltip.style('opacity', 0);
             });
 
-    }, [dimensions, riskLevel, nowcastTrendsCollection, userSelectedRiskLevelModel, USStateNum, userSelectedWeek]);
+    }, [dimensions, riskLevel, nowcastTrendsCollection, userSelectedRiskLevelModel, USStateNum, userSelectedWeek, zoomLevel]);
 
     return (
-        <div className="layout-grid-nowcast-gauge text-white w-min-full h-min-full">
-            <div className="gauge-chart">
+        <div ref={containerRef}
+             className="layout-grid-nowcast-gauge flex flex-col justify-stretch items-stretch text-white p-2 mb-4 h-full w-full overflow-scroll">
+            <div className="gauge-chart flex-grow overflow-scroll util-no-sb-length">
                 <svg ref={svgRef} width="100%" height="100%" preserveAspectRatio="xMidYMid meet"/>
             </div>
             <div className="gauge-legend">

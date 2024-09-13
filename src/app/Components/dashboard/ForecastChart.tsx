@@ -65,8 +65,8 @@ const ForecastChart: React.FC = () => {
         const zoomFactor = Math.max(1, zoomLevel);
 
         const baseMarginTop = Math.max(25 - (zoomFactor * 12), height * 0.02);
-        const baseMarginBottom = Math.max(60 - (zoomFactor * 12), height * 0.15);
-        const baseMarginLeft = Math.max(20 + (zoomFactor * 5), width * 0.03);
+        const baseMarginBottom = Math.max(20 - (zoomFactor * 60), height * 0.15);
+        const baseMarginLeft = Math.max(60 - (zoomFactor * 25), width * 0.03);
         const baseMarginRight = Math.max(20 - (zoomFactor * 12), width * 0.02);
 
 
@@ -1024,17 +1024,13 @@ const ForecastChart: React.FC = () => {
     }, [chartDimensions, groundTruthData, predictionsData, USStateNum, forecastModel, numOfWeeksAhead, dateStart, dateEnd, yAxisScale, confidenceInterval, historicalDataMode, userSelectedWeek, historicalDataMode, historicalGroundTruthData]);
 
     // Return the SVG object using reference
-    return (<div ref={chartRef} className="flex w-full h-full">
-        {/*<div className="flex justify-start items-center mb-4">
-                <h2 className="mx-5 text-2xl font-bold">Forecast Chart</h2>
-                <InfoButton title="Forecast Chart Information" content={chartInfo}/>
-            </div>*/}
+    return (<div ref={chartRef} className="flex w-full h-full sm:text-xs md:text-base lg:text-lg xl:text-lg">
         <svg
             ref={svgRef}
             width={"100%"}
             height={"100%"}
             preserveAspectRatio="xMidYMid meet"
-            fontStyle={{fontFamily: "var(--font-dm-sans)"}}
+            fontStyle={`fontFamily: "var(--font-dm-sans)"`}
         ></svg>
     </div>);
 

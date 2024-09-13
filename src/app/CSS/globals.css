@@ -49,7 +49,7 @@ body {
 
     .layout-grid-forecasts-page {
         display: grid;
-        width: 100vw;
+        width: 100%;
         height: calc(100vh - var(--header-height));
         gap: 0.5rem;
         grid-template-columns: 2.6fr 2px 1.4fr 1fr;
@@ -77,7 +77,6 @@ body {
     .nowcast-thermo, .nowcast-gauge, .settings-panel {
         width: 100%;
         height: 100%;
-        overflow: hidden;
     }
 
     .nowcast-thermo {
@@ -97,6 +96,9 @@ body {
 
     .settings-panel {
         grid-area: settings;
+        overflow: scroll;
+        scrollbar-gutter: auto;
+        scrollbar-width: none;
     }
 
     .horizontal-separator {
@@ -176,14 +178,14 @@ body {
         grid-template-areas:
             "gauge-chart"
             "gauge-legend";
-        grid-template-columns: 1fr;
-        grid-template-rows: 5fr 1fr;
-        padding-bottom: 10px;
+        grid-template-columns: 100%;
+        grid-template-rows: 6fr 1fr;
+        overflow: scroll;
+        scrollbar-gutter: auto;
+        scrollbar-width: none;
+        --webkit-scrollbar-width: none;
     }
 
-    .layout-grid-nowcast-gauge > div {
-        overflow: hidden;
-    }
 
     .gauge-chart {
         grid-area: gauge-chart;

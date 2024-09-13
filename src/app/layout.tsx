@@ -30,7 +30,7 @@ export default function RootLayout({
 
     return (
         <html lang="en" className={dmSans.className}>
-        <body className="flex flex-col min-h-screen bg-mobs-lab-color text-white ">
+        <body className="flex flex-col min-h-screen bg-mobs-lab-color text-white overflow-clip">
         <Header/>
         <main className="box-content flex-grow overflow-scroll util-no-sb-length">
             <div className="w-full h-full">

@@ -16,7 +16,7 @@ const ThermoLegendBoxes: React.FC = () => {
             {riskLevels.map((level, index) => (
                 <div key={level} className="flex items-center">
                     <div
-                        className="w-[1em] h-[1em]"
+                        className="w-[1rem] h-[1rem]"
                         style={{backgroundColor: riskColors[index]}}
                     ></div>
                     <span className="text-sm mx-2">{level}</span>
@@ -53,7 +53,7 @@ const ThermoLegendArea: React.FC<{
 
     return (
         <div
-            className="flex flex-col h-full justify-stretch items-stretch overflow-scroll util-no-sb-length bg-mobs-lab-color-filterspane p-2 rounded mx-4 mb-4" >
+            className="flex flex-col h-full justify-stretch items-stretch overflow-scroll util-no-sb-length bg-mobs-lab-color-filterspane p-2 rounded mx-4 mb-4">
             <div className="text-lg font-bold text-center ">Activity level</div>
             <div className="flex flex-col justify-stretch items-stretch space-y-2">
                 <div className="flex flex-col">
@@ -66,7 +66,7 @@ const ThermoLegendArea: React.FC<{
                     <div className="ml-6 font-bold">{currentWeek}</div>
                     <div className="ml-6 flex items-center mt-1">
                         <div
-                            className="w-full h-6 flex items-center justify-center text-sm"
+                            className="w-full h-6 flex items-center justify-center rounded text-sm"
                             style={{backgroundColor: getRiskColor(currentRiskLevel)}}
                         >
                             {currentRiskLevel}
@@ -84,7 +84,7 @@ const ThermoLegendArea: React.FC<{
                     <div className="ml-6 font-bold">{previousWeek}</div>
                     <div className="ml-6 flex items-center mt-1">
                         <div
-                            className="w-full h-6 flex items-center justify-center text-sm"
+                            className="w-full h-6 flex items-center justify-center rounded text-sm"
                             style={{backgroundColor: getRiskColor(previousRiskLevel)}}
                         >
                             {previousRiskLevel}
