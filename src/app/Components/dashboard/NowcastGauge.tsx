@@ -72,7 +72,7 @@ const NowcastGauge: React.FC<RiskLevelGaugeProps> = ({riskLevel}) => {
         svg.selectAll('*').remove();
 
         const {width, height} = gaugeDimensions;
-        const baseMargin = {top: 40, right: 30, bottom: 30, left: 30};
+        const baseMargin = {top: 60, right: 30, bottom: 0, left: 30};
         const margin = {
             top: baseMargin.top / zoomLevel,
             right: baseMargin.right / zoomLevel,
