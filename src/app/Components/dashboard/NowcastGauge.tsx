@@ -1,6 +1,7 @@
 import React, {useEffect, useRef, useState} from 'react';
 import * as d3 from 'd3';
 import {useAppSelector} from "../../store/hooks";
+import {isUTCDateEqual} from "../../Interfaces/forecast-interfaces";
 
 interface RiskLevelGaugeProps {
     riskLevel: string;
@@ -103,28 +104,26 @@ const NowcastGauge: React.FC<RiskLevelGaugeProps> = ({riskLevel}) => {
         const modelData = matchingModelNowcast.data;
         const matchingStateData = modelData.filter(entry => entry.location === USStateNum);
 
-        const userSelectedWeekStart = new Date(userSelectedWeek);
-        userSelectedWeekStart.setHours(0, 0, 0, 0);
 
         const latestTrend = matchingStateData.find(entry => {
             const entryDate = new Date(entry.reference_date);
-            entryDate.setHours(0, 0, 0, 0);
-            return entryDate.getTime() === userSelectedWeekStart.getTime();
+            // return entryDate.getTime() === userSelectedWeekStart.getTime();
+            return isUTCDateEqual(entryDate, userSelectedWeek);
         });
 
-        let trendToUse = latestTrend || matchingStateData.reduce((acc, curr) => acc.reference_date > curr.reference_date ? acc : curr);
+        let trendToUse = latestTrend || null;
 
-        if (!trendToUse) {
-            console.error("No trend data available for the selected state and date range");
-            return;
-        }
+        // if (!trendToUse) {
+        //     console.error("No trend data available for the selected state and date range");
+        //     return;
+        // }
 
-        const formattedCurrentWeekDate = new Date(trendToUse.reference_date).toLocaleDateString('en-US', {
+        const formattedCurrentWeekDate = userSelectedWeek.toLocaleDateString('en-US', {
             month: 'short',
             day: 'numeric',
             year: 'numeric'
         });
-        const lastWeekDate = new Date(trendToUse.reference_date);
+        const lastWeekDate = new Date(userSelectedWeek);
         lastWeekDate.setDate(lastWeekDate.getDate() - 6);
         const formattedLastWeekDate = lastWeekDate.toLocaleDateString('en-US', {
             month: 'short',
@@ -143,21 +142,23 @@ const NowcastGauge: React.FC<RiskLevelGaugeProps> = ({riskLevel}) => {
             .outerRadius(radius * 0.89);
 
         const color = d3.scaleOrdinal<string>()
-            .domain(['decrease', 'stable', 'increase'])
-            .range(['#478791', '#b9d6d6', '#eae78b']);
+            .domain(['decrease', 'stable', 'increase', 'no data'])
+            .range(['#478791', '#b9d6d6', '#eae78b', 'rgba(200, 200, 200, 0.1)']);
 
-        const data = [
-            Math.max(0.001, trendToUse.decrease),
-            Math.max(0.001, trendToUse.stable),
-            Math.max(0.001, trendToUse.increase)
-        ];
+        const data = trendToUse
+            ? [
+                Math.max(0.001, trendToUse.decrease),
+                Math.max(0.001, trendToUse.stable),
+                Math.max(0.001, trendToUse.increase)
+            ]
+            : [1]; // Single slice for "no data"
 
         const paths = chartGroup.selectAll('path')
             .data(pie(data))
             .enter()
             .append('path')
             .attr('d', arc)
-            .attr('fill', (_, i) => color(i.toString()))
+            .attr('fill', (d, i) => trendToUse ? color(i.toString()) : 'rgba(200, 200, 200, 0.1)')
             .attr('stroke', 'lightgray')
             .attr('stroke-width', 2);
 
@@ -204,7 +205,10 @@ const NowcastGauge: React.FC<RiskLevelGaugeProps> = ({riskLevel}) => {
         paths.on('mouseover', function (event: MouseEvent, d) {
             const [x, y] = d3.pointer(event);
             let label, value;
-            if (d.index === 0) {
+            if (!trendToUse) {
+                label = 'No data';
+                value = 'N/A';
+            } else if (d.index === 0) {
                 label = 'Decrease';
                 value = trendToUse.decrease;
             } else if (d.index === 1) {
@@ -215,8 +219,9 @@ const NowcastGauge: React.FC<RiskLevelGaugeProps> = ({riskLevel}) => {
                 value = trendToUse.increase;
             }
 
-            const tooltipContent = `${label}: ${value.toFixed(3)}`;
+            const tooltipContent = `${label}: ${value === 'N/A' ? value : value.toFixed(3)}`;
             tooltipText.text(tooltipContent);
+
 
             const textBBox = tooltipText.node()!.getBBox();
             const padding = 8;

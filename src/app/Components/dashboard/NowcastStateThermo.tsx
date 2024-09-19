@@ -3,13 +3,16 @@ import * as d3 from 'd3';
 import * as topojson from 'topojson-client';
 import {useAppSelector} from '../../store/hooks';
 import {format, subDays} from "date-fns";
+import {isUTCDateEqual} from "../../Interfaces/forecast-interfaces";
 
 const shapeFile = '/states-10m.json';
 
+const riskLevels = ['No Data', 'Low', 'Medium', 'High'];
+const riskColors = ['#363b43', '#7cd8c9', '#2bafe2', '#435fce'];
+
 /* Color legend boxes */
 const ThermoLegendBoxes: React.FC = () => {
-    const riskLevels = ['Low', 'Medium', 'High'];
-    const riskColors = ['#7cd8c9', '#2bafe2', '#435fce'];
+
 
     return (
         <div className="flex flex-grow justify-evenly items-end h-full w-full">
@@ -37,15 +40,15 @@ const ThermoLegendArea: React.FC<{
     // console.log('DEBUG: Rendering ThermoLegendArea', {currentWeek, previousWeek, currentRiskLevel, previousRiskLevel});
 
     const getRiskColor = (riskLevel: string) => {
-        switch (riskLevel.toLowerCase()) {
-            case 'low':
+        switch (riskLevel) {
+            case 'No Data':
+                return '#363b43';
+            case 'Low':
                 return '#7cd8c9';
-            case 'medium':
+            case 'Medium':
                 return '#2bafe2';
-            case 'high':
+            case 'High':
                 return '#435fce';
-            /*case 'very high':
-                return '#3939a8';*/
             default:
                 return '#7cd8c9';
         }
@@ -110,7 +113,6 @@ const NowcastStateThermo: React.FC = () => {
     const locationData = useAppSelector(state => state.location.data);
     const thresholdsData = useAppSelector(state => state.stateThresholds.data);
     const [riskColor, setRiskColor] = useState('#7cd8c9'); // Default to low risk color
-
     const [currentRiskLevel, setCurrentRiskLevel] = useState('Low');
     const [previousRiskLevel, setPreviousRiskLevel] = useState('Low');
 
@@ -154,7 +156,8 @@ const NowcastStateThermo: React.FC = () => {
                         .append('path')
                         .attr('d', path)
                         .attr('fill', riskColor)
-                        .attr('stroke', riskColor);
+                        .attr('stroke', 'white')
+                        .attr('stroke-width', 0.8);
                 } else {
                     const selectedState = states.features.find((feature) => feature.properties.name === selectedStateName);
 
@@ -166,7 +169,8 @@ const NowcastStateThermo: React.FC = () => {
                             .datum(selectedState)
                             .attr('d', path)
                             .attr('fill', riskColor)
-                            .attr('stroke', 'white');
+                            .attr('stroke', 'white')
+                            .attr('stroke-width', 2);
                     }
                 }
                 svg.attr('width', '100%')
@@ -206,9 +210,6 @@ const NowcastStateThermo: React.FC = () => {
         const thermoGroup = svg.append('g')
             .attr('transform', `translate(${margin.left},${margin.top})`);
 
-        // Define risk levels and colors
-        const riskLevels = ['low', 'medium', 'high'];
-        const riskColors = ['#7cd8c9', '#2bafe2', '#435fce'];
 
         // Get thresholds for the selected state
         const stateThresholds = thresholdsData.find(t => t.location === USStateNum);
@@ -229,16 +230,19 @@ const NowcastStateThermo: React.FC = () => {
         const currentSelectedWeek = new Date(userSelectedWeek);
         const relativeLastWeek = new Date(currentSelectedWeek);
         relativeLastWeek.setDate(relativeLastWeek.getDate() - 7);
+        console.log('DEBUG: Relative last week:', relativeLastWeek);
 
         // Get ground truth value
-        const groundTruthEntry = groundTruthData.find(d => d.stateNum === USStateNum && d.date.getTime() === relativeLastWeek.getTime());
+        const groundTruthEntry = groundTruthData.find(d => d.stateNum === USStateNum && isUTCDateEqual(d.date, currentSelectedWeek));
         const groundTruthValue = groundTruthEntry ? groundTruthEntry.weeklyRate : 0;
+        console.log('DEBUG: Ground truth value:', groundTruthValue);
 
         // Get predicted value
         let predictedValue = 0;
         const selectedModel = predictionsData.find(m => m.modelName === userSelectedRiskLevelModel);
         if (selectedModel) {
-            const prediction = selectedModel.predictionData.find(p => p.stateNum === USStateNum && p.referenceDate.getTime() === relativeLastWeek.getTime() && p.targetEndDate.getTime() === currentSelectedWeek.getTime());
+            // const prediction = selectedModel.predictionData.find(p => p.stateNum === USStateNum && p.referenceDate.getTime() === relativeLastWeek.getTime() && p.targetEndDate.getTime() === currentSelectedWeek.getTime());
+            const prediction = selectedModel.predictionData.find(p => p.stateNum === USStateNum && isUTCDateEqual(p.referenceDate, relativeLastWeek) && isUTCDateEqual(p.targetEndDate, currentSelectedWeek));
             if (prediction) {
                 const statePopulation = locationData.find(l => l.stateNum === USStateNum)?.population;
                 if (statePopulation) {
@@ -246,28 +250,31 @@ const NowcastStateThermo: React.FC = () => {
                 }
             }
         }
+        console.log('DEBUG: Predicted value:', predictedValue);
 
         // Function to calculate line position and risk level
         const calculateLinePosition = (value: number) => {
-            let riskLevel = 'low';
+            if (value === 0) {
+                return {riskLevel: 'No Data', yPosition: null};
+            }
+
+            let riskLevel = 'Low';
             let yPosition = 0;
 
-            /*if (value >= stateThresholds.veryHigh) {
-                riskLevel = 'very high';
-                yPosition = yScale(riskPositions[3].position * 100);
-            } else*/
-
             if (value >= stateThresholds.high) {
-                riskLevel = 'high';
+                riskLevel = 'High';
                 const fraction = (value - stateThresholds.high) / (stateThresholds.veryHigh - stateThresholds.high);
                 yPosition = yScale((riskPositions[2].position + fraction * (riskPositions[3].position - riskPositions[2].position)) * 100);
             } else if (value >= stateThresholds.medium) {
-                riskLevel = 'medium';
+                riskLevel = 'Medium';
                 const fraction = (value - stateThresholds.medium) / (stateThresholds.high - stateThresholds.medium);
                 yPosition = yScale((riskPositions[1].position + fraction * (riskPositions[2].position - riskPositions[1].position)) * 100);
-            } else {
+            } else if (value > 0) {
                 const fraction = value / stateThresholds.medium;
                 yPosition = yScale((riskPositions[0].position + fraction * (riskPositions[1].position - riskPositions[0].position)) * 100);
+            } else {
+                riskLevel = 'No Data';
+                yPosition = -1;
             }
 
             return {riskLevel, yPosition};
@@ -281,6 +288,9 @@ const NowcastStateThermo: React.FC = () => {
         setPreviousRiskLevel(groundTruthPosition.riskLevel.charAt(0).toUpperCase() + groundTruthPosition.riskLevel.slice(1));
         setCurrentRiskLevel(predictedPosition.riskLevel.charAt(0).toUpperCase() + predictedPosition.riskLevel.slice(1));
 
+        // Update risk color for the map
+        console.log("Debug: ", predictedPosition.riskLevel);
+        setRiskColor(riskColors[riskLevels.indexOf(predictedPosition.riskLevel)]);
         // Helper functions for tooltip
         const formatNumber = (num: number) => num.toLocaleString('en-US', {maximumFractionDigits: 2});
         const getRangeString = (level: string, value: number, nextValue: number | null) => {
@@ -303,7 +313,7 @@ const NowcastStateThermo: React.FC = () => {
 
         // Draw background rectangles with tooltips
         thermoGroup.selectAll('rect')
-            .data(riskLevels)
+            .data(riskLevels.slice(1))
             .enter()
             .append('rect')
             .attr('x', 0)
@@ -314,7 +324,7 @@ const NowcastStateThermo: React.FC = () => {
                 const end = riskPositions[i + 1].position;
                 return yScale(start * 100) - yScale(end * 100);
             })
-            .attr('fill', (d, i) => riskColors[i])
+            .attr('fill', (d, i) => riskColors.slice(1)[i])
             .attr('stroke', 'lightgray')
             .attr('stroke-width', 2)
             .on('mouseover', function (event, d) {
@@ -324,7 +334,8 @@ const NowcastStateThermo: React.FC = () => {
                 const nextValue = level === 'very high' ? null : stateThresholds[level === 'low' ? 'medium' : level === 'medium' ? 'high' : 'veryHigh'];
 
                 tooltip.html(`
-                <div style="font-size: 14px">
+                <div class="lg:text-sm">
+                <div style="display: flex; align-items: center; margin: 10px;"> Rate/100k </div>
                     <div style="display: flex; align-items: center; margin: 5px;">
                         <div style="width: 12px; height: 12px; background-color: ${riskColors[levelIndex]}; margin-right: 5px;"></div>
                         <span>${level.charAt(0).toUpperCase() + level.slice(1)}: ${getRangeString(level, value, nextValue)}</span>
@@ -376,28 +387,30 @@ const NowcastStateThermo: React.FC = () => {
             .on('mouseout', () => {
                 tooltip.style('display', 'none');
             });
-
-        // Draw ground truth line (dotted)
-        thermoGroup.append('line')
-            .attr('x1', 0)
-            .attr('x2', thermoWidth)
-            .attr('y1', groundTruthPosition.yPosition)
-            .attr('y2', groundTruthPosition.yPosition)
-            .attr('stroke', 'white')
-            .attr('stroke-width', 4)
-            .attr('stroke-dasharray', '3,5');
+// Draw ground truth line (dotted)
+        if (groundTruthPosition.yPosition !== null) {
+            thermoGroup.append('line')
+                .attr('x1', 0)
+                .attr('x2', thermoWidth)
+                .attr('y1', groundTruthPosition.yPosition)
+                .attr('y2', groundTruthPosition.yPosition)
+                .attr('stroke', 'white')
+                .attr('stroke-width', 3.5)
+                .attr('stroke-dasharray', '3,5');
+        }
 
         // Draw predicted line (solid)
-        thermoGroup.append('line')
-            .attr('x1', 0)
-            .attr('x2', thermoWidth)
-            .attr('y1', predictedPosition.yPosition)
-            .attr('y2', predictedPosition.yPosition)
-            .attr('stroke', 'white')
-            .attr('stroke-width', 6);
+        if (predictedPosition.yPosition !== null) {
+            thermoGroup.append('line')
+                .attr('x1', 0)
+                .attr('x2', thermoWidth)
+                .attr('y1', predictedPosition.yPosition)
+                .attr('y2', predictedPosition.yPosition)
+                .attr('stroke', 'white')
+                .attr('stroke-width', 3.5);
+        }
 
-        // Update risk color for the map
-        setRiskColor(riskColors[riskLevels.indexOf(predictedPosition.riskLevel)]);
+
 
     }, [dimensions, USStateNum, userSelectedRiskLevelModel, userSelectedWeek, groundTruthData, predictionsData, locationData, thresholdsData]);
 

@@ -56,8 +56,8 @@ const SettingsPanel: React.FC = () => {
         };
     }, [groundTruthData]);
 
-    console.log("DEBUG: earliestDayFromGroundTruthData: ", earliestDayFromGroundTruthData);
-    console.log("DEBUG: latestDayFromGroundTruthData: ", latestDayFromGroundTruthData);
+    /*console.log("DEBUG: earliestDayFromGroundTruthData: ", earliestDayFromGroundTruthData);
+    console.log("DEBUG: latestDayFromGroundTruthData: ", latestDayFromGroundTruthData);*/
 
     const onStateSelectionChange = (stateNum: string) => {
         const selectedState = locationData.find((state) => state.stateNum === stateNum);
