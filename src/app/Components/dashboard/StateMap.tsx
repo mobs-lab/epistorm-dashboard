@@ -22,7 +22,7 @@ const StateMap: React.FC = () => {
     const updateDimensions = useCallback(() => {
         if (containerRef.current) {
             const {width, height} = containerRef.current.getBoundingClientRect();
-            setDimensions({width, height});
+            setDimensions({width: width, height: height});
         }
     }, []);
 
@@ -186,7 +186,7 @@ const StateMap: React.FC = () => {
 
 
     return (
-        <div ref={containerRef} className="w-full h-full relative" style={{minHeight: '240px', maxHeight: '420px'}}>
+        <div ref={containerRef} className="w-full h-full relative" style={{minHeight: '240px', maxHeight: '360px'}}>
             <button
                 onClick={handleReset}
                 className="absolute top-2 left-2 bg-[#5d636a] text-white text-xs p-1 rounded z-10"
@@ -197,7 +197,7 @@ const StateMap: React.FC = () => {
                 ref={svgRef}
                 width="100%"
                 height="100%"
-                style={{minHeight: '240px', maxHeight: '420px'}}
+                style={{minHeight: '240px', maxHeight: '360'}}
             >
                 <g ref={gRef}></g>
             </svg>

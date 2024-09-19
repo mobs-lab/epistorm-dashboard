@@ -1,6 +1,7 @@
 import React, {useEffect, useRef, useState} from 'react';
 import * as d3 from 'd3';
 import {useAppSelector} from "../../store/hooks";
+import {isUTCDateEqual} from "../../Interfaces/forecast-interfaces";
 
 interface RiskLevelGaugeProps {
     riskLevel: string;
@@ -18,47 +19,51 @@ const LegendBoxes: React.FC = () => {
             {legendData.map((item) => (
                 <div key={item.label} className="flex items-center">
                     <div
-                        className="w-[1em] h-[1em]"
+                        className="w-[1rem] h-[1rem]"
                         style={{backgroundColor: item.color}}
                     ></div>
-                    <span className="text-xs mx-1">{item.label}</span>
+                    <span className="text-sm mx-2">{item.label}</span>
                 </div>
             ))}
         </div>
     );
 };
-
 const NowcastGauge: React.FC<RiskLevelGaugeProps> = ({riskLevel}) => {
     const svgRef = useRef<SVGSVGElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
-    const [dimensions, setDimensions] = useState({width: 0, height: 0});
+    const gaugeRef = useRef<HTMLDivElement>(null);
+    const [gaugeDimensions, setGaugeDimensions] = useState({width: 0, height: 0});
+    const [zoomLevel, setZoomLevel] = useState(1);
     const nowcastTrendsCollection = useAppSelector((state) => state.nowcastTrends.allData);
     const {USStateNum, userSelectedRiskLevelModel, userSelectedWeek} = useAppSelector((state) => state.filter);
 
-    const [zoomLevel, setZoomLevel] = useState(1);
-
     useEffect(() => {
-        const detectZoomLevel = () => {
-            const scale = window.devicePixelRatio || 1;
-            setZoomLevel(scale);
-        };
+        if (!gaugeRef.current) return;
 
-        detectZoomLevel();
-        window.addEventListener('resize', detectZoomLevel);
-        return () => window.removeEventListener('resize', detectZoomLevel);
-    }, []);
-
-    useEffect(() => {
         const updateDimensions = () => {
-            if (containerRef.current) {
-                const {width, height} = containerRef.current.getBoundingClientRect();
-                setDimensions({width, height});
+            if (gaugeRef.current) {
+                const {width, height} = gaugeRef.current.getBoundingClientRect();
+                setGaugeDimensions({width, height});
             }
         };
 
-        updateDimensions();
-        window.addEventListener('resize', updateDimensions);
-        return () => window.removeEventListener('resize', updateDimensions);
+        const detectZoom = () => {
+            const zoom = window.devicePixelRatio;
+            setZoomLevel(zoom);
+        };
+
+        const resizeObserver = new ResizeObserver(() => {
+            updateDimensions();
+            detectZoom();
+        });
+
+        resizeObserver.observe(gaugeRef.current);
+        window.addEventListener('resize', detectZoom);
+
+        return () => {
+            resizeObserver.disconnect();
+            window.removeEventListener('resize', detectZoom);
+        };
     }, []);
 
     useEffect(() => {
@@ -67,16 +72,31 @@ const NowcastGauge: React.FC<RiskLevelGaugeProps> = ({riskLevel}) => {
         const svg = d3.select(svgRef.current);
         svg.selectAll('*').remove();
 
-        const width = dimensions.width;
-        const height = dimensions.height;
+        const {width, height} = gaugeDimensions;
+        const baseMargin = {top: 60, right: 30, bottom: 0, left: 30};
+        const margin = {
+            top: baseMargin.top / zoomLevel,
+            right: baseMargin.right / zoomLevel,
+            bottom: baseMargin.bottom / zoomLevel,
+            left: baseMargin.left / zoomLevel
+        };
 
-        // Define margins
-        const margin = {top: 30, right: 20, bottom: 30, left: 20};
-        const chartWidth = (width - margin.left - margin.right) - 10 * zoomLevel;
-        const chartHeight = (height - margin.top - margin.bottom) - 10 * zoomLevel;
+        const gaugeWidth = width - margin.left - margin.right;
+        const gaugeHeight = height - margin.top - margin.bottom;
+        console.log("gaugeWidth", gaugeWidth, "gaugeHeight", gaugeHeight);
 
-        // Calculate radius considering margins
-        const radius = Math.min(chartWidth, chartHeight);
+        // Calculate radius based on the diagonal of the available space
+        const diagonal = Math.sqrt(gaugeWidth * gaugeWidth + gaugeHeight * gaugeHeight);
+        const radius = (diagonal / 2) * 0.75; // Using 80% of half the diagonal
+        console.log("radius", radius);
+
+        // Set viewBox for better scaling
+        svg.attr('viewBox', `0 0 ${width} ${height}`)
+            .attr('preserveAspectRatio', 'xMaxYMid meet');
+
+        // Create a group for the entire chart and position it
+        const chartGroup = svg.append('g')
+            .attr('transform', `translate(${width / 2}, ${height})`);
 
         const matchingModelNowcast = nowcastTrendsCollection.find(model => model.modelName === userSelectedRiskLevelModel);
         if (!matchingModelNowcast || !matchingModelNowcast.data.length) return;
@@ -84,28 +104,26 @@ const NowcastGauge: React.FC<RiskLevelGaugeProps> = ({riskLevel}) => {
         const modelData = matchingModelNowcast.data;
         const matchingStateData = modelData.filter(entry => entry.location === USStateNum);
 
-        const userSelectedWeekStart = new Date(userSelectedWeek);
-        userSelectedWeekStart.setHours(0, 0, 0, 0);
 
         const latestTrend = matchingStateData.find(entry => {
             const entryDate = new Date(entry.reference_date);
-            entryDate.setHours(0, 0, 0, 0);
-            return entryDate.getTime() === userSelectedWeekStart.getTime();
+            // return entryDate.getTime() === userSelectedWeekStart.getTime();
+            return isUTCDateEqual(entryDate, userSelectedWeek);
         });
 
-        let trendToUse = latestTrend || matchingStateData.reduce((acc, curr) => acc.reference_date > curr.reference_date ? acc : curr);
+        let trendToUse = latestTrend || null;
 
-        if (!trendToUse) {
-            console.error("No trend data available for the selected state and date range");
-            return;
-        }
+        // if (!trendToUse) {
+        //     console.error("No trend data available for the selected state and date range");
+        //     return;
+        // }
 
-        const formattedCurrentWeekDate = new Date(trendToUse.reference_date).toLocaleDateString('en-US', {
+        const formattedCurrentWeekDate = userSelectedWeek.toLocaleDateString('en-US', {
             month: 'short',
             day: 'numeric',
             year: 'numeric'
         });
-        const lastWeekDate = new Date(trendToUse.reference_date);
+        const lastWeekDate = new Date(userSelectedWeek);
         lastWeekDate.setDate(lastWeekDate.getDate() - 6);
         const formattedLastWeekDate = lastWeekDate.toLocaleDateString('en-US', {
             month: 'short',
@@ -120,51 +138,51 @@ const NowcastGauge: React.FC<RiskLevelGaugeProps> = ({riskLevel}) => {
             .endAngle(Math.PI / 2);
 
         const arc = d3.arc<d3.PieArcDatum<number>>()
-            .innerRadius(radius * 0.9)
-            .outerRadius(radius * 1.2);
+            .innerRadius(radius * 0.68)
+            .outerRadius(radius * 0.89);
 
         const color = d3.scaleOrdinal<string>()
-            .domain(['decrease', 'stable', 'increase'])
-            .range(['#478791', '#b9d6d6', '#eae78b']);
+            .domain(['decrease', 'stable', 'increase', 'no data'])
+            .range(['#478791', '#b9d6d6', '#eae78b', 'rgba(200, 200, 200, 0.1)']);
 
-        const data = [
-            Math.max(0.001, trendToUse.decrease),
-            Math.max(0.001, trendToUse.stable),
-            Math.max(0.001, trendToUse.increase)
-        ];
-
-        // Create a group for the entire chart and position it
-        const chartGroup = svg.append('g')
-            .attr('transform', `translate(${width / 2}, ${height - margin.bottom})`);
+        const data = trendToUse
+            ? [
+                Math.max(0.001, trendToUse.decrease),
+                Math.max(0.001, trendToUse.stable),
+                Math.max(0.001, trendToUse.increase)
+            ]
+            : [1]; // Single slice for "no data"
 
         const paths = chartGroup.selectAll('path')
             .data(pie(data))
             .enter()
             .append('path')
             .attr('d', arc)
-            .attr('fill', (_, i) => color(i.toString()))
+            .attr('fill', (d, i) => trendToUse ? color(i.toString()) : 'rgba(200, 200, 200, 0.1)')
             .attr('stroke', 'lightgray')
             .attr('stroke-width', 2);
 
-        const calculateFontSize = (baseSize: number) => {
+        /*const calculateFontSize = (baseSize: number) => {
             const baseFontSize = 16;  // Adjust this value to change the overall text size
             const zoomFactor = 1 / Math.max(1, zoomLevel);  // Inverse relationship with zoom
             return Math.max(13, Math.min(baseSize * zoomFactor, baseFontSize));
-        };
+        };*/
+
+        const fontSize = Math.max(23, Math.min(16, radius * 0.1));
 
         // Add text
         chartGroup.append('text')
             .attr('text-anchor', 'middle')
-            .attr('dy', `-${radius * 0.6}`)
-            .attr('font-size', `${calculateFontSize(24)}px`)
+            .attr('dy', `-${radius * 0.3}`)
+            .attr('font-size', `${fontSize}px`)
             .attr('font-weight', 'bold')
             .attr('fill', 'white')
             .text("Trend forecast");
 
         chartGroup.append('text')
             .attr('text-anchor', 'middle')
-            .attr('dy', `-${radius * 0.3}`)
-            .attr('font-size', `${calculateFontSize(16)}px`)
+            .attr('dy', `-${radius * 0.1}`)
+            .attr('font-size', `${fontSize * 0.8}px`)
             .attr('fill', 'white')
             .text(`${formattedLastWeekDate} - ${formattedCurrentWeekDate}`);
 
@@ -182,12 +200,15 @@ const NowcastGauge: React.FC<RiskLevelGaugeProps> = ({riskLevel}) => {
 
         const tooltipText = hovertooltip.append('text')
             .attr('fill', 'black')
-            .attr('font-size', `${calculateFontSize(12)}px`);
+            .attr('font-size', `${fontSize * 0.5}px`);
 
         paths.on('mouseover', function (event: MouseEvent, d) {
             const [x, y] = d3.pointer(event);
             let label, value;
-            if (d.index === 0) {
+            if (!trendToUse) {
+                label = 'No data';
+                value = 'N/A';
+            } else if (d.index === 0) {
                 label = 'Decrease';
                 value = trendToUse.decrease;
             } else if (d.index === 1) {
@@ -198,8 +219,9 @@ const NowcastGauge: React.FC<RiskLevelGaugeProps> = ({riskLevel}) => {
                 value = trendToUse.increase;
             }
 
-            const tooltipContent = `${label}: ${value.toFixed(3)}`;
+            const tooltipContent = `${label}: ${value === 'N/A' ? value : value.toFixed(3)}`;
             tooltipText.text(tooltipContent);
+
 
             const textBBox = tooltipText.node()!.getBBox();
             const padding = 8;
@@ -216,14 +238,14 @@ const NowcastGauge: React.FC<RiskLevelGaugeProps> = ({riskLevel}) => {
             let tooltipY = y - tooltipHeight - 10;
 
             // Adjust position if it goes out of bounds
-            if (tooltipX + tooltipWidth > width / 2) {
-                tooltipX = width / 2 - tooltipWidth - 10;
+            if (tooltipX + tooltipWidth > gaugeWidth / 2) {
+                tooltipX = gaugeWidth / 2 - tooltipWidth - 10;
             }
-            if (tooltipX < -width / 2) {
-                tooltipX = -width / 2 + 10;
+            if (tooltipX < -gaugeWidth / 2) {
+                tooltipX = -gaugeWidth / 2 + 10;
             }
-            if (tooltipY < -height + margin.top) {
-                tooltipY = -height + margin.top + 10;
+            if (tooltipY < -gaugeHeight + margin.top) {
+                tooltipY = -gaugeHeight + margin.top + 10;
             }
 
             hovertooltip
@@ -234,19 +256,20 @@ const NowcastGauge: React.FC<RiskLevelGaugeProps> = ({riskLevel}) => {
                 hovertooltip.style('opacity', 0);
             });
 
-    }, [dimensions, riskLevel, nowcastTrendsCollection, userSelectedRiskLevelModel, USStateNum, userSelectedWeek, zoomLevel]);
+    }, [gaugeDimensions, riskLevel, nowcastTrendsCollection, userSelectedRiskLevelModel, USStateNum, userSelectedWeek, zoomLevel]);
 
     return (
         <div ref={containerRef}
-             className="layout-grid-nowcast-gauge flex flex-col justify-stretch items-stretch text-white p-2 mb-4 h-full w-full overflow-scroll">
-            <div className="gauge-chart flex-grow overflow-scroll util-no-sb-length">
-                <svg ref={svgRef} width="100%" height="100%" preserveAspectRatio="xMidYMid meet"/>
+             className="layout-grid-nowcast-gauge py-2">
+            <div ref={gaugeRef} className="gauge-chart">
+                <svg ref={svgRef} width="100%" height="100%"/>
             </div>
             <div className="gauge-legend">
                 <LegendBoxes/>
             </div>
         </div>
-    );
+    )
+
 };
 
 export default NowcastGauge;
