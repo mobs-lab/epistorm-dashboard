@@ -9,7 +9,7 @@ import {updateUserSelectedWeek} from "../../store/filterSlice";
 
 import {modelColorMap} from "../../Interfaces/modelColors";
 import {
-    DataPoint, HistoricalDataEntry, ModelPrediction, PredictionDataPoint
+    DataPoint, HistoricalDataEntry, isUTCDateEqual, ModelPrediction, PredictionDataPoint
 } from "../../Interfaces/forecast-interfaces";
 
 const ForecastChart: React.FC = () => {
@@ -65,8 +65,9 @@ const ForecastChart: React.FC = () => {
         const zoomFactor = Math.max(1, zoomLevel);
 
         const baseMarginTop = Math.max(25 - (zoomFactor * 12), height * 0.02);
-        const baseMarginBottom = Math.max(20 + (zoomFactor * 20), height * 0.2);
-        const baseMarginLeft = Math.max(20 + (zoomFactor * 20), width * 0.03);
+        const baseMarginBottom = Math.max(20 + (zoomFactor * 14), height * 0.15);
+        const baseMarginLeft = Math.max(20 + (zoomFactor * 10), width * 0.038);
+        // console.log("DEBUG: Base Margin Left:", baseMarginLeft);
         const baseMarginRight = Math.max(20 - (zoomFactor * 12), width * 0.02);
 
 
@@ -115,7 +116,8 @@ const ForecastChart: React.FC = () => {
         // Filter the prediction data by referenceDate and targetEndDate for each model
         let filteredModelData = {};
         Object.entries(modelData).forEach(([modelName, predictionData]) => {
-            let filteredByReferenceDate = predictionData.filter((d) => d.referenceDate.getTime() === selectedWeek.getTime());
+            // let filteredByReferenceDate = predictionData.filter((d) => d.referenceDate.getTime() === selectedWeek.getTime());
+            let filteredByReferenceDate = predictionData.filter((d) => isUTCDateEqual(d.referenceDate, selectedWeek));
 
             let filteredByTargetEndDate = filteredByReferenceDate.filter((d) => {
                 let targetWeek = new Date(selectedWeek.getTime());
@@ -369,7 +371,8 @@ const ForecastChart: React.FC = () => {
         console.log("DEBUG: ForecastChart: User selected week:", userSelectedWeek);
 
         // Find the historical data file that is 1 week before the user selected week
-        const matchingHistoricalData = historicalData.find((entry) => entry.associatedDate instanceof Date && entry.associatedDate.getTime() === (userSelectedWeek.getTime() - 7 * 24 * 60 * 60 * 1000));
+        // const matchingHistoricalData = historicalData.find((entry) => entry.associatedDate instanceof Date && entry.associatedDate.getTime() === (userSelectedWeek.getTime() - 7 * 24 * 60 * 60 * 1000));
+        const matchingHistoricalData = historicalData.find((entry) => isUTCDateEqual(entry.associatedDate, userSelectedWeek));
 
         if (!matchingHistoricalData) {
             // console.log("DEBUG: No matching historical data found for:", userSelectedWeek.toISOString());
@@ -704,7 +707,8 @@ const ForecastChart: React.FC = () => {
     function findPredictionsForDate(predictionData: any, date: Date) {
         const foundPredictions = {};
         Object.entries(predictionData).forEach(([modelName, modelPredictions]: [string, any]) => {
-            const prediction = modelPredictions[0].data.find((p: any) => new Date(p.targetEndDate).getTime() === date.getTime(),);
+            // const prediction = modelPredictions[0].data.find((p: any) => new Date(p.targetEndDate).getTime() === date.getTime());
+            const prediction = modelPredictions[0].data.find((p: any) => isUTCDateEqual(new Date(p.targetEndDate), date));
             if (prediction) {
                 foundPredictions[modelName] = prediction;
             }
@@ -843,7 +847,8 @@ const ForecastChart: React.FC = () => {
         Object.values(predictionData).forEach((modelPredictions: any) => {
             // For each prediction, check if a data point already exists for that
             modelPredictions[0].data.forEach((prediction: any) => {
-                const existingPoint = combinedData.find((d) => d.date.getTime() === new Date(prediction.targetEndDate).getTime(),);
+                // const existingPoint = combinedData.find((d) => d.date.getTime() === new Date(prediction.targetEndDate).getTime());
+                const existingPoint = combinedData.find((d) => isUTCDateEqual(d.date, new Date(prediction.targetEndDate)));
                 if (!existingPoint) {
                     combinedData.push({
                         date: new Date(prediction.targetEndDate),
