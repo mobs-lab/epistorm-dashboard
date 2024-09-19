@@ -128,34 +128,35 @@ const SettingsPanel: React.FC = () => {
     };
 
 
-    return (<div
-        className={"bg-mobs-lab-color-filterspane text-white fill-white flex flex-col flex-wrap justify-between items-stretch p-4 rounded-md overflow:clip util-responsive-text"}>
+    return (
+        <div
+            className="bg-mobs-lab-color-filterspane text-white fill-white flex flex-col h-full rounded-md overflow-hidden util-responsive-text">
+            <div className="flex-grow overflow-y-auto p-4">
+                <div className="flex flex-col flex-wrap justify-stretch items-start w-full">
+                    <h2> Select a location <InfoButton title="State Selection Information" content={stateMapInfo}/></h2>
 
-        <div className={"flex flex-col flex-wrap justify-stretch items-start h-full w-full"}>
-            <h2> Select a location <InfoButton title="State Selection Information" content={stateMapInfo}/></h2>
-
-            <div className="mb-4 w-full h-full size-full">
-                <StateMap/>
-            </div>
+                    <div className="mb-4 w-full">
+                        <StateMap/>
+                    </div>
 
 
-            <select
-                value={USStateNum}
-                onChange={(e) => onStateSelectionChange(e.target.value)}
-                className={"text-white border-[#5d636a] border-2 font-sans flex-wrap bg-mobs-lab-color-filterspane rounded-md px-2 py-4 w-full h-full"}
-            >
-                {locationData.map((state) => (<option key={state.state} value={state.stateNum}>
-                    {state.stateName}
-                    {/*{state.stateNum} : {state.stateName}*/}
-                </option>))}
-            </select>
+                    <select
+                        value={USStateNum}
+                        onChange={(e) => onStateSelectionChange(e.target.value)}
+                        className={"text-white border-[#5d636a] border-2 font-sans flex-wrap bg-mobs-lab-color-filterspane rounded-md px-2 py-4 w-full h-full"}
+                    >
+                        {locationData.map((state) => (<option key={state.state} value={state.stateNum}>
+                            {state.stateName}
+                            {/*{state.stateNum} : {state.stateName}*/}
+                        </option>))}
+                    </select>
 
-            {/*NOTE: Revisit for potential improvement*/}
-            <div className="my-2 w-full h-full overflow-ellipsis">
-                <Typography variant="h6" className="text-white">Model</Typography>
-                <div className="flex flex-col text-wrap">
-                    {["MOBS-GLEAM_FLUH", "CEPH-Rtrend_fluH", "MIGHTE-Nsemble", "NU_UCSD-GLEAM_AI_FLUH"].map((model) => (
-                        <label key={model} className="inline-flex items-center text-white">
+                    {/*NOTE: Revisit for potential improvement*/}
+                    <div className="my-2 w-full h-full overflow-ellipsis">
+                        <Typography variant="h6" className="text-white">Model</Typography>
+                        <div className="flex flex-col text-wrap">
+                            {["MOBS-GLEAM_FLUH", "CEPH-Rtrend_fluH", "MIGHTE-Nsemble", "NU_UCSD-GLEAM_AI_FLUH"].map((model) => (
+                                <label key={model} className="inline-flex items-center text-white">
                                 <span
                                     className="w-[1em] h-[1em] border-2 rounded-sm mr-2 "
                                     style={{
@@ -163,111 +164,113 @@ const SettingsPanel: React.FC = () => {
                                         borderColor: modelColorMap[model],
                                     }}
                                 />
-                            <input
-                                type="checkbox"
-                                className="sr-only"
-                                checked={forecastModel.includes(model)}
-                                onChange={(e) => onModelSelectionChange(model, e.target.checked)}
-                            />
-                            <span className="ml-2 text-wrap xs:text-sm ">{model}</span>
-                        </label>))}
-                </div>
-            </div>
+                                    <input
+                                        type="checkbox"
+                                        className="sr-only"
+                                        checked={forecastModel.includes(model)}
+                                        onChange={(e) => onModelSelectionChange(model, e.target.checked)}
+                                    />
+                                    <span className="ml-2 text-wrap xs:text-sm ">{model}</span>
+                                </label>))}
+                        </div>
+                    </div>
 
-            {/* TODO: Change up this to make season selector correctly work */}
-            <div className="w-full h-full justify-stretch items-stretch py-4">
-                <Typography variant="h6" className="text-white">Season</Typography>
-                <select
-                    value={dateRange}
-                    onChange={(e) => onSeasonSelectionChange(e.target.value)}
-                    className={"text-white border-[#5d636a] border-2 flex-wrap bg-mobs-lab-color-filterspane rounded-md w-full h-full py-2 px-2 overflow-ellipsis"}
-                >
-                    {seasonOptions.map((option: SeasonOption) => (<option key={option.index} value={option.timeValue}>
-                        {option.displayString}
-                    </option>))}
-                </select>
-            </div>
+                    {/* TODO: Change up this to make season selector correctly work */}
+                    <div className="w-full h-full justify-stretch items-stretch py-4">
+                        <Typography variant="h6" className="text-white">Season</Typography>
+                        <select
+                            value={dateRange}
+                            onChange={(e) => onSeasonSelectionChange(e.target.value)}
+                            className={"text-white border-[#5d636a] border-2 flex-wrap bg-mobs-lab-color-filterspane rounded-md w-full h-full py-2 px-2 overflow-ellipsis"}
+                        >
+                            {seasonOptions.map((option: SeasonOption) => (
+                                <option key={option.index} value={option.timeValue}>
+                                    {option.displayString}
+                                </option>))}
+                        </select>
+                    </div>
 
-            <div className="pt-4 w-full h-full">
-                <Typography variant="h6" className="text-white">Start Date</Typography>
-                <StyledDatePicker
-                    value={dateStart}
-                    onChange={onDateStartSelectionChange}
-                    minDate={earliestDayFromGroundTruthData}
-                    maxDate={dateEnd}
-                    className="w-full border-[#5d636a] border-2 rounded-md"
-                />
-            </div>
-            <div className="pt-2 w-full h-full">
-                <Typography variant="h6" className="text-white">End Date</Typography>
-                <StyledDatePicker
-                    value={dateEnd}
-                    onChange={onDateEndSelectionChange}
-                    minDate={dateStart}
-                    maxDate={latestDayFromGroundTruthData}
-                    className="w-full border-[#5d636a] border-2 rounded-md"
-                />
-            </div>
-            <button
-                className="mb-4 mt-2 bg-[#5d636a] text-white rounded text-sm w-full h-full"
-                onClick={handleShowAllDates}
-            >
-                Show All
-            </button>
-
-            <div className="my-2 w-full h-full">
-                <Typography variant="h6" className="text-white"> Horizon </Typography>
-                {[0, 1, 2, 3].map((value) => (<Radio
-                    key={value}
-                    name="weeksAheadRadioBtn"
-                    value={value.toString()}
-                    label={value.toString()}
-                    onChange={(e) => onNumOfWeeksAheadChange(e)}
-                    className="text-white"
-                    labelProps={{className: "text-white"}}
-                    defaultChecked={value === 3}
-                />))}
-            </div>
-            <div className="mb-4 w-full h-full">
-                <Typography variant="h6" className="text-white">Y-axis scale</Typography>
-                {["linear", "log"].map((value) => (<Radio
-                    key={value}
-                    name="yAxisRadioBtn"
-                    value={value}
-                    label={value === "linear" ? "Linear" : "Logarithmic"}
-                    onChange={(e) => onYAxisScaleChange(e)}
-                    className="text-white"
-                    labelProps={{className: "text-white"}}
-                    defaultChecked={value === "linear"}
-                />))}
-            </div>
-
-            <div className="mb-4 flex-col justify-stretch items-stretch flex-wrap w-full h-full">
-                <Typography variant="h6" className="text-white">Confidence Interval</Typography>
-                <div className="flex flex-row flex-wrap justify-between items-center">
-                    {["50%", "90%", "95%"].map((interval) => (
-                        <label key={interval} className="flex items-center text-white">
-                            <input
-                                type="checkbox"
-                                className="form-checkbox text-blue-600 mr-2"
-                                checked={confidenceInterval.includes(interval.split("%")[0])}
-                                onChange={(e) => onConfidenceIntervalChange(interval, e.target.checked)}
-                            />
-                            <span>{interval}</span>
-                        </label>))}
+                    <div className="pt-4 w-full h-full">
+                        <Typography variant="h6" className="text-white">Start Date</Typography>
+                        <StyledDatePicker
+                            value={dateStart}
+                            onChange={onDateStartSelectionChange}
+                            minDate={earliestDayFromGroundTruthData}
+                            maxDate={dateEnd}
+                            className="w-full border-[#5d636a] border-2 rounded-md"
+                        />
+                    </div>
+                    <div className="pt-2 w-full h-full">
+                        <Typography variant="h6" className="text-white">End Date</Typography>
+                        <StyledDatePicker
+                            value={dateEnd}
+                            onChange={onDateEndSelectionChange}
+                            minDate={dateStart}
+                            maxDate={latestDayFromGroundTruthData}
+                            className="w-full border-[#5d636a] border-2 rounded-md"
+                        />
+                    </div>
                     <button
-                        className={`flex flex-wrap rounded p-1 ${confidenceInterval.length === 0 ? "bg-[] text-white" : "bg-[#5d636a] text-white"}`}
-                        onClick={() => dispatch(updateConfidenceInterval([]))}
+                        className="mb-4 mt-2 bg-[#5d636a] text-white rounded text-sm w-full h-full"
+                        onClick={handleShowAllDates}
                     >
-                        None
+                        Show All
                     </button>
+
+                    <div className="my-2 w-full h-full">
+                        <Typography variant="h6" className="text-white"> Horizon </Typography>
+                        {[0, 1, 2, 3].map((value) => (<Radio
+                            key={value}
+                            name="weeksAheadRadioBtn"
+                            value={value.toString()}
+                            label={value.toString()}
+                            onChange={(e) => onNumOfWeeksAheadChange(e)}
+                            className="text-white"
+                            labelProps={{className: "text-white"}}
+                            defaultChecked={value === 3}
+                        />))}
+                    </div>
+                    <div className="mb-4 w-full h-full">
+                        <Typography variant="h6" className="text-white">Y-axis scale</Typography>
+                        {["linear", "log"].map((value) => (<Radio
+                            key={value}
+                            name="yAxisRadioBtn"
+                            value={value}
+                            label={value === "linear" ? "Linear" : "Logarithmic"}
+                            onChange={(e) => onYAxisScaleChange(e)}
+                            className="text-white"
+                            labelProps={{className: "text-white"}}
+                            defaultChecked={value === "linear"}
+                        />))}
+                    </div>
+
+                    <div className="mb-4 flex-col justify-stretch items-stretch flex-wrap w-full h-full">
+                        <Typography variant="h6" className="text-white">Confidence Interval</Typography>
+                        <div className="flex flex-row flex-wrap justify-between items-center">
+                            {["50%", "90%", "95%"].map((interval) => (
+                                <label key={interval} className="flex items-center text-white">
+                                    <input
+                                        type="checkbox"
+                                        className="form-checkbox text-blue-600 mr-2"
+                                        checked={confidenceInterval.includes(interval.split("%")[0])}
+                                        onChange={(e) => onConfidenceIntervalChange(interval, e.target.checked)}
+                                    />
+                                    <span>{interval}</span>
+                                </label>))}
+                            <button
+                                className={`flex flex-wrap rounded p-1 ${confidenceInterval.length === 0 ? "bg-[] text-white" : "bg-[#5d636a] text-white"}`}
+                                onClick={() => dispatch(updateConfidenceInterval([]))}
+                            >
+                                None
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
-        </div>
-        <div className="m-auto p-6">
-            <Image src="/epistorm-logo.png" width={9999} height={100} alt="Epistorm Logo"/>
-        </div>
-    </div>);
+            <div className="m-auto p-6">
+                <Image src="/epistorm-logo.png" width={9999} height={100} alt="Epistorm Logo"/>
+            </div>
+        </div>);
 }
 
 export default SettingsPanel;
