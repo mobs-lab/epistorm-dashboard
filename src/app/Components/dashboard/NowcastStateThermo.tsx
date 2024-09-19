@@ -12,7 +12,7 @@ const ThermoLegendBoxes: React.FC = () => {
     const riskColors = ['#7cd8c9', '#2bafe2', '#435fce'];
 
     return (
-        <div className="flex flex-grow justify-evenly items-end h-full">
+        <div className="flex flex-grow justify-evenly items-end h-full w-full">
             {riskLevels.map((level, index) => (
                 <div key={level} className="flex items-center">
                     <div
@@ -53,7 +53,7 @@ const ThermoLegendArea: React.FC<{
 
     return (
         <div
-            className="flex flex-col h-full justify-stretch items-stretch overflow-scroll util-no-sb-length bg-mobs-lab-color-filterspane p-2 rounded mx-4 mb-4">
+            className="flex flex-col h-full justify-stretch items-stretch overflow-scroll util-no-sb-length bg-mobs-lab-color-filterspane p-2 rounded mx-4 mb-2">
             <div className="text-lg font-bold text-center ">Activity level</div>
             <div className="flex flex-col justify-stretch items-stretch space-y-2">
                 <div className="flex flex-col">
@@ -121,7 +121,7 @@ const NowcastStateThermo: React.FC = () => {
         const updateDimensions = () => {
             if (containerRef.current) {
                 const {width, height} = containerRef.current.getBoundingClientRect();
-                setDimensions({width, height});
+                setDimensions({width: width, height: height});
             }
         };
 
