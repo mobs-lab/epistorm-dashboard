@@ -1006,7 +1006,7 @@ const ForecastChart: React.FC = () => {
                     // bubbleUserSelectedWeek(new Date(closestDataPoint.date.toISOString()));
                 }
 
-                const processedPredictionData = processPredictionData(predictionsData, forecastModel, USStateNum, userSelectedWeek, numOfWeeksAhead, confidenceInterval, historicalDataMode,);
+                const processedPredictionData = processPredictionData(predictionsData, forecastModel, USStateNum, userSelectedWeek, numOfWeeksAhead, confidenceInterval, historicalDataMode);
 
                 const {
                     xScale, yScale, xAxis, yAxis
