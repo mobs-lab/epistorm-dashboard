@@ -176,31 +176,24 @@ body {
 
 
     /*NOTE: Below are for NowcastGauge Component*/
-    .layout-grid-nowcast-gauge {
-        display: grid;
+    .layout-nowcast-gauge {
+        display: flex;
+        flex-direction: column;
         width: 100%;
         height: 100%;
-        grid-template-areas:
-            "gauge-chart"
-            "gauge-legend";
-        grid-template-columns: 1fr;
-        grid-template-rows: 4fr 1fr;
-        gap: 0.2fr;
-        overflow: scroll;
-        scrollbar-gutter: auto;
-        scrollbar-width: none;
-        --webkit-scrollbar-width: none;
+        overflow: hidden;
     }
 
-
-    .gauge-chart {
-        grid-area: gauge-chart;
-
-    }
-
-    .gauge-legend {
-        grid-area: gauge-legend;
-
+    .nowcast-gauge-tooltip {
+        position: absolute;
+        pointer-events: none;
+        z-index: 10;
+        background-color: white;
+        color: black;
+        padding: 5px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        font-size: 12px;
     }
 
     /*CSS for Styled Date Picker's Components*/

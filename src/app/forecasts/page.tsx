@@ -8,6 +8,7 @@ import ForecastChart from "../Components/dashboard/ForecastChart";
 import SettingsPanel from "../Components/dashboard/SettingsPanel";
 import NowcastStateThermo from "../Components/dashboard/NowcastStateThermo";
 import NowcastGauge from "../Components/dashboard/NowcastGauge";
+import NowcastGaugeOval from "../Components/dashboard/NowcastGauge-oval-version";
 import {useAppDispatch} from '../store/hooks';
 import {setGroundTruthData} from '../store/groundTruthSlice';
 import {setPredictionsData} from '../store/predictionsSlice';
@@ -330,6 +331,7 @@ const Page: React.FC = () => {
         </div>
         {!loadingStates.groundTruth && !loadingStates.thresholds && (<div className="nowcast-gauge">
             <NowcastGauge riskLevel="US"/>
+            {/*<NowcastGaugeOval riskLevel="US"/>*/}
         </div>)}
         {!loadingStates.locations && (<div className="settings-panel">
             <SettingsPanel/>

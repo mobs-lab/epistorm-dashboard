@@ -65,8 +65,8 @@ const ForecastChart: React.FC = () => {
         const zoomFactor = Math.max(1, zoomLevel);
 
         const baseMarginTop = Math.max(25 - (zoomFactor * 12), height * 0.02);
-        const baseMarginBottom = Math.max(20 + (zoomFactor * 14), height * 0.15);
-        const baseMarginLeft = Math.max(20 + (zoomFactor * 10), width * 0.038);
+        const baseMarginBottom = Math.max(20 + (zoomFactor * 25), height * 0.15);
+        const baseMarginLeft = Math.max(20 + (zoomFactor * 25), width * 0.038);
         // console.log("DEBUG: Base Margin Left:", baseMarginLeft);
         const baseMarginRight = Math.max(20 - (zoomFactor * 12), width * 0.02);
 
