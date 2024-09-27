@@ -1,3 +1,4 @@
+/*
 // File Path: src/app/forecasts/page.tsx
 
 'use client'
@@ -113,7 +114,7 @@ const Page: React.FC = () => {
                     })
                 );
 
-                /* Load the Thresholds Data for RiskLevelThermometer */
+                /!* Load the Thresholds Data for RiskLevelThermometer *!/
                 const thresholdsData = await d3.csv('/data/thresholds.csv');
                 const parsedThresholdsData: StateThresholds[] = thresholdsData.map((d) => ({
                     location: d.Location,
@@ -329,3 +330,4 @@ function generateSeasonOptions(data: DataPoint[]): SeasonOption[] {
 }
 
 export default Page;
+*/
