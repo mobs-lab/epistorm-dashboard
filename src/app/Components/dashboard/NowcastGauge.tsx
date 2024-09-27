@@ -31,6 +31,7 @@ const LegendBoxes: React.FC = () => {
 const NowcastGauge: React.FC<RiskLevelGaugeProps> = ({riskLevel}) => {
     const svgRef = useRef<SVGSVGElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
+    const tooltipRef = useRef<HTMLDivElement>(null);
     const [containerDimensions, setContainerDimensions] = useState({width: 0, height: 0});
 
     const nowcastTrendsCollection = useAppSelector((state) => state.nowcastTrends.allData);
@@ -63,7 +64,7 @@ const NowcastGauge: React.FC<RiskLevelGaugeProps> = ({riskLevel}) => {
         const gaugeWidth = width - margin.left - margin.right;
         const gaugeHeight = height - margin.top - margin.bottom;
 
-        const diagonalLength = Math.sqrt((gaugeWidth / 2) ** 2 + gaugeHeight ** 2) * 0.68;
+        const diagonalLength = Math.sqrt((gaugeWidth / 2) ** 2 + gaugeHeight ** 2) * 0.62;
 
         const radius = Math.min(Math.min(gaugeWidth / 2, diagonalLength), gaugeHeight * 1.12);
 
@@ -140,7 +141,7 @@ const NowcastGauge: React.FC<RiskLevelGaugeProps> = ({riskLevel}) => {
             .attr('fill', 'white')
             .text(`${formattedLastWeekDate} - ${formattedCurrentWeekDate}`);
 
-        // Tooltip implementation
+        /*// Tooltip implementation
         const tooltip = d3.select(containerRef.current)
             .append('div')
             .attr('class', 'nowcast-gauge-tooltip')
@@ -176,7 +177,62 @@ const NowcastGauge: React.FC<RiskLevelGaugeProps> = ({riskLevel}) => {
         })
             .on('mouseout', () => {
                 tooltip.style('opacity', 0);
+            });*/
+
+        // Tooltip implementation
+        const tooltip = d3.select(tooltipRef.current);
+
+        paths.on('mouseover', function (event, d) {
+            let label, value;
+            if (!trendToUse) {
+                label = 'No data';
+                value = 'N/A';
+            } else if (d.index === 0) {
+                label = 'Decrease';
+                value = trendToUse.decrease;
+            } else if (d.index === 1) {
+                label = 'Stable';
+                value = trendToUse.stable;
+            } else {
+                label = 'Increase';
+                value = trendToUse.increase;
+            }
+
+            tooltip.html(`${label}: ${value === 'N/A' ? value : value.toFixed(3)}`)
+                .style('display', 'block');
+
+            updateTooltipPosition(event);
+        })
+            .on('mousemove', updateTooltipPosition)
+            .on('mouseout', () => {
+                tooltip.style('display', 'none');
             });
+
+        function updateTooltipPosition(event: MouseEvent) {
+            const tooltipNode = tooltip.node();
+            if (tooltipNode) {
+                const containerRect = containerRef.current?.getBoundingClientRect();
+                const svgRect = svgRef.current?.getBoundingClientRect();
+
+                if (containerRect && svgRect) {
+                    const x = event.clientX - svgRect.left;
+                    const y = event.clientY - svgRect.top;
+
+                    const tooltipWidth = tooltipNode.offsetWidth;
+                    const tooltipHeight = tooltipNode.offsetHeight;
+
+                    let left = x - tooltipWidth / 2;
+                    let top = y - tooltipHeight - 10; // Position above the cursor
+
+                    // Ensure the tooltip stays within the container bounds
+                    left = Math.max(0, Math.min(left, containerRect.width - tooltipWidth));
+                    top = Math.max(0, Math.min(top, containerRect.height - tooltipHeight));
+
+                    tooltip.style('left', `${left}px`)
+                        .style('top', `${top}px`);
+                }
+            }
+        }
 
     }, [containerDimensions, riskLevel, nowcastTrendsCollection, userSelectedRiskLevelModel, USStateNum, userSelectedWeek]);
 
@@ -185,9 +241,14 @@ const NowcastGauge: React.FC<RiskLevelGaugeProps> = ({riskLevel}) => {
     }, [drawGauge]);
 
     return (
-        <div ref={containerRef} className="flex flex-col h-full items-stretch justify-stretch py-2">
-            <div className="flex-grow">
+        <div ref={containerRef} className="flex flex-col h-full items-stretch justify-stretch py-2 relative">
+            <div className="flex-grow relative">
                 <svg ref={svgRef} className="w-full h-full"/>
+                <div
+                    ref={tooltipRef}
+                    className="absolute hidden bg-white text-black rounded shadow-md p-2 text-sm"
+                    style={{pointerEvents: 'none', zIndex: 10}}
+                ></div>
             </div>
             <div className="h-1/5">
                 <LegendBoxes/>

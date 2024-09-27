@@ -188,6 +188,12 @@ body {
         position: absolute;
         pointer-events: none;
         z-index: 10;
+        background-color: white;
+        color: black;
+        padding: 5px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        font-size: 12px;
     }
 
     /*CSS for Styled Date Picker's Components*/
