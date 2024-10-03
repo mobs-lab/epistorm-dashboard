@@ -11,10 +11,10 @@ import {
     SeasonOption,
     StateThresholds, HistoricalDataEntry
 } from "../Interfaces/forecast-interfaces";
-import ForecastChart from "../Components/dashboard/ForecastChart";
-import SettingsPanel from "../Components/dashboard/SettingsPanel";
-import NowcastStateThermo from "../Components/dashboard/NowcastStateThermo";
-import NowcastGauge from "../Components/dashboard/NowcastGauge";
+import ForecastChart from "../Components/forecasts-components/ForecastChart";
+import SettingsPanel from "../Components/forecasts-components/SettingsPanel";
+import NowcastStateThermo from "../Components/forecasts-components/NowcastStateThermo";
+import NowcastGauge from "../Components/forecasts-components/NowcastGauge";
 import {useAppDispatch} from '../store/hooks';
 import {setGroundTruthData} from '../store/groundTruthSlice';
 import {setPredictionsData} from '../store/predictionsSlice';
@@ -25,8 +25,8 @@ import {setStateThresholdsData} from '../store/stateThresholdsSlice';
 
 import * as d3 from "d3";
 import {format} from "date-fns";
-import NowcastHeader from "../Components/dashboard/NowcastHeader";
-import ForecastChartHeader from "../Components/dashboard/ForecastChartHeader";
+import NowcastHeader from "../Components/forecasts-components/NowcastHeader";
+import ForecastChartHeader from "../Components/forecasts-components/ForecastChartHeader";
 
 import {setHistoricalGroundTruthData} from '../store/historicalGroundTruthSlice';
 

@@ -4,11 +4,11 @@
 
 import React, {useEffect, useState} from "react";
 import {DataPoint, ModelPrediction, SeasonOption} from "../Interfaces/forecast-interfaces";
-import ForecastChart from "../Components/dashboard/ForecastChart";
-import SettingsPanel from "../Components/dashboard/SettingsPanel";
-import NowcastStateThermo from "../Components/dashboard/NowcastStateThermo";
-import NowcastGauge from "../Components/dashboard/NowcastGauge";
-import NowcastGaugeOval from "../Components/dashboard/NowcastGauge-oval-version";
+import ForecastChart from "./forecasts-components/ForecastChart";
+import SettingsPanel from "./forecasts-components/SettingsPanel";
+import NowcastStateThermo from "./forecasts-components/NowcastStateThermo";
+import NowcastGauge from "./forecasts-components/NowcastGauge";
+// import NowcastGaugeOval from "./forecasts-components/NowcastGauge-oval-version";
 import {useAppDispatch} from '../store/hooks';
 import {setGroundTruthData} from '../store/groundTruthSlice';
 import {setPredictionsData} from '../store/predictionsSlice';
@@ -19,8 +19,8 @@ import {setStateThresholdsData} from '../store/stateThresholdsSlice';
 
 import * as d3 from "d3";
 import {format} from "date-fns";
-import NowcastHeader from "../Components/dashboard/NowcastHeader";
-import ForecastChartHeader from "../Components/dashboard/ForecastChartHeader";
+import NowcastHeader from "./forecasts-components/NowcastHeader";
+import ForecastChartHeader from "./forecasts-components/ForecastChartHeader";
 
 import {setHistoricalGroundTruthData} from '../store/historicalGroundTruthSlice';
 
@@ -104,6 +104,7 @@ const Page: React.FC = () => {
 
             /*NOTE: Season Options are generated using Ground Truth data so must be here*/
             const seasonOptions = generateSeasonOptions(groundTruthDataWithPredictions);
+            console.log("Debug: page.tsx: fetchForecastData: seasonOptions: ", seasonOptions);
             dispatch(setSeasonOptions(seasonOptions));
             updateLoadingState('seasonOptions', false);
 

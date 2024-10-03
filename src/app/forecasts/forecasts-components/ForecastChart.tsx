@@ -1,4 +1,4 @@
-// src/app/Components/dashboard/ForecastChart.tsx
+// src/app/Components/forecasts-components/ForecastChart.tsx
 "use client";
 
 import React, {useEffect, useRef, useState} from "react";
@@ -371,8 +371,8 @@ const ForecastChart: React.FC = () => {
         console.log("DEBUG: ForecastChart: User selected week:", userSelectedWeek);
 
         // Find the historical data file that is 1 week before the user selected week
-        // const matchingHistoricalData = historicalData.find((entry) => entry.associatedDate instanceof Date && entry.associatedDate.getTime() === (userSelectedWeek.getTime() - 7 * 24 * 60 * 60 * 1000));
-        const matchingHistoricalData = historicalData.find((entry) => isUTCDateEqual(entry.associatedDate, userSelectedWeek));
+        const matchingHistoricalData = historicalData.find((entry) => entry.associatedDate.getTime() === (userSelectedWeek.getTime() - 7 * 24 * 60 * 60 * 1000));
+        // const matchingHistoricalData = historicalData.find((entry) => isUTCDateEqual(entry.associatedDate, userSelectedWeek));
 
         if (!matchingHistoricalData) {
             // console.log("DEBUG: No matching historical data found for:", userSelectedWeek.toISOString());
