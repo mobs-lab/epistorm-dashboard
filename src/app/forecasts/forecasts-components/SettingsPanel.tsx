@@ -1,7 +1,7 @@
 // components/SettingsPanel.tsx
 "use client"
 
-import React, {useMemo} from 'react';
+import React, {useEffect, useMemo} from 'react';
 import {modelColorMap} from '../../Interfaces/modelColors';
 import InfoButton from './InfoButton';
 import {SeasonOption} from '../../Interfaces/forecast-interfaces';
@@ -101,6 +101,12 @@ const SettingsPanel: React.FC = () => {
             dispatch(updateDateRange(timeValue));
             dispatch(updateDateStart(selectedOption.startDate));
             dispatch(updateDateEnd(selectedOption.endDate));
+            /*Then select the `select` tag element responsible for picking season options
+            * And update its value so it matches the generated one's values*/
+            const selectElement = document.getElementById('settings-panel-season-select');
+            if (selectElement) {
+                selectElement.value = timeValue;
+            }
         }
     };
 
@@ -127,6 +133,15 @@ const SettingsPanel: React.FC = () => {
         console.log("SettingsPanel update: Confidence Interval changed to: ", confidenceInterval);
     };
 
+    /*UseEffect for updating season option when page initially loads*/
+    useEffect(() => {
+        if (seasonOptions.length > 0) {
+            const selectedOption = seasonOptions[seasonOptions.length - 1];
+            dispatch(updateDateRange(selectedOption.timeValue));
+            dispatch(updateDateStart(selectedOption.startDate));
+            dispatch(updateDateEnd(selectedOption.endDate));
+        }
+    }, [seasonOptions]);
 
     return (
         <div
@@ -179,7 +194,8 @@ const SettingsPanel: React.FC = () => {
                     <div className="w-full h-full justify-stretch items-stretch py-4">
                         <Typography variant="h6" className="text-white">Season</Typography>
                         <select
-                            value={dateRange}
+                            id={"settings-panel-season-select"}
+                            value={null}
                             onChange={(e) => onSeasonSelectionChange(e.target.value)}
                             className={"text-white border-[#5d636a] border-2 flex-wrap bg-mobs-lab-color-filterspane rounded-md w-full h-full py-2 px-2 overflow-ellipsis"}
                         >
@@ -267,8 +283,8 @@ const SettingsPanel: React.FC = () => {
                     </div>
                 </div>
             </div>
-            <div className="m-auto p-6">
-                <Image src="/epistorm-logo.png" width={9999} height={100} alt="Epistorm Logo"/>
+            <div className="mx-auto p-2">
+                <Image src="/epistorm-logo.png" width={300} height={120} alt="Epistorm Logo"/>
             </div>
         </div>);
 }
