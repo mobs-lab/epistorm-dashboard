@@ -1,8 +1,8 @@
 import React from "react";
-import StateDetail from "../Components/dashboard/NowcastStateThermo";
-import NowcastGauge from "../Components/dashboard/NowcastGauge";
-import ForecastChart from "../Components/dashboard/ForecastChart";
-import StateMapWithFilters from "../Components/dashboard/SettingsPanel";
+import StateDetail from "../forecasts/forecasts-components/NowcastStateThermo";
+import NowcastGauge from "../forecasts/forecasts-components/NowcastGauge";
+import ForecastChart from "../forecasts/forecasts-components/ForecastChart";
+import StateMapWithFilters from "../forecasts/forecasts-components/SettingsPanel";
 
 export default function Page() {
 
