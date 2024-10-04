@@ -977,7 +977,17 @@ const ForecastChart: React.FC = () => {
             const chartWidth = width - marginLeft - marginRight;
             const chartHeight = height - marginTop - marginBottom;
 
-            const filteredGroundTruthData = filterGroundTruthData(groundTruthData, USStateNum, [dateStart, dateEnd],);
+            const filteredGroundTruthData = filterGroundTruthData(groundTruthData, USStateNum, [dateStart, dateEnd]);
+
+            // Ensure userSelectedWeek is within the current date range
+            let adjustedUserSelectedWeek = new Date(userSelectedWeek);
+            if (adjustedUserSelectedWeek < dateStart) {
+                adjustedUserSelectedWeek = new Date(filteredGroundTruthData[filteredGroundTruthData.length - 1].date);
+                dispatch(updateUserSelectedWeek(adjustedUserSelectedWeek));
+            } else if (adjustedUserSelectedWeek > dateEnd) {
+                adjustedUserSelectedWeek = new Date(filteredGroundTruthData[0].date);
+                dispatch(updateUserSelectedWeek(adjustedUserSelectedWeek));
+            }
 
             // Further filter the data to exclude placeholder points
 
@@ -1023,7 +1033,7 @@ const ForecastChart: React.FC = () => {
                     mouseFollowLine, verticalIndicatorGroup, lineTooltip, cornerTooltip,
                 } = renderChartComponents(svg, filteredGroundTruthData, processedPredictionData, xScale, yScale, marginLeft, marginTop, chartWidth, chartHeight, height, marginBottom,);
 
-                updateVerticalIndicator(userSelectedWeek || filteredGroundTruthData[0].date, xScale, marginLeft, chartWidth, verticalIndicatorGroup, lineTooltip,);
+                updateVerticalIndicator(adjustedUserSelectedWeek || filteredGroundTruthData[0].date, xScale, marginLeft, chartWidth, verticalIndicatorGroup, lineTooltip,);
             }
         }
     }, [chartDimensions, groundTruthData, predictionsData, USStateNum, forecastModel, numOfWeeksAhead, dateStart, dateEnd, yAxisScale, confidenceInterval, historicalDataMode, userSelectedWeek, historicalDataMode, historicalGroundTruthData]);

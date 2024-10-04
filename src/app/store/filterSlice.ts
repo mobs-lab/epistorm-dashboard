@@ -70,7 +70,7 @@ const filterSlice = createSlice({
             state.seasonOptions = action.payload;
         },
         updateDateRange: (state, action: PayloadAction<string>) => {
-            // console.log("updateDateRange", action.payload);
+            console.log("DEBUG: Redux: filterSlice.ts: updateDateRange", action.payload);
             state.dateRange = action.payload;
         },
         updateUserSelectedRiskLevelModel: (state, action: PayloadAction<string>) => {
@@ -79,7 +79,6 @@ const filterSlice = createSlice({
         updateUserSelectedWeek: (state, action: PayloadAction<Date>) => {
             state.userSelectedWeek = action.payload;
         }
-
     },
 });
 
