@@ -14,7 +14,7 @@ import {setGroundTruthData} from '../store/groundTruthSlice';
 import {setPredictionsData} from '../store/predictionsSlice';
 import {setLocationData} from '../store/locationSlice';
 import {setNowcastTrendsData} from '../store/nowcastTrendsSlice';
-import {setSeasonOptions} from "../store/filterSlice";
+import {setSeasonOptions, updateDateEnd, updateDateRange, updateDateStart} from "../store/filterSlice";
 import {setStateThresholdsData} from '../store/stateThresholdsSlice';
 
 import * as d3 from "d3";
@@ -102,17 +102,26 @@ const Page: React.FC = () => {
             /*NOTE: Ground Truth data may be missing dates where predictions exists for but no data available. Need to add them here.*/
             const groundTruthDataWithPredictions = addBackEmptyDatesWithPrediction(parsedGroundTruthData, predictionsData);
 
-            /*NOTE: Season Options are generated using Ground Truth data so must be here*/
-            const seasonOptions = generateSeasonOptions(groundTruthDataWithPredictions);
-            console.log("Debug: page.tsx: fetchForecastData: seasonOptions: ", seasonOptions);
-            dispatch(setSeasonOptions(seasonOptions));
-            updateLoadingState('seasonOptions', false);
 
             dispatch(setGroundTruthData(groundTruthDataWithPredictions));
             updateLoadingState('groundTruth', false);
 
             dispatch(setPredictionsData(predictionsData));
             updateLoadingState('predictions', false);
+
+            /*NOTE: Season Options are generated using Ground Truth data so must be here*/
+            const seasonOptions = generateSeasonOptions(groundTruthDataWithPredictions);
+            console.log("Debug: page.tsx: fetchForecastData: seasonOptions: ", seasonOptions);
+            dispatch(setSeasonOptions(seasonOptions));
+            if (seasonOptions.length > 0) {
+                const lastSeason = seasonOptions[seasonOptions.length - 1];
+                console.log("DEBUG: page.tsx: fetchForecastData: lastSeason: ", lastSeason);
+                dispatch(updateDateRange(lastSeason.timeValue));
+                dispatch(updateDateStart(lastSeason.startDate));
+                dispatch(updateDateEnd(lastSeason.endDate));
+            }
+            updateLoadingState('seasonOptions', false);
+
 
         } catch (error) {
             console.error('Error fetching predictions data:', error);
