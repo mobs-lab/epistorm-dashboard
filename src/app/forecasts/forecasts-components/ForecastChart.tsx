@@ -577,7 +577,7 @@ const ForecastChart: React.FC = () => {
         return svg
             .append("g")
             .attr("class", "corner-tooltip")
-            .attr("transform", `translate(${marginLeft + 20}, ${marginTop + 20})`);
+            .attr("transform", `translate(${marginLeft + 40}, ${marginTop + 20})`);
 
     }
 
@@ -690,7 +690,7 @@ const ForecastChart: React.FC = () => {
         // Position the tooltip
         const xPosition = xScale(data.date);
         const shouldShowOnRightSide = xPosition < chartWidth / 2;
-        const tooltipX = shouldShowOnRightSide ? chartWidth - maxWidth - padding * 2 : 40;
+        const tooltipX = shouldShowOnRightSide ? chartWidth - maxWidth - padding * 2 : 60;
         const tooltipY = marginTop;
 
         /*console.log('Updating tooltip position:', tooltipX, tooltipY);

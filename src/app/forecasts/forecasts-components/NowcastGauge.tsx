@@ -100,8 +100,8 @@ const NowcastGauge: React.FC<RiskLevelGaugeProps> = ({riskLevel}) => {
             .endAngle(Math.PI / 2);
 
         const arc = d3.arc<d3.PieArcDatum<number>>()
-            .innerRadius(radius * 0.8)
-            .outerRadius(radius);
+            .innerRadius(radius * 0.78)
+            .outerRadius(radius * 0.96);
 
         const color = d3.scaleOrdinal<string>()
             .domain(['decrease', 'stable', 'increase', 'no data'])
