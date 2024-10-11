@@ -3,13 +3,13 @@
 
 import React from "react";
 
-import Header from './Components/Header';
-
 import {Provider} from 'react-redux';
 import store from './store';
 
+import Header from './Components/Header';
+
 import './CSS/globals.css';
-import {Inter, DM_Sans} from 'next/font/google'
+import {DM_Sans} from 'next/font/google'
 
 // Importing original styles for react-date-picker from npm
 import 'react-date-picker/dist/DatePicker.css';
