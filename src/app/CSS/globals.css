@@ -1,3 +1,5 @@
+@import './reset.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -148,7 +150,7 @@ body {
         grid-template-areas:
     "map-svg thermometer thermo-legend-area"
     "thermo-legend-boxes thermo-legend-boxes thermo-legend-area";
-        grid-template-columns: 3fr 1fr 2fr;
+        grid-template-columns: 2.5fr 1fr 2.2fr;
         grid-template-rows: 4fr 1fr;
         gap: 0.2fr;
 
@@ -168,7 +170,9 @@ body {
 
     .thermo-legend-area {
         grid-area: thermo-legend-area;
-
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
     }
 
     .thermo-legend-boxes {

@@ -18,7 +18,11 @@ module.exports = withMT({
                 'mobs-lab-separator': '#4e585e',
             },
         },
-    }, plugins: [],
+    },
+    plugins: [],
+    corePlugins: {
+        preflight: true,
+    },
 })
 
 ;

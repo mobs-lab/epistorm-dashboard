@@ -28,8 +28,8 @@ const ThermoLegendBoxes: React.FC = () => {
         </div>
     );
 };
-
-/* Bigger legend area for lines */
+/*
+/!* Bigger legend area for lines *!/
 const ThermoLegendArea: React.FC<{
     currentWeek: string,
     previousWeek: string,
@@ -97,7 +97,84 @@ const ThermoLegendArea: React.FC<{
             </div>
         </div>
     );
+};*/
+
+const ThermoLegendArea: React.FC<{
+    currentWeek: string,
+    previousWeek: string,
+    currentRiskLevel: string,
+    previousRiskLevel: string
+}> = ({currentWeek, previousWeek, currentRiskLevel, previousRiskLevel}) => {
+    const getRiskColor = (riskLevel: string) => {
+        switch (riskLevel) {
+            case 'No Data':
+                return '#363b43';
+            case 'Low':
+                return '#7cd8c9';
+            case 'Medium':
+                return '#2bafe2';
+            case 'High':
+                return '#435fce';
+            default:
+                return '#7cd8c9';
+        }
+    };
+
+    return (
+        <div
+            className="flex flex-col flex-shrink h-full w-full justify-stretch items-stretch bg-mobs-lab-color-filterspane p-2 rounded util-no-sb-length overflow-scroll overscroll-x-contain">
+            <div className="justify-self-start text-lg font-bold text-center">Activity level</div>
+            <div className="flex flex-col justify-stretch items-stretch flex-grow min-h-0 max-w-full min-w-5">
+                <LegendItem
+                    title="Forecasted week"
+                    week={currentWeek}
+                    riskLevel={currentRiskLevel}
+                    color={getRiskColor(currentRiskLevel)}
+                    lineType="solid"
+                />
+                {/*Use svg to draw a horizontal divider line that is gray colored*/}
+                <svg width="100%" height="2" className="my-2">
+                    <line x1="0" y1="1" x2="100%" y2="1" stroke="gray" strokeWidth="1"/>
+                </svg>
+                <LegendItem
+                    title="Previous week"
+                    week={previousWeek}
+                    riskLevel={previousRiskLevel}
+                    color={getRiskColor(previousRiskLevel)}
+                    lineType="dashed"
+                />
+            </div>
+        </div>
+    );
 };
+
+const LegendItem: React.FC<{
+    title: string,
+    week: string,
+    riskLevel: string,
+    color: string,
+    lineType: 'solid' | 'dashed'
+}> = ({title, week, riskLevel, color, lineType}) => (
+    <div className="flex flex-row justify-stretch items-center h-full min-w-full">
+        <svg width="20" height="2" className="mr-2 flex-shrink-0">
+            <line x1="0" y1="1" x2="20" y2="1" stroke="white" strokeWidth="2"
+                  strokeDasharray={lineType === 'dashed' ? "2,2" : "none"}/>
+        </svg>
+        <div className={"justify-self-stretch flex-shrink util-responsive-text w-full"}>
+            <span
+                className="sm:text-xs md:text-xs lg:text-sm xl:text-sm whitespace-nowrap overflow-ellipsis">{title}</span>
+
+            <div
+                className="sm:text-xs md:text-xs lg:text-sm xl:text-sm font-bold whitespace-nowrap overflow-ellipsis">{week}</div>
+            <div
+                className="sm:text-xs md:text-xs lg:text-xs xl:text-sm flex items-center justify-center rounded"
+                style={{backgroundColor: color}}>
+                {riskLevel}
+            </div>
+
+        </div>
+    </div>
+);
 
 const NowcastStateThermo: React.FC = () => {
     const containerRef = useRef<HTMLDivElement>(null);
@@ -230,12 +307,12 @@ const NowcastStateThermo: React.FC = () => {
         const currentSelectedWeek = new Date(userSelectedWeek);
         const relativeLastWeek = new Date(currentSelectedWeek);
         relativeLastWeek.setDate(relativeLastWeek.getDate() - 7);
-        console.log('DEBUG: Relative last week:', relativeLastWeek);
+        // console.log('DEBUG: Relative last week:', relativeLastWeek);
 
         // Get ground truth value
         const groundTruthEntry = groundTruthData.find(d => d.stateNum === USStateNum && isUTCDateEqual(d.date, currentSelectedWeek));
         const groundTruthValue = groundTruthEntry ? groundTruthEntry.weeklyRate : 0;
-        console.log('DEBUG: Ground truth value:', groundTruthValue);
+        // console.log('DEBUG: Ground truth value:', groundTruthValue);
 
         // Get predicted value
         let predictedValue = 0;
@@ -250,7 +327,7 @@ const NowcastStateThermo: React.FC = () => {
                 }
             }
         }
-        console.log('DEBUG: Predicted value:', predictedValue);
+        // console.log('DEBUG: Predicted value:', predictedValue);
 
         // Function to calculate line position and risk level
         const calculateLinePosition = (value: number) => {
@@ -289,7 +366,7 @@ const NowcastStateThermo: React.FC = () => {
         setCurrentRiskLevel(predictedPosition.riskLevel.charAt(0).toUpperCase() + predictedPosition.riskLevel.slice(1));
 
         // Update risk color for the map
-        console.log("Debug: ", predictedPosition.riskLevel);
+        // console.log("DEBUG: ", predictedPosition.riskLevel);
         setRiskColor(riskColors[riskLevels.indexOf(predictedPosition.riskLevel)]);
         // Helper functions for tooltip
         const formatNumber = (num: number) => num.toLocaleString('en-US', {maximumFractionDigits: 2});
@@ -409,7 +486,6 @@ const NowcastStateThermo: React.FC = () => {
                 .attr('stroke', 'white')
                 .attr('stroke-width', 3.5);
         }
-
 
 
     }, [dimensions, USStateNum, userSelectedRiskLevelModel, userSelectedWeek, groundTruthData, predictionsData, locationData, thresholdsData]);

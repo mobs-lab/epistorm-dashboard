@@ -3,12 +3,36 @@
 'use client'
 
 import React, {useEffect, useState} from "react";
-import {DataPoint, ModelPrediction, SeasonOption} from "../Interfaces/forecast-interfaces";
+import * as d3 from "d3";
+import {
+    addWeeks,
+    eachWeekOfInterval,
+    endOfWeek,
+    format,
+    getYear,
+    isAfter,
+    isBefore,
+    isSameDay,
+    parseISO,
+    setDate,
+    setMonth,
+    startOfWeek
+} from "date-fns";
+
+import {
+    DataPoint,
+    LocationData,
+    ModelPrediction,
+    PredictionDataPoint,
+    SeasonOption
+} from "../Interfaces/forecast-interfaces";
 import ForecastChart from "./forecasts-components/ForecastChart";
 import SettingsPanel from "./forecasts-components/SettingsPanel";
 import NowcastStateThermo from "./forecasts-components/NowcastStateThermo";
 import NowcastGauge from "./forecasts-components/NowcastGauge";
-// import NowcastGaugeOval from "./forecasts-components/NowcastGauge-oval-version";
+import NowcastHeader from "./forecasts-components/NowcastHeader";
+import ForecastChartHeader from "./forecasts-components/ForecastChartHeader";
+
 import {useAppDispatch} from '../store/hooks';
 import {setGroundTruthData} from '../store/groundTruthSlice';
 import {setPredictionsData} from '../store/predictionsSlice';
@@ -16,13 +40,14 @@ import {setLocationData} from '../store/locationSlice';
 import {setNowcastTrendsData} from '../store/nowcastTrendsSlice';
 import {setSeasonOptions, updateDateEnd, updateDateRange, updateDateStart} from "../store/filterSlice";
 import {setStateThresholdsData} from '../store/stateThresholdsSlice';
-
-import * as d3 from "d3";
-import {format} from "date-fns";
-import NowcastHeader from "./forecasts-components/NowcastHeader";
-import ForecastChartHeader from "./forecasts-components/ForecastChartHeader";
-
 import {setHistoricalGroundTruthData} from '../store/historicalGroundTruthSlice';
+
+/* Custom Interface for addBackEmptyDatesWithPrediction() and generateSeasonOptions().*/
+interface ProcessedDataWithDateRange {
+    data: DataPoint[];
+    earliestDate: Date;
+    latestDate: Date;
+}
 
 const modelNames = ['MOBS-GLEAM_FLUH', 'CEPH-Rtrend_fluH', 'MIGHTE-Nsemble', 'NU_UCSD-GLEAM_AI_FLUH'];
 
@@ -58,7 +83,7 @@ const Page: React.FC = () => {
         try {
             const groundTruthData = await d3.csv("/data/ground-truth/target-hospital-admissions.csv");
             const parsedGroundTruthData = groundTruthData.map((d) => ({
-                date: new Date(d.date + "T12:00:00Z"),
+                date: parseISO(d.date),
                 stateNum: d.location,
                 stateName: d.location_name,
                 admissions: +d.value,
@@ -72,9 +97,9 @@ const Page: React.FC = () => {
 
                 // Process predictions data
                 // NOTE: 2024-09-25: No longer distinguish between old vs new prediction data
-                const predictionData = [...newPredictions.map((d) => ({
-                    referenceDate: new Date(d.reference_date + "T12:00:00Z"),
-                    targetEndDate: new Date(d.target_end_date + "T12:00:00Z"),
+                const predictionData: PredictionDataPoint[] = [...newPredictions, ...oldPredictions].map((d) => ({
+                    referenceDate: parseISO(d.reference_date), // Ensure UTC
+                    targetEndDate: parseISO(d.target_end_date),
                     stateNum: d.location,
                     confidence025: +d['0.025'],
                     confidence050: +d['0.05'],
@@ -83,46 +108,35 @@ const Page: React.FC = () => {
                     confidence750: +d['0.75'],
                     confidence950: +d['0.95'],
                     confidence975: +d['0.975'],
-                })), ...oldPredictions.map((d) => ({
-                    referenceDate: new Date(d.reference_date + "T12:00:00Z"), // Ensure UTC
-                    targetEndDate: new Date(d.target_end_date + "T12:00:00Z"),
-                    stateNum: d.location,
-                    confidence025: +d['0.025'],
-                    confidence050: +d['0.05'],
-                    confidence250: +d['0.25'],
-                    confidence500: +d['0.5'],
-                    confidence750: +d['0.75'],
-                    confidence950: +d['0.95'],
-                    confidence975: +d['0.975'],
-                })),];
+                    confidence_low: +d['0.5'],
+                    confidence_high: +d['0.5'],
+                }));
 
                 return {modelName: team_model, predictionData: predictionData};
             }));
 
-            /*NOTE: Ground Truth data may be missing dates where predictions exists for but no data available. Need to add them here.*/
-            const groundTruthDataWithPredictions = addBackEmptyDatesWithPrediction(parsedGroundTruthData, predictionsData);
+            const locationData = await fetchLocationData();
 
-
-            dispatch(setGroundTruthData(groundTruthDataWithPredictions));
+            const processedData = addBackEmptyDatesWithPrediction(parsedGroundTruthData, predictionsData, locationData);
+            dispatch(setGroundTruthData(processedData.data));
             updateLoadingState('groundTruth', false);
+
 
             dispatch(setPredictionsData(predictionsData));
             updateLoadingState('predictions', false);
+            console.log("Debug: page.tsx: fetchForecastData: predictionsData: ", predictionsData);
 
             /*NOTE: Season Options are generated using Ground Truth data so must be here*/
-            const seasonOptions = generateSeasonOptions(groundTruthDataWithPredictions);
+            const seasonOptions = generateSeasonOptions(processedData);
             console.log("Debug: page.tsx: fetchForecastData: seasonOptions: ", seasonOptions);
             dispatch(setSeasonOptions(seasonOptions));
             if (seasonOptions.length > 0) {
                 const lastSeason = seasonOptions[seasonOptions.length - 1];
-                console.log("DEBUG: page.tsx: fetchForecastData: lastSeason: ", lastSeason);
                 dispatch(updateDateRange(lastSeason.timeValue));
                 dispatch(updateDateStart(lastSeason.startDate));
                 dispatch(updateDateEnd(lastSeason.endDate));
             }
             updateLoadingState('seasonOptions', false);
-
-
         } catch (error) {
             console.error('Error fetching predictions data:', error);
             updateLoadingState('predictions', true);
@@ -137,9 +151,11 @@ const Page: React.FC = () => {
             }));
             dispatch(setLocationData(parsedLocationData));
             updateLoadingState('locations', false);
+            return parsedLocationData;
         } catch (error) {
             console.error('Error fetching location data:', error);
             updateLoadingState('locations', true);
+            return [];
         }
     };
 
@@ -151,7 +167,7 @@ const Page: React.FC = () => {
 
                 const responseParsed = response.map((d) => ({
                     location: d.location,
-                    reference_date: new Date(d.reference_date + "T12:00:00Z"),
+                    reference_date: parseISO(d.reference_date),
                     decrease: +d.decrease,
                     increase: +d.increase,
                     stable: +d.stable,
@@ -182,19 +198,19 @@ const Page: React.FC = () => {
 
     const fetchHistoricalGroundTruthData = async () => {
         try {
-            const startDate = new Date('2023-09-23T12:00:00Z');
-            const endDate = new Date('2024-04-27T12:00:00Z');
+            const startDate = parseISO('2023-09-23T12:00:00Z');
+            const endDate = parseISO('2024-04-27T12:00:00Z');
             const historicalData = [];
 
-            for (let date = new Date(startDate); date <= endDate; date.setUTCDate(date.getUTCDate() + 7)) {
-                const fileName = `target-hospital-admissions_${date.toISOString().split('T')[0]}.csv`;
+            for (let date = startDate; date <= endDate; date = addWeeks(date, 1)) {
+                const fileName = `target-hospital-admissions_${format(date, 'yyyy-MM-dd')}.csv`;
                 const filePath = `/data/ground-truth/historical-data/${fileName}`;
 
                 try {
                     const fileContent = await d3.csv(filePath);
                     historicalData.push({
-                        associatedDate: new Date(date.toISOString()), historicalData: fileContent.map(record => ({
-                            date: new Date(record.date + "T12:00:00Z"),
+                        associatedDate: date, historicalData: fileContent.map(record => ({
+                            date: parseISO(record.date),
                             stateNum: record.location ?? record['location'],
                             stateName: record.location_name ?? record['location_name'],
                             admissions: +(record.value ?? record['value']),
@@ -217,114 +233,108 @@ const Page: React.FC = () => {
     const isFullyLoaded = Object.values(loadingStates).every(state => !state);
 
 
-    function addBackEmptyDatesWithPrediction(groundTruthData: DataPoint[], predictionsData: ModelPrediction[]): DataPoint[] {
-        const states = new Set<string>();
-        let mostRecentDate = new Date(0);
+    function addBackEmptyDatesWithPrediction(groundTruthData: DataPoint[], predictionsData: ModelPrediction[], locationData: LocationData[]): ProcessedDataWithDateRange {
+        let earliestDate = new Date(8640000000000000); // Max date
+        let latestDate = new Date(-8640000000000000); // Min date
 
-        // Step 1: Keep track of distinct states and the most recent date in ground truth data
-        groundTruthData.forEach((dataPoint) => {
-            states.add(`${dataPoint.stateNum}-${dataPoint.stateName}`);
-            if (dataPoint.date > mostRecentDate) {
-                mostRecentDate = dataPoint.date;
+        // Find earliest and latest dates
+        groundTruthData.forEach(d => {
+            if (d.date < earliestDate) earliestDate = d.date;
+            if (d.date > latestDate) latestDate = d.date;
+        });
+
+        predictionsData.forEach(model => {
+            model.predictionData.forEach(d => {
+                if (d.referenceDate < earliestDate) earliestDate = d.referenceDate;
+                if (d.targetEndDate > latestDate) latestDate = d.targetEndDate;
+            });
+        });
+
+        // Generate all Saturdays between earliest and latest dates
+        const allSaturdays = eachWeekOfInterval({
+            start: startOfWeek(earliestDate, {weekStartsOn: 6}),
+            end: endOfWeek(latestDate, {weekStartsOn: 6})
+        }, {weekStartsOn: 6});
+
+        // Create a map of existing data points
+        const existingDataMap = new Map(groundTruthData.map(d => [format(d.date, 'yyyy-MM-dd'), d]));
+
+        // Create placeholder data for missing dates
+        const placeholderData: DataPoint[] = [];
+
+        allSaturdays.forEach(date => {
+            const dateString = format(date, 'yyyy-MM-dd');
+            if (!existingDataMap.has(dateString)) {
+                locationData.forEach(location => {
+                    placeholderData.push({
+                        date, stateNum: location.stateNum, stateName: location.stateName, admissions: -1, weeklyRate: 0
+                    });
+                });
             }
         });
 
-        const newerDates = new Set<Date>();
+        // Combine existing and placeholder data, sort them by date
+        const combinedData = [...groundTruthData, ...placeholderData];
+        const sortedData = combinedData.sort((a, b) => a.date.getTime() - b.date.getTime());
 
-        // Step 2: Find dates in prediction data that are newer than the most recent ground truth date
-        predictionsData.forEach((model) => {
-            model.predictionData.forEach((dataPoint) => {
-                if (dataPoint.referenceDate > mostRecentDate) {
-                    newerDates.add(dataPoint.referenceDate);
-                } else if (dataPoint.targetEndDate > mostRecentDate) {
-                    newerDates.add(dataPoint.targetEndDate);
-                }
-            });
-        });
-
-        console.log("DEBUG: page.tsx: addBackEmptyDatesWithPrediction: newerDates: ", newerDates);
-
-        const placeholderData: DataPoint[] = [];
-
-        // Step 3: Create placeholder data for each distinct state and newer date
-        newerDates.forEach((newDate) => {
-            const date = newDate;
-            states.forEach((stateString) => {
-                const [stateNum, stateName] = stateString.split('-');
-                placeholderData.push({
-                    date, stateNum, stateName, admissions: -1, weeklyRate: 0 // Use -1 to indicate a placeholder for admission value
-                });
-            });
-        });
-        return [...groundTruthData, ...placeholderData].sort((a, b) => b.date.getTime() - a.date.getTime());
+        // Sort the combined data by date
+        return {
+            data: sortedData, earliestDate, latestDate
+        };
     }
 
-    function generateSeasonOptions(data: DataPoint[]): SeasonOption[] {
+    function generateSeasonOptions(processedData: ProcessedDataWithDateRange): SeasonOption[] {
         const options: SeasonOption[] = [];
+        const {earliestDate, latestDate} = processedData;
 
-        if (data.length === 0) {
+        if (!earliestDate || !latestDate) {
             return options;
         }
 
-        let earliestDate = data[0].date;
-        let latestDate = data[0].date;
+        const getSeasonEnd = (year: number) => setDate(setMonth(new Date(year, 0, 1), 6), 31); // July 31st
+        const getSeasonStart = (year: number) => setDate(setMonth(new Date(year - 1, 0, 1), 7), 1); // August 1st of previous year
 
-        // Find earliest and latest dates without using spread operator
-        for (let i = 1; i < data.length; i++) {
-            if (data[i].date < earliestDate) earliestDate = data[i].date;
-            if (data[i].date > latestDate) latestDate = data[i].date;
-        }
+        let currentYear = getYear(latestDate);
+        let currentSeasonEnd = getSeasonEnd(currentYear);
+        let optionIndex = 0;
 
-        const earliestYear = earliestDate.getFullYear();
-        const latestYear = latestDate.getFullYear();
-
-        // Handle partial season at the start
-        const firstSeasonStart = new Date(earliestYear, 7, 1); // August 1st of the earliest year
-        if (earliestDate < firstSeasonStart) {
+        // Handle the case where latestDate is after July 31st of the current year
+        if (isAfter(latestDate, currentSeasonEnd)) {
+            const nextSeasonStart = getSeasonStart(currentYear + 1);
             options.push({
-                index: 0,
-                displayString: `Partial ${earliestYear - 1}-${earliestYear}`,
-                timeValue: `${format(earliestDate, 'yyyy-MM-dd')}/${format(new Date(earliestYear, 6, 31), 'yyyy-MM-dd')}`,
-                startDate: earliestDate,
-                endDate: new Date(earliestYear, 6, 31) // July 31st of the earliest year
-            });
-        }
-
-
-        let optionIndex = 1;
-        // Generate full seasons
-        for (let year = earliestYear; year <= latestYear; year++) {
-            const seasonStart = new Date(year, 7, 1); // August 1st
-            const seasonEnd = new Date(year + 1, 6, 31); // July 31st of the following year
-
-            // Adjust start and end dates if they're outside the data range
-            const adjustedStart = new Date(Math.max(seasonStart.getTime(), earliestDate.getTime()));
-            const adjustedEnd = new Date(Math.min(seasonEnd.getTime(), latestDate.getTime()));
-
-            // Only add the season if it's within the data range
-            if (adjustedStart < adjustedEnd) {
-                options.push({
-                    index: optionIndex++,
-                    displayString: `${year}-${year + 1}`,
-                    timeValue: `${format(adjustedStart, 'yyyy-MM-dd')}/${format(adjustedEnd, 'yyyy-MM-dd')}`,
-                    startDate: adjustedStart,
-                    endDate: adjustedEnd
-                });
-            }
-        }
-
-        // Handle partial season at the end
-        const lastSeasonEnd = new Date(latestYear, 6, 31); // July 31st of the latest year
-        if (latestDate > lastSeasonEnd) {
-            options.push({
-                index: options.length,
-                displayString: `Partial ${latestYear}-${latestYear + 1}`,
-                timeValue: `${format(new Date(latestYear, 7, 1), 'yyyy-MM-dd')}/${format(latestDate, 'yyyy-MM-dd')}`,
-                startDate: new Date(latestYear, 7, 1), // August 1st of the latest year
+                index: optionIndex++,
+                displayString: `${currentYear}-${currentYear + 1} (Ongoing)`,
+                timeValue: `${format(nextSeasonStart, 'yyyy-MM-dd')}/${format(latestDate, 'yyyy-MM-dd')}`,
+                startDate: nextSeasonStart,
                 endDate: latestDate
             });
         }
-        return options;
+
+        while (isAfter(currentSeasonEnd, earliestDate) || isSameDay(currentSeasonEnd, earliestDate)) {
+            const seasonStart = getSeasonStart(currentYear);
+            const adjustedStart = isBefore(seasonStart, earliestDate) ? earliestDate : seasonStart;
+            const adjustedEnd = isBefore(latestDate, currentSeasonEnd) ? latestDate : currentSeasonEnd;
+
+            let displayString = `${currentYear - 1}-${currentYear}`;
+            if (isSameDay(adjustedEnd, latestDate) && isBefore(latestDate, currentSeasonEnd)) {
+                displayString += " (Ongoing)";
+            } else if (isSameDay(adjustedStart, earliestDate) && isAfter(earliestDate, seasonStart)) {
+                displayString = `Partial ${displayString}`;
+            }
+
+            options.push({
+                index: optionIndex++,
+                displayString,
+                timeValue: `${format(adjustedStart, 'yyyy-MM-dd')}/${format(adjustedEnd, 'yyyy-MM-dd')}`,
+                startDate: adjustedStart,
+                endDate: adjustedEnd
+            });
+
+            currentYear--;
+            currentSeasonEnd = getSeasonEnd(currentYear);
+        }
+
+        return options.reverse();
     }
 
     return (<div className="layout-grid-forecasts-page w-full h-full pl-4">
