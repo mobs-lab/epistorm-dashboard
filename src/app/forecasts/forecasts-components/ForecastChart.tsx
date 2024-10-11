@@ -4,8 +4,7 @@
 import React, {useEffect, useRef, useState} from "react";
 import * as d3 from "d3";
 import {Axis, BaseType, NumberValue, ScaleLinear, ScaleLogarithmic, ScaleTime} from "d3";
-import {useAppDispatch, useAppSelector} from "../../store/hooks";
-import {updateUserSelectedWeek} from "../../store/filterSlice";
+import {subWeeks} from "date-fns";
 
 import {modelColorMap} from "../../Interfaces/modelColors";
 import {
@@ -15,6 +14,9 @@ import {
     ModelPrediction,
     PredictionDataPoint
 } from "../../Interfaces/forecast-interfaces";
+
+import {useAppDispatch, useAppSelector} from "../../store/hooks";
+import {updateUserSelectedWeek} from "../../store/filterSlice";
 
 const ForecastChart: React.FC = () => {
 
@@ -68,7 +70,7 @@ const ForecastChart: React.FC = () => {
     const calculateMargins = () => {
         const zoomFactor = Math.max(1, zoomLevel);
 
-        const baseMarginTop = Math.max(25 - (zoomFactor * 12), height * 0.02);
+        const baseMarginTop = Math.max(20 + (zoomFactor * 12), height * 0.1);
         const baseMarginBottom = Math.max(20 + (zoomFactor * 25), height * 0.15);
         const baseMarginLeft = Math.max(20 + (zoomFactor * 25), width * 0.038);
         // console.log("DEBUG: Base Margin Left:", baseMarginLeft);
@@ -129,9 +131,8 @@ const ForecastChart: React.FC = () => {
                 targetWeek.setDate(targetWeek.getDate() + weeksAhead * 7);
 
                 // NOTE: Added a 2-hour buffer to account for DST transitions
-                const bufferMs = 4 * 60 * 60 * 1000; // 4 hours in milliseconds
+                const bufferMs = 2 * 60 * 60 * 1000; // 4 hours in milliseconds
 
-                // TODO: Update this to use date-fns
                 // NOTE: Historical entries where targetEndDate earlier than referenceDate are ignored
                 return (d.targetEndDate >= d.referenceDate && d.targetEndDate.getTime() <= targetWeek.getTime() + bufferMs);
             });
@@ -170,8 +171,6 @@ const ForecastChart: React.FC = () => {
                             targetEndDate: d.targetEndDate, // Convert targetEndDate to Date object
                         };
                     });
-
-
                     confidenceIntervalData[modelName].push({
                         interval: interval, data: confidenceIntervalPredictions,
                     });
@@ -191,7 +190,7 @@ const ForecastChart: React.FC = () => {
 
     }
 
-    function createScalesAndAxes(ground: DataPoint[], predictions: any, chartWidth: number, chartHeight: number, yAxisScale: string,) {
+    function createScalesAndAxes(ground: DataPoint[], predictions: {}, chartWidth: number, chartHeight: number, yAxisScale: string,) {
         // Find the maximum date in the ground truth data
         const maxGroundTruthDate = d3.max(ground, (d) => d.date) as Date;
 
@@ -216,7 +215,7 @@ const ForecastChart: React.FC = () => {
             .range(dateStart, maxDate)
             .filter((d) => d.getDay() === 6);
 
-        console.log("DEBUG: ForecastChart: createScalesAndAxes(): allSaturdayTracker: ", allSaturdayTracker);
+        // console.log("DEBUG: ForecastChart: createScalesAndAxes(): allSaturdayTracker: ", allSaturdayTracker);
 
         // Determine the ideal number of ticks
         const idealTickCount = Math.min(Math.max(10, allSaturdayTracker.length), 20);
@@ -228,14 +227,18 @@ const ForecastChart: React.FC = () => {
         const xAxis = d3
             .axisBottom(xScale)
             .tickValues(selectedTicks)
-            .tickFormat((d: Date) => {
+            .tickFormat((d: Date, i: number) => {
                 const month = d3.timeFormat("%b")(d);
                 const day = d3.timeFormat("%d")(d);
                 const year = d.getUTCFullYear();
 
                 /*TODO: Add year to the very first tick (earliest since dateStart)*/
+                if (i === 0) {
+                    return `${year}\n${month}\n${day}`
 
+                }
 
+                // Check if the date is near the beginning of the year
                 const isNearYearChange = (d.getMonth() === 0 && d.getDate() <= 10);
 
                 return isNearYearChange ? `${year}\n${month}\n${day}` : `${month}\n${day}`;
@@ -247,18 +250,33 @@ const ForecastChart: React.FC = () => {
         // Update yScale
         let yScale: d3.ScaleSymLog<number, number> | d3.ScaleLinear<number, number>;
 
-        //TODO: Find the maximum ground truth admission value
         const maxGroundTruthValue = d3.max(ground.filter((d) => d.admissions !== -1), (d) => d.admissions) as number;
 
         let maxPredictionValue = 0;
+        console.log("DEBUG: ForecastChart: createScalesAndAxes(): predictions: ", predictions);
 
         if (predictions && Object.keys(predictions).length > 0) {
-            const predictionValues = Object.values(predictions)
-                .flatMap((modelData: any) => modelData[0]?.data || [])
-                .map((p: any) => p.confidence_high || p.confidence500);
-
-            maxPredictionValue = predictionValues.length > 0 ? d3.max(predictionValues) : 0;
+            maxPredictionValue = Object.values(predictions).reduce((max, modelData: PredictionDataPoint[]) => {
+                const modelMax = modelData.reduce((modelMax, intervalData) => {
+                    const intervalMax = d3.max(intervalData.data, (p: PredictionDataPoint) => {
+                        // Use the highest confidence interval available
+                        if (p.confidence_high !== undefined) {
+                            return p.confidence_high;
+                        } else if (p.confidence975 !== undefined) {
+                            return p.confidence975;
+                        } else if (p.confidence950 !== undefined) {
+                            return p.confidence950;
+                        } else {
+                            return p.confidence750;
+                        }
+                    });
+                    return Math.max(modelMax, intervalMax || 0);
+                }, 0);
+                return Math.max(max, modelMax);
+            }, 0);
         }
+
+        console.log("DEBUG: ForecastChart: createScalesAndAxes(): maxPredictionValue: ", maxPredictionValue);
 
         let maxValue = Math.max(maxGroundTruthValue, maxPredictionValue);
         console.log("DEBUG: ForecastChart: createScalesAndAxes(): maxValue: ", maxValue);
@@ -293,8 +311,8 @@ const ForecastChart: React.FC = () => {
         // Format ticks
         yAxis.tickFormat((d) => {
             if (d === 0) return "0";
-            if (d.valueOf() >= 1000000) return d3.format(".1s")(d);
-            if (d.valueOf() >= 1000) return d3.format(".2s")(d);
+            if (d.valueOf() >= 10000) return d3.format(".1s")(d);
+            if (d.valueOf() >= 1000) return d3.format(".2r")(d);
             return d.toString();
         });
 
@@ -391,8 +409,11 @@ const ForecastChart: React.FC = () => {
         console.log("DEBUG: ForecastChart: Rendering historical data:", historicalData);
         console.log("DEBUG: ForecastChart: User selected week:", userSelectedWeek);
 
-        // Find the historical data file that is 1 week before the user selected week
-        const matchingHistoricalData = historicalData.find((entry) => entry.associatedDate.getTime() === (userSelectedWeek.getTime() - 7 * 24 * 60 * 60 * 1000));
+        // Find the historical data file that is 1 week before the user selected week,
+        // While accounting for day light saving time transitions, using a 2-hour buffer, using isUTCDateEqual
+        const matchingHistoricalData = historicalData.find((entry) => isUTCDateEqual(entry.associatedDate, subWeeks(userSelectedWeek, 1)));
+
+
         // const matchingHistoricalData = historicalData.find((entry) => isUTCDateEqual(entry.associatedDate, userSelectedWeek));
 
         if (!matchingHistoricalData) {
@@ -432,10 +453,6 @@ const ForecastChart: React.FC = () => {
             .attr("r", 6) // Slightly larger than current ground truth dots
             .attr("fill", "#FFA500")
             .attr("transform", `translate(${marginLeft}, ${marginTop})`);
-
-        // Debug output to calculate the difference between the actual ground truth and the historical ground truth data points value; to save resource we only display ones that are different
-        // console.log("DEBUG: ForecastChart: Historical Data Difference:", matchingHistoricalData.historicalData.filter(d => d.admissions !== -1 && !isNaN(d.admissions)).filter((d, i) => d.admissions !== matchingHistoricalData.historicalData[i].admissions));
-
     }
 
     function renderPredictionData(svg: d3.Selection<null, unknown, null, undefined>, predictionData: {}, xScale: d3.ScaleTime<number, number, never>, yScale: d3.ScaleLinear<number, number, never>, marginLeft: number, marginTop: number, confidenceInterval: string[], isGroundTruthDataPlaceHolderOnly: boolean,) {
@@ -1036,7 +1053,7 @@ const ForecastChart: React.FC = () => {
                     // bubbleUserSelectedWeek(new Date(closestDataPoint.date.toISOString()));
                 }
 
-                const processedPredictionData = processPredictionData(predictionsData, forecastModel, USStateNum, userSelectedWeek, numOfWeeksAhead, confidenceInterval, historicalDataMode);
+                const processedPredictionData = processPredictionData(predictionsData, forecastModel, USStateNum, userSelectedWeek, numOfWeeksAhead, confidenceInterval);
 
                 const {
                     xScale, yScale, xAxis, yAxis

@@ -35,7 +35,7 @@ const initialState: FilterState = {
     historicalDataMode: false,
     seasonOptions: [],
     userSelectedRiskLevelModel: "MOBS-GLEAM_FLUH",
-    userSelectedWeek: parseISO("2024-05-04T12:00:00.000Z")
+    userSelectedWeek: parseISO("2024-05-04")
 };
 
 const filterSlice = createSlice({

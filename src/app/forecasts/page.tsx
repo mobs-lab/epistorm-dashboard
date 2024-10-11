@@ -3,12 +3,36 @@
 'use client'
 
 import React, {useEffect, useState} from "react";
-import {DataPoint, ModelPrediction, SeasonOption, LocationData} from "../Interfaces/forecast-interfaces";
+import * as d3 from "d3";
+import {
+    addWeeks,
+    eachWeekOfInterval,
+    endOfWeek,
+    format,
+    getYear,
+    isAfter,
+    isBefore,
+    isSameDay,
+    parseISO,
+    setDate,
+    setMonth,
+    startOfWeek
+} from "date-fns";
+
+import {
+    DataPoint,
+    LocationData,
+    ModelPrediction,
+    PredictionDataPoint,
+    SeasonOption
+} from "../Interfaces/forecast-interfaces";
 import ForecastChart from "./forecasts-components/ForecastChart";
 import SettingsPanel from "./forecasts-components/SettingsPanel";
 import NowcastStateThermo from "./forecasts-components/NowcastStateThermo";
 import NowcastGauge from "./forecasts-components/NowcastGauge";
-// import NowcastGaugeOval from "./forecasts-components/NowcastGauge-oval-version";
+import NowcastHeader from "./forecasts-components/NowcastHeader";
+import ForecastChartHeader from "./forecasts-components/ForecastChartHeader";
+
 import {useAppDispatch} from '../store/hooks';
 import {setGroundTruthData} from '../store/groundTruthSlice';
 import {setPredictionsData} from '../store/predictionsSlice';
@@ -16,22 +40,6 @@ import {setLocationData} from '../store/locationSlice';
 import {setNowcastTrendsData} from '../store/nowcastTrendsSlice';
 import {setSeasonOptions, updateDateEnd, updateDateRange, updateDateStart} from "../store/filterSlice";
 import {setStateThresholdsData} from '../store/stateThresholdsSlice';
-
-import * as d3 from "d3";
-import {
-    format,
-    parseISO,
-    eachWeekOfInterval,
-    startOfWeek,
-    endOfWeek,
-    addWeeks,
-    isSameDay,
-    addYears,
-    isBefore, isAfter, subYears, getYear, setDate, setMonth
-} from "date-fns";
-import NowcastHeader from "./forecasts-components/NowcastHeader";
-import ForecastChartHeader from "./forecasts-components/ForecastChartHeader";
-
 import {setHistoricalGroundTruthData} from '../store/historicalGroundTruthSlice';
 
 /* Custom Interface for addBackEmptyDatesWithPrediction() and generateSeasonOptions().*/
@@ -40,7 +48,6 @@ interface ProcessedDataWithDateRange {
     earliestDate: Date;
     latestDate: Date;
 }
-
 
 const modelNames = ['MOBS-GLEAM_FLUH', 'CEPH-Rtrend_fluH', 'MIGHTE-Nsemble', 'NU_UCSD-GLEAM_AI_FLUH'];
 
@@ -76,7 +83,7 @@ const Page: React.FC = () => {
         try {
             const groundTruthData = await d3.csv("/data/ground-truth/target-hospital-admissions.csv");
             const parsedGroundTruthData = groundTruthData.map((d) => ({
-                date: parseISO(d.date + "T12:00:00Z"),
+                date: parseISO(d.date),
                 stateNum: d.location,
                 stateName: d.location_name,
                 admissions: +d.value,
@@ -90,9 +97,9 @@ const Page: React.FC = () => {
 
                 // Process predictions data
                 // NOTE: 2024-09-25: No longer distinguish between old vs new prediction data
-                const predictionData = [...newPredictions, ...oldPredictions].map((d) => ({
-                    referenceDate: parseISO(d.reference_date + "T12:00:00Z"), // Ensure UTC
-                    targetEndDate: parseISO(d.target_end_date + "T12:00:00Z"),
+                const predictionData: PredictionDataPoint[] = [...newPredictions, ...oldPredictions].map((d) => ({
+                    referenceDate: parseISO(d.reference_date), // Ensure UTC
+                    targetEndDate: parseISO(d.target_end_date),
                     stateNum: d.location,
                     confidence025: +d['0.025'],
                     confidence050: +d['0.05'],
@@ -101,6 +108,8 @@ const Page: React.FC = () => {
                     confidence750: +d['0.75'],
                     confidence950: +d['0.95'],
                     confidence975: +d['0.975'],
+                    confidence_low: +d['0.5'],
+                    confidence_high: +d['0.5'],
                 }));
 
                 return {modelName: team_model, predictionData: predictionData};
@@ -112,15 +121,17 @@ const Page: React.FC = () => {
             dispatch(setGroundTruthData(processedData.data));
             updateLoadingState('groundTruth', false);
 
+
             dispatch(setPredictionsData(predictionsData));
             updateLoadingState('predictions', false);
+            console.log("Debug: page.tsx: fetchForecastData: predictionsData: ", predictionsData);
 
             /*NOTE: Season Options are generated using Ground Truth data so must be here*/
             const seasonOptions = generateSeasonOptions(processedData);
             console.log("Debug: page.tsx: fetchForecastData: seasonOptions: ", seasonOptions);
             dispatch(setSeasonOptions(seasonOptions));
             if (seasonOptions.length > 0) {
-                const lastSeason = seasonOptions[seasonOptions.length - 2];
+                const lastSeason = seasonOptions[seasonOptions.length - 1];
                 dispatch(updateDateRange(lastSeason.timeValue));
                 dispatch(updateDateStart(lastSeason.startDate));
                 dispatch(updateDateEnd(lastSeason.endDate));
@@ -136,10 +147,7 @@ const Page: React.FC = () => {
         try {
             const locationData = await d3.csv('/data/locations.csv');
             const parsedLocationData = locationData.map((d) => ({
-                stateNum: d.location,
-                state: d.abbreviation,
-                stateName: d.location_name,
-                population: +d.population,
+                stateNum: d.location, state: d.abbreviation, stateName: d.location_name, population: +d.population,
             }));
             dispatch(setLocationData(parsedLocationData));
             updateLoadingState('locations', false);
@@ -159,7 +167,7 @@ const Page: React.FC = () => {
 
                 const responseParsed = response.map((d) => ({
                     location: d.location,
-                    reference_date: parseISO(d.reference_date + "T12:00:00Z"),
+                    reference_date: parseISO(d.reference_date),
                     decrease: +d.decrease,
                     increase: +d.increase,
                     stable: +d.stable,
@@ -201,9 +209,8 @@ const Page: React.FC = () => {
                 try {
                     const fileContent = await d3.csv(filePath);
                     historicalData.push({
-                        associatedDate: date,
-                        historicalData: fileContent.map(record => ({
-                            date: parseISO(record.date + "T12:00:00Z"),
+                        associatedDate: date, historicalData: fileContent.map(record => ({
+                            date: parseISO(record.date),
                             stateNum: record.location ?? record['location'],
                             stateName: record.location_name ?? record['location_name'],
                             admissions: +(record.value ?? record['value']),
@@ -244,15 +251,13 @@ const Page: React.FC = () => {
         });
 
         // Generate all Saturdays between earliest and latest dates
-        const allSaturdays = eachWeekOfInterval(
-            {start: startOfWeek(earliestDate, {weekStartsOn: 6}), end: endOfWeek(latestDate, {weekStartsOn: 6})},
-            {weekStartsOn: 6}
-        );
+        const allSaturdays = eachWeekOfInterval({
+            start: startOfWeek(earliestDate, {weekStartsOn: 6}),
+            end: endOfWeek(latestDate, {weekStartsOn: 6})
+        }, {weekStartsOn: 6});
 
         // Create a map of existing data points
-        const existingDataMap = new Map(
-            groundTruthData.map(d => [format(d.date, 'yyyy-MM-dd'), d])
-        );
+        const existingDataMap = new Map(groundTruthData.map(d => [format(d.date, 'yyyy-MM-dd'), d]));
 
         // Create placeholder data for missing dates
         const placeholderData: DataPoint[] = [];
@@ -262,11 +267,7 @@ const Page: React.FC = () => {
             if (!existingDataMap.has(dateString)) {
                 locationData.forEach(location => {
                     placeholderData.push({
-                        date,
-                        stateNum: location.stateNum,
-                        stateName: location.stateName,
-                        admissions: -1,
-                        weeklyRate: 0
+                        date, stateNum: location.stateNum, stateName: location.stateName, admissions: -1, weeklyRate: 0
                     });
                 });
             }
@@ -278,11 +279,9 @@ const Page: React.FC = () => {
 
         // Sort the combined data by date
         return {
-            data: sortedData,
-            earliestDate,
-            latestDate
+            data: sortedData, earliestDate, latestDate
         };
-    };
+    }
 
     function generateSeasonOptions(processedData: ProcessedDataWithDateRange): SeasonOption[] {
         const options: SeasonOption[] = [];

@@ -22,6 +22,8 @@ export interface PredictionDataPoint {
     confidence750: number;
     confidence950: number;
     confidence975: number;
+    confidence_low: number;
+    confidence_high: number;
 }
 
 export interface LocationData {
