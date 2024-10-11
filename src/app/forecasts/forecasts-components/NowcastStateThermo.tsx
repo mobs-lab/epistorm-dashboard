@@ -307,12 +307,12 @@ const NowcastStateThermo: React.FC = () => {
         const currentSelectedWeek = new Date(userSelectedWeek);
         const relativeLastWeek = new Date(currentSelectedWeek);
         relativeLastWeek.setDate(relativeLastWeek.getDate() - 7);
-        console.log('DEBUG: Relative last week:', relativeLastWeek);
+        // console.log('DEBUG: Relative last week:', relativeLastWeek);
 
         // Get ground truth value
         const groundTruthEntry = groundTruthData.find(d => d.stateNum === USStateNum && isUTCDateEqual(d.date, currentSelectedWeek));
         const groundTruthValue = groundTruthEntry ? groundTruthEntry.weeklyRate : 0;
-        console.log('DEBUG: Ground truth value:', groundTruthValue);
+        // console.log('DEBUG: Ground truth value:', groundTruthValue);
 
         // Get predicted value
         let predictedValue = 0;
@@ -327,7 +327,7 @@ const NowcastStateThermo: React.FC = () => {
                 }
             }
         }
-        console.log('DEBUG: Predicted value:', predictedValue);
+        // console.log('DEBUG: Predicted value:', predictedValue);
 
         // Function to calculate line position and risk level
         const calculateLinePosition = (value: number) => {
@@ -366,7 +366,7 @@ const NowcastStateThermo: React.FC = () => {
         setCurrentRiskLevel(predictedPosition.riskLevel.charAt(0).toUpperCase() + predictedPosition.riskLevel.slice(1));
 
         // Update risk color for the map
-        console.log("Debug: ", predictedPosition.riskLevel);
+        // console.log("DEBUG: ", predictedPosition.riskLevel);
         setRiskColor(riskColors[riskLevels.indexOf(predictedPosition.riskLevel)]);
         // Helper functions for tooltip
         const formatNumber = (num: number) => num.toLocaleString('en-US', {maximumFractionDigits: 2});

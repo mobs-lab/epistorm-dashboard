@@ -1,6 +1,7 @@
 // src/app/store/filterSlice.ts
 import {createSlice, PayloadAction} from '@reduxjs/toolkit';
 import {SeasonOption} from '../Interfaces/forecast-interfaces';
+import {parseISO} from "date-fns";
 
 interface FilterState {
     selectedStateName: string;
@@ -27,14 +28,14 @@ const initialState: FilterState = {
     forecastModel: ["MOBS-GLEAM_FLUH"],
     numOfWeeksAhead: 3,
     dateRange: "2023-08-01/2024-05-18",
-    dateStart: new Date("2023-08-01T12:00:00Z"),
-    dateEnd: new Date("2024-08-01T12:00:00Z"),
+    dateStart: parseISO("2023-08-01T12:00:00Z"),
+    dateEnd: parseISO("2024-05-04T12:00:00Z"),
     yAxisScale: "linear",
     confidenceInterval: ["90"],
     historicalDataMode: false,
     seasonOptions: [],
     userSelectedRiskLevelModel: "MOBS-GLEAM_FLUH",
-    userSelectedWeek: new Date("2024-05-04T12:00:00.000Z")
+    userSelectedWeek: parseISO("2024-05-04T12:00:00.000Z")
 };
 
 const filterSlice = createSlice({

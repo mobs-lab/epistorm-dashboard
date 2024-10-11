@@ -9,7 +9,11 @@ import {updateUserSelectedWeek} from "../../store/filterSlice";
 
 import {modelColorMap} from "../../Interfaces/modelColors";
 import {
-    DataPoint, HistoricalDataEntry, isUTCDateEqual, ModelPrediction, PredictionDataPoint
+    DataPoint,
+    HistoricalDataEntry,
+    isUTCDateEqual,
+    ModelPrediction,
+    PredictionDataPoint
 } from "../../Interfaces/forecast-interfaces";
 
 const ForecastChart: React.FC = () => {
@@ -87,16 +91,18 @@ const ForecastChart: React.FC = () => {
 
 
     // Function to filter ground truth data by selected state and dates
-    function filterGroundTruthData(data: DataPoint[], state: string, dateRange: [Date, Date],) {
+    function filterGroundTruthData(data: DataPoint[], state: string, groundTruthDateRange: [Date, Date]) {
         var filteredGroundTruthDataByState = data.filter((d) => d.stateNum === state,);
 
         // Filter data by extracting those entries that fall within the selected date range
-        filteredGroundTruthDataByState = filteredGroundTruthDataByState.filter((d) => d.date >= dateRange[0] && d.date <= dateRange[1],);
+        filteredGroundTruthDataByState = filteredGroundTruthDataByState.filter((d) => d.date >= groundTruthDateRange[0] && d.date <= groundTruthDateRange[1],);
+
+        console.log("DEBUG: ForecastChart: Filtered Ground Truth Data:", filteredGroundTruthDataByState);
 
         return filteredGroundTruthDataByState;
     }
 
-    function processPredictionData(allPredictions: ModelPrediction[], selectedModels: string[], state: string, selectedWeek: any, weeksAhead: number, confidenceIntervals: string[], historicalDataMode: boolean,) {
+    function processPredictionData(allPredictions: ModelPrediction[], selectedModels: string[], state: string, selectedWeek: any, weeksAhead: number, confidenceIntervals: string[]) {
         // Create an object to store the prediction data for each selected model
         let modelData: any = {};
 
@@ -106,12 +112,11 @@ const ForecastChart: React.FC = () => {
             const modelPrediction = allPredictions.find((model) => model.modelName === modelName);
 
             if (modelPrediction) {
-                modelData[modelName] = modelPrediction.predictionData.filter((d) => d.stateNum === state,);
+                modelData[modelName] = modelPrediction.predictionData.filter((d) => d.stateNum === state);
             } else {
                 modelData[modelName] = [];
             }
         });
-
 
         // Filter the prediction data by referenceDate and targetEndDate for each model
         let filteredModelData = {};
@@ -119,17 +124,17 @@ const ForecastChart: React.FC = () => {
             // let filteredByReferenceDate = predictionData.filter((d) => d.referenceDate.getTime() === selectedWeek.getTime());
             let filteredByReferenceDate = predictionData.filter((d) => isUTCDateEqual(d.referenceDate, selectedWeek));
 
-            let filteredByTargetEndDate = filteredByReferenceDate.filter((d) => {
+            filteredModelData[modelName] = filteredByReferenceDate.filter((d) => {
                 let targetWeek = new Date(selectedWeek.getTime());
                 targetWeek.setDate(targetWeek.getDate() + weeksAhead * 7);
 
                 // NOTE: Added a 2-hour buffer to account for DST transitions
-                const bufferMs = 2 * 60 * 60 * 1000; // 2 hours in milliseconds
+                const bufferMs = 4 * 60 * 60 * 1000; // 4 hours in milliseconds
 
+                // TODO: Update this to use date-fns
+                // NOTE: Historical entries where targetEndDate earlier than referenceDate are ignored
                 return (d.targetEndDate >= d.referenceDate && d.targetEndDate.getTime() <= targetWeek.getTime() + bufferMs);
             });
-
-            filteredModelData[modelName] = filteredByTargetEndDate;
         });
 
         // Create an object to store the confidence interval data for each model
@@ -145,8 +150,8 @@ const ForecastChart: React.FC = () => {
                 // Iterate over each confidence interval
                 confidenceIntervals.forEach((interval) => {
 
-                    var confidenceIntervalPredictions = modelPredictions.map((d) => {
-                        var confidenceLow, confidenceHigh;
+                    const confidenceIntervalPredictions = modelPredictions.map((d) => {
+                        let confidenceLow, confidenceHigh;
                         if (interval === "50") {
                             confidenceLow = d.confidence250;
                             confidenceHigh = d.confidence750;
@@ -173,12 +178,10 @@ const ForecastChart: React.FC = () => {
                 });
             } else {
                 // No confidence intervals selected, use the original prediction data
-
-
                 confidenceIntervalData[modelName].push({
                     interval: "", data: modelPredictions.map((d) => ({
-                        ...d, referenceDate: d.referenceDate, // Convert referenceDate to Date object
-                        targetEndDate: d.targetEndDate, // Convert targetEndDate to Date object
+                        ...d, referenceDate: d.referenceDate,
+                        targetEndDate: d.targetEndDate,
                     })),
                 });
             }
@@ -189,8 +192,10 @@ const ForecastChart: React.FC = () => {
     }
 
     function createScalesAndAxes(ground: DataPoint[], predictions: any, chartWidth: number, chartHeight: number, yAxisScale: string,) {
+        // Find the maximum date in the ground truth data
         const maxGroundTruthDate = d3.max(ground, (d) => d.date) as Date;
 
+        // Find the maximum date in the prediction data
         const maxPredictionDate = Object.values(predictions)
             .flatMap((modelData: any) => modelData[0]?.data || [])
             .reduce((maxDate: Date, dataPoint: PredictionDataPoint) => {
@@ -199,6 +204,7 @@ const ForecastChart: React.FC = () => {
             }, new Date(0));
 
         const maxDate = d3.max([maxGroundTruthDate, maxPredictionDate]) as Date;
+        console.log("DEBUG: ForecastChart: createScalesAndAxes(): maxDate: ", maxDate);
 
         const xScale = d3
             .scaleUtc()
@@ -210,31 +216,40 @@ const ForecastChart: React.FC = () => {
             .range(dateStart, maxDate)
             .filter((d) => d.getDay() === 6);
 
+        console.log("DEBUG: ForecastChart: createScalesAndAxes(): allSaturdayTracker: ", allSaturdayTracker);
+
         // Determine the ideal number of ticks
-        const idealTickCount = Math.min(Math.max(10, allSaturdayTracker.length), 20,);
+        const idealTickCount = Math.min(Math.max(10, allSaturdayTracker.length), 20);
 
         // Select evenly spaced Saturdays
-        const tickInterval = Math.max(1, Math.floor(allSaturdayTracker.length / idealTickCount),);
+        const tickInterval = Math.max(1, Math.floor(allSaturdayTracker.length / idealTickCount));
         const selectedTicks = allSaturdayTracker.filter((_, i) => i % tickInterval === 0);
 
         const xAxis = d3
             .axisBottom(xScale)
             .tickValues(selectedTicks)
-            .tickFormat((d) => {
+            .tickFormat((d: Date) => {
                 const month = d3.timeFormat("%b")(d);
                 const day = d3.timeFormat("%d")(d);
-                const year = d.getFullYear();
-                const isNearYearChange = (d.getMonth() === 11 && d.getDate() >= 24) || (d.getMonth() === 0 && d.getDate() <= 14);
+                const year = d.getUTCFullYear();
+
+                /*TODO: Add year to the very first tick (earliest since dateStart)*/
+
+
+                const isNearYearChange = (d.getMonth() === 0 && d.getDate() <= 10);
 
                 return isNearYearChange ? `${year}\n${month}\n${day}` : `${month}\n${day}`;
             });
 
-        xAxis.tickSize(12); // Increase tick size to accommodate multi-line labels
+        xAxis.tickSize(14); // Increase tick size to accommodate multi-line labels
 
         // Initialize yScale with a default linear scale
         // Update yScale
         let yScale: d3.ScaleSymLog<number, number> | d3.ScaleLinear<number, number>;
-        const maxGroundTruthValue = d3.max(ground.filter((d) => d.admissions !== -1), (d) => d.admissions,) as number;
+
+        //TODO: Find the maximum ground truth admission value
+        const maxGroundTruthValue = d3.max(ground.filter((d) => d.admissions !== -1), (d) => d.admissions) as number;
+
         let maxPredictionValue = 0;
 
         if (predictions && Object.keys(predictions).length > 0) {
@@ -245,10 +260,16 @@ const ForecastChart: React.FC = () => {
             maxPredictionValue = predictionValues.length > 0 ? d3.max(predictionValues) : 0;
         }
 
-        const maxValue = Math.max(maxGroundTruthValue, maxPredictionValue);
-        const minValue = d3.min(ground.filter((d) => d.admissions !== -1), (d) => d.admissions) as number;
+        let maxValue = Math.max(maxGroundTruthValue, maxPredictionValue);
+        console.log("DEBUG: ForecastChart: createScalesAndAxes(): maxValue: ", maxValue);
 
-        /*TODO: Refine Y-axis Logarithmic mode ticks display.*/
+        let minValue = d3.min(ground.filter((d) => d.admissions !== -1), (d) => d.admissions) as number;
+
+        if (maxValue === minValue) {
+            maxValue = maxValue + 1;
+            minValue = minValue - 1;
+        }
+
         if (yAxisScale === "linear") {
             yScale = d3
                 .scaleLinear()
@@ -273,7 +294,7 @@ const ForecastChart: React.FC = () => {
         yAxis.tickFormat((d) => {
             if (d === 0) return "0";
             if (d.valueOf() >= 1000000) return d3.format(".1s")(d);
-            if (d.valueOf() >= 1000) return d3.format(".1s")(d);
+            if (d.valueOf() >= 1000) return d3.format(".2s")(d);
             return d.toString();
         });
 
@@ -375,11 +396,11 @@ const ForecastChart: React.FC = () => {
         // const matchingHistoricalData = historicalData.find((entry) => isUTCDateEqual(entry.associatedDate, userSelectedWeek));
 
         if (!matchingHistoricalData) {
-            // console.log("DEBUG: No matching historical data found for:", userSelectedWeek.toISOString());
+            console.log("DEBUG: No matching historical data found for:", userSelectedWeek.toISOString());
             return;
         }
 
-        // console.log("DEBUG: Matching historical data:", matchingHistoricalData);
+        console.log("DEBUG: Matching historical data:", matchingHistoricalData);
 
         /*Ensure the historical data to be drawn is cutoff before dateStart*/
         const historicalDataToDraw = matchingHistoricalData.historicalData.filter((d) => d.date >= dateStart);
@@ -412,7 +433,7 @@ const ForecastChart: React.FC = () => {
             .attr("fill", "#FFA500")
             .attr("transform", `translate(${marginLeft}, ${marginTop})`);
 
-        //     Debug output to calculate the difference between the actual ground truth and the historical ground truth data points value; to save resource we only display ones that are different
+        // Debug output to calculate the difference between the actual ground truth and the historical ground truth data points value; to save resource we only display ones that are different
         // console.log("DEBUG: ForecastChart: Historical Data Difference:", matchingHistoricalData.historicalData.filter(d => d.admissions !== -1 && !isNaN(d.admissions)).filter((d, i) => d.admissions !== matchingHistoricalData.historicalData[i].admissions));
 
     }
@@ -605,7 +626,7 @@ const ForecastChart: React.FC = () => {
             .attr('font-weight', 'bold')
             .style("font-family", 'var(--font-dm-sans), sans-serif')
             .attr('font-size', '14px') // Increased font size
-            .text(`Date: ${data.date.toUTCString().slice(0, 16)}`);
+            .text(`Date: ${data.date.toUTCString().slice(5, 16)}`);
 
 
         // Add admissions data
@@ -964,8 +985,6 @@ const ForecastChart: React.FC = () => {
 
 
     useEffect(() => {
-        // console.log("DEBUG: ForecastChart useEffect executed.");
-
         if (svgRef.current && groundTruthData.length > 0) {
             const svg = d3.select(svgRef.current);
 
@@ -1007,12 +1026,13 @@ const ForecastChart: React.FC = () => {
 
             if (allPlaceholders) {
                 // If so, render a message to inform the user
-                renderMessage(svg, "Not enough data loaded, please extend date range", chartWidth, chartHeight, marginLeft, marginTop,);
+                renderMessage(svg, "Not enough data, please extend date range", chartWidth, chartHeight, marginLeft, marginTop,);
+                return;
             } else {
                 // Safety Clamping for when date range is changed by user and userSelectedWeek falls out of the range as a result
                 if (userSelectedWeek < dateStart || userSelectedWeek > dateEnd) {
                     // Re-find the nearest data point which should be new date range's endpoints
-                    const closestDataPoint = findNearestDataPoint(filteredGroundTruthData, userSelectedWeek,);
+                    const closestDataPoint = findNearestDataPoint(filteredGroundTruthData, userSelectedWeek);
                     // bubbleUserSelectedWeek(new Date(closestDataPoint.date.toISOString()));
                 }
 
@@ -1036,7 +1056,7 @@ const ForecastChart: React.FC = () => {
                 updateVerticalIndicator(adjustedUserSelectedWeek || filteredGroundTruthData[0].date, xScale, marginLeft, chartWidth, verticalIndicatorGroup, lineTooltip,);
             }
         }
-    }, [chartDimensions, groundTruthData, predictionsData, USStateNum, forecastModel, numOfWeeksAhead, dateStart, dateEnd, yAxisScale, confidenceInterval, historicalDataMode, userSelectedWeek, historicalDataMode, historicalGroundTruthData]);
+    }, [chartDimensions, groundTruthData, predictionsData, USStateNum, forecastModel, numOfWeeksAhead, dateStart, dateEnd, yAxisScale, confidenceInterval, historicalDataMode, userSelectedWeek, historicalDataMode]);
 
     // Return the SVG object using reference
     return (<div ref={chartRef} className="flex w-full h-full util-responsive-text">
