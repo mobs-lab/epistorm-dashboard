@@ -253,7 +253,7 @@ const ForecastChart: React.FC = () => {
         const maxGroundTruthValue = d3.max(ground.filter((d) => d.admissions !== -1), (d) => d.admissions) as number;
 
         let maxPredictionValue = 0;
-        console.log("DEBUG: ForecastChart: createScalesAndAxes(): predictions: ", predictions);
+        // console.log("DEBUG: ForecastChart: createScalesAndAxes(): predictions: ", predictions);
 
         if (predictions && Object.keys(predictions).length > 0) {
             maxPredictionValue = Object.values(predictions).reduce((max, modelData: PredictionDataPoint[]) => {
@@ -276,21 +276,22 @@ const ForecastChart: React.FC = () => {
             }, 0);
         }
 
-        console.log("DEBUG: ForecastChart: createScalesAndAxes(): maxPredictionValue: ", maxPredictionValue);
+        // console.log("DEBUG: ForecastChart: createScalesAndAxes(): maxPredictionValue: ", maxPredictionValue);
 
         let maxValue = Math.max(maxGroundTruthValue, maxPredictionValue);
-        console.log("DEBUG: ForecastChart: createScalesAndAxes(): maxValue: ", maxValue);
+        // console.log("DEBUG: ForecastChart: createScalesAndAxes(): maxValue: ", maxValue);
 
         let minValue = d3.min(ground.filter((d) => d.admissions !== -1), (d) => d.admissions) as number;
 
         if (maxValue === minValue) {
             maxValue = maxValue + 1;
-            minValue = minValue - 1;
+            minValue = Math.max(0, minValue - 1);
         }
 
+        const isLogScale = yAxisScale === "log";
+
         if (yAxisScale === "linear") {
-            yScale = d3
-                .scaleLinear()
+            yScale = d3.scaleLinear()
                 .domain([0, maxValue * 1.1])
                 .range([chartHeight, 0]);
         } else {
@@ -299,22 +300,24 @@ const ForecastChart: React.FC = () => {
                 .domain([0, maxValue * 1.2])
                 .constant(constant)
                 .range([chartHeight, 0]);
-
         }
 
-        const yAxis = d3.axisLeft(yScale);
+        console.log("DEBUG: ForecastChart: createScalesAndAxes(): minValue: ", minValue);
+        console.log("DEBUG: ForecastChart: createScalesAndAxes(): maxValue: ", maxValue);
+        const ticks = generateYAxisTicks(minValue, maxValue, isLogScale);
 
-        // Generate ticks
-        const ticks = generateYAxisTicks(minValue, maxValue, yAxisScale === "log");
-        yAxis.tickValues(ticks);
-
-        // Format ticks
-        yAxis.tickFormat((d) => {
-            if (d === 0) return "0";
-            if (d.valueOf() >= 10000) return d3.format(".1s")(d);
-            if (d.valueOf() >= 1000) return d3.format(".2r")(d);
-            return d.toString();
-        });
+        const yAxis = d3.axisLeft(yScale)
+            .tickValues(ticks)
+            .tickFormat((d) => {
+                d = d.valueOf();
+                if (d === 0) return "0";
+                if (d >= 10000) return d3.format(".2~s")(d);
+                if (d >= 1000) return d3.format(".2~s")(d);
+                if (d >= 100) return d3.format(".0f")(d);
+                if (d >= 10) return d3.format(".0f")(d);
+                if (d >= 1) return d3.format(".0f")(d);
+                return d3.format(".1f")(d);
+            });
 
         yAxis.tickSize(-chartWidth);
 
@@ -323,51 +326,80 @@ const ForecastChart: React.FC = () => {
 
     function generateYAxisTicks(minValue: number, maxValue: number, isLogScale: boolean): number[] {
         const desiredTickCount = 8;
-        let ticks: number[] = [];
 
         if (isLogScale) {
-            const minExp = minValue === 0 ? 0 : Math.floor(Math.log10(minValue));
+            // Keep the existing logarithmic scale logic
+            const minExp = minValue <= 0 ? 0 : Math.floor(Math.log10(minValue));
             const maxExp = Math.ceil(Math.log10(maxValue));
+            let ticks: number[] = [];
 
             for (let exp = minExp; exp <= maxExp; exp++) {
                 const base = Math.pow(10, exp);
-                if (exp === minExp && minValue === 0) {
-                    ticks.push(0);
-                }
                 ticks.push(base);
-                if (exp < maxExp) {
-                    if (2.5 * base <= maxValue) ticks.push(Math.round(2.5 * base));
-                    if (5 * base <= maxValue) ticks.push(5 * base);
+                if (exp < maxExp - 1 || (exp === maxExp - 1 && maxValue / base > 5)) {
+                    ticks.push(2.5 * base);
+                    ticks.push(5 * base);
                 }
             }
 
             ticks = ticks.filter(tick => tick >= minValue && tick <= maxValue);
 
-            // If we have too many ticks, reduce them
             if (ticks.length > desiredTickCount) {
                 const step = Math.ceil(ticks.length / desiredTickCount);
                 ticks = ticks.filter((_, index) => index % step === 0);
             }
+
+            return ticks;
         } else {
-            // Linear scale tick generation
-            const niceScale = d3.scaleLinear().domain([minValue, maxValue]).nice();
-            const niceMin = Math.floor(niceScale.domain()[0]);
-            const niceMax = Math.ceil(niceScale.domain()[1]);
-            const step = Math.ceil((niceMax - niceMin) / (desiredTickCount - 1));
+            // Improved linear scale logic
+            const range = maxValue - minValue;
+            const roughStep = range / (desiredTickCount - 1);
 
-            for (let i = niceMin; i <= niceMax; i += step) {
-                ticks.push(i);
+            // Find the nearest nice step value
+            const magnitude = Math.pow(10, Math.floor(Math.log10(roughStep)));
+            let step = magnitude;
+            if (roughStep / magnitude >= 5) step *= 5;
+            else if (roughStep / magnitude >= 2) step *= 2;
+
+            // Calculate the start and end values
+            const start = Math.floor(minValue / step) * step;
+            const end = Math.ceil(maxValue / step) * step;
+
+            let ticks: number[] = [];
+            for (let tick = start; tick <= end; tick += step) {
+                ticks.push(Number(tick.toFixed(2)));
             }
-        }
 
-        // Ensure all ticks are integers
-        ticks = ticks.map(tick => Math.round(tick));
+            // If we have too many ticks, reduce them
+            if (ticks.length > desiredTickCount) {
+                const stride = Math.ceil(ticks.length / desiredTickCount);
+                ticks = ticks.filter((_, index) => index % stride === 0);
+            }
 
-        // Remove duplicates
-        ticks = [...new Set(ticks)];
+            // Ensure we include minValue and maxValue (or close values) in the ticks
+            /*if (ticks[0] > minValue) ticks.unshift(Number(minValue.toFixed(2)));
+            if (ticks[ticks.length - 1] < maxValue) ticks.push(Number(maxValue.toFixed(2)));*/
 
-        return ticks;
-    }
+            // If we still don't have enough ticks, add intermediate values
+            while (ticks.length < desiredTickCount) {
+                const newTicks = [];
+                for (let i = 0; i < ticks.length - 1; i++) {
+                    newTicks.push(ticks[i]);
+                    const middleValue = (ticks[i] + ticks[i + 1]) / 2;
+                    newTicks.push(Number(middleValue.toFixed(2)));
+                }
+                newTicks.push(ticks[ticks.length - 1]);
+                ticks = newTicks;
+            }
+
+            // If we have too many ticks after adding intermediate values, reduce them again
+            if (ticks.length > desiredTickCount) {
+                const stride = Math.ceil(ticks.length / desiredTickCount);
+                ticks = ticks.filter((_, index) => index % stride === 0);
+            }
+
+            return ticks;
+        }    }
 
     function renderGroundTruthData(svg: Selection<BaseType, unknown, HTMLElement, any>, surveillanceData: DataPoint[], xScale: ScaleTime<number, number, never>, yScale: | ScaleLogarithmic<number, number, never> | ScaleLinear<number, number, never>, marginLeft: number, marginTop: number,) {
         // Remove existing ground truth data paths and circles
@@ -872,8 +904,9 @@ const ForecastChart: React.FC = () => {
             .attr("x", chartWidth / 2 + marginLeft)
             .attr("y", chartHeight / 2 + marginTop)
             .attr("text-anchor", "middle")
-            .attr("font-size", "16px")
+            .attr("font-size", "22px")
             .attr("font-weight", "bold")
+            .attr("fill", "white")
             .text(message);
     }
 
@@ -1025,27 +1058,24 @@ const ForecastChart: React.FC = () => {
                 dispatch(updateUserSelectedWeek(adjustedUserSelectedWeek));
             }
 
-            // Further filter the data to exclude placeholder points
-
-            // This works once for the first time the component is rendered to by default make the latest date as user-selected week
-            if (!initialDataLoaded) {
-                const filteredGroundTruthDataWithoutPlaceholders = filteredGroundTruthData.filter((d) => d.admissions !== -1,);
-                console.log("DEBUG: ForecastChart: Initial data loaded, setting user selected week to latest date:", filteredGroundTruthDataWithoutPlaceholders);
-                const latestDate = d3.max(filteredGroundTruthDataWithoutPlaceholders, (d) => d.date,) as Date;
-                // ensure latestDate is UTC
-                const latestDateUTC = new Date(latestDate.toISOString());
-                bubbleUserSelectedWeek(latestDateUTC);
-                setInitialDataLoaded(true);
-            }
-
-            // Safety Check to see whether all surveillance data points within current date range, are placeholder points
             const allPlaceholders = filteredGroundTruthData.every((d) => d.admissions === -1,);
-
+            /*Check to see if all available is just placeholders*/
             if (allPlaceholders) {
                 // If so, render a message to inform the user
-                renderMessage(svg, "Not enough data, please extend date range", chartWidth, chartHeight, marginLeft, marginTop,);
+                renderMessage(svg, "Not enough data, please extend date range.", chartWidth, chartHeight, marginLeft, marginTop,);
                 return;
             } else {
+                // This works once for the first time the component is rendered to by default make the latest date as user-selected week
+                if (!initialDataLoaded) {
+                    const filteredGroundTruthDataWithoutPlaceholders = filteredGroundTruthData.filter((d) => d.admissions !== -1,);
+                    // console.log("DEBUG: ForecastChart: Initial data loaded, setting user selected week to latest date:", filteredGroundTruthDataWithoutPlaceholders);
+                    const latestDate = d3.max(filteredGroundTruthDataWithoutPlaceholders, (d) => d.date,) as Date;
+                    // ensure latestDate is UTC
+                    const latestDateUTC = new Date(latestDate.toISOString());
+                    bubbleUserSelectedWeek(latestDateUTC);
+                    setInitialDataLoaded(true);
+                }
+
                 // Safety Clamping for when date range is changed by user and userSelectedWeek falls out of the range as a result
                 if (userSelectedWeek < dateStart || userSelectedWeek > dateEnd) {
                     // Re-find the nearest data point which should be new date range's endpoints
