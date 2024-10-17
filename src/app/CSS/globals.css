@@ -38,6 +38,14 @@ body {
         @apply sm:font-light md:font-normal lg:font-normal xl:font-normal;
     }
 
+    .util-responsive-text-small{
+        @apply sm:text-xs md:text-xs lg:text-sm xl:text-sm;
+        @apply sm:font-light md:font-normal lg:font-normal xl:font-normal;
+        @apply sm:leading-4 md:leading-4 lg:leading-5 xl:leading-5;
+        @apply sm:tracking-tight md:tracking-tight lg:tracking-tight xl:tracking-tight;
+        @apply whitespace-nowrap;
+    }
+
     /* For Setting Scrollbar width to none*/
     .util-no-sb-length {
         scrollbar-gutter: auto;
@@ -56,7 +64,7 @@ body {
 
     .layout-grid-forecasts-page {
         display: grid;
-        width: 100%;
+        width: 100vw;
         height: calc(100vh - var(--header-height));
         gap: 0.2fr;
         grid-template-columns: minmax(0, 2fr) 0.1fr minmax(0, 1.2fr) minmax(200px, 350px);
@@ -170,9 +178,9 @@ body {
 
     .thermo-legend-area {
         grid-area: thermo-legend-area;
-        display: flex;
-        flex-direction: column;
-        overflow: hidden;
+        /*display: flex;*/
+        /*flex-direction: column;*/
+        /*overflow: hidden;*/
     }
 
     .thermo-legend-boxes {
