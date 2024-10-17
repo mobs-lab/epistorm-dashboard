@@ -14,96 +14,19 @@ const riskColors = ['#363b43', '#7cd8c9', '#2bafe2', '#435fce'];
 const ThermoLegendBoxes: React.FC = () => {
 
 
-    return (
-        <div className="flex flex-grow justify-evenly items-end h-full w-full">
-            {riskLevels.map((level, index) => (
-                <div key={level} className="flex items-center">
-                    <div
-                        className="w-[1rem] h-[1rem]"
-                        style={{backgroundColor: riskColors[index]}}
-                    ></div>
-                    <span className="text-sm mx-2">{level}</span>
-                </div>
-            ))}
-        </div>
-    );
+    return (<div className="flex flex-grow justify-evenly items-end h-full w-full">
+        {riskLevels.map((level, index) => (<div key={level} className="flex items-center">
+            <div
+                className="w-[1rem] h-[1rem]"
+                style={{backgroundColor: riskColors[index]}}
+            ></div>
+            <span className="text-sm mx-2">{level}</span>
+        </div>))}
+    </div>);
 };
-/*
-/!* Bigger legend area for lines *!/
-const ThermoLegendArea: React.FC<{
-    currentWeek: string,
-    previousWeek: string,
-    currentRiskLevel: string,
-    previousRiskLevel: string
-}> = ({currentWeek, previousWeek, currentRiskLevel, previousRiskLevel}) => {
-
-    // console.log('DEBUG: Rendering ThermoLegendArea', {currentWeek, previousWeek, currentRiskLevel, previousRiskLevel});
-
-    const getRiskColor = (riskLevel: string) => {
-        switch (riskLevel) {
-            case 'No Data':
-                return '#363b43';
-            case 'Low':
-                return '#7cd8c9';
-            case 'Medium':
-                return '#2bafe2';
-            case 'High':
-                return '#435fce';
-            default:
-                return '#7cd8c9';
-        }
-    };
-
-    return (
-        <div
-            className="flex flex-col h-full justify-stretch items-stretch overflow-scroll util-no-sb-length bg-mobs-lab-color-filterspane p-2 rounded mx-4 mb-2">
-            <div className="text-lg font-bold text-center ">Activity level</div>
-            <div className="flex flex-col justify-stretch items-stretch space-y-2">
-                <div className="flex flex-col">
-                    <div className="flex items-center">
-                        <svg width="16" height="2" className="mr-2">
-                            <line x1="0" y1="1" x2="16" y2="1" stroke="white" strokeWidth="2"/>
-                        </svg>
-                        <span>Forecasted week</span>
-                    </div>
-                    <div className="ml-6 font-bold">{currentWeek}</div>
-                    <div className="ml-6 flex items-center mt-1">
-                        <div
-                            className="w-full h-6 flex items-center justify-center rounded text-sm"
-                            style={{backgroundColor: getRiskColor(currentRiskLevel)}}
-                        >
-                            {currentRiskLevel}
-                        </div>
-                    </div>
-                </div>
-                <div className="border-t border-gray-300 my-2"></div>
-                <div className="flex flex-col">
-                    <div className="flex items-center">
-                        <svg width="16" height="2" className="mr-2">
-                            <line x1="0" y1="1" x2="16" y2="1" stroke="white" strokeWidth="2" strokeDasharray="2,2"/>
-                        </svg>
-                        <span>Previous week</span>
-                    </div>
-                    <div className="ml-6 font-bold">{previousWeek}</div>
-                    <div className="ml-6 flex items-center mt-1">
-                        <div
-                            className="w-full h-6 flex items-center justify-center rounded text-sm"
-                            style={{backgroundColor: getRiskColor(previousRiskLevel)}}
-                        >
-                            {previousRiskLevel}
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    );
-};*/
 
 const ThermoLegendArea: React.FC<{
-    currentWeek: string,
-    previousWeek: string,
-    currentRiskLevel: string,
-    previousRiskLevel: string
+    currentWeek: string, previousWeek: string, currentRiskLevel: string, previousRiskLevel: string
 }> = ({currentWeek, previousWeek, currentRiskLevel, previousRiskLevel}) => {
     const getRiskColor = (riskLevel: string) => {
         switch (riskLevel) {
@@ -120,61 +43,54 @@ const ThermoLegendArea: React.FC<{
         }
     };
 
-    return (
+    return (<div
+        className="flex flex-col h-full justify-stretch items-stretch bg-mobs-lab-color-filterspane rounded util-no-sb-length py-2 pl-1 pr-4">
         <div
-            className="flex flex-col flex-shrink h-full w-full justify-stretch items-stretch bg-mobs-lab-color-filterspane p-2 rounded util-no-sb-length overflow-scroll overscroll-x-contain">
-            <div className="justify-self-start text-lg font-bold text-center">Activity level</div>
-            <div className="flex flex-col justify-stretch items-stretch flex-grow min-h-0 max-w-full min-w-5">
-                <LegendItem
-                    title="Forecasted week"
-                    week={currentWeek}
-                    riskLevel={currentRiskLevel}
-                    color={getRiskColor(currentRiskLevel)}
-                    lineType="solid"
-                />
-                {/*Use svg to draw a horizontal divider line that is gray colored*/}
-                <svg width="100%" height="2" className="my-2">
-                    <line x1="0" y1="1" x2="100%" y2="1" stroke="gray" strokeWidth="1"/>
-                </svg>
-                <LegendItem
-                    title="Previous week"
-                    week={previousWeek}
-                    riskLevel={previousRiskLevel}
-                    color={getRiskColor(previousRiskLevel)}
-                    lineType="dashed"
-                />
-            </div>
+            className="self-center sm:text-xs md:text-sm lg:text-sm xl:text-base font-bold text-center">Activity
+            level
         </div>
-    );
+        <div className="flex flex-col justify-stretch items-stretch flex-grow min-h-0 max-w-full min-w-[10%]">
+            <LegendItem
+                title="Forecasted week"
+                week={currentWeek}
+                riskLevel={currentRiskLevel}
+                color={getRiskColor(currentRiskLevel)}
+                lineType="solid"
+            />
+            {/*Use svg to draw a horizontal divider line that is gray colored*/}
+            <svg width="100%" height="10%" className="mt-2">
+                <line x1="0" y1="1" x2="100%" y2="1" stroke="gray" strokeWidth="1"/>
+            </svg>
+            <LegendItem
+                title="Previous week"
+                week={previousWeek}
+                riskLevel={previousRiskLevel}
+                color={getRiskColor(previousRiskLevel)}
+                lineType="dashed"
+            />
+        </div>
+    </div>);
 };
 
 const LegendItem: React.FC<{
-    title: string,
-    week: string,
-    riskLevel: string,
-    color: string,
-    lineType: 'solid' | 'dashed'
+    title: string, week: string, riskLevel: string, color: string, lineType: 'solid' | 'dashed'
 }> = ({title, week, riskLevel, color, lineType}) => (
-    <div className="flex flex-row justify-stretch items-center h-full min-w-full">
-        <svg width="20" height="2" className="mr-2 flex-shrink-0">
-            <line x1="0" y1="1" x2="20" y2="1" stroke="white" strokeWidth="2"
+    <div className="flex flex-row flex-shrink justify-stretch items-center h-full w-full">
+        <svg width="20" height="3" className="flex-shrink-0 pr-1">
+            <line x1="0" y1="1" x2="18" y2="1" stroke="white" strokeWidth="2"
                   strokeDasharray={lineType === 'dashed' ? "2,2" : "none"}/>
         </svg>
-        <div className={"justify-self-stretch flex-shrink util-responsive-text w-full"}>
-            <span
-                className="sm:text-xs md:text-xs lg:text-sm xl:text-sm whitespace-nowrap overflow-ellipsis">{title}</span>
-
+        <div
+            className={"justify-self-stretch flex flex-col justify-stretch items-stretch flex-shrink util-responsive-text-small w-full overflow-ellipsis"}>
+            <div>{title}</div>
             <div
-                className="sm:text-xs md:text-xs lg:text-sm xl:text-sm font-bold whitespace-nowrap overflow-ellipsis">{week}</div>
-            <div
-                className="sm:text-xs md:text-xs lg:text-xs xl:text-sm flex items-center justify-center rounded"
-                style={{backgroundColor: color}}>
+                className="font-bold">{week}</div>
+            <div className={"flex items-center justify-center rounded"} style={{backgroundColor: color}}>
                 {riskLevel}
             </div>
 
         </div>
-    </div>
-);
+    </div>);
 
 const NowcastStateThermo: React.FC = () => {
     const containerRef = useRef<HTMLDivElement>(null);
@@ -299,8 +215,7 @@ const NowcastStateThermo: React.FC = () => {
 
         // Define risk level positions
         const riskPositions = [{level: 'low', position: 0}, {level: 'medium', position: 0.4}, {
-            level: 'high',
-            position: 0.9
+            level: 'high', position: 0.9
         }, {level: 'max', position: 1}];
 
         // Calculate relative last week and current selected week
@@ -383,8 +298,7 @@ const NowcastStateThermo: React.FC = () => {
 
             const svgRect = svgElement.getBoundingClientRect();
             return {
-                x: event.clientX - svgRect.left,
-                y: event.clientY
+                x: event.clientX - svgRect.left, y: event.clientY
             };
         };
 
@@ -512,35 +426,33 @@ const NowcastStateThermo: React.FC = () => {
 
     // console.log('DEBUG: Rendering NowcastStateThermo', {currentWeek, previousWeek});
 
-    return (
-        <div ref={containerRef}
-             className="nowcast-state-thermo-grid-layout text-white w-min-full h-min-full py-2">
+    return (<div ref={containerRef}
+                 className="nowcast-state-thermo-grid-layout text-white w-min-full h-min-full py-2">
 
-            <div className="map-svg">
-                <svg ref={mapSvgRef} width="100%" height="100%" preserveAspectRatio="xMidYMid meet"/>
-            </div>
-
-            <div className="thermometer">
-                <svg ref={thermometerSvgRef} width="100%" height="100%" preserveAspectRatio="xMidYMid meet"/>
-                <div ref={tooltipRef}
-                     className="absolute hidden bg-white text-black rounded shadow-md text-sm"
-                     style={{pointerEvents: 'none', zIndex: 10}}></div>
-            </div>
-
-            <div className="thermo-legend-area">
-                <ThermoLegendArea
-                    currentWeek={currentWeek}
-                    previousWeek={previousWeek}
-                    currentRiskLevel={currentRiskLevel}
-                    previousRiskLevel={previousRiskLevel}
-                />
-            </div>
-
-            <div className="thermo-legend-boxes">
-                <ThermoLegendBoxes/>
-            </div>
+        <div className="map-svg">
+            <svg ref={mapSvgRef} width="100%" height="100%" preserveAspectRatio="xMidYMid meet"/>
         </div>
-    );
+
+        <div className="thermometer">
+            <svg ref={thermometerSvgRef} width="100%" height="100%" preserveAspectRatio="xMidYMid meet"/>
+            <div ref={tooltipRef}
+                 className="absolute hidden bg-white text-black rounded shadow-md text-sm"
+                 style={{pointerEvents: 'none', zIndex: 10}}></div>
+        </div>
+
+        <div className="thermo-legend-area">
+            <ThermoLegendArea
+                currentWeek={currentWeek}
+                previousWeek={previousWeek}
+                currentRiskLevel={currentRiskLevel}
+                previousRiskLevel={previousRiskLevel}
+            />
+        </div>
+
+        <div className="thermo-legend-boxes">
+            <ThermoLegendBoxes/>
+        </div>
+    </div>);
 
 };
 
