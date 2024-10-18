@@ -47,7 +47,7 @@ def data_transformation(team_name):
     del predictions
 
     ### Hospitalization Rate Change Trends (for not-a-pie-chart)
-    if team_name in ("MOBS-GLEAM_FLUH", "MIGHTE-Nsemble", "CEPH-Rtrend_fluH"):
+    if team_name in ("MOBS-GLEAM_FLUH", "MIGHTE-Nsemble", "CEPH-Rtrend_fluH", "FluSight-ensemble"):
 
         # Retain only rate change trends.
         trends = team_data.drop(team_data[team_data.target != 'wk_flu_hosp_rate_change'].index, inplace=False)
@@ -94,7 +94,7 @@ def data_transformation(team_name):
     del team_data
 
 # Transform data for all teams.
-teams_list = ["MOBS-GLEAM_FLUH", "MIGHTE-Nsemble", "NU_UCSD-GLEAM_AI_FLUH", "CEPH-Rtrend_fluH"]
+teams_list = ["MOBS-GLEAM_FLUH", "MIGHTE-Nsemble", "NU_UCSD-GLEAM_AI_FLUH", "CEPH-Rtrend_fluH", "FluSight-ensemble"]
 for team in teams_list:
     data_transformation(team)
 

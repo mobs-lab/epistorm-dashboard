@@ -52,7 +52,6 @@ def transform_older_data(model_name):
 
 
 model_names = ["MOBS-GLEAM_FLUH", "MIGHTE-Nsemble",
-               "CEPH-Rtrend_fluH", "NU_UCSD-GLEAM_AI_FLUH"]
-
+               "CEPH-Rtrend_fluH", "NU_UCSD-GLEAM_AI_FLUH", "FluSight-ensemble"]
 for model in model_names:
     transform_older_data(model)
