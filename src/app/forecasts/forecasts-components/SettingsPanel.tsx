@@ -21,6 +21,7 @@ import StateMap from "./StateMap";
 import StyledDatePicker from "./StyledDatePicker";
 import Image from "next/image";
 
+const modelNames = ['MOBS-GLEAM_FLUH', 'CEPH-Rtrend_fluH', 'MIGHTE-Nsemble', 'NU_UCSD-GLEAM_AI_FLUH', 'FluSight-ensemble'];
 
 const SettingsPanel: React.FC = () => {
 
@@ -154,7 +155,7 @@ const SettingsPanel: React.FC = () => {
                     <div className="my-2 w-full h-full overflow-ellipsis">
                         <Typography variant="h6" className="text-white">Model</Typography>
                         <div className="flex flex-col text-wrap">
-                            {["MOBS-GLEAM_FLUH", "CEPH-Rtrend_fluH", "MIGHTE-Nsemble", "NU_UCSD-GLEAM_AI_FLUH"].map((model) => (
+                            {modelNames.map((model) => (
                                 <label key={model} className="inline-flex items-center text-white">
                                 <span
                                     className="w-[1em] h-[1em] border-2 rounded-sm mr-2 "
