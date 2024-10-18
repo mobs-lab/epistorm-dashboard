@@ -18,9 +18,9 @@ def data_transformation(team_name):
     df: pd.DataFrame, transformed data
     """
 
-    team_data_source_location = "./public/data/unprocessed/" + team_name + "/*" + team_name + ".csv"
-    predictions_target_location = "./public/data/processed/" + team_name + "/predictions.csv"
-    trends_target_location = "./public/data/processed/"+ team_name + "/nowcast_trends.csv"
+    team_data_source_location = "../public/data/unprocessed/" + team_name + "/*" + team_name + ".csv"
+    predictions_target_location = "../public/data/processed/" + team_name + "/predictions.csv"
+    trends_target_location = "../public/data/processed/"+ team_name + "/nowcast_trends.csv"
 
     # Load all CSV files in forecasts folder into a single data frame, ignore unneeded columns.
     team_data = pd.concat((pd.read_csv(f, usecols=['reference_date', 'target', 'target_end_date', 'location', 'output_type_id', 'value'],
