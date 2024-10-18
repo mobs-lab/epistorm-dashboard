@@ -20,7 +20,6 @@ import {updateUserSelectedWeek} from "../../store/filterSlice";
 
 const ForecastChart: React.FC = () => {
 
-
     // reference to svg object
     const svgRef = useRef(null);
 
@@ -340,15 +339,14 @@ const ForecastChart: React.FC = () => {
                     ticks.push(2.5 * base);
                     ticks.push(5 * base);
                 }
+                // console.debug("DEBUG: ForecastChart.tsx: generateYAxisTicks(): ticks: ", ticks);
             }
-
-            ticks = ticks.filter(tick => tick >= minValue && tick <= maxValue);
-
-            if (ticks.length > desiredTickCount) {
-                const step = Math.ceil(ticks.length / desiredTickCount);
-                ticks = ticks.filter((_, index) => index % step === 0);
-            }
-
+            ticks = ticks.filter((tick) => tick >= minValue && tick <= maxValue);
+            // if (ticks.length > desiredTickCount) {
+            //     const step = Math.ceil(ticks.length / desiredTickCount);
+            //     ticks = ticks.filter((_, index) => index % step === 0);
+            // }
+            console.debug("DEBUG: ForecastChart.tsx: generateYAxisTicks(): ticks after filtering: ", ticks);
             return ticks;
         } else {
             // Improved linear scale logic
@@ -376,10 +374,6 @@ const ForecastChart: React.FC = () => {
                 ticks = ticks.filter((_, index) => index % stride === 0);
             }
 
-            // Ensure we include minValue and maxValue (or close values) in the ticks
-            /*if (ticks[0] > minValue) ticks.unshift(Number(minValue.toFixed(2)));
-            if (ticks[ticks.length - 1] < maxValue) ticks.push(Number(maxValue.toFixed(2)));*/
-
             // If we still don't have enough ticks, add intermediate values
             while (ticks.length < desiredTickCount) {
                 const newTicks = [];
@@ -399,7 +393,8 @@ const ForecastChart: React.FC = () => {
             }
 
             return ticks;
-        }    }
+        }
+    }
 
     function renderGroundTruthData(svg: Selection<BaseType, unknown, HTMLElement, any>, surveillanceData: DataPoint[], xScale: ScaleTime<number, number, never>, yScale: | ScaleLogarithmic<number, number, never> | ScaleLinear<number, number, never>, marginLeft: number, marginTop: number,) {
         // Remove existing ground truth data paths and circles
