@@ -49,7 +49,7 @@ interface ProcessedDataWithDateRange {
     latestDate: Date;
 }
 
-const modelNames = ['MOBS-GLEAM_FLUH', 'CEPH-Rtrend_fluH', 'MIGHTE-Nsemble', 'NU_UCSD-GLEAM_AI_FLUH'];
+const modelNames = ['MOBS-GLEAM_FLUH', 'CEPH-Rtrend_fluH', 'MIGHTE-Nsemble', 'NU_UCSD-GLEAM_AI_FLUH', 'FluSight-ensemble'];
 
 
 const Page: React.FC = () => {
@@ -69,7 +69,6 @@ const Page: React.FC = () => {
         setLoadingStates(prev => ({...prev, [key]: value}));
     };
 
-
     useEffect(() => {
         // Surveillance and predictions are fetched together to ensure special days are added
         fetchForecastData();
@@ -78,6 +77,15 @@ const Page: React.FC = () => {
         fetchThresholdsData();
         fetchHistoricalGroundTruthData();
     }, []);
+
+    const safeCSVFetch = async (url: string) => {
+        try {
+            return await d3.csv(url);
+        } catch (error) {
+            console.warn(`File not found or error parsing: ${url}`);
+            return null;
+        }
+    };
 
     const fetchForecastData = async () => {
         try {
@@ -92,32 +100,39 @@ const Page: React.FC = () => {
 
 
             const predictionsData = await Promise.all(modelNames.map(async (team_model) => {
-                const newPredictions = await d3.csv(`/data/processed/${team_model}/predictions.csv`);
-                const oldPredictions = await d3.csv(`/data/processed/${team_model}/predictions_older.csv`);
+                const newPredictions = await safeCSVFetch(`/data/processed/${team_model}/predictions.csv`);
+                const oldPredictions = await safeCSVFetch(`/data/processed/${team_model}/predictions_older.csv`);
+
+                if (!newPredictions && !oldPredictions) {
+                    console.warn(`No prediction data found for model: ${team_model}`);
+                    return {modelName: team_model, predictionData: []};
+                }
 
                 // Process predictions data
                 // NOTE: 2024-09-25: No longer distinguish between old vs new prediction data
-                const predictionData: PredictionDataPoint[] = [...newPredictions, ...oldPredictions].map((d) => ({
-                    referenceDate: parseISO(d.reference_date), // Ensure UTC
-                    targetEndDate: parseISO(d.target_end_date),
-                    stateNum: d.location,
-                    confidence025: +d['0.025'],
-                    confidence050: +d['0.05'],
-                    confidence250: +d['0.25'],
-                    confidence500: +d['0.5'],
-                    confidence750: +d['0.75'],
-                    confidence950: +d['0.95'],
-                    confidence975: +d['0.975'],
-                    confidence_low: +d['0.5'],
-                    confidence_high: +d['0.5'],
-                }));
+                const predictionData: PredictionDataPoint[] =
+                    [...(newPredictions || []), ...(oldPredictions || [])].map((d) => ({
+                        referenceDate: parseISO(d.reference_date), // Ensure UTC
+                        targetEndDate: parseISO(d.target_end_date),
+                        stateNum: d.location,
+                        confidence025: +d['0.025'],
+                        confidence050: +d['0.05'],
+                        confidence250: +d['0.25'],
+                        confidence500: +d['0.5'],
+                        confidence750: +d['0.75'],
+                        confidence950: +d['0.95'],
+                        confidence975: +d['0.975'],
+                        confidence_low: +d['0.5'],
+                        confidence_high: +d['0.5'],
+                    }));
 
                 return {modelName: team_model, predictionData: predictionData};
             }));
 
+            const validPredictionsData = predictionsData.filter(Boolean);
             const locationData = await fetchLocationData();
 
-            const processedData = addBackEmptyDatesWithPrediction(parsedGroundTruthData, predictionsData, locationData);
+            const processedData = addBackEmptyDatesWithPrediction(parsedGroundTruthData, validPredictionsData, locationData);
             dispatch(setGroundTruthData(processedData.data));
             updateLoadingState('groundTruth', false);
 
@@ -128,7 +143,7 @@ const Page: React.FC = () => {
 
             /*NOTE: Season Options are generated using Ground Truth data so must be here*/
             const seasonOptions = generateSeasonOptions(processedData);
-            console.log("Debug: page.tsx: fetchForecastData: seasonOptions: ", seasonOptions);
+            // console.log("Debug: page.tsx: fetchForecastData: seasonOptions: ", seasonOptions);
             dispatch(setSeasonOptions(seasonOptions));
             if (seasonOptions.length > 0) {
                 const lastSeason = seasonOptions[seasonOptions.length - 1];
@@ -139,7 +154,7 @@ const Page: React.FC = () => {
             updateLoadingState('seasonOptions', false);
         } catch (error) {
             console.error('Error fetching predictions data:', error);
-            updateLoadingState('predictions', true);
+            updateLoadingState('predictions', false);
         }
     };
 
@@ -154,27 +169,31 @@ const Page: React.FC = () => {
             return parsedLocationData;
         } catch (error) {
             console.error('Error fetching location data:', error);
-            updateLoadingState('locations', true);
+            updateLoadingState('locations', false);
             return [];
         }
     };
 
     const fetchNowcastTrendsData = async () => {
         try {
-            const modelNames = ['MOBS-GLEAM_FLUH', 'CEPH-Rtrend_fluH', 'MIGHTE-Nsemble', 'NU_UCSD-GLEAM_AI_FLUH'];
-            const nowcastTrendsData = await Promise.all(modelNames.map(async (modelName) => {
-                const response = await d3.csv(`/data/processed/${modelName}/nowcast_trends.csv`);
-
-                const responseParsed = response.map((d) => ({
-                    location: d.location,
-                    reference_date: parseISO(d.reference_date),
-                    decrease: +d.decrease,
-                    increase: +d.increase,
-                    stable: +d.stable,
+            const nowcastTrendsData = await Promise.all(
+                modelNames.map(async (modelName) => {
+                    const response = await safeCSVFetch(`/data/processed/${modelName}/nowcast_trends.csv`);
+                    if (!response) {
+                        console.warn(`No nowcast trends data found for model: ${modelName}`);
+                        return {modelName, data: []};
+                    }
+                    const responseParsed = response.map((d) => ({
+                        location: d.location,
+                        reference_date: parseISO(d.reference_date),
+                        decrease: +d.decrease,
+                        increase: +d.increase,
+                        stable: +d.stable,
+                    }));
+                    return {modelName, data: responseParsed};
                 }));
-                return {modelName, data: responseParsed};
-            }));
-            dispatch(setNowcastTrendsData(nowcastTrendsData));
+            const validNowcastTrendsData = nowcastTrendsData.filter(Boolean);
+            dispatch(setNowcastTrendsData(validNowcastTrendsData));
             updateLoadingState('nowcastTrends', false);
         } catch (error) {
             console.error('Error fetching nowcast trends data:', error);
@@ -229,9 +248,7 @@ const Page: React.FC = () => {
         }
     };
 
-
     const isFullyLoaded = Object.values(loadingStates).every(state => !state);
-
 
     function addBackEmptyDatesWithPrediction(groundTruthData: DataPoint[], predictionsData: ModelPrediction[], locationData: LocationData[]): ProcessedDataWithDateRange {
         let earliestDate = new Date(8640000000000000); // Max date
