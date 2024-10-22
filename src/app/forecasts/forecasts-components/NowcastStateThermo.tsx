@@ -15,10 +15,16 @@ const ThermoLegendBoxes: React.FC = () => {
 
 
     return (<div className="flex flex-grow justify-evenly items-end h-full w-full">
-        {riskLevels.map((level, index) => (<div key={level} className="flex items-center">
+        {riskLevels.filter((rl) => {
+            return rl !== "No Data";
+        }).map((level, index) => (<div key={level} className="flex items-center">
             <div
                 className="w-[1rem] h-[1rem]"
-                style={{backgroundColor: riskColors[index]}}
+                style={{
+                    backgroundColor: riskColors.filter((rl) => {
+                        return rl !== "#363b43";
+                    })[index]
+                }}
             ></div>
             <span className="text-sm mx-2">{level}</span>
         </div>))}
@@ -180,7 +186,7 @@ const NowcastStateThermo: React.FC = () => {
     }, [dimensions, selectedStateName, riskColor]);
 
 
-    /* NOTE: Use Effect that draws the Thermometer */
+    /* NOTE: useEffect that draws the Thermometer */
     useEffect(() => {
         if (!thermometerSvgRef.current || !tooltipRef.current) return;
 
@@ -233,7 +239,6 @@ const NowcastStateThermo: React.FC = () => {
         let predictedValue = 0;
         const selectedModel = predictionsData.find(m => m.modelName === userSelectedRiskLevelModel);
         if (selectedModel) {
-            // const prediction = selectedModel.predictionData.find(p => p.stateNum === USStateNum && p.referenceDate.getTime() === relativeLastWeek.getTime() && p.targetEndDate.getTime() === currentSelectedWeek.getTime());
             const prediction = selectedModel.predictionData.find(p => p.stateNum === USStateNum && isUTCDateEqual(p.referenceDate, relativeLastWeek) && isUTCDateEqual(p.targetEndDate, currentSelectedWeek));
             if (prediction) {
                 const statePopulation = locationData.find(l => l.stateNum === USStateNum)?.population;
@@ -283,13 +288,37 @@ const NowcastStateThermo: React.FC = () => {
         // Update risk color for the map
         // console.log("DEBUG: ", predictedPosition.riskLevel);
         setRiskColor(riskColors[riskLevels.indexOf(predictedPosition.riskLevel)]);
+
         // Helper functions for tooltip
-        const formatNumber = (num: number) => num.toLocaleString('en-US', {maximumFractionDigits: 2});
-        const getRangeString = (level: string, value: number, nextValue: number | null) => {
-            if (level === 'low') return `[0, ${formatNumber(stateThresholds.medium)}]`;
-            /*if (level === 'very high') return `[${formatNumber(stateThresholds.veryHigh)}, ∞)`;*/
-            return `[${formatNumber(value)}, ${formatNumber(nextValue!)}]`;
+        const formatNumber = (num: number | null) => {
+            if (num === null || num === 0) return 'N/A';
+            return num.toLocaleString('en-US', {maximumFractionDigits: 2});
         };
+
+        const getRangeString = (level: string) => {
+            // Get dynamic thresholds based on current state
+            const thresholds = {
+                low: [0, stateThresholds.medium],
+                medium: [stateThresholds.medium, stateThresholds.high],
+                high: [stateThresholds.high, stateThresholds.veryHigh],
+            };
+
+            const range = thresholds[level as keyof typeof thresholds];
+            if (!range) return 'N/A';
+
+            if (level === 'low') {
+                return `[0, ${formatNumber(range[1])}]`;
+            }
+            return `[${formatNumber(range[0])}, ${formatNumber(range[1])}]`;
+        };
+
+        // Update the ground truth and predicted value handling
+        const displayValue = (value: number) => {
+            return value === 0 ? null : value;
+        };
+
+        const groundTruthDisplayValue = displayValue(groundTruthValue);
+        const predictedDisplayValue = displayValue(predictedValue);
 
         // Helper function to get page coordinates
         const getPageCoordinates = (event: MouseEvent) => {
@@ -319,22 +348,21 @@ const NowcastStateThermo: React.FC = () => {
             .attr('stroke', 'lightgray')
             .attr('stroke-width', 2)
             .on('mouseover', function (event, d) {
-                const level = d;
-                const levelIndex = riskLevels.indexOf(level);
-                const value = level === 'low' ? 0 : stateThresholds[level === 'medium' ? 'medium' : level === 'high' ? 'high' : "veryHigh"];
-                const nextValue = level === 'very high' ? null : stateThresholds[level === 'low' ? 'medium' : level === 'medium' ? 'high' : 'veryHigh'];
+                const level = d.toLowerCase();
+                // Fix: Get the correct index by using the original case from riskLevels
+                const levelIndex = riskLevels.indexOf(d); // d is already in correct case from the data
 
                 tooltip.html(`
-                <div class="lg:text-sm">
-                <div style="display: flex; align-items: center; margin: 10px;"> Rate/100k </div>
-                    <div style="display: flex; align-items: center; margin: 5px;">
-                        <div style="width: 12px; height: 12px; background-color: ${riskColors[levelIndex]}; margin-right: 5px;"></div>
-                        <span>${level.charAt(0).toUpperCase() + level.slice(1)}: ${getRangeString(level, value, nextValue)}</span>
+                    <div class="lg:text-sm">
+                        <div style="display: flex; align-items: center; margin: 10px;"> Rate/100k </div>
+                        <div style="display: flex; align-items: center; margin: 5px;">
+                            <div style="width: 12px; height: 12px; background-color: ${riskColors[levelIndex]}; margin-right: 5px;"></div>
+                            <span>${d}: ${getRangeString(level)}</span>
+                        </div>
+                        <div style="margin: 10px;">Surveillance: ${formatNumber(groundTruthDisplayValue)}</div>
+                        <div style="margin: 10px;">Predicted: ${formatNumber(predictedDisplayValue)}</div>
                     </div>
-                    <div style="margin: 10px;">Surveillance: ${formatNumber(groundTruthValue)}</div>
-                    <div style="margin: 10px;">Predicted: ${formatNumber(predictedValue)}</div>
-                    </div>
-                `);
+    `);
 
                 const tooltipNode = tooltip.node();
                 if (tooltipNode) {
@@ -378,7 +406,8 @@ const NowcastStateThermo: React.FC = () => {
             .on('mouseout', () => {
                 tooltip.style('display', 'none');
             });
-// Draw ground truth line (dotted)
+
+        // Draw ground truth line (dotted)
         if (groundTruthPosition.yPosition !== null) {
             thermoGroup.append('line')
                 .attr('x1', 0)
