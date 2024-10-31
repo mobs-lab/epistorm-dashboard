@@ -12,7 +12,7 @@ interface StyledDatePickerProps {
     className?: string;
 }
 
-const StyledDatePicker: React.FC<StyledDatePickerProps> = ({value, onChange, minDate, maxDate, className}) => {
+const SettingsStyledDatePicker: React.FC<StyledDatePickerProps> = ({value, onChange, minDate, maxDate, className}) => {
     return (
         <div className={`styled-date-picker ${className}`}>
             <DatePicker
@@ -30,4 +30,4 @@ const StyledDatePicker: React.FC<StyledDatePickerProps> = ({value, onChange, min
     );
 };
 
-export default StyledDatePicker;
+export default SettingsStyledDatePicker;

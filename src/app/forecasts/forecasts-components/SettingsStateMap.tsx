@@ -7,7 +7,7 @@ import {updateSelectedState} from '../../store/filterSlice';
 
 const usStateData = "/states-10m.json";
 
-const StateMap: React.FC = () => {
+const SettingsStateMap: React.FC = () => {
     const containerRef = useRef<HTMLDivElement>(null);
     const svgRef = useRef<SVGSVGElement>(null);
     const gRef = useRef<SVGGElement>(null);
@@ -204,4 +204,4 @@ const StateMap: React.FC = () => {
         </div>
     );
 };
-export default StateMap;
+export default SettingsStateMap;

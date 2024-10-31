@@ -17,8 +17,8 @@ import {
     updateSelectedState,
     updateYScale
 } from '../../store/filterSlice';
-import StateMap from "./StateMap";
-import StyledDatePicker from "./StyledDatePicker";
+import SettingsStateMap from "./SettingsStateMap";
+import SettingsStyledDatePicker from "./SettingsStyledDatePicker";
 import Image from "next/image";
 
 const modelNames = ['MOBS-GLEAM_FLUH', 'CEPH-Rtrend_fluH', 'MIGHTE-Nsemble', 'NU_UCSD-GLEAM_AI_FLUH', 'FluSight-ensemble'];
@@ -136,7 +136,7 @@ const SettingsPanel: React.FC = () => {
                     <h2> Select a location <InfoButton title="State Selection Information" content={stateMapInfo}/></h2>
 
                     <div className="mb-4 w-full">
-                        <StateMap/>
+                        <SettingsStateMap/>
                     </div>
 
 
@@ -193,7 +193,7 @@ const SettingsPanel: React.FC = () => {
 
                     <div className="pt-4 w-full h-full">
                         <Typography variant="h6" className="text-white">Start Date</Typography>
-                        <StyledDatePicker
+                        <SettingsStyledDatePicker
                             value={dateStart}
                             onChange={onDateStartSelectionChange}
                             minDate={earliestDayFromGroundTruthData}
@@ -203,7 +203,7 @@ const SettingsPanel: React.FC = () => {
                     </div>
                     <div className="pt-2 w-full h-full">
                         <Typography variant="h6" className="text-white">End Date</Typography>
-                        <StyledDatePicker
+                        <SettingsStyledDatePicker
                             value={dateEnd}
                             onChange={onDateEndSelectionChange}
                             minDate={dateStart}
