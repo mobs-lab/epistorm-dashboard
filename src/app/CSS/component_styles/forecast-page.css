@@ -1,0 +1,80 @@
+@import 'header.css';
+
+/**************************************************
+     * NOTE: Custom Grid for Forecast Page
+     *************************************************/
+.layout-grid-forecasts-page {
+    display: grid;
+    width: 100vw;
+    height: calc(100vh - var(--header-height));
+    gap: 0.2fr;
+    grid-template-columns: minmax(0, 2fr) 0.1fr minmax(0, 1.2fr) minmax(200px, 350px);
+    grid-template-rows: minmax(0, 0.5fr) minmax(0, 1fr) 0.8rem minmax(20px, 0.14fr) minmax(0, 2.2fr);
+    grid-template-areas:
+    "nowcastHeader nowcastHeader nowcastHeader settings"
+    "nowcastThermo verticalSeparator nowcastGauge settings"
+    "separator separator separator settings"
+    "chartHeader chartHeader chartHeader settings"
+    "graph graph graph settings";
+}
+
+.nowcast-header {
+    grid-area: nowcastHeader;
+    scrollbar-gutter: auto;
+    scrollbar-width: none;
+}
+
+.forecast-graph {
+    overflow: scroll;
+    scrollbar-gutter: auto;
+    scrollbar-width: none;
+}
+
+.nowcast-thermo, .nowcast-gauge, .settings-panel {
+    width: 100%;
+    height: 100%;
+}
+
+.nowcast-thermo {
+    grid-area: nowcastThermo;
+}
+
+.vertical-separator {
+    grid-area: verticalSeparator;
+    width: 100%;
+    height: 100%;
+    /*display: flex;
+    justify-content: center;
+    align-items: center;*/
+}
+
+.nowcast-gauge {
+    grid-area: nowcastGauge;
+}
+
+.settings-panel {
+    grid-area: settings;
+    overflow: scroll;
+    scrollbar-gutter: auto;
+    scrollbar-width: none;
+}
+
+.horizontal-separator {
+    grid-area: separator;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.chart-header {
+    grid-area: chartHeader;
+}
+
+.forecast-graph {
+    grid-area: graph;
+}
+
+.forecast-drag-bar {
+    grid-area: dragBar;
+    /*border: 1px solid white;*/
+}
