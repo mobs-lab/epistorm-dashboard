@@ -141,44 +141,6 @@ const NowcastGauge: React.FC<RiskLevelGaugeProps> = ({riskLevel}) => {
             .attr('fill', 'white')
             .text(`${formattedLastWeekDate} - ${formattedCurrentWeekDate}`);
 
-        /*// Tooltip implementation
-        const tooltip = d3.select(containerRef.current)
-            .append('div')
-            .attr('class', 'nowcast-gauge-tooltip')
-            .style('opacity', 0)
-            .style('position', 'absolute')
-            .style('background-color', 'white')
-            .style('color', 'black')
-            .style('padding', '5px')
-            .style('border', '1px solid #ccc')
-            .style('border-radius', '4px')
-            .style('pointer-events', 'none');
-
-        paths.on('mouseover', function (event, d) {
-            let label, value;
-            if (!trendToUse) {
-                label = 'No data';
-                value = 'N/A';
-            } else if (d.index === 0) {
-                label = 'Decrease';
-                value = trendToUse.decrease;
-            } else if (d.index === 1) {
-                label = 'Stable';
-                value = trendToUse.stable;
-            } else {
-                label = 'Increase';
-                value = trendToUse.increase;
-            }
-
-            tooltip.html(`${label}: ${value === 'N/A' ? value : value.toFixed(3)}`)
-                .style('opacity', 1)
-                .style('left', `${event.pageX}px`)
-                .style('top', `${event.pageY - 28}px`);
-        })
-            .on('mouseout', () => {
-                tooltip.style('opacity', 0);
-            });*/
-
         // Tooltip implementation
         const tooltip = d3.select(tooltipRef.current);
 

@@ -1,0 +1,38 @@
+/**************************************************/
+/*NOTE: Below are for NowcastStateThermo Component*/
+/**************************************************/
+.nowcast-state-thermo-grid-layout {
+    display: grid;
+    width: 100%;
+    height: 100%;
+    grid-template-areas:
+    "map-svg thermometer thermo-legend-area"
+    "thermo-legend-boxes thermo-legend-boxes thermo-legend-area";
+    grid-template-columns: 2.5fr 1fr 2.2fr;
+    grid-template-rows: 4fr 1fr;
+    gap: 0.2fr;
+
+}
+
+.nowcast-state-thermo-grid-layout > div {
+    overflow: hidden;
+}
+
+.map-svg {
+    grid-area: map-svg;
+}
+
+.thermometer {
+    grid-area: thermometer;
+}
+
+.thermo-legend-area {
+    grid-area: thermo-legend-area;
+    /*display: flex;*/
+    /*flex-direction: column;*/
+    /*overflow: hidden;*/
+}
+
+.thermo-legend-boxes {
+    grid-area: thermo-legend-boxes;
+}
