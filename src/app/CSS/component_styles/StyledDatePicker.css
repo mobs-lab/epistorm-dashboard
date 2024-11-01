@@ -1,3 +1,14 @@
+/*CSS for Styled Date Picker's Components*/
+.styled-date-picker .react-datepicker-wrapper,
+.styled-date-picker .react-datepicker__input-container {
+    display: block;
+    width: 100%;
+}
+
+.styled-date-picker .react-datepicker__input-container input {
+    width: 100%;
+}
+
 .styled-date-picker .react-date-picker {
     width: 100%;
 }

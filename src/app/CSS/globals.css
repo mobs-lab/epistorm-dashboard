@@ -1,4 +1,8 @@
 @import './reset.css';
+@import './utility/common.css';
+/*@import './component_styles/forecast-page.css';*/
+@import './component_styles/nowcast-gauge.css';
+@import './component_styles/nowcast-thermo.css';
 
 @tailwind base;
 @tailwind components;
@@ -6,6 +10,11 @@
 
 * {
     caret-color: transparent;
+}
+
+/* Remove focus outline */
+*:focus {
+    outline: none;
 }
 
 input, textarea {
@@ -19,204 +28,11 @@ body {
 }
 
 :root {
-    --header-height: 0px;
+    --header-height: 4rem;
 }
 
-
-@layer utilities {
-
-    /*For Texts*/
-    .util-text-limit {
-        max-font-size: var(--max-font-size);
-        --max-font-size: 1rem; /* roughly 20px */
-        text-overflow: ellipsis;
-        white-space: nowrap;
-    }
-
-    .util-responsive-text {
-        @apply sm:text-xs md:text-base lg:text-lg xl:text-lg;
-        @apply sm:font-light md:font-normal lg:font-normal xl:font-normal;
-    }
-
-    .util-responsive-text-small{
-        @apply sm:text-xs md:text-xs lg:text-sm xl:text-sm;
-        @apply sm:font-light md:font-normal lg:font-normal xl:font-normal;
-        @apply sm:leading-4 md:leading-4 lg:leading-5 xl:leading-5;
-        @apply sm:tracking-tight md:tracking-tight lg:tracking-tight xl:tracking-tight;
-        @apply whitespace-nowrap;
-    }
-
-    /* For Setting Scrollbar width to none*/
-    .util-no-sb-length {
-        scrollbar-gutter: auto;
-        scrollbar-width: none;
-    }
-
-    /* Prevent text selection */
-    .no-select {
-        user-select: none;
-    }
-
-    /* Remove focus outline */
-    *:focus {
-        outline: none;
-    }
-
-    .layout-grid-forecasts-page {
-        display: grid;
-        width: 100vw;
-        height: calc(100vh - var(--header-height));
-        gap: 0.2fr;
-        grid-template-columns: minmax(0, 2fr) 0.1fr minmax(0, 1.2fr) minmax(200px, 350px);
-        grid-template-rows: minmax(0, 0.5fr) minmax(0, 1fr) 0.8rem minmax(20px, 0.14fr) minmax(0, 2.2fr);
-        grid-template-areas:
-    "nowcastHeader nowcastHeader nowcastHeader settings"
-    "nowcastThermo verticalSeparator nowcastGauge settings"
-    "separator separator separator settings"
-    "chartHeader chartHeader chartHeader settings"
-    "graph graph graph settings";
-    }
-
-    .nowcast-header {
-        grid-area: nowcastHeader;
-        scrollbar-gutter: auto;
-        scrollbar-width: none;
-    }
-
-    .forecast-graph {
-        overflow: scroll;
-        scrollbar-gutter: auto;
-        scrollbar-width: none;
-    }
-
-    .nowcast-thermo, .nowcast-gauge, .settings-panel {
-        width: 100%;
-        height: 100%;
-    }
-
-    .nowcast-thermo {
-        grid-area: nowcastThermo;
-    }
-
-    .vertical-separator {
-        grid-area: verticalSeparator;
-        width: 100%;
-        height: 100%;
-        /*display: flex;
-        justify-content: center;
-        align-items: center;*/
-    }
-
-    .nowcast-gauge {
-        grid-area: nowcastGauge;
-    }
-
-    .settings-panel {
-        grid-area: settings;
-        overflow: scroll;
-        scrollbar-gutter: auto;
-        scrollbar-width: none;
-    }
-
-    .horizontal-separator {
-        grid-area: separator;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-    }
-
-    .chart-header {
-        grid-area: chartHeader;
-    }
-
-    .forecast-graph {
-        grid-area: graph;
-    }
-
-    .forecast-drag-bar {
-        grid-area: dragBar;
-        /*border: 1px solid white;*/
-    }
-
-    /*NOTE: For `NowcastGauge` Component's popover tooltip*/
-    .tooltip {
-        position: absolute;
-        visibility: hidden;
-        background-color: rgba(0, 0, 0, 0.7);
-        color: white;
-        padding: 10px;
-        border-radius: 5px;
-        pointer-events: none;
-    }
-
-
-    /*NOTE: Below are for NowcastStateThermo Component*/
-    .nowcast-state-thermo-grid-layout {
-        display: grid;
-        width: 100%;
-        height: 100%;
-        grid-template-areas:
-    "map-svg thermometer thermo-legend-area"
-    "thermo-legend-boxes thermo-legend-boxes thermo-legend-area";
-        grid-template-columns: 2.5fr 1fr 2.2fr;
-        grid-template-rows: 4fr 1fr;
-        gap: 0.2fr;
-
-    }
-
-    .nowcast-state-thermo-grid-layout > div {
-        overflow: hidden;
-    }
-
-    .map-svg {
-        grid-area: map-svg;
-    }
-
-    .thermometer {
-        grid-area: thermometer;
-    }
-
-    .thermo-legend-area {
-        grid-area: thermo-legend-area;
-        /*display: flex;*/
-        /*flex-direction: column;*/
-        /*overflow: hidden;*/
-    }
-
-    .thermo-legend-boxes {
-        grid-area: thermo-legend-boxes;
-    }
-
-
-    /*NOTE: Below are for NowcastGauge Component*/
-    .layout-nowcast-gauge {
-        display: flex;
-        flex-direction: column;
-        width: 100%;
-        height: 100%;
-        overflow: hidden;
-    }
-
-    .nowcast-gauge-tooltip {
-        position: absolute;
-        pointer-events: none;
-        z-index: 10;
-        background-color: white;
-        color: black;
-        padding: 5px;
-        border: 1px solid #ccc;
-        border-radius: 4px;
-        font-size: 12px;
-    }
-
-    /*CSS for Styled Date Picker's Components*/
-    .styled-date-picker .react-datepicker-wrapper,
-    .styled-date-picker .react-datepicker__input-container {
-        display: block;
-        width: 100%;
-    }
-
-    .styled-date-picker .react-datepicker__input-container input {
-        width: 100%;
+@media (min-width: 768px) {
+    :root {
+        --header-height: 5rem; /* Larger screens */
     }
 }

@@ -42,6 +42,8 @@ import {setSeasonOptions, updateDateEnd, updateDateRange, updateDateStart} from 
 import {setStateThresholdsData} from '../store/stateThresholdsSlice';
 import {setHistoricalGroundTruthData} from '../store/historicalGroundTruthSlice';
 
+import '../CSS/component_styles/forecast-page.css';
+
 /* Custom Interface for addBackEmptyDatesWithPrediction() and generateSeasonOptions().*/
 interface ProcessedDataWithDateRange {
     data: DataPoint[];

@@ -1,0 +1,33 @@
+/* NOTE: Utility Classes */
+
+/*For Texts*/
+.util-text-limit {
+    max-font-size: var(--max-font-size);
+    --max-font-size: 1rem; /* roughly 20px */
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.util-responsive-text {
+    @apply sm:text-xs md:text-base lg:text-lg xl:text-lg;
+    @apply sm:font-light md:font-normal lg:font-normal xl:font-normal;
+}
+
+.util-responsive-text-small {
+    @apply sm:text-xs md:text-xs lg:text-sm xl:text-sm;
+    @apply sm:font-light md:font-normal lg:font-normal xl:font-normal;
+    @apply sm:leading-4 md:leading-4 lg:leading-5 xl:leading-5;
+    @apply sm:tracking-tight md:tracking-tight lg:tracking-tight xl:tracking-tight;
+    @apply whitespace-nowrap;
+}
+
+/* For Setting Scrollbar width to none*/
+.util-no-sb-length {
+    scrollbar-gutter: auto;
+    scrollbar-width: none;
+}
+
+/* Prevent text selection */
+.no-select {
+    user-select: none;
+}

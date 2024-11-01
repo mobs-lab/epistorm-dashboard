@@ -2,7 +2,7 @@ import React from 'react';
 import DatePicker from 'react-date-picker';
 import 'react-date-picker/dist/DatePicker.css';
 import 'react-calendar/dist/Calendar.css';
-import '../../CSS/StyledDatePicker.css';
+import '../../CSS/component_styles/StyledDatePicker.css';
 
 interface StyledDatePickerProps {
     value: Date | null;
