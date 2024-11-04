@@ -27,7 +27,7 @@ const NowcastHeader: React.FC = () => {
 
     return (<div
         className="w-full h-full text-nowrap flex flex-shrink flex-col justify-evenly flex-nowrap px-4 pt-2 pb-4 util-responsive-text">
-        <h1 className="sm:text-xl md:text-2xl lg:text-3xl xl:text-4xl 2xl:text-4xl font-light util-text-limit ">
+        <h1 className="sm:text-sm md:text-base lg:text-2xl xl:text-3xl 2xl:text-4xl font-light util-text-limit ">
             {stateName}</h1>
         <div className="w-full bg-[#5d636a]">
             {/*    Use Svg to draw a very thin light gray horizontal line to use as separator. */}

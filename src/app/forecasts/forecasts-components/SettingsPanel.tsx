@@ -133,7 +133,7 @@ const SettingsPanel: React.FC = () => {
             className="bg-mobs-lab-color-filterspane text-white fill-white flex flex-col h-full rounded-md overflow-hidden util-responsive-text">
             <div className="flex-grow overflow-y-auto p-4">
                 <div className="flex flex-col flex-wrap justify-stretch items-start w-full">
-                    <h2> Select a location <InfoButton title="State Selection Information" content={stateMapInfo}/></h2>
+                    <h2> Select Location </h2>
 
                     <div className="mb-4 w-full">
                         <SettingsStateMap/>
@@ -232,7 +232,7 @@ const SettingsPanel: React.FC = () => {
                         />))}
                     </div>
                     <div className="mb-4 w-full h-full">
-                        <Typography variant="h6" className="text-white">Y-axis scale</Typography>
+                        <Typography variant="h6" className="text-white">Y-Axis Scale</Typography>
                         {["linear", "log"].map((value) => (<Radio
                             key={value}
                             name="yAxisRadioBtn"

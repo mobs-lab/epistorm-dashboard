@@ -37,13 +37,14 @@ const ForecastChartHeader: React.FC = () => {
 
     return (
         <div
-            className="w-full h-full text-nowrap flex flex-shrink flex-row justify-between align-middle items-center flex-nowrap px-4 overflow-scroll util-no-sb-length">
+            className="text-nowrap flex flex-shrink flex-row justify-between align-middle items-center flex-nowrap px-4">
             <div className="flex justify-start items-center">
-                <h2 className="text-3xl util-text-limit font-bold mr-4">Forecast Chart</h2>
+                <h2 className="util-responsive-text util-text-limit font-bold mr-2"> Weekly Hospital Admissions
+                    Forecast</h2>
                 <InfoButton title="Forecast Chart Information" content={chartInfo}/>
             </div>
             <div className="flex justify-end items-center">
-                <span className="mr-3 text-sm">Show data available at time of forecast</span>
+                <span className="mr-3 md:text-sm sm:text-xs">Show Data Available at Time of Forecast</span>
                 <Switch
                     checked={historicalDataMode}
                     onChange={handleHistoricalDataModeToggle}
@@ -51,6 +52,7 @@ const ForecastChartHeader: React.FC = () => {
                     label={historicalDataMode ? "On" : "Off"} crossOrigin={undefined}
                 />
             </div>
-        </div>);
+        </div>
+    );
 };
 export default ForecastChartHeader;
