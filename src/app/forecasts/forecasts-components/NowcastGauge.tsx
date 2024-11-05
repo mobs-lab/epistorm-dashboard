@@ -124,7 +124,7 @@ const NowcastGauge: React.FC<RiskLevelGaugeProps> = ({riskLevel}) => {
             .attr('stroke', 'lightgray')
             .attr('stroke-width', 2);
 
-        const fontSize = width < height ? 12 : Math.max(20, Math.max(12, radius * 0.1));
+        const fontSize = width < height ? 16 : Math.min(24, Math.max(12, radius * 0.1));
 
         chartGroup.append('text')
             .attr('text-anchor', 'middle')
@@ -132,7 +132,7 @@ const NowcastGauge: React.FC<RiskLevelGaugeProps> = ({riskLevel}) => {
             .attr('font-size', `${fontSize}px`)
             .attr('font-weight', 'bold')
             .attr('fill', 'white')
-            .text("Trend forecast");
+            .text("Trend Forecast");
 
         chartGroup.append('text')
             .attr('text-anchor', 'middle')
