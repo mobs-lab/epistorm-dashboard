@@ -9,8 +9,14 @@
 }
 
 .util-responsive-text {
-    @apply sm:text-xs md:text-base lg:text-lg xl:text-xl 2xl:text-2xl;
-    @apply sm:font-light md:font-normal lg:font-normal xl:font-normal;
+    @apply sm:text-xs md:text-sm lg:text-base xl:text-xl 2xl:text-2xl;
+    @apply sm:font-light md:font-normal lg:font-bold xl:font-bold;
+    @apply overflow-ellipsis whitespace-nowrap;
+}
+
+.util-responsive-text-settings {
+    @apply sm:text-xs md:text-sm lg:text-base xl:text-lg 2xl:text-lg;
+    @apply sm:font-light md:font-light lg:font-light xl:font-normal;
 }
 
 .util-responsive-text-small {
