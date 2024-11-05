@@ -231,7 +231,7 @@ const NowcastStateThermo: React.FC = () => {
         // console.log('DEBUG: Relative last week:', relativeLastWeek);
 
         // Get ground truth value
-        const groundTruthEntry = groundTruthData.find(d => d.stateNum === USStateNum && isUTCDateEqual(d.date, currentSelectedWeek));
+        const groundTruthEntry = groundTruthData.find(d => d.stateNum === USStateNum && isUTCDateEqual(d.date, relativeLastWeek));
         const groundTruthValue = groundTruthEntry ? groundTruthEntry.weeklyRate : 0;
         // console.log('DEBUG: Ground truth value:', groundTruthValue);
 
@@ -239,7 +239,7 @@ const NowcastStateThermo: React.FC = () => {
         let predictedValue = 0;
         const selectedModel = predictionsData.find(m => m.modelName === userSelectedRiskLevelModel);
         if (selectedModel) {
-            const prediction = selectedModel.predictionData.find(p => p.stateNum === USStateNum && isUTCDateEqual(p.referenceDate, relativeLastWeek) && isUTCDateEqual(p.targetEndDate, currentSelectedWeek));
+            const prediction = selectedModel.predictionData.find(p => p.stateNum === USStateNum && isUTCDateEqual(p.referenceDate, currentSelectedWeek) && isUTCDateEqual(p.targetEndDate, currentSelectedWeek));
             if (prediction) {
                 const statePopulation = locationData.find(l => l.stateNum === USStateNum)?.population;
                 if (statePopulation) {
@@ -455,33 +455,30 @@ const NowcastStateThermo: React.FC = () => {
 
     // console.log('DEBUG: Rendering NowcastStateThermo', {currentWeek, previousWeek});
 
-    return (<div ref={containerRef}
-                 className="nowcast-state-thermo-grid-layout text-white w-min-full h-min-full py-2">
-
-        <div className="map-svg">
-            <svg ref={mapSvgRef} width="100%" height="100%" preserveAspectRatio="xMidYMid meet"/>
-        </div>
-
-        <div className="thermometer">
-            <svg ref={thermometerSvgRef} width="100%" height="100%" preserveAspectRatio="xMidYMid meet"/>
-            <div ref={tooltipRef}
-                 className="absolute hidden bg-white text-black rounded shadow-md text-sm"
-                 style={{pointerEvents: 'none', zIndex: 10}}></div>
-        </div>
-
-        <div className="thermo-legend-area">
-            <ThermoLegendArea
-                currentWeek={currentWeek}
-                previousWeek={previousWeek}
-                currentRiskLevel={currentRiskLevel}
-                previousRiskLevel={previousRiskLevel}
-            />
-        </div>
-
-        <div className="thermo-legend-boxes">
-            <ThermoLegendBoxes/>
-        </div>
-    </div>);
+    return (
+        <div ref={containerRef}
+             className="nowcast-state-thermo-grid-layout text-white w-min-full h-min-full py-2">
+            <div className="map-svg">
+                <svg ref={mapSvgRef} width="100%" height="100%" preserveAspectRatio="xMidYMid meet"/>
+            </div>
+            <div className="thermometer">
+                <svg ref={thermometerSvgRef} width="100%" height="100%" preserveAspectRatio="xMidYMid meet"/>
+                <div ref={tooltipRef}
+                     className="absolute hidden bg-white text-black rounded shadow-md text-sm"
+                     style={{pointerEvents: 'none', zIndex: 10}}></div>
+            </div>
+            <div className="thermo-legend-area">
+                <ThermoLegendArea
+                    currentWeek={currentWeek}
+                    previousWeek={previousWeek}
+                    currentRiskLevel={currentRiskLevel}
+                    previousRiskLevel={previousRiskLevel}
+                />
+            </div>
+            <div className="thermo-legend-boxes">
+                <ThermoLegendBoxes/>
+            </div>
+        </div>);
 
 };
 
