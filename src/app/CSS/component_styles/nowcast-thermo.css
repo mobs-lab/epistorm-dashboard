@@ -1,6 +1,7 @@
-/**************************************************/
-/*NOTE: Below are for NowcastStateThermo Component*/
-/**************************************************/
+/*NOTE: For the combination nowcast visualization widget that display map, thermometer and activity level*/
+/* !DEPRECATED for nowcast-redesign version on 2024-11-04*/
+
+/*
 .nowcast-state-thermo-grid-layout {
     display: grid;
     width: 100%;
@@ -28,11 +29,13 @@
 
 .thermo-legend-area {
     grid-area: thermo-legend-area;
-    /*display: flex;*/
-    /*flex-direction: column;*/
-    /*overflow: hidden;*/
+    !*display: flex;*!
+    !*flex-direction: column;*!
+    !*overflow: hidden;*!
 }
 
 .thermo-legend-boxes {
     grid-area: thermo-legend-boxes;
 }
+
+*/

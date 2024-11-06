@@ -28,6 +28,7 @@ const LegendBoxes: React.FC = () => {
         </div>
     );
 };
+
 const NowcastGauge: React.FC<RiskLevelGaugeProps> = ({riskLevel}) => {
     const svgRef = useRef<SVGSVGElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
@@ -72,7 +73,7 @@ const NowcastGauge: React.FC<RiskLevelGaugeProps> = ({riskLevel}) => {
             .attr('preserveAspectRatio', 'xMidYMid meet');
 
         const chartGroup = svg.append('g')
-            .attr('transform', `translate(${width/2}, ${height})`);
+            .attr('transform', `translate(${width / 2}, ${height})`);
 
         const matchingModelNowcast = nowcastTrendsCollection.find(model => model.modelName === userSelectedRiskLevelModel);
         if (!matchingModelNowcast || !matchingModelNowcast.data.length) return;
@@ -204,7 +205,7 @@ const NowcastGauge: React.FC<RiskLevelGaugeProps> = ({riskLevel}) => {
 
     return (
         <div ref={containerRef} className="flex flex-row justify-around items-stretch align-middle h-full w-full pr-2">
-            <div className="h-full w-[4/5] flex-grow relative p-4 ">
+            <div className="h-full w-[4/5] flex-grow relative py-2 pr-2 pl-0">
                 <svg ref={svgRef} className="w-full h-full"/>
                 <div
                     ref={tooltipRef}
