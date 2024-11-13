@@ -1,0 +1,3 @@
+# app.demo.yaml (demo service)
+runtime: nodejs20
+service: demo

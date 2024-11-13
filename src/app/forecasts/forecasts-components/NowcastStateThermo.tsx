@@ -464,20 +464,20 @@ const NowcastStateThermo: React.FC = () => {
 
     return (
         <div ref={containerRef}
-             className="flex flex-row justify-stretch items-center text-white size-full py-2 pl-4">
-            <div className="flex flex-col justify-between h-full w-[1/2] py-2">
+             className="flex flex-row justify-stretch items-center text-white size-full py-4 pl-4">
+            <div className="flex h-full w-[30%] min-w-0 flex-col justify-between items-stretch shrink xs:text-[0.5rem]  util-responsive-text-small">
                 <ThermoLegendBoxes/>
             </div>
-            <div className={"size-full"}>
+            <div className={"h-full w-full flex-grow-2"}>
                 <svg ref={mapSvgRef} width="100%" height="100%" preserveAspectRatio="xMidYMid meet"/>
             </div>
-            <div className={"size-full"}>
+            <div className={"h-full w-full flex-grow-2"}>
                 <svg ref={thermometerSvgRef} preserveAspectRatio="xMidYMid meet"/>
                 <div ref={tooltipRef}
                      className="absolute hidden bg-white text-black rounded shadow-md text-sm"
                      style={{pointerEvents: 'none', zIndex: 10}}></div>
             </div>
-            <div className={"size-full"}>
+            <div className={"h-full max-w-[50%] min-w-[10%] w-full grow"}>
                 <ThermoLegendArea
                     currentWeek={currentWeek}
                     previousWeek={previousWeek}

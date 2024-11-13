@@ -26,8 +26,8 @@ jobs:
       - name: Check and Copy New Files
         id: check-copy
         run: |
-          chmod +x ./bash_scripts/data_retrieval.sh
-          source ./bash_scripts/data_retrieval.sh
+          chmod +x ./scripts/data_retrieval.sh
+          source ./scripts/data_retrieval.sh
           echo "NEW_FILES_COPIED=$NEW_FILES_COPIED" >> $GITHUB_ENV
 
       - name: Setup Python
@@ -44,8 +44,8 @@ jobs:
       - name: Create subdirectory within public/data/processed
         if: env.NEW_FILES_COPIED == 'true'
         run: |
-          chmod +x ./bash_scripts/setup_directories.sh
-          ./bash_scripts/setup_directories.sh
+          chmod +x ./scripts/setup_directories.sh
+          ./scripts/setup_directories.sh
 
       - name: Execute Data Transformation
         if: env.NEW_FILES_COPIED == 'true'

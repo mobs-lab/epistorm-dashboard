@@ -1,1 +1,3 @@
+# app.yaml (production service)
 runtime: nodejs20
+service: default

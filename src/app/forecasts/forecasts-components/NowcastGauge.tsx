@@ -17,12 +17,12 @@ const LegendBoxes: React.FC = () => {
     return (
         <>
             {legendData.map((item) => (
-                <div key={item.label} className="flex items-center">
+                <div key={item.label} className="flex flex-row justify-stretch align-middle items-center">
                     <div
-                        className="w-[1rem] h-[1rem]"
+                        className="w-[1rem] h-[1rem] size-full"
                         style={{backgroundColor: item.color}}
                     ></div>
-                    <span className="text-sm mx-2">{item.label}</span>
+                    <span className="ml-2">{item.label}</span>
                 </div>
             ))}
         </>
@@ -205,10 +205,10 @@ const NowcastGauge: React.FC<RiskLevelGaugeProps> = ({riskLevel}) => {
 
     return (
         <div ref={containerRef} className="flex flex-row justify-around items-stretch align-middle h-full w-full ">
-            <div className="h-full w-[1/5] flex flex-col justify-between items-stretch h-full py-4">
+            <div className="flex flex-shrink h-full w-[20%] min-w-0 flex-col justify-between items-stretch py-4 xs:text-[0.5rem] util-responsive-text-small">
                 <LegendBoxes/>
             </div>
-            <div className="h-full w-[4/5] flex-grow relative py-2">
+            <div className="h-full w-[80%] min-w-0  flex-grow relative py-2">
                 <svg ref={svgRef} className="w-full h-full"/>
                 <div
                     ref={tooltipRef}
