@@ -356,7 +356,8 @@ const Page: React.FC = () => {
         return options.reverse();
     }
 
-    return (<div className="layout-grid-forecasts-page w-full h-full pl-4">
+    return (
+        <div className="layout-grid-forecasts-page w-full h-full pl-4">
         <div className="nowcast-header">
             <NowcastHeader/>
         </div>
