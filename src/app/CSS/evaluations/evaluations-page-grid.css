@@ -1,0 +1,24 @@
+@import '../header.css';
+
+.evaluations-page {
+    display: grid;
+    width: 100vw;
+    height: calc(100vh - var(--header-height));
+    grid-template-columns: 4fr 1fr;
+    grid-template-rows: 0.8fr 11.2fr;
+    grid-template-areas:
+    "evaluationsHeader evaluationsSettingsPanel"
+    "evaluationsTabPanel evaluationsSettingsPanel";
+}
+
+.evaluations-header {
+    grid-area: evaluationsHeader;
+}
+
+.evaluations-settings {
+    grid-area: evaluationsSettingsPanel;
+}
+
+.evaluations-content {
+    grid-area: evaluationsTabPanel;
+}
