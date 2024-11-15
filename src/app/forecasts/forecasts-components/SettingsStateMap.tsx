@@ -172,7 +172,7 @@ const SettingsStateMap: React.FC = () => {
             paths.transition().style("fill", null);
 
             const selectedState = paths.filter((d: any) => d && d.properties && d.properties.name === selectedStateName);
-            selectedState.transition().style("fill", "red");
+            selectedState.transition().style("fill", "white");
         }
     }, [selectedStateName]);
 

@@ -324,3 +324,7 @@ cython_debug/
 #.idea/
 
 .zed/
+
+# GCP App Engine service-specific files
+.demo-env
+*.demo.env

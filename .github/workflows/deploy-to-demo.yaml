@@ -1,12 +1,13 @@
-name: Deploy to GCP App Engine Default Service
+name: Deploy to Demo Environment
 
 on:
   push:
     branches:
-      - production
+      - demo
+  workflow_dispatch:
 
 jobs:
-  deploy:
+  deploy-demo:
     runs-on: ubuntu-latest
 
     steps:
@@ -25,6 +26,6 @@ jobs:
       - name: 'Use gcloud CLI'
         run: 'gcloud info'
 
-      - name: Deploy to App Engine
+      - name: Deploy to Demo App Engine
         run: |
-          gcloud app deploy app.yaml --quiet
+          gcloud app deploy app.demo.yaml --quiet
