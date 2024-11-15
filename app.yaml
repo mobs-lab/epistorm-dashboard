@@ -1,3 +1,17 @@
 # app.yaml (production service)
 runtime: nodejs20
 service: default
+
+env_variables:
+  NEXT_PUBLIC_GAE_SERVICE: "default"
+
+handlers:
+  - url: /robots.txt
+    static_files: public/robots.txt
+    upload: public/robots.txt
+    secure: always
+
+  # Let App Engine handle all other routes
+  - url: /.*
+    secure: always
+    script: auto
