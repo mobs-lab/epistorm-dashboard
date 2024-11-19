@@ -23,36 +23,36 @@ jobs:
           git submodule update --remote
           git submodule foreach git pull origin main
 
+      - name: Create subdirectory for all target locations for all data
+        run: |
+          chmod +x ./scripts/setup_directories.sh
+          ./scripts/setup_directories.sh
+
       - name: Check and Copy New Files
         id: check-copy
         run: |
-          chmod +x ./bash_scripts/data_retrieval.sh
-          source ./bash_scripts/data_retrieval.sh
-          echo "NEW_FILES_COPIED=$NEW_FILES_COPIED" >> $GITHUB_ENV
+          chmod +x ./scripts/data_retrieval.sh
+          source ./scripts/data_retrieval.sh
+          echo "NEW_FORECAST_FILES_COPIED=$NEW_FORECAST_FILES_COPIED" >> $GITHUB_ENV
 
+      # NOTE:
       - name: Setup Python
-        if: env.NEW_FILES_COPIED == 'true'
+        if: env.NEW_FORECAST_FILES_COPIED == 'true'
         uses: actions/setup-python@v4
         with:
           python-version: 3.11
 
       - name: Install Python Dependencies
-        if: env.NEW_FILES_COPIED == 'true'
+        if: env.NEW_FORECAST_FILES_COPIED == 'true'
         run: |
           pip install numpy pandas glob2
 
-      - name: Create subdirectory within public/data/processed
-        if: env.NEW_FILES_COPIED == 'true'
-        run: |
-          chmod +x ./bash_scripts/setup_directories.sh
-          ./bash_scripts/setup_directories.sh
-
       - name: Execute Data Transformation
-        if: env.NEW_FILES_COPIED == 'true'
+        if: env.NEW_FORECAST_FILES_COPIED == 'true'
         run: python python_scripts/transform_data.py
 
       - name: Commit Changes to Main
-        if: env.NEW_FILES_COPIED == 'true'
+        if: env.NEW_FORECAST_FILES_COPIED == 'true'
         run: |
           git config user.name github-actions
           git config user.email github-actions@github.com
@@ -61,7 +61,7 @@ jobs:
           git push origin main
 
       - name: Update Production
-        if: env.NEW_FILES_COPIED == 'true'
+        if: env.NEW_FORECAST_FILES_COPIED == 'true'
         run: |
           git checkout production
           git merge --no-ff main -m "Merge weekly data update from main"
