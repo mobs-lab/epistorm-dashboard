@@ -31,13 +31,11 @@ jobs:
 
       - name: Create subdirectory for all target locations for all data
         run: |
-          chmod +x ./scripts/setup_directories.sh
           ./scripts/setup_directories.sh
 
       - name: Check and Copy New Files
         id: check-copy
         run: |
-          chmod +x ./scripts/data_retrieval.sh
           source ./scripts/data_retrieval.sh
 
       # Set up python and run transform_data.py ONLY WHEN new prediction data is copied
