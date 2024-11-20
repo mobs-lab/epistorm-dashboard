@@ -57,14 +57,12 @@ jobs:
         run: python scripts/transform_data.py
       # End of python setup and execution
 
-      - name: Commit Changes to Main
+      # NOTE: commit back to main branch, and releasing into production branch are done together to avoid timestamp issue
+      - name: Commit Changes and Update Production
         if: ${{ env.NEW_PREDICTION_DATA_COPIED == 'true' || env.NEW_SURVEILLANCE_DATA_COPIED == 'true' || env.NEW_SURVEILLANCE_ARCHIVE_DATA_COPIED == 'true' }}
         run: |
-          # Generate Timestamp for every update
+          # Generate timestamp
           TIMESTAMP=$(date +'%Y-%m-%d-%H-%M-%S')
-          
-          # Save timestamp for next step
-          echo "timestamp=${TIMESTAMP}" >> $GITHUB_OUTPUT
           
           # Stage data changes
           git add public/data/unprocessed/* public/data/ground-truth/* public/data/processed/* || true
@@ -99,14 +97,6 @@ jobs:
             exit 1
           fi
           
-          echo "Successfully pushed changes to main and created tag: ${TAG_NAME}"
-
-      - name: Create Data Release
-        if: ${{ env.NEW_PREDICTION_DATA_COPIED == 'true' || env.NEW_SURVEILLANCE_DATA_COPIED == 'true' || env.NEW_SURVEILLANCE_ARCHIVE_DATA_COPIED == 'true' }}
-        run: |
-          # Use the timestamp from previous step
-          TAG_NAME="data-update/${{ steps.create_tag.outputs.timestamp }}"
-          
           # Update production branch
           git fetch origin production:production
           git checkout production
@@ -122,8 +112,8 @@ jobs:
           
           # Push to production
           if ! git push origin production; then
-          echo "Failed to push to production"
-          exit 1
+            echo "Failed to push to production"
+            exit 1
           fi
           
-          echo "Successfully merged data update into production"
+          echo "Successfully updated main and production branches with tag: ${TAG_NAME}"
