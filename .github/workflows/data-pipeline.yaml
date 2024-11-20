@@ -62,6 +62,10 @@ jobs:
         run: |
           # Generate Timestamp for every update
           TIMESTAMP=$(date +'%Y-%m-%d-%H-%M-%S')
+          
+          # Save timestamp for next step
+          echo "timestamp=${TIMESTAMP}" >> $GITHUB_OUTPUT
+          
           # Stage data changes
           git add public/data/unprocessed/* public/data/ground-truth/* public/data/processed/* || true
           
@@ -100,8 +104,8 @@ jobs:
       - name: Create Data Release
         if: ${{ env.NEW_PREDICTION_DATA_COPIED == 'true' || env.NEW_SURVEILLANCE_DATA_COPIED == 'true' || env.NEW_SURVEILLANCE_ARCHIVE_DATA_COPIED == 'true' }}
         run: |
-          TIMESTAMP=$(date +'%Y-%m-%d-%H-%M-%S')
-          TAG_NAME="data-update/${TIMESTAMP}"
+          # Use the timestamp from previous step
+          TAG_NAME="data-update/${{ steps.create_tag.outputs.timestamp }}"
           
           # Update production branch
           git fetch origin production:production
