@@ -5,6 +5,10 @@ on:
     - cron: '30 6-21/3 * * 4'  # Runs every Thursday, starting from 6:30 AM UTC until 9:30 PM UTC, every 3 hours
   workflow_dispatch:
 
+concurrency:
+  group: data-pipeline
+  cancel-in-progress: false
+
 jobs:
   update-data:
     runs-on: ubuntu-latest
@@ -14,12 +18,14 @@ jobs:
         with:
           submodules: 'recursive'
           fetch-depth: 0
+          ref: main  # Explicitly checkout main
 
       - name: Update Submodule
         run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
           git pull origin main
           git submodule init
-          git submodule update
           git submodule update --remote
           git submodule foreach git pull origin main
 
@@ -33,36 +39,57 @@ jobs:
         run: |
           chmod +x ./scripts/data_retrieval.sh
           source ./scripts/data_retrieval.sh
-          echo "NEW_FORECAST_FILES_COPIED=$NEW_FORECAST_FILES_COPIED" >> $GITHUB_ENV
 
-      # NOTE:
+      # Set up python and run transform_data.py ONLY WHEN new prediction data is copied
       - name: Setup Python
-        if: env.NEW_FORECAST_FILES_COPIED == 'true'
-        uses: actions/setup-python@v4
+        if: ${{ env.NEW_PREDICTION_DATA_COPIED == 'true' }}
+        uses: actions/setup-python@v5
         with:
-          python-version: 3.11
+          python-version: '3.13'
+          cache: 'pip'
 
       - name: Install Python Dependencies
-        if: env.NEW_FORECAST_FILES_COPIED == 'true'
+        if: ${{ env.NEW_PREDICTION_DATA_COPIED == 'true' }}
         run: |
+          python -m pip install --upgrade pip
           pip install numpy pandas glob2
 
       - name: Execute Data Transformation
-        if: env.NEW_FORECAST_FILES_COPIED == 'true'
-        run: python python_scripts/transform_data.py
+        if: ${{ env.NEW_PREDICTION_DATA_COPIED == 'true' }}
+        run: python scripts/transform_data.py
+      # End of python setup and execution
 
       - name: Commit Changes to Main
-        if: env.NEW_FORECAST_FILES_COPIED == 'true'
+        if: ${{ env.NEW_PREDICTION_DATA_COPIED == 'true' || env.NEW_SURVEILLANCE_DATA_COPIED == 'true' || env.NEW_SURVEILLANCE_ARCHIVE_DATA_COPIED == 'true' }}
         run: |
-          git config user.name github-actions
-          git config user.email github-actions@github.com
-          git add public/data/unprocessed/* public/data/ground-truth/* public/data/processed/*
-          git commit -m "Update and process data via GitHub Actions"
-          git push origin main
+          # Stage data changes
+          git add public/data/unprocessed/* public/data/ground-truth/* public/data/processed/* || true
+          
+          # Stage submodule changes
+          git add FluSight-forecast-hub || true
+          
+          # Check if there are changes to commit
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+            exit 0
+          fi
+          
+          git commit -m "Weekly data update
+          
+          - Updated data files
+          - Updated FluSight-forecast-hub submodule reference"
+          git push origin main || exit 1
 
-      - name: Update Production
-        if: env.NEW_FORECAST_FILES_COPIED == 'true'
+      - name: Create Data Release
+        if: ${{ env.NEW_PREDICTION_DATA_COPIED == 'true' || env.NEW_SURVEILLANCE_DATA_COPIED == 'true' || env.NEW_SURVEILLANCE_ARCHIVE_DATA_COPIED == 'true' }}
         run: |
+          # Create a release tag with date
+          RELEASE_TAG="data-update-$(date +'%Y-%m-%d')"
+          git tag -a $RELEASE_TAG -m "Weekly data update $(date +'%Y-%m-%d')"
+          git push origin $RELEASE_TAG
+          
+          # Merge to production via release tag
+          git fetch origin production:production
           git checkout production
-          git merge --no-ff main -m "Merge weekly data update from main"
+          git merge --no-ff $RELEASE_TAG -m "Merge data update $RELEASE_TAG into production"
           git push origin production

@@ -1,35 +1,39 @@
 # Model Names Listed Here
 team_names=("MOBS-GLEAM_FLUH" "MIGHTE-Nsemble" "NU_UCSD-GLEAM_AI_FLUH" "CEPH-Rtrend_fluH" "FluSight-ensemble")
 
-NEW_FORECAST_FILES_COPIED=false
-NEW_SURVEILLANCE_ARCHIVE_COPIED=false
+NEW_PREDICTION_DATA_COPIED=false
+NEW_SURVEILLANCE_DATA_COPIED=false
+NEW_SURVEILLANCE_ARCHIVE_DATA_COPIED=false
 
-DATA_SOURCE_LOCATION_PATH='FluSight-forecast-hub/model-output'
-DATA_TARGET_LOCATION_PATH='public/data/unprocessed'
+PREDICTION_DATA_SOURCE_LOCATION='FluSight-forecast-hub/model-output'
+PREDICTION_DATA_TARGET_LOCATION='public/data/unprocessed'
 
-GROUND_TRUTH_SOURCE='FluSight-forecast-hub/target-data'
-GROUND_TRUTH_TARGET='public/data/ground-truth'
-GROUND_TRUTH_FILE_NAME='target-hospital-admissions.csv'
+SURVEILLANCE_DATA_SOURCE_LOCATION='FluSight-forecast-hub/target-data'
+SURVEILLANCE_DATA_TARGET_LOCATION='public/data/ground-truth'
+SURVEILLANCE_DATA_FILE_NAME='target-hospital-admissions.csv'
+
+SURVEILLANCE_ARCHIVE_DATA_SOURCE_LOCATION='auxiliary-data/target-data-archive'
+SURVEILLANCE_ARCHIVE_DATA_TARGET_LOCATION='public/data/ground-truth/historical-data'
 
 #region Check if new model predictions are available, and copy them over if yes
 for team in "${team_names[@]}"; do
   echo "Checking for new files from $team..."
 
 # Make sure each model has a subdirectory
-  if [ -d "$DATA_SOURCE_LOCATION_PATH/$team" ]; then
-    mkdir -p "$DATA_TARGET_LOCATION_PATH/$team"
+  if [ -d "$PREDICTION_DATA_SOURCE_LOCATION/$team" ]; then
+    mkdir -p "$PREDICTION_DATA_TARGET_LOCATION/$team"
 
     # Iterate through all the models on CDC's source
-    for file in "$DATA_SOURCE_LOCATION_PATH/$team"/*; do
+    for file in "$PREDICTION_DATA_SOURCE_LOCATION/$team"/*; do
       filename=$(basename "$file")
 
       # Check if the file exists in the target directory
       # If not, it is new, so we copy it over
-      if [ ! -f "$DATA_TARGET_LOCATION_PATH/$team/$filename" ]; then
-        cp "$file" "$DATA_TARGET_LOCATION_PATH/$team/"
-        echo "Copied $filename to $DATA_TARGET_LOCATION_PATH/$team/"
+      if [ ! -f "$PREDICTION_DATA_TARGET_LOCATION/$team/$filename" ]; then
+        cp "$file" "$PREDICTION_DATA_TARGET_LOCATION/$team/"
+        echo "Copied $filename to $PREDICTION_DATA_TARGET_LOCATION/$team/"
         #NOTE: Any new file copied over should trigger a new deployment
-        NEW_FORECAST_FILES_COPIED=true
+        NEW_PREDICTION_DATA_COPIED=true
       fi
     done
   else
@@ -40,25 +44,49 @@ done
 #endregion
 
 #region Check if new Surveillance data is available, and copy it over if yes
-# Check if target directory is set up for ground truth
-if [ ! -d "$GROUND_TRUTH_TARGET" ]; then
-    mkdir -p "$GROUND_TRUTH_TARGET"
+# Duplicate: Check if target directory is set up for ground truth
+if [ ! -d "$SURVEILLANCE_DATA_TARGET_LOCATION" ]; then
+    mkdir -p "$SURVEILLANCE_DATA_TARGET_LOCATION"
 fi
 
 # NOTE: This set up should only run during initialization of project
-if [ ! -f "$GROUND_TRUTH_TARGET/$GROUND_TRUTH_FILE_NAME" ]; then
-  cp "$GROUND_TRUTH_SOURCE/$GROUND_TRUTH_FILE_NAME" "$GROUND_TRUTH_TARGET/$GROUND_TRUTH_FILE_NAME"
-  echo "Copied target-hospital-admissions.csv to $GROUND_TRUTH_TARGET"
-  NEW_FORECAST_FILES_COPIED=true
+if [ ! -f "$SURVEILLANCE_DATA_TARGET_LOCATION/$SURVEILLANCE_DATA_FILE_NAME" ]; then
+  cp "$SURVEILLANCE_DATA_SOURCE_LOCATION/$SURVEILLANCE_DATA_FILE_NAME" "$SURVEILLANCE_DATA_TARGET_LOCATION/$SURVEILLANCE_DATA_FILE_NAME"
+  echo "Copied target-hospital-admissions.csv to $SURVEILLANCE_DATA_TARGET_LOCATION"
+  NEW_SURVEILLANCE_DATA_COPIED=true
 else
-  if ! cmp -s "$GROUND_TRUTH_SOURCE/$GROUND_TRUTH_FILE_NAME" "$GROUND_TRUTH_TARGET/$GROUND_TRUTH_FILE_NAME"; then
-      echo "Detected new version of $GROUND_TRUTH_FILE_NAME in source, merging with stale one..."
-      awk '!seen[$0]++' "$GROUND_TRUTH_SOURCE/$GROUND_TRUTH_FILE_NAME" "$GROUND_TRUTH_TARGET/$GROUND_TRUTH_FILE_NAME" > "$GROUND_TRUTH_TARGET/$GROUND_TRUTH_FILE_NAME"
-      echo "Merged new entries from $GROUND_TRUTH_FILE_NAME into our $GROUND_TRUTH_TARGET"
-      NEW_FORECAST_FILES_COPIED=true
+  if ! cmp -s "$SURVEILLANCE_DATA_SOURCE_LOCATION/$SURVEILLANCE_DATA_FILE_NAME" "$SURVEILLANCE_DATA_TARGET_LOCATION/$SURVEILLANCE_DATA_FILE_NAME"; then
+      echo "Detected new version of $SURVEILLANCE_DATA_FILE_NAME in source, merging with stale one..."
+      awk '!seen[$0]++' "$SURVEILLANCE_DATA_SOURCE_LOCATION/$SURVEILLANCE_DATA_FILE_NAME" "$SURVEILLANCE_DATA_TARGET_LOCATION/$SURVEILLANCE_DATA_FILE_NAME" > "$SURVEILLANCE_DATA_TARGET_LOCATION/$SURVEILLANCE_DATA_FILE_NAME"
+      echo "Merged new entries from $SURVEILLANCE_DATA_FILE_NAME into our $SURVEILLANCE_DATA_TARGET_LOCATION"
+      NEW_SURVEILLANCE_DATA_COPIED=true
     fi
 fi
 #endregion
 
-# Echo this for CI/CD pipeline to know that new files are copied.
-echo "NEW_FORECAST_FILES_COPIED=$NEW_FORECAST_FILES_COPIED"
+#region Check if new Surveillance Archive data is available, and copy it over if yes
+# Duplicate: Check if target directory is set up for historical data
+if [ ! -d "$SURVEILLANCE_ARCHIVE_DATA_TARGET_LOCATION" ]; then
+    mkdir -p "$SURVEILLANCE_ARCHIVE_DATA_TARGET_LOCATION"
+fi
+
+# check if new files are available in the source directory for historical archive data
+for file in "$SURVEILLANCE_ARCHIVE_DATA_SOURCE_LOCATION"/*; do
+  filename=$(basename "$file")
+
+  # Check if the file exists in the target directory
+  # If not, it is new, so we copy it over
+  if [ ! -f "$SURVEILLANCE_ARCHIVE_DATA_TARGET_LOCATION/$filename" ]; then
+    cp "$file" "$SURVEILLANCE_ARCHIVE_DATA_TARGET_LOCATION/"
+    echo "Copied $filename to $SURVEILLANCE_ARCHIVE_DATA_TARGET_LOCATION/"
+    NEW_SURVEILLANCE_ARCHIVE_DATA_COPIED=true
+  fi
+done
+#endregion
+
+# Export the environment variables to be used by the CI/CD Pipeline
+{
+    echo "NEW_PREDICTION_DATA_COPIED=$NEW_PREDICTION_DATA_COPIED"
+    echo "NEW_SURVEILLANCE_DATA_COPIED=$NEW_SURVEILLANCE_DATA_COPIED"
+    echo "NEW_SURVEILLANCE_ARCHIVE_DATA_COPIED=$NEW_SURVEILLANCE_ARCHIVE_DATA_COPIED"
+} >> $GITHUB_ENV

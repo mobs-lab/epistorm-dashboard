@@ -13,6 +13,9 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          ref: demo
+          submodules: 'false'
 
       - id: 'auth'
         name: 'Authenticate to Google Cloud'
