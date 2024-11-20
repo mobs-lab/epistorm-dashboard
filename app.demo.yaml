@@ -1,9 +1,9 @@
-# app.yaml (default service)
+# app.demo.yaml (demo service)
 runtime: nodejs20
-service: default
+service: demo
 
 env_variables:
-  NEXT_PUBLIC_GAE_SERVICE: "default"
+  NEXT_PUBLIC_GAE_SERVICE: "demo"
 
 handlers:
   - url: /robots.txt

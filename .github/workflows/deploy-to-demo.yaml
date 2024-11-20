@@ -1,18 +1,21 @@
-name: Deploy to GCP App Engine Default Service
+name: Deploy to GCP App Engine demo Service
 
 on:
   push:
     branches:
-      - production
+      - demo
   workflow_dispatch:
 
 jobs:
-  deploy:
+  deploy-demo:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          ref: demo
+          submodules: 'false'
 
       - id: 'auth'
         name: 'Authenticate to Google Cloud'
@@ -26,6 +29,6 @@ jobs:
       - name: 'Use gcloud CLI'
         run: 'gcloud info'
 
-      - name: Deploy to App Engine
+      - name: Deploy to Demo App Engine
         run: |
-          gcloud app deploy app.yaml --quiet
+          gcloud app deploy app.demo.yaml --quiet
