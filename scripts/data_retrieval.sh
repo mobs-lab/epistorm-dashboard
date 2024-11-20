@@ -12,7 +12,7 @@ SURVEILLANCE_DATA_SOURCE_LOCATION='FluSight-forecast-hub/target-data'
 SURVEILLANCE_DATA_TARGET_LOCATION='public/data/ground-truth'
 SURVEILLANCE_DATA_FILE_NAME='target-hospital-admissions.csv'
 
-SURVEILLANCE_ARCHIVE_DATA_SOURCE_LOCATION='auxiliary-data/target-data-archive'
+SURVEILLANCE_ARCHIVE_DATA_SOURCE_LOCATION='FluSight-forecast-hub/auxiliary-data/target-data-archive'
 SURVEILLANCE_ARCHIVE_DATA_TARGET_LOCATION='public/data/ground-truth/historical-data'
 
 #region Check if new model predictions are available, and copy them over if yes
