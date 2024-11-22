@@ -162,9 +162,9 @@ const SingleModelHorizonPlot = ({viewBoxWidth, viewBoxHeight}: SingleModelHorizo
         // Calculate margins based on viewBox dimensions
         const margin = {
             top: viewBoxHeight * 0.05,
-            right: viewBoxWidth * 0.05,
-            bottom: viewBoxHeight * 0.1,
-            left: viewBoxWidth * 0.08
+            right: viewBoxWidth * 0.04,
+            bottom: viewBoxHeight * 0.05,
+            left: viewBoxWidth * 0.04
         };
 
         const chartWidth = viewBoxWidth - margin.left - margin.right;
