@@ -1,26 +1,29 @@
 'use client'
 
-import React, {useState} from "react";
+import React, {useEffect, useRef, useState} from "react";
 import {Card} from "../CSS/material-tailwind-wrapper";
 import {SeasonOverviewSettings} from "./evaluations-components/SeasonOverview/SeasonOverviewSettingsPanel";
 import SingleModelSettingsPanel from "./evaluations-components/SingleModel/SingleModelSettingsPanel";
-
-// Content Components
-const SeasonOverviewContent = () => {
-    return (
-        <Card className="bg-gray-800 p-6">
-            {/* Season Overview specific content */}
-            <div className="text-white">Season Overview Visualizations</div>
-        </Card>
-    );
-};
+import SingleModelHorizonPlot from "./evaluations-components/SingleModel/SingleModelHorizonPlot";
 
 const SingleModelContent = () => {
+    // Default viewBox dimensions - these define the coordinate system
+    const DEFAULT_VIEW_WIDTH = 1200;
+    const DEFAULT_VIEW_HEIGHT = 600;
+
     return (
-        <Card className="bg-gray-800 p-6">
-            {/* Single Model specific content */}
-            <div className="text-white">Single Model Visualizations</div>
-        </Card>
+        <div className="grid grid-rows-2 gap-4 h-full w-full">
+            <div className="w-full h-full min-h-0"> {/* min-h-0 is crucial for grid layout */}
+                <SingleModelHorizonPlot
+                    viewBoxWidth={DEFAULT_VIEW_WIDTH}
+                    viewBoxHeight={DEFAULT_VIEW_HEIGHT}
+                />
+            </div>
+            <div className="w-full h-full min-h-0">
+                {/* Score chart placeholder */}
+                <p className="text-white">Placeholder for score chart</p>
+            </div>
+        </div>
     );
 };
 
@@ -81,21 +84,11 @@ const EvaluationsPage = () => {
 
                 {/* Tab Content */}
                 <Card className="h-[calc(100%-2.5rem)] bg-gray-800">
-                        {activeTab === 'season-overview' ? (
-                            <div className="text-white">Season Overview Content</div>
-                        ) : (
-                            <div className={"flex flex-col size-full justify-stretch items-stretch align-middle"}>
-                                <div className={"flex size-full bg-amber-400"}>
-                                    {/*<SingleModelWeeklyForecastBoxPlot/>*/}
-                                    <p> Placeholder for box plot </p>
-                                </div>
-                                <div className={"flex size-full bg-blue-600"}>
-                                    {/*<SingleModelWeeklyScoreChart/>*/}
-                                    <p> Placeholder for score chart</p>
-                                </div>
-
-                            </div>
-                        )}
+                    {activeTab === 'season-overview' ? (
+                        <div className="text-white">Season Overview Content</div>
+                    ) : (
+                        <SingleModelContent/>
+                    )}
                 </Card>
             </div>
         </div>
