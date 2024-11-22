@@ -106,7 +106,7 @@ const NowcastStateThermo: React.FC = () => {
     const [dimensions, setDimensions] = useState({width: 0, height: 0});
     const {
         selectedStateName, USStateNum, userSelectedRiskLevelModel, userSelectedWeek
-    } = useAppSelector((state) => state.filter);
+    } = useAppSelector((state) => state.forecastSettings);
     const groundTruthData = useAppSelector(state => state.groundTruth.data);
     const predictionsData = useAppSelector(state => state.predictions.data);
     const locationData = useAppSelector(state => state.location.data);
@@ -228,12 +228,12 @@ const NowcastStateThermo: React.FC = () => {
         const currentSelectedWeek = new Date(userSelectedWeek);
         const relativeLastWeek = new Date(currentSelectedWeek);
         relativeLastWeek.setDate(relativeLastWeek.getDate() - 7);
-        // console.log('DEBUG: Relative last week:', relativeLastWeek);
+        // console.debug('DEBUG: Relative last week:', relativeLastWeek);
 
         // Get ground truth value
         const groundTruthEntry = groundTruthData.find(d => d.stateNum === USStateNum && isUTCDateEqual(d.date, relativeLastWeek));
         const groundTruthValue = groundTruthEntry ? groundTruthEntry.weeklyRate : 0;
-        // console.log('DEBUG: Ground truth value:', groundTruthValue);
+        // console.debug('DEBUG: Ground truth value:', groundTruthValue);
 
         // Get predicted value
         let predictedValue = 0;
@@ -247,7 +247,7 @@ const NowcastStateThermo: React.FC = () => {
                 }
             }
         }
-        // console.log('DEBUG: Predicted value:', predictedValue);
+        // console.debug('DEBUG: Predicted value:', predictedValue);
 
         // Function to calculate line position and risk level
         const calculateLinePosition = (value: number) => {
@@ -286,7 +286,7 @@ const NowcastStateThermo: React.FC = () => {
         setCurrentRiskLevel(predictedPosition.riskLevel.charAt(0).toUpperCase() + predictedPosition.riskLevel.slice(1));
 
         // Update risk color for the map
-        // console.log("DEBUG: ", predictedPosition.riskLevel);
+        // console.debug("DEBUG: ", predictedPosition.riskLevel);
         setRiskColor(riskColors[riskLevels.indexOf(predictedPosition.riskLevel)]);
 
         // Helper functions for tooltip
@@ -444,16 +444,16 @@ const NowcastStateThermo: React.FC = () => {
         const currentWeekText = `${formatDate(dateA)} to ${formatDate(dateB)}`;
         const previousWeekText = `${formatDate(dateC)} to ${formatDate(dateD)}`;
 
-        // console.log('DEBUG: Date strings calculated:', {currentWeekText, previousWeekText});
+        // console.debug('DEBUG: Date strings calculated:', {currentWeekText, previousWeekText});
 
         // Update state variables to trigger re-render of ThermoLegendArea
         setCurrentWeek(currentWeekText);
         setPreviousWeek(previousWeekText);
 
-        // console.log('DEBUG: State updated:', {currentWeek, previousWeek});
+        // console.debug('DEBUG: State updated:', {currentWeek, previousWeek});
     }, [userSelectedWeek]);
 
-    // console.log('DEBUG: Rendering NowcastStateThermo', {currentWeek, previousWeek});
+    // console.debug('DEBUG: Rendering NowcastStateThermo', {currentWeek, previousWeek});
 
     return (
         <div ref={containerRef}

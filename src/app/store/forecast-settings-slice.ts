@@ -1,9 +1,9 @@
-// src/app/store/filterSlice.ts
+/* src/app/store/forecast-settings-slice.ts */
 import {createSlice, PayloadAction} from '@reduxjs/toolkit';
 import {SeasonOption} from '../Interfaces/forecast-interfaces';
 import {parseISO} from "date-fns";
 
-interface FilterState {
+interface ForecastSettingsState {
     selectedStateName: string;
     USStateNum: string;
     forecastModel: string[];
@@ -22,7 +22,7 @@ interface FilterState {
     userSelectedWeek: Date;
 }
 
-const initialState: FilterState = {
+const initialState: ForecastSettingsState = {
     selectedStateName: "United States",
     USStateNum: "US",
     forecastModel: ["MOBS-GLEAM_FLUH"],
@@ -38,8 +38,8 @@ const initialState: FilterState = {
     userSelectedWeek: parseISO("2024-05-04")
 };
 
-const filterSlice = createSlice({
-    name: 'filter',
+const forecastSettingsSlice = createSlice({
+    name: 'forecast-settings-slice',
     initialState,
     reducers: {
         updateSelectedState: (state, action: PayloadAction<{ stateName: string; stateNum: string }>) => {
@@ -71,7 +71,7 @@ const filterSlice = createSlice({
             state.seasonOptions = action.payload;
         },
         updateDateRange: (state, action: PayloadAction<string>) => {
-            console.log("DEBUG: Redux: filterSlice.ts: updateDateRange", action.payload);
+            console.debug("DEBUG: Redux: forecast-settings-slice.ts: updateDateRange", action.payload);
             state.dateRange = action.payload;
         },
         updateUserSelectedRiskLevelModel: (state, action: PayloadAction<string>) => {
@@ -96,6 +96,6 @@ export const {
     setSeasonOptions,
     updateUserSelectedRiskLevelModel,
     updateUserSelectedWeek
-} = filterSlice.actions;
+} = forecastSettingsSlice.actions;
 
-export default filterSlice.reducer;
+export default forecastSettingsSlice.reducer;

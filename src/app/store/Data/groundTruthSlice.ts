@@ -1,6 +1,6 @@
 // src/app/store/groundTruthSlice.ts
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { DataPoint } from '../Interfaces/forecast-interfaces';
+import { DataPoint } from '../../Interfaces/forecast-interfaces';
 
 interface GroundTruthState {
     data: DataPoint[];

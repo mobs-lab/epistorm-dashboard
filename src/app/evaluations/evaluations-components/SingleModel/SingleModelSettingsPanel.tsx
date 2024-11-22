@@ -1,11 +1,11 @@
 "use client"
 
 import React, {useMemo} from 'react';
-import {modelColorMap} from '../../Interfaces/modelColors';
-import InfoButton from './InfoButton';
-import {SeasonOption} from '../../Interfaces/forecast-interfaces';
-import {Radio, Typography} from "../../CSS/material-tailwind-wrapper";
-import {useAppDispatch, useAppSelector} from '../../store/hooks';
+import {modelColorMap} from '../../../Interfaces/modelColors';
+import InfoButton from '../../../forecasts/forecasts-components/InfoButton';
+import {SeasonOption} from '../../../Interfaces/forecast-interfaces';
+import {Radio, Typography} from "../../../CSS/material-tailwind-wrapper";
+import {useAppDispatch, useAppSelector} from '../../../store/hooks';
 import {
     updateConfidenceInterval,
     updateDateEnd,
@@ -15,9 +15,9 @@ import {
     updateNumOfWeeksAhead,
     updateSelectedState,
     updateYScale
-} from '../../store/filterSlice';
-import SettingsStateMap from "../../forecasts/forecasts-components/SettingsStateMap";
-import SettingsStyledDatePicker from "../../forecasts/forecasts-components/SettingsStyledDatePicker";
+} from '../../../store/forecast-settings-slice';
+import SettingsStateMap from "../../../forecasts/forecasts-components/SettingsStateMap";
+import SettingsStyledDatePicker from "../../../forecasts/forecasts-components/SettingsStyledDatePicker";
 import Image from "next/image";
 
 const modelNames = ['MOBS-GLEAM_FLUH', 'CEPH-Rtrend_fluH', 'MIGHTE-Nsemble', 'NU_UCSD-GLEAM_AI_FLUH', 'FluSight-ensemble'];
@@ -38,7 +38,7 @@ const SingleModelSettingsPanel: React.FC = () => {
 
     const {
         USStateNum, forecastModel, dateStart, dateEnd, dateRange, confidenceInterval, seasonOptions
-    } = useAppSelector((state) => state.filter);
+    } = useAppSelector((state) => state.forecastSettings);
 
 
     const {earliestDayFromGroundTruthData, latestDayFromGroundTruthData} = useMemo(() => {
@@ -56,13 +56,13 @@ const SingleModelSettingsPanel: React.FC = () => {
         };
     }, [groundTruthData]);
 
-    /*console.log("DEBUG: earliestDayFromGroundTruthData: ", earliestDayFromGroundTruthData);
-    console.log("DEBUG: latestDayFromGroundTruthData: ", latestDayFromGroundTruthData);*/
+    /*console.debug("DEBUG: earliestDayFromGroundTruthData: ", earliestDayFromGroundTruthData);
+    console.debug("DEBUG: latestDayFromGroundTruthData: ", latestDayFromGroundTruthData);*/
 
     const onStateSelectionChange = (stateNum: string) => {
         const selectedState = locationData.find((state) => state.stateNum === stateNum);
         if (selectedState) {
-            console.log("SettingsPanel update: State selected: ", selectedState.stateName, " with stateNum: ", selectedState.stateNum);
+            console.debug("SettingsPanel update: State selected: ", selectedState.stateName, " with stateNum: ", selectedState.stateNum);
             dispatch(updateSelectedState({stateName: selectedState.stateName, stateNum: selectedState.stateNum}));
         }
     };
@@ -83,7 +83,7 @@ const SingleModelSettingsPanel: React.FC = () => {
         if (date && date >= earliestDayFromGroundTruthData && date <= dateEnd) {
             dispatch(updateDateStart(date));
         } else {
-            console.log("SettingsPanel.tsx: Invalid dateStart selection");
+            console.debug("SettingsPanel.tsx: Invalid dateStart selection");
         }
     };
 
@@ -91,7 +91,7 @@ const SingleModelSettingsPanel: React.FC = () => {
         if (date && date >= dateStart && date <= latestDayFromGroundTruthData) {
             dispatch(updateDateEnd(date));
         } else {
-            console.log("SettingsPanel.tsx: Invalid dateEnd selection");
+            console.debug("SettingsPanel.tsx: Invalid dateEnd selection");
         }
     };
 
@@ -112,7 +112,7 @@ const SingleModelSettingsPanel: React.FC = () => {
 
 
     const onYAxisScaleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-        console.log("SettingsPanel update: Y-axis scale changed to: ", event.target.value);
+        console.debug("SettingsPanel update: Y-axis scale changed to: ", event.target.value);
         dispatch(updateYScale(event.target.value));
     };
 
@@ -124,12 +124,12 @@ const SingleModelSettingsPanel: React.FC = () => {
         } else {
             dispatch(updateConfidenceInterval(confidenceInterval.filter((model) => model !== interval)));
         }
-        console.log("SettingsPanel update: Confidence Interval changed to: ", confidenceInterval);
+        console.debug("SettingsPanel update: Confidence Interval changed to: ", confidenceInterval);
     };
 
     return (
         <div
-            className="bg-mobs-lab-color-filterspane text-white fill-white flex flex-col h-full rounded-md overflow-hidden util-responsive-text-settings">
+            className="bg-mobs-lab-color-filterspane text-white fill-white flex flex-col h-full rounded-md overflow-scroll util-responsive-text-settings">
             <div className="p-4">
                 <div className="flex flex-col flex-wrap justify-stretch items-start w-full">
                     <h2> Select Location </h2>
@@ -189,18 +189,12 @@ const SingleModelSettingsPanel: React.FC = () => {
                 </div>
 
                 {/*TODO: Score Option that changes how Evaluations display*/}
-                <div className={"size-full justify-stretch items-stretch py-4"}>
+                <div className={"w-full justify-stretch items-stretch py-4"}>
                     <Typography variant="h6" className="text-white"> Score </Typography>
-                </div>
-
-
-                <div className="w-full h-full justify-stretch items-stretch py-4">
-                    <Typography variant="h6" className="text-white">Season</Typography>
                     <select
-                        id={"settings-panel-season-select"}
-                        value={dateRange}
-                        onChange={(e) => onSeasonSelectionChange(e.target.value)}
-                        className={"text-white border-[#5d636a] border-2 flex-wrap bg-mobs-lab-color-filterspane rounded-md w-full h-full py-2 px-2 overflow-ellipsis"}
+                        id={"evaluations-settings-panel-score-select"}
+                        value={null}
+                        className={"text-white border-[#5d636a] border-2 bg-mobs-lab-color-filterspane rounded-md w-full p-2"}
                     >
                         {seasonOptions.map((option: SeasonOption) => (
                             <option key={option.index} value={option.timeValue}>
@@ -209,8 +203,22 @@ const SingleModelSettingsPanel: React.FC = () => {
                     </select>
                 </div>
 
-
+                <div className="w-full py-4">
+                    <Typography variant="h6" className="text-white">Season</Typography>
+                    <select
+                        id={"evaluations-settings-panel-season-select"}
+                        value={dateRange}
+                        onChange={(e) => onSeasonSelectionChange(e.target.value)}
+                        className={"text-white border-[#5d636a] border-2 flex-wrap bg-mobs-lab-color-filterspane rounded-md w-full py-2 px-2 overflow-ellipsis"}
+                    >
+                        {seasonOptions.map((option: SeasonOption) => (
+                            <option key={option.index} value={option.timeValue}>
+                                {option.displayString}
+                            </option>))}
+                    </select>
+                </div>
             </div>
+
             <div className="mx-auto p-2">
                 <Image src="/epistorm-logo.png" width={300} height={120} alt="Epistorm Logo"/>
             </div>

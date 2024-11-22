@@ -34,13 +34,13 @@ import NowcastHeader from "./forecasts-components/NowcastHeader";
 import ForecastChartHeader from "./forecasts-components/ForecastChartHeader";
 
 import {useAppDispatch} from '../store/hooks';
-import {setGroundTruthData} from '../store/groundTruthSlice';
-import {setPredictionsData} from '../store/predictionsSlice';
-import {setLocationData} from '../store/locationSlice';
-import {setNowcastTrendsData} from '../store/nowcastTrendsSlice';
-import {setSeasonOptions, updateDateEnd, updateDateRange, updateDateStart} from "../store/filterSlice";
-import {setStateThresholdsData} from '../store/stateThresholdsSlice';
-import {setHistoricalGroundTruthData} from '../store/historicalGroundTruthSlice';
+import {setGroundTruthData} from '../store/Data/groundTruthSlice';
+import {setPredictionsData} from '../store/Data/predictionsSlice';
+import {setLocationData} from '../store/Data/locationSlice';
+import {setNowcastTrendsData} from '../store/Data/nowcastTrendsSlice';
+import {setSeasonOptions, updateDateEnd, updateDateRange, updateDateStart} from "../store/forecast-settings-slice";
+import {setStateThresholdsData} from '../store/Data/stateThresholdsSlice';
+import {setHistoricalGroundTruthData} from '../store/Data/historicalGroundTruthSlice';
 
 import '../CSS/component_styles/forecast-page.css';
 
@@ -51,6 +51,7 @@ interface ProcessedDataWithDateRange {
     latestDate: Date;
 }
 
+/*TODO: Move model names to interfaces*/
 const modelNames = ['MOBS-GLEAM_FLUH', 'CEPH-Rtrend_fluH', 'MIGHTE-Nsemble', 'NU_UCSD-GLEAM_AI_FLUH', 'FluSight-ensemble'];
 
 
@@ -141,11 +142,11 @@ const Page: React.FC = () => {
 
             dispatch(setPredictionsData(predictionsData));
             updateLoadingState('predictions', false);
-            console.log("Debug: page.tsx: fetchForecastData: predictionsData: ", predictionsData);
+            console.debug("Debug: page.tsx: fetchForecastData: predictionsData: ", predictionsData);
 
             /*NOTE: Season Options are generated using Ground Truth data so must be here*/
             const seasonOptions = generateSeasonOptions(processedData);
-            // console.log("Debug: page.tsx: fetchForecastData: seasonOptions: ", seasonOptions);
+            // console.debug("Debug: page.tsx: fetchForecastData: seasonOptions: ", seasonOptions);
             dispatch(setSeasonOptions(seasonOptions));
             if (seasonOptions.length > 0) {
                 const lastSeason = seasonOptions[seasonOptions.length - 1];

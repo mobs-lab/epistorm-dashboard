@@ -3,7 +3,7 @@ import * as topojson from "topojson-client";
 import * as d3 from "d3";
 import {zoom, zoomIdentity, ZoomBehavior} from "d3-zoom";
 import {useAppDispatch, useAppSelector} from '../../store/hooks';
-import {updateSelectedState} from '../../store/filterSlice';
+import {updateSelectedState} from '../../store/forecast-settings-slice';
 
 const usStateData = "/states-10m.json";
 
@@ -15,7 +15,7 @@ const SettingsStateMap: React.FC = () => {
     const [dimensions, setDimensions] = useState({width: 0, height: 0});
     const [zoomLevel, setZoomLevel] = useState(1);
     const dispatch = useAppDispatch();
-    const {selectedStateName} = useAppSelector((state) => state.filter);
+    const {selectedStateName} = useAppSelector((state) => state.forecastSettings);
     const locationData = useAppSelector((state) => state.location.data);
     const [initialTransform, setInitialTransform] = useState<d3.ZoomTransform | null>(null);
 
