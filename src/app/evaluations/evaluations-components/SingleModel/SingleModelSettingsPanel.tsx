@@ -1,35 +1,34 @@
 "use client"
 
 import React, {useMemo} from 'react';
+
 import {modelColorMap} from '../../../Interfaces/modelColors';
-import InfoButton from '../../../forecasts/forecasts-components/InfoButton';
 import {SeasonOption} from '../../../Interfaces/forecast-interfaces';
-import {Radio, Typography} from "../../../CSS/material-tailwind-wrapper";
+
+import SettingsStateMap from "../../../forecasts/forecasts-components/SettingsStateMap";
+
+
 import {useAppDispatch, useAppSelector} from '../../../store/hooks';
 import {
-    updateConfidenceInterval,
     updateDateEnd,
     updateDateRange,
     updateDateStart,
-    updateForecastModel,
-    updateNumOfWeeksAhead,
-    updateSelectedState,
-    updateYScale
+    updateSelectedState
 } from '../../../store/forecast-settings-slice';
-import SettingsStateMap from "../../../forecasts/forecasts-components/SettingsStateMap";
+import {
+    updateEvaluationSingleViewModel,
+    updateEvaluationHorizon,
+    updateEvaluationSeasonOptions,
+} from '../../../store/evaluations-settings-slice';
+
+import {Radio, Typography} from "../../../CSS/material-tailwind-wrapper";
 import SettingsStyledDatePicker from "../../../forecasts/forecasts-components/SettingsStyledDatePicker";
+
 import Image from "next/image";
 
 const modelNames = ['MOBS-GLEAM_FLUH', 'CEPH-Rtrend_fluH', 'MIGHTE-Nsemble', 'NU_UCSD-GLEAM_AI_FLUH', 'FluSight-ensemble'];
 
 const SingleModelSettingsPanel: React.FC = () => {
-
-    const stateMapInfo = (<div>
-        <p>Use this map to select a specific state for your forecast.</p>
-        <p>Click on a state to zoom in and select it. The map will automatically zoom out after selection.</p>
-        <p>You can also use the dropdown menu below to select a state.</p>
-    </div>);
-
     /* Redux-Managed State Variables */
     const dispatch = useAppDispatch();
 
@@ -37,7 +36,7 @@ const SingleModelSettingsPanel: React.FC = () => {
     const locationData = useAppSelector((state) => state.location.data);
 
     const {
-        USStateNum, forecastModel, dateStart, dateEnd, dateRange, confidenceInterval, seasonOptions
+        USStateNum, dateStart, dateEnd, seasonOptions
     } = useAppSelector((state) => state.forecastSettings);
 
 

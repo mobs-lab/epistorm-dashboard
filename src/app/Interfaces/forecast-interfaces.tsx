@@ -75,6 +75,25 @@ export interface HistoricalDataEntry {
     historicalData: DataPoint[];
 }
 
+// New loading states interface
+export interface LoadingStates {
+    groundTruth: boolean;
+    predictions: boolean;
+    locations: boolean;
+    nowcastTrends: boolean;
+    thresholds: boolean;
+    historicalGroundTruth: boolean;
+    seasonOptions: boolean;
+}
+
+/* NOTE: For data provider to pass processed fetched data into helper functions*/
+export interface ProcessedDataWithDateRange {
+    data: DataPoint[];
+    earliestDate: Date;
+    latestDate: Date;
+}
+
+
 export const isUTCDateEqual = (a: Date, b: Date) => {
     return a.getUTCFullYear() === b.getUTCFullYear() && a.getUTCMonth() === b.getUTCMonth() && a.getUTCDate() === b.getUTCDate();
 }

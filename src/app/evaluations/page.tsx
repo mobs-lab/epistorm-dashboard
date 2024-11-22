@@ -1,3 +1,9 @@
+// File Path: /src/app/evaluations/page.tsx
+/* Page Component for displaying tab layout for:
+*   - Season Overview
+*   - Single Model
+* */
+
 'use client'
 
 import React, {useEffect, useRef, useState} from "react";
