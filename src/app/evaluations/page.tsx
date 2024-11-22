@@ -21,14 +21,14 @@ const SingleModelContent = () => {
 
     if (!loadingStates.groundTruth || !loadingStates.predictions) {
         return (
-            <div className="grid grid-rows-2 gap-4 h-full w-full">
+            <div className="grid grid-rows-2 gap-4 h-full w-full border border-b-brown-500">
                 <div className="w-full h-full min-h-0">
                     <SingleModelHorizonPlot
                         viewBoxWidth={DEFAULT_VIEW_WIDTH}
                         viewBoxHeight={DEFAULT_VIEW_HEIGHT}
                     />
                 </div>
-                <div className="w-full h-full min-h-0">
+                <div className="w-full h-full min-h-0 border-2">
                     <p className="text-white">Placeholder for score chart</p>
                 </div>
             </div>
@@ -119,7 +119,7 @@ const EvaluationsPage = () => {
                 </div>
 
                 {/* Tab Content */}
-                <Card className="h-[calc(100%-2.5rem)] bg-gray-800">
+                <Card className="h-[calc(100%-2.5rem)] bg-mobs-lab-color">
                     {renderContent()}
                 </Card>
             </div>
