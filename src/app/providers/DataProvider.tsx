@@ -179,7 +179,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         return options.reverse();
     };
-    // ... (Copy all the helper functions from your root page)
 
     const fetchAndProcessData = async () => {
         if (dataFetchStarted) return;

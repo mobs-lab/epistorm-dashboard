@@ -13,16 +13,15 @@ import {
     updateDateEnd,
     updateDateRange,
     updateDateStart,
-    updateSelectedState
+    updateSelectedState,
 } from '../../../store/forecast-settings-slice';
 import {
     updateEvaluationSingleViewModel,
     updateEvaluationHorizon,
-    updateEvaluationSeasonOptions,
+    // updateEvaluationSeasonOptions,
 } from '../../../store/evaluations-settings-slice';
 
 import {Radio, Typography} from "../../../CSS/material-tailwind-wrapper";
-import SettingsStyledDatePicker from "../../../forecasts/forecasts-components/SettingsStyledDatePicker";
 
 import Image from "next/image";
 
@@ -36,8 +35,13 @@ const SingleModelSettingsPanel: React.FC = () => {
     const locationData = useAppSelector((state) => state.location.data);
 
     const {
-        USStateNum, dateStart, dateEnd, seasonOptions
+        USStateNum, dateStart, dateEnd, dateRange, seasonOptions
     } = useAppSelector((state) => state.forecastSettings);
+
+    // Evaluation-specific state
+    const {
+        evaluationSingleViewModel, evaluationHorizon
+    } = useAppSelector((state) => state.evaluationsSettings);
 
 
     const {earliestDayFromGroundTruthData, latestDayFromGroundTruthData} = useMemo(() => {
@@ -55,45 +59,28 @@ const SingleModelSettingsPanel: React.FC = () => {
         };
     }, [groundTruthData]);
 
-    /*console.debug("DEBUG: earliestDayFromGroundTruthData: ", earliestDayFromGroundTruthData);
-    console.debug("DEBUG: latestDayFromGroundTruthData: ", latestDayFromGroundTruthData);*/
-
+    // State selection handlers (reused from forecast)
     const onStateSelectionChange = (stateNum: string) => {
         const selectedState = locationData.find((state) => state.stateNum === stateNum);
         if (selectedState) {
-            console.debug("SettingsPanel update: State selected: ", selectedState.stateName, " with stateNum: ", selectedState.stateNum);
-            dispatch(updateSelectedState({stateName: selectedState.stateName, stateNum: selectedState.stateNum}));
+            dispatch(updateSelectedState({
+                stateName: selectedState.stateName,
+                stateNum: selectedState.stateNum
+            }));
         }
     };
 
-    const onModelSelectionChange = (modelName: string, checked: boolean) => {
-        if (checked) {
-            dispatch(updateForecastModel([...forecastModel, modelName]));
-        } else {
-            dispatch(updateForecastModel(forecastModel.filter((model) => model !== modelName)));
-        }
+    // Model selection handler (single model only)
+    const onModelSelectionChange = (modelName: string) => {
+        dispatch(updateEvaluationSingleViewModel(modelName));
     };
 
-    const onNumOfWeeksAheadChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-        dispatch(updateNumOfWeeksAhead(Number(event.target.value)));
+    // Horizon handler
+    const onHorizonChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        dispatch(updateEvaluationHorizon(Number(event.target.value)));
     };
 
-    const onDateStartSelectionChange = (date: Date | undefined) => {
-        if (date && date >= earliestDayFromGroundTruthData && date <= dateEnd) {
-            dispatch(updateDateStart(date));
-        } else {
-            console.debug("SettingsPanel.tsx: Invalid dateStart selection");
-        }
-    };
-
-    const onDateEndSelectionChange = (date: Date | undefined) => {
-        if (date && date >= dateStart && date <= latestDayFromGroundTruthData) {
-            dispatch(updateDateEnd(date));
-        } else {
-            console.debug("SettingsPanel.tsx: Invalid dateEnd selection");
-        }
-    };
-
+    // Season selection handler (shared with forecast)
     const onSeasonSelectionChange = (timeValue: string) => {
         const selectedOption = seasonOptions.find(option => option.timeValue === timeValue);
         if (selectedOption) {
@@ -103,50 +90,27 @@ const SingleModelSettingsPanel: React.FC = () => {
         }
     };
 
-    const handleShowAllDates = () => {
-        //TODO: Implement this again now that earliest and latest dates are calculated using useMemo
-        dispatch(updateDateStart(earliestDayFromGroundTruthData));
-        dispatch(updateDateEnd(latestDayFromGroundTruthData));
-    };
-
-
-    const onYAxisScaleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-        console.debug("SettingsPanel update: Y-axis scale changed to: ", event.target.value);
-        dispatch(updateYScale(event.target.value));
-    };
-
-    const onConfidenceIntervalChange = (interval: string, checked: boolean) => {
-        // need to also get rid of the percentage sign from the input
-        interval = interval.split("%")[0];
-        if (checked) {
-            dispatch(updateConfidenceInterval([...confidenceInterval, interval]));
-        } else {
-            dispatch(updateConfidenceInterval(confidenceInterval.filter((model) => model !== interval)));
-        }
-        console.debug("SettingsPanel update: Confidence Interval changed to: ", confidenceInterval);
-    };
-
     return (
         <div
             className="bg-mobs-lab-color-filterspane text-white fill-white flex flex-col h-full rounded-md overflow-scroll util-responsive-text-settings">
             <div className="p-4">
                 <div className="flex flex-col flex-wrap justify-stretch items-start w-full">
-                    <h2> Select Location </h2>
+                    <h2>Select Location</h2>
 
                     <div className="mb-4 w-full">
                         <SettingsStateMap/>
                     </div>
 
-
                     <select
                         value={USStateNum}
                         onChange={(e) => onStateSelectionChange(e.target.value)}
-                        className={"text-white border-[#5d636a] border-2 font-sans flex-wrap bg-mobs-lab-color-filterspane rounded-md px-2 py-4 w-full h-full"}
+                        className="text-white border-[#5d636a] border-2 font-sans flex-wrap bg-mobs-lab-color-filterspane rounded-md px-2 py-4 w-full h-full"
                     >
-                        {locationData.map((state) => (<option key={state.state} value={state.stateNum}>
-                            {state.stateName}
-                            {/*{state.stateNum} : {state.stateName}*/}
-                        </option>))}
+                        {locationData.map((state) => (
+                            <option key={state.state} value={state.stateNum}>
+                                {state.stateName}
+                            </option>
+                        ))}
                     </select>
 
                     <div className="my-2 w-full h-full overflow-ellipsis">
@@ -154,74 +118,74 @@ const SingleModelSettingsPanel: React.FC = () => {
                         <div className="flex flex-col text-wrap">
                             {modelNames.map((model) => (
                                 <label key={model} className="inline-flex items-center text-white">
-                                <span
-                                    className="w-[1em] h-[1em] border-2 rounded-sm mr-2 "
-                                    style={{
-                                        backgroundColor: forecastModel.includes(model) ? modelColorMap[model] : 'transparent',
-                                        borderColor: modelColorMap[model],
-                                    }}
-                                />
                                     <input
-                                        type="checkbox"
+                                        type="radio"
                                         className="sr-only"
-                                        checked={forecastModel.includes(model)}
-                                        onChange={(e) => onModelSelectionChange(model, e.target.checked)}
+                                        checked={evaluationSingleViewModel === model}
+                                        onChange={() => onModelSelectionChange(model)}
                                     />
-                                    <span className="ml-2 text-wrap xs:text-sm ">{model}</span>
-                                </label>))}
+                                    <span
+                                        className="w-[1em] h-[1em] border-2 rounded-sm mr-2"
+                                        style={{
+                                            backgroundColor: evaluationSingleViewModel === model ? modelColorMap[model] : 'transparent',
+                                            borderColor: modelColorMap[model],
+                                        }}
+                                    />
+                                    <span className="ml-2 text-wrap xs:text-sm">{model}</span>
+                                </label>
+                            ))}
                         </div>
                     </div>
 
                     <div className="my-2 w-full h-full">
-                        <Typography variant="h6" className="text-white"> Horizon </Typography>
-                        {[0, 1, 2, 3].map((value) => (<Radio
-                            key={value}
-                            name="weeksAheadRadioBtn"
-                            value={value.toString()}
-                            label={value.toString()}
-                            onChange={(e) => onNumOfWeeksAheadChange(e)}
-                            className="text-white"
-                            labelProps={{className: "text-white"}}
-                            defaultChecked={value === 3}
-                        />))}
+                        <Typography variant="h6" className="text-white">Horizon</Typography>
+                        {[0, 1, 2, 3].map((value) => (
+                            <Radio
+                                key={value}
+                                name="horizonRadioBtn"
+                                value={value.toString()}
+                                label={value.toString()}
+                                onChange={onHorizonChange}
+                                className="text-white"
+                                labelProps={{className: "text-white"}}
+                                checked={evaluationHorizon === value}
+                            />
+                        ))}
                     </div>
-                </div>
 
-                {/*TODO: Score Option that changes how Evaluations display*/}
-                <div className={"w-full justify-stretch items-stretch py-4"}>
-                    <Typography variant="h6" className="text-white"> Score </Typography>
-                    <select
-                        id={"evaluations-settings-panel-score-select"}
-                        value={null}
-                        className={"text-white border-[#5d636a] border-2 bg-mobs-lab-color-filterspane rounded-md w-full p-2"}
-                    >
-                        {seasonOptions.map((option: SeasonOption) => (
-                            <option key={option.index} value={option.timeValue}>
-                                {option.displayString}
-                            </option>))}
-                    </select>
-                </div>
+                    {/* Score selection placeholder */}
+                    <div className="w-full justify-stretch items-stretch py-4">
+                        <Typography variant="h6" className="text-white">Score</Typography>
+                        <select
+                            disabled
+                            className="text-white border-[#5d636a] border-2 bg-mobs-lab-color-filterspane rounded-md w-full p-2 opacity-50"
+                        >
+                            <option>Coming soon...</option>
+                        </select>
+                    </div>
 
-                <div className="w-full py-4">
-                    <Typography variant="h6" className="text-white">Season</Typography>
-                    <select
-                        id={"evaluations-settings-panel-season-select"}
-                        value={dateRange}
-                        onChange={(e) => onSeasonSelectionChange(e.target.value)}
-                        className={"text-white border-[#5d636a] border-2 flex-wrap bg-mobs-lab-color-filterspane rounded-md w-full py-2 px-2 overflow-ellipsis"}
-                    >
-                        {seasonOptions.map((option: SeasonOption) => (
-                            <option key={option.index} value={option.timeValue}>
-                                {option.displayString}
-                            </option>))}
-                    </select>
+                    <div className="w-full py-4">
+                        <Typography variant="h6" className="text-white">Season</Typography>
+                        <select
+                            value={dateRange}
+                            onChange={(e) => onSeasonSelectionChange(e.target.value)}
+                            className="text-white border-[#5d636a] border-2 flex-wrap bg-mobs-lab-color-filterspane rounded-md w-full py-2 px-2 overflow-ellipsis"
+                        >
+                            {seasonOptions.map((option: SeasonOption) => (
+                                <option key={option.index} value={option.timeValue}>
+                                    {option.displayString}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
                 </div>
             </div>
 
             <div className="mx-auto p-2">
                 <Image src="/epistorm-logo.png" width={300} height={120} alt="Epistorm Logo"/>
             </div>
-        </div>);
-}
+        </div>
+    );
+};
 
 export default SingleModelSettingsPanel;

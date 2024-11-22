@@ -241,6 +241,8 @@ const SingleModelHorizonPlot = ({viewBoxWidth, viewBoxHeight}: SingleModelHorizo
                 .attr("stroke-opacity", 0.5)
                 .attr("stroke-dasharray", "2,2")
                 .attr("x2", chartWidth));
+
+        /* */
     }
 
     /* NOTE:
@@ -274,6 +276,7 @@ const SingleModelHorizonPlot = ({viewBoxWidth, viewBoxHeight}: SingleModelHorizo
                 viewBox={`0 0 ${viewBoxWidth} ${viewBoxHeight}`}
                 preserveAspectRatio="xMidYMid meet"
                 className="w-full h-full"
+                fontStyle={`fontFamily: "var(--font-dm-sans)"`}
             />
         </div>
     );
