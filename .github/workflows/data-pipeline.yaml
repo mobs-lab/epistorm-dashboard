@@ -5,6 +5,10 @@ on:
     - cron: '30 6-21/3 * * 4'  # Runs every Thursday, starting from 6:30 AM UTC until 9:30 PM UTC, every 3 hours
   workflow_dispatch:
 
+concurrency:
+  group: data-pipeline
+  cancel-in-progress: false
+
 jobs:
   update-data:
     runs-on: ubuntu-latest
@@ -14,55 +18,101 @@ jobs:
         with:
           submodules: 'recursive'
           fetch-depth: 0
+          ref: main  # Explicitly checkout main
 
       - name: Update Submodule
         run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
           git pull origin main
           git submodule init
-          git submodule update
           git submodule update --remote
           git submodule foreach git pull origin main
+
+      - name: Create subdirectory for all target locations for all data
+        run: |
+          ./scripts/setup_directories.sh
 
       - name: Check and Copy New Files
         id: check-copy
         run: |
-          chmod +x ./bash_scripts/data_retrieval.sh
-          source ./bash_scripts/data_retrieval.sh
-          echo "NEW_FILES_COPIED=$NEW_FILES_COPIED" >> $GITHUB_ENV
+          source ./scripts/data_retrieval.sh
 
+      # Set up python and run transform_data.py ONLY WHEN new prediction data is copied
       - name: Setup Python
-        if: env.NEW_FILES_COPIED == 'true'
-        uses: actions/setup-python@v4
+        if: ${{ env.NEW_PREDICTION_DATA_COPIED == 'true' }}
+        uses: actions/setup-python@v5
         with:
-          python-version: 3.11
+          python-version: '3.11'
 
       - name: Install Python Dependencies
-        if: env.NEW_FILES_COPIED == 'true'
+        if: ${{ env.NEW_PREDICTION_DATA_COPIED == 'true' }}
         run: |
+          python -m pip install --upgrade pip
           pip install numpy pandas glob2
 
-      - name: Create subdirectory within public/data/processed
-        if: env.NEW_FILES_COPIED == 'true'
-        run: |
-          chmod +x ./bash_scripts/setup_directories.sh
-          ./bash_scripts/setup_directories.sh
-
       - name: Execute Data Transformation
-        if: env.NEW_FILES_COPIED == 'true'
-        run: python python_scripts/transform_data.py
+        if: ${{ env.NEW_PREDICTION_DATA_COPIED == 'true' }}
+        run: python scripts/transform_data.py
+      # End of python setup and execution
 
-      - name: Commit Changes to Main
-        if: env.NEW_FILES_COPIED == 'true'
+      # NOTE: commit back to main branch, and releasing into production branch are done together to avoid timestamp issue
+      - name: Commit Changes and Update Production
+        if: ${{ env.NEW_PREDICTION_DATA_COPIED == 'true' || env.NEW_SURVEILLANCE_DATA_COPIED == 'true' || env.NEW_SURVEILLANCE_ARCHIVE_DATA_COPIED == 'true' }}
         run: |
-          git config user.name github-actions
-          git config user.email github-actions@github.com
-          git add public/data/unprocessed/* public/data/ground-truth/* public/data/processed/*
-          git commit -m "Update and process data via GitHub Actions"
-          git push origin main
-
-      - name: Update Production
-        if: env.NEW_FILES_COPIED == 'true'
-        run: |
+          # Generate timestamp
+          TIMESTAMP=$(date +'%Y-%m-%d-%H-%M-%S')
+          
+          # Stage data changes
+          git add public/data/unprocessed/* public/data/ground-truth/* public/data/processed/* || true
+          
+          # Stage submodule changes
+          git add FluSight-forecast-hub || true
+          
+          # Check if there are changes to commit
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+            exit 0
+          fi
+          
+          # Create commit in main
+          git commit -m "Data update ${TIMESTAMP}
+          
+          - Updated data files
+          - Updated FluSight-forecast-hub submodule reference"
+          
+          # Push changes to main
+          if ! git push origin main; then
+            echo "Failed to push to main"
+            exit 1
+          fi
+          
+          # Create and push tag
+          TAG_NAME="data-update/${TIMESTAMP}"
+          git tag -a "${TAG_NAME}" -m "Data update at ${TIMESTAMP}"
+          
+          if ! git push origin "${TAG_NAME}"; then
+            echo "Failed to push tag"
+            exit 1
+          fi
+          
+          # Update production branch
+          git fetch origin production:production
           git checkout production
-          git merge --no-ff main -m "Merge weekly data update from main"
-          git push origin production
+          
+          # Merge the tagged snapshot of main branch with data update into production
+          if ! git merge --no-ff "${TAG_NAME}" -m "Merge data update ${TIMESTAMP} into production
+          
+          Source: ${TAG_NAME}"; then
+            echo "Merge conflict detected - aborting"
+            git merge --abort
+            exit 1
+          fi
+          
+          # Push to production
+          if ! git push origin production; then
+            echo "Failed to push to production"
+            exit 1
+          fi
+          
+          echo "Successfully updated main and production branches with tag: ${TAG_NAME}"
