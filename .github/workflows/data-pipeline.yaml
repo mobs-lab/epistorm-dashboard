@@ -40,13 +40,13 @@ jobs:
 
       # Set up python and run transform_data.py ONLY WHEN new prediction data is copied
       - name: Setup Python
-        if: ${{ env.NEW_PREDICTION_DATA_COPIED == 'true' }}
+        if: ${{ env.NEW_PREDICTION_DATA_COPIED == 'true' || env.NEW_SURVEILLANCE_DATA_COPIED == 'true'}}
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
       - name: Install Python Dependencies
-        if: ${{ env.NEW_PREDICTION_DATA_COPIED == 'true' }}
+        if: ${{ env.NEW_PREDICTION_DATA_COPIED == 'true' || env.NEW_SURVEILLANCE_DATA_COPIED == 'true'}}
         run: |
           python -m pip install --upgrade pip
           pip install numpy pandas glob2
@@ -55,6 +55,10 @@ jobs:
         if: ${{ env.NEW_PREDICTION_DATA_COPIED == 'true' }}
         run: python scripts/transform_data.py
       # End of python setup and execution
+
+      - name: Execute Surveillance Data Cleaning
+        if: ${{ env.NEW_SURVEILLANCE_DATA_COPIED == 'true'|| env.NEW_SURVEILLANCE_ARCHIVE_DATA_COPIED == 'true'}}
+        run: python scripts/clean_surveillance_data.py
 
       # NOTE: commit back to main branch, and releasing into production branch are done together to avoid timestamp issue
       - name: Commit Changes and Update Production
