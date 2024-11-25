@@ -28,8 +28,8 @@ const Header: React.FC = () => {
                 <nav className="flex space-x-6 pr-4">
                     <Link href="/forecasts/"
                           className="text-2xl text-mobs-lab-color hover:text-teal-900">Forecasts</Link>
-                    {/*<Link href="/evaluations/"
-                          className="text-2xl text-mobs-lab-color hover:text-teal-900">Evaluations</Link> */}
+                    <Link href="/evaluations/"
+                          className="text-2xl text-mobs-lab-color hover:text-teal-900">Evaluations</Link>
                     {/*<Link href="/background/"
                           className="text-2xl text-mobs-lab-color hover:text-teal-900">Background</Link>*/}
                 </nav>
