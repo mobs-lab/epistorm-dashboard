@@ -20,7 +20,7 @@ def clean_surveillance_data():
         "public/data/ground-truth/compare/target-hospital-admissions.csv"
     )
 
-    output_current_data_path = os.path.join(
+    output_data_path = os.path.join(
         project_root,
         "public/data/ground-truth/target-hospital-admissions.csv"
     )
@@ -40,8 +40,8 @@ def clean_surveillance_data():
         df = df.replace('NA', pd.NA, regex=True)
         df = df.dropna()
 
-        # Save cleaned data back to the same location
-        df.to_csv(output_current_data_path, index=False)
+        # Save cleaned data to outside "compare" folder
+        df.to_csv(output_data_path, index=False)
 
         print(f"Current surveillance data processed:")
         print(f"  - Original rows: {original_count}")
