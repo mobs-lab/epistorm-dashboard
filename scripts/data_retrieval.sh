@@ -9,7 +9,7 @@ PREDICTION_DATA_SOURCE_LOCATION='FluSight-forecast-hub/model-output'
 PREDICTION_DATA_TARGET_LOCATION='public/data/unprocessed'
 
 SURVEILLANCE_DATA_SOURCE_LOCATION='FluSight-forecast-hub/target-data'
-SURVEILLANCE_DATA_TARGET_LOCATION='public/data/ground-truth'
+SURVEILLANCE_DATA_TARGET_LOCATION='public/data/ground-truth/compare' #NOTE: Added "compare" so this script does not compare new ones with cleaned up ones (which will always be different)
 SURVEILLANCE_DATA_FILE_NAME='target-hospital-admissions.csv'
 
 SURVEILLANCE_ARCHIVE_DATA_SOURCE_LOCATION='FluSight-forecast-hub/auxiliary-data/target-data-archive'
@@ -51,15 +51,16 @@ fi
 
 # NOTE: This set up should only run during initialization of project
 if [ ! -f "$SURVEILLANCE_DATA_TARGET_LOCATION/$SURVEILLANCE_DATA_FILE_NAME" ]; then
+  echo "Missing required surveillance data file, copying newest one over..."
   cp "$SURVEILLANCE_DATA_SOURCE_LOCATION/$SURVEILLANCE_DATA_FILE_NAME" "$SURVEILLANCE_DATA_TARGET_LOCATION/$SURVEILLANCE_DATA_FILE_NAME"
   echo "Copied target-hospital-admissions.csv to $SURVEILLANCE_DATA_TARGET_LOCATION"
   NEW_SURVEILLANCE_DATA_COPIED=true
 else
   if ! cmp -s "$SURVEILLANCE_DATA_SOURCE_LOCATION/$SURVEILLANCE_DATA_FILE_NAME" "$SURVEILLANCE_DATA_TARGET_LOCATION/$SURVEILLANCE_DATA_FILE_NAME"; then
-      echo "Detected new version of $SURVEILLANCE_DATA_FILE_NAME in source, merging with stale one..."
+      echo "Detected new version of $SURVEILLANCE_DATA_FILE_NAME in source, copying into compare area..."
       rm "$SURVEILLANCE_DATA_TARGET_LOCATION/$SURVEILLANCE_DATA_FILE_NAME" # Remove the old file
       cp "$SURVEILLANCE_DATA_SOURCE_LOCATION/$SURVEILLANCE_DATA_FILE_NAME" "$SURVEILLANCE_DATA_TARGET_LOCATION/$SURVEILLANCE_DATA_FILE_NAME" # Copy the new file over
-      echo "Merged new entries from $SURVEILLANCE_DATA_FILE_NAME into our $SURVEILLANCE_DATA_TARGET_LOCATION"
+      echo "Copied $SURVEILLANCE_DATA_FILE_NAME into our $SURVEILLANCE_DATA_TARGET_LOCATION, awaiting cleanup of NA rows..."
       NEW_SURVEILLANCE_DATA_COPIED=true
     fi
 fi
