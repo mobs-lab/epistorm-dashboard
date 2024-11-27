@@ -1046,10 +1046,10 @@ const ForecastChart: React.FC = () => {
             // Ensure userSelectedWeek is within the current date range
             let adjustedUserSelectedWeek = new Date(userSelectedWeek);
             if (adjustedUserSelectedWeek < dateStart) {
-                adjustedUserSelectedWeek = new Date(filteredGroundTruthData[filteredGroundTruthData.length - 1].date);
+                adjustedUserSelectedWeek = new Date(filteredGroundTruthData[0].date);
                 dispatch(updateUserSelectedWeek(adjustedUserSelectedWeek));
             } else if (adjustedUserSelectedWeek > dateEnd) {
-                adjustedUserSelectedWeek = new Date(filteredGroundTruthData[0].date);
+                adjustedUserSelectedWeek = new Date(filteredGroundTruthData[filteredGroundTruthData.length - 1].date);
                 dispatch(updateUserSelectedWeek(adjustedUserSelectedWeek));
             }
 
@@ -1062,13 +1062,55 @@ const ForecastChart: React.FC = () => {
             } else {
                 // This works once for the first time the component is rendered to by default make the latest date as user-selected week
                 if (!initialDataLoaded) {
-                    const filteredGroundTruthDataWithoutPlaceholders = filteredGroundTruthData.filter((d) => d.admissions !== -1,);
-                    // console.log("DEBUG: ForecastChart: Initial data loaded, setting user selected week to latest date:", filteredGroundTruthDataWithoutPlaceholders);
-                    const latestDate = d3.max(filteredGroundTruthDataWithoutPlaceholders, (d) => d.date,) as Date;
-                    // ensure latestDate is UTC
-                    const latestDateUTC = new Date(latestDate.toISOString());
-                    bubbleUserSelectedWeek(latestDateUTC);
-                    setInitialDataLoaded(true);
+                    // Find the most recent reference date for US predictions (default option defined in Redux)
+                    const usPredictions = predictionsData.flatMap(model =>
+                        model.predictionData.filter(pred => pred.stateNum === USStateNum)
+                    );
+
+                    if (usPredictions.length > 0) {
+                        // Get the most recent reference date that has associated target dates
+                        const validPredictions = usPredictions.filter(pred =>
+                            // Ensure the prediction has at least one target end date
+                            pred.targetEndDate != null &&
+                            // Only consider predictions where target end date is same as or after reference date
+                            pred.targetEndDate >= pred.referenceDate
+                        );
+
+                        if (validPredictions.length > 0) {
+                            const latestReferenceDate = new Date(
+                                Math.max(...validPredictions.map(pred => pred.referenceDate.getTime()))
+                            );
+
+                            // Ensure we're working with UTC dates consistently
+                            const latestDateUTC = new Date(latestReferenceDate.toISOString());
+                            bubbleUserSelectedWeek(latestDateUTC);
+                            setInitialDataLoaded(true);
+                        } else {
+                            // Fallback to the latest ground truth data if no valid predictions
+                            const filteredGroundTruthDataWithoutPlaceholders = filteredGroundTruthData.filter(
+                                (d) => d.admissions !== -1
+                            );
+                            const latestDate = d3.max(
+                                filteredGroundTruthDataWithoutPlaceholders,
+                                (d) => d.date
+                            ) as Date;
+                            const latestDateUTC = new Date(latestDate.toISOString());
+                            bubbleUserSelectedWeek(latestDateUTC);
+                            setInitialDataLoaded(true);
+                        }
+                    } else {
+                        // Fallback to the latest ground truth data if no US predictions
+                        const filteredGroundTruthDataWithoutPlaceholders = filteredGroundTruthData.filter(
+                            (d) => d.admissions !== -1
+                        );
+                        const latestDate = d3.max(
+                            filteredGroundTruthDataWithoutPlaceholders,
+                            (d) => d.date
+                        ) as Date;
+                        const latestDateUTC = new Date(latestDate.toISOString());
+                        bubbleUserSelectedWeek(latestDateUTC);
+                        setInitialDataLoaded(true);
+                    }
                 }
 
                 // Safety Clamping for when date range is changed by user and userSelectedWeek falls out of the range as a result
@@ -1103,14 +1145,14 @@ const ForecastChart: React.FC = () => {
     // Return the SVG object using reference
     return (
         <div ref={chartRef} className="flex w-full h-full">
-        <svg
-            ref={svgRef}
-            width={"100%"}
-            height={"100%"}
-            preserveAspectRatio="xMidYMid meet"
-            fontStyle={`fontFamily: "var(--font-dm-sans)"`}
-        ></svg>
-    </div>);
+            <svg
+                ref={svgRef}
+                width={"100%"}
+                height={"100%"}
+                preserveAspectRatio="xMidYMid meet"
+                fontStyle={`fontFamily: "var(--font-dm-sans)"`}
+            ></svg>
+        </div>);
 
 
 };
