@@ -120,3 +120,14 @@ jobs:
           fi
           
           echo "Successfully updated main and production branches with tag: ${TAG_NAME}"
+          
+          # Set an output to indicate successful push
+          echo "PRODUCTION_UPDATED=true" >> $GITHUB_ENV
+
+      - name: Trigger deployment workflow by sending a workflow_dispatch event
+#        TODO: Uncomment the following line when test is done
+#        if: ${{ env.PRODUCTION_UPDATED == 'true' }}
+        run: |
+          gh workflow run "Deploy to GCP App Engine Default Service"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} #NOTE: this is not necessary but just in case

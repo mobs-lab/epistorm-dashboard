@@ -3,8 +3,10 @@ name: Deploy to GCP App Engine Default Service
 on:
   push:
     branches:
-      - production
+      - 'production'
   workflow_dispatch:
+  workflow_call:
+
 
 jobs:
   deploy:
