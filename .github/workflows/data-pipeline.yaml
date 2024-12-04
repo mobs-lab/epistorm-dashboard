@@ -3,6 +3,7 @@ name: Weekly Data Update
 on:
   schedule:
     - cron: '30 6-21/3 * * 4'  # Runs every Thursday, starting from 6:30 AM UTC until 9:30 PM UTC, every 3 hours
+    - cron: '30 21 * * 5,6'   # Separately runs another two times, on every Friday and Saturday at 9:30 PM UTC
   workflow_dispatch:
 
 concurrency:
@@ -120,3 +121,15 @@ jobs:
           fi
           
           echo "Successfully updated main and production branches with tag: ${TAG_NAME}"
+          
+          # Set an output to indicate successful push
+          echo "PRODUCTION_UPDATED=true" >> $GITHUB_ENV
+
+        # GitHub bans workflow calling workflows
+        # So we deliberately call a workflow_dispatch event to trigger deployment-to-gcp.yaml workflow
+      - name: Trigger Deployment Workflow
+        if: ${{ env.PRODUCTION_UPDATED == 'true' }}
+        run: |
+          gh workflow run "Deploy to GCP App Engine Default Service"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} #NOTE: this is not necessary but just in case
