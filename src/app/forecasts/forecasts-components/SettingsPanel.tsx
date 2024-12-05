@@ -16,7 +16,7 @@ import {
     updateNumOfWeeksAhead,
     updateSelectedState,
     updateYScale
-} from '../../store/filterSlice';
+} from '../../store/forecast-settings-slice';
 import SettingsStateMap from "./SettingsStateMap";
 import SettingsStyledDatePicker from "./SettingsStyledDatePicker";
 import Image from "next/image";
@@ -39,7 +39,7 @@ const SettingsPanel: React.FC = () => {
 
     const {
         USStateNum, forecastModel, dateStart, dateEnd, dateRange, confidenceInterval, seasonOptions
-    } = useAppSelector((state) => state.filter);
+    } = useAppSelector((state) => state.forecastSettings);
 
 
     const {earliestDayFromGroundTruthData, latestDayFromGroundTruthData} = useMemo(() => {
@@ -57,13 +57,13 @@ const SettingsPanel: React.FC = () => {
         };
     }, [groundTruthData]);
 
-    /*console.log("DEBUG: earliestDayFromGroundTruthData: ", earliestDayFromGroundTruthData);
-    console.log("DEBUG: latestDayFromGroundTruthData: ", latestDayFromGroundTruthData);*/
+    /*console.debug("DEBUG: earliestDayFromGroundTruthData: ", earliestDayFromGroundTruthData);
+    console.debug("DEBUG: latestDayFromGroundTruthData: ", latestDayFromGroundTruthData);*/
 
     const onStateSelectionChange = (stateNum: string) => {
         const selectedState = locationData.find((state) => state.stateNum === stateNum);
         if (selectedState) {
-            console.log("SettingsPanel update: State selected: ", selectedState.stateName, " with stateNum: ", selectedState.stateNum);
+            console.debug("SettingsPanel update: State selected: ", selectedState.stateName, " with stateNum: ", selectedState.stateNum);
             dispatch(updateSelectedState({stateName: selectedState.stateName, stateNum: selectedState.stateNum}));
         }
     };
@@ -84,7 +84,7 @@ const SettingsPanel: React.FC = () => {
         if (date && date >= earliestDayFromGroundTruthData && date <= dateEnd) {
             dispatch(updateDateStart(date));
         } else {
-            console.log("SettingsPanel.tsx: Invalid dateStart selection");
+            console.debug("SettingsPanel.tsx: Invalid dateStart selection");
         }
     };
 
@@ -92,7 +92,7 @@ const SettingsPanel: React.FC = () => {
         if (date && date >= dateStart && date <= latestDayFromGroundTruthData) {
             dispatch(updateDateEnd(date));
         } else {
-            console.log("SettingsPanel.tsx: Invalid dateEnd selection");
+            console.debug("SettingsPanel.tsx: Invalid dateEnd selection");
         }
     };
 
@@ -113,7 +113,7 @@ const SettingsPanel: React.FC = () => {
 
 
     const onYAxisScaleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-        console.log("SettingsPanel update: Y-axis scale changed to: ", event.target.value);
+        console.debug("SettingsPanel update: Y-axis scale changed to: ", event.target.value);
         dispatch(updateYScale(event.target.value));
     };
 
@@ -125,7 +125,7 @@ const SettingsPanel: React.FC = () => {
         } else {
             dispatch(updateConfidenceInterval(confidenceInterval.filter((model) => model !== interval)));
         }
-        console.log("SettingsPanel update: Confidence Interval changed to: ", confidenceInterval);
+        console.debug("SettingsPanel update: Confidence Interval changed to: ", confidenceInterval);
     };
 
     return (

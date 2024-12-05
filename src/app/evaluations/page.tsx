@@ -2,8 +2,8 @@
 
 import React, {useState} from "react";
 import {Card} from "../CSS/material-tailwind-wrapper";
-import {SeasonOverviewSettings} from "./evaluations-components/SeasonOverviewSettingsPanel";
-import SingleModelSettingsPanel from "./evaluations-components/SingleModelSettingsPanel";
+import {SeasonOverviewSettings} from "./evaluations-components/SeasonOverview/SeasonOverviewSettingsPanel";
+import SingleModelSettingsPanel from "./evaluations-components/SingleModel/SingleModelSettingsPanel";
 
 // Content Components
 const SeasonOverviewContent = () => {

@@ -16,7 +16,7 @@ import {
 } from "../../Interfaces/forecast-interfaces";
 
 import {useAppDispatch, useAppSelector} from "../../store/hooks";
-import {updateUserSelectedWeek} from "../../store/filterSlice";
+import {updateUserSelectedWeek} from "../../store/forecast-settings-slice";
 
 const ForecastChart: React.FC = () => {
 
@@ -46,7 +46,7 @@ const ForecastChart: React.FC = () => {
         yAxisScale,
         confidenceInterval,
         historicalDataMode,
-    } = useAppSelector((state) => state.filter);
+    } = useAppSelector((state) => state.forecastSettings);
 
     const dispatch = useAppDispatch();
 
@@ -72,7 +72,7 @@ const ForecastChart: React.FC = () => {
         const baseMarginTop = Math.max(20 + (zoomFactor * 12), height * 0.1);
         const baseMarginBottom = Math.max(20 + (zoomFactor * 25), height * 0.15);
         const baseMarginLeft = Math.max(20 + (zoomFactor * 25), width * 0.038);
-        // console.log("DEBUG: Base Margin Left:", baseMarginLeft);
+        // console.debug("DEBUG: Base Margin Left:", baseMarginLeft);
         const baseMarginRight = Math.max(20 - (zoomFactor * 12), width * 0.02);
 
 
@@ -98,7 +98,7 @@ const ForecastChart: React.FC = () => {
         // Filter data by extracting those entries that fall within the selected date range
         filteredGroundTruthDataByState = filteredGroundTruthDataByState.filter((d) => d.date >= groundTruthDateRange[0] && d.date <= groundTruthDateRange[1],);
 
-        console.log("DEBUG: ForecastChart: Filtered Ground Truth Data:", filteredGroundTruthDataByState);
+        console.debug("DEBUG: ForecastChart: Filtered Ground Truth Data:", filteredGroundTruthDataByState);
 
         return filteredGroundTruthDataByState;
     }
@@ -122,7 +122,7 @@ const ForecastChart: React.FC = () => {
         // Filter the prediction data by referenceDate and targetEndDate for each model
         let filteredModelData = {};
         Object.entries(modelData).forEach(([modelName, predictionData]) => {
-            // let filteredByReferenceDate = predictionData.filter((d) => d.referenceDate.getTime() === selectedWeek.getTime());
+
             let filteredByReferenceDate = predictionData.filter((d) => isUTCDateEqual(d.referenceDate, selectedWeek));
 
             filteredModelData[modelName] = filteredByReferenceDate.filter((d) => {
@@ -202,7 +202,7 @@ const ForecastChart: React.FC = () => {
             }, new Date(0));
 
         const maxDate = d3.max([maxGroundTruthDate, maxPredictionDate]) as Date;
-        console.log("DEBUG: ForecastChart: createScalesAndAxes(): maxDate: ", maxDate);
+        console.debug("DEBUG: ForecastChart: createScalesAndAxes(): maxDate: ", maxDate);
 
         const xScale = d3
             .scaleUtc()
@@ -214,7 +214,7 @@ const ForecastChart: React.FC = () => {
             .range(dateStart, maxDate)
             .filter((d) => d.getDay() === 6);
 
-        // console.log("DEBUG: ForecastChart: createScalesAndAxes(): allSaturdayTracker: ", allSaturdayTracker);
+        // console.debug("DEBUG: ForecastChart: createScalesAndAxes(): allSaturdayTracker: ", allSaturdayTracker);
 
         // Determine the ideal number of ticks
         const idealTickCount = Math.min(Math.max(10, allSaturdayTracker.length), 20);
@@ -252,7 +252,7 @@ const ForecastChart: React.FC = () => {
         const maxGroundTruthValue = d3.max(ground.filter((d) => d.admissions !== -1), (d) => d.admissions) as number;
 
         let maxPredictionValue = 0;
-        // console.log("DEBUG: ForecastChart: createScalesAndAxes(): predictions: ", predictions);
+        // console.debug("DEBUG: ForecastChart: createScalesAndAxes(): predictions: ", predictions);
 
         if (predictions && Object.keys(predictions).length > 0) {
             maxPredictionValue = Object.values(predictions).reduce((max, modelData: PredictionDataPoint[]) => {
@@ -275,10 +275,10 @@ const ForecastChart: React.FC = () => {
             }, 0);
         }
 
-        // console.log("DEBUG: ForecastChart: createScalesAndAxes(): maxPredictionValue: ", maxPredictionValue);
+        // console.debug("DEBUG: ForecastChart: createScalesAndAxes(): maxPredictionValue: ", maxPredictionValue);
 
         let maxValue = Math.max(maxGroundTruthValue, maxPredictionValue);
-        // console.log("DEBUG: ForecastChart: createScalesAndAxes(): maxValue: ", maxValue);
+        // console.debug("DEBUG: ForecastChart: createScalesAndAxes(): maxValue: ", maxValue);
 
         let minValue = d3.min(ground.filter((d) => d.admissions !== -1), (d) => d.admissions) as number;
 
@@ -301,8 +301,8 @@ const ForecastChart: React.FC = () => {
                 .range([chartHeight, 0]);
         }
 
-        console.log("DEBUG: ForecastChart: createScalesAndAxes(): minValue: ", minValue);
-        console.log("DEBUG: ForecastChart: createScalesAndAxes(): maxValue: ", maxValue);
+        /*console.debug("DEBUG: ForecastChart: createScalesAndAxes(): minValue: ", minValue);
+        console.debug("DEBUG: ForecastChart: createScalesAndAxes(): maxValue: ", maxValue);*/
         const ticks = generateYAxisTicks(minValue, maxValue, isLogScale);
 
         const yAxis = d3.axisLeft(yScale)
@@ -433,8 +433,8 @@ const ForecastChart: React.FC = () => {
 
     function renderHistoricalData(svg: d3.Selection<SVGSVGElement, unknown, null, undefined>, historicalData: HistoricalDataEntry[], xScale: d3.ScaleTime<number, number>, yScale: d3.ScaleLinear<number, number> | d3.ScaleLogarithmic<number, number>, marginLeft: number, marginTop: number) {
 
-        console.log("DEBUG: ForecastChart: Rendering historical data:", historicalData);
-        console.log("DEBUG: ForecastChart: User selected week:", userSelectedWeek);
+        console.debug("DEBUG: ForecastChart: Rendering historical data:", historicalData);
+        console.debug("DEBUG: ForecastChart: User selected week:", userSelectedWeek);
 
         // Find the historical data file that is 1 week before the user selected week,
         // While accounting for day light saving time transitions, using a 2-hour buffer, using isUTCDateEqual
@@ -444,11 +444,11 @@ const ForecastChart: React.FC = () => {
         // const matchingHistoricalData = historicalData.find((entry) => isUTCDateEqual(entry.associatedDate, userSelectedWeek));
 
         if (!matchingHistoricalData) {
-            console.log("DEBUG: No matching historical data found for:", userSelectedWeek.toISOString());
+            console.debug("DEBUG: No matching historical data found for:", userSelectedWeek.toISOString());
             return;
         }
 
-        console.log("DEBUG: Matching historical data:", matchingHistoricalData);
+        console.debug("DEBUG: Matching historical data:", matchingHistoricalData);
 
         /*Ensure the historical data to be drawn is cutoff before dateStart*/
         const historicalDataToDraw = matchingHistoricalData.historicalData.filter((d) => d.date >= dateStart);
@@ -638,7 +638,7 @@ const ForecastChart: React.FC = () => {
 
     function createCornerTooltip(svg: d3.Selection<SVGSVGElement, unknown, null, undefined>, marginLeft: number, marginTop: number, chartWidth: number,) {
 
-        // console.log('DEBUG: Initial tooltip position:', marginLeft + 20, marginTop + 20);
+        // console.debug('DEBUG: Initial tooltip position:', marginLeft + 20, marginTop + 20);
         return svg
             .append("g")
             .attr("class", "corner-tooltip")
@@ -758,10 +758,10 @@ const ForecastChart: React.FC = () => {
         const tooltipX = shouldShowOnRightSide ? chartWidth - maxWidth - padding * 2 : 60;
         const tooltipY = marginTop;
 
-        /*console.log('Updating tooltip position:', tooltipX, tooltipY);
-        console.log('Chart width:', chartWidth);
-        console.log('Corner Tooltip on upper-right:', shouldShowOnRightSide);
-        console.log('Max width:', maxWidth);*/
+        /*console.debug('Updating tooltip position:', tooltipX, tooltipY);
+        console.debug('Chart width:', chartWidth);
+        console.debug('Corner Tooltip on upper-right:', shouldShowOnRightSide);
+        console.debug('Max width:', maxWidth);*/
 
         cornerTooltip
             .attr('transform', `translate(${tooltipX}, ${tooltipY})`)
@@ -1009,7 +1009,7 @@ const ForecastChart: React.FC = () => {
     }
 
     function bubbleUserSelectedWeek(date: Date) {
-        console.log("Bubbling user selected week:", date.toISOString());
+        console.debug("Bubbling user selected week:", date.toISOString());
         dispatch(updateUserSelectedWeek(new Date(date.toISOString()))); // Ensure UTC
     }
 
@@ -1046,10 +1046,10 @@ const ForecastChart: React.FC = () => {
             // Ensure userSelectedWeek is within the current date range
             let adjustedUserSelectedWeek = new Date(userSelectedWeek);
             if (adjustedUserSelectedWeek < dateStart) {
-                adjustedUserSelectedWeek = new Date(filteredGroundTruthData[0].date);
+                adjustedUserSelectedWeek = new Date(filteredGroundTruthData[filteredGroundTruthData.length - 1].date);
                 dispatch(updateUserSelectedWeek(adjustedUserSelectedWeek));
             } else if (adjustedUserSelectedWeek > dateEnd) {
-                adjustedUserSelectedWeek = new Date(filteredGroundTruthData[filteredGroundTruthData.length - 1].date);
+                adjustedUserSelectedWeek = new Date(filteredGroundTruthData[0].date);
                 dispatch(updateUserSelectedWeek(adjustedUserSelectedWeek));
             }
 
@@ -1062,55 +1062,13 @@ const ForecastChart: React.FC = () => {
             } else {
                 // This works once for the first time the component is rendered to by default make the latest date as user-selected week
                 if (!initialDataLoaded) {
-                    // Find the most recent reference date for US predictions (default option defined in Redux)
-                    const usPredictions = predictionsData.flatMap(model =>
-                        model.predictionData.filter(pred => pred.stateNum === USStateNum)
-                    );
-
-                    if (usPredictions.length > 0) {
-                        // Get the most recent reference date that has associated target dates
-                        const validPredictions = usPredictions.filter(pred =>
-                            // Ensure the prediction has at least one target end date
-                            pred.targetEndDate != null &&
-                            // Only consider predictions where target end date is same as or after reference date
-                            pred.targetEndDate >= pred.referenceDate
-                        );
-
-                        if (validPredictions.length > 0) {
-                            const latestReferenceDate = new Date(
-                                Math.max(...validPredictions.map(pred => pred.referenceDate.getTime()))
-                            );
-
-                            // Ensure we're working with UTC dates consistently
-                            const latestDateUTC = new Date(latestReferenceDate.toISOString());
-                            bubbleUserSelectedWeek(latestDateUTC);
-                            setInitialDataLoaded(true);
-                        } else {
-                            // Fallback to the latest ground truth data if no valid predictions
-                            const filteredGroundTruthDataWithoutPlaceholders = filteredGroundTruthData.filter(
-                                (d) => d.admissions !== -1
-                            );
-                            const latestDate = d3.max(
-                                filteredGroundTruthDataWithoutPlaceholders,
-                                (d) => d.date
-                            ) as Date;
-                            const latestDateUTC = new Date(latestDate.toISOString());
-                            bubbleUserSelectedWeek(latestDateUTC);
-                            setInitialDataLoaded(true);
-                        }
-                    } else {
-                        // Fallback to the latest ground truth data if no US predictions
-                        const filteredGroundTruthDataWithoutPlaceholders = filteredGroundTruthData.filter(
-                            (d) => d.admissions !== -1
-                        );
-                        const latestDate = d3.max(
-                            filteredGroundTruthDataWithoutPlaceholders,
-                            (d) => d.date
-                        ) as Date;
-                        const latestDateUTC = new Date(latestDate.toISOString());
-                        bubbleUserSelectedWeek(latestDateUTC);
-                        setInitialDataLoaded(true);
-                    }
+                    const filteredGroundTruthDataWithoutPlaceholders = filteredGroundTruthData.filter((d) => d.admissions !== -1,);
+                    // console.debug("DEBUG: ForecastChart: Initial data loaded, setting user selected week to latest date:", filteredGroundTruthDataWithoutPlaceholders);
+                    const latestDate = d3.max(filteredGroundTruthDataWithoutPlaceholders, (d) => d.date,) as Date;
+                    // ensure latestDate is UTC
+                    const latestDateUTC = new Date(latestDate.toISOString());
+                    bubbleUserSelectedWeek(latestDateUTC);
+                    setInitialDataLoaded(true);
                 }
 
                 // Safety Clamping for when date range is changed by user and userSelectedWeek falls out of the range as a result

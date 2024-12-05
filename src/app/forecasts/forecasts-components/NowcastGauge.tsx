@@ -35,7 +35,7 @@ const NowcastGauge: React.FC<RiskLevelGaugeProps> = ({riskLevel}) => {
     const [containerDimensions, setContainerDimensions] = useState({width: 0, height: 0});
 
     const nowcastTrendsCollection = useAppSelector((state) => state.nowcastTrends.allData);
-    const {USStateNum, userSelectedRiskLevelModel, userSelectedWeek} = useAppSelector((state) => state.filter);
+    const {USStateNum, userSelectedRiskLevelModel, userSelectedWeek} = useAppSelector((state) => state.forecastSettings);
 
     const updateDimensions = useCallback(() => {
         if (containerRef.current) {

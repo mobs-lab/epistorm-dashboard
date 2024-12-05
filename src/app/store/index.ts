@@ -1,18 +1,18 @@
 import {configureStore} from '@reduxjs/toolkit';
-import groundTruthReducer from './groundTruthSlice';
-import predictionsReducer from './predictionsSlice';
-import locationReducer from './locationSlice';
-import filterReducer from './filterSlice';
-import nowcastTrendsReducer from './nowcastTrendsSlice';
-import stateThresholdsReducer from "./stateThresholdsSlice";
-import historicalGroundTruthReducer from './historicalGroundTruthSlice';
+import groundTruthReducer from './Data/groundTruthSlice';
+import predictionsReducer from './Data/predictionsSlice';
+import locationReducer from './Data/locationSlice';
+import forecastSettingsReducer from './forecast-settings-slice';
+import nowcastTrendsReducer from './Data/nowcastTrendsSlice';
+import stateThresholdsReducer from "./Data/stateThresholdsSlice";
+import historicalGroundTruthReducer from './Data/historicalGroundTruthSlice';
 
 const store = configureStore({
     reducer: {
         groundTruth: groundTruthReducer,
         predictions: predictionsReducer,
         location: locationReducer,
-        filter: filterReducer,
+        forecastSettings: forecastSettingsReducer,
         nowcastTrends: nowcastTrendsReducer,
         stateThresholds: stateThresholdsReducer,
         historicalGroundTruth: historicalGroundTruthReducer,
