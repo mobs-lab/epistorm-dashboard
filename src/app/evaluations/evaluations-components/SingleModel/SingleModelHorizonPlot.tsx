@@ -1,6 +1,6 @@
 'use client'
 
-import React, {useEffect, useLayoutEffect, useRef, useState} from "react";
+import React, {useEffect, useRef, useState} from "react";
 import * as d3 from "d3";
 import {subWeeks} from "date-fns";
 
@@ -25,26 +25,25 @@ const SingleModelHorizonPlot = ({viewBoxWidth, viewBoxHeight}: SingleModelHorizo
 
     // Get the ground and prediction data from store
     const groundTruthData = useAppSelector((state) => state.groundTruth.data);
+    console.debug("DEBUG: SingleModelHorizonPlot.tsx: groundTruthData", groundTruthData);
+
     const predictionsData = useAppSelector((state) => state.predictions.data);
 
-    // Get all settings variables from Redux
     const {
-        USStateNum,
-        dateStart,
-        dateEnd,
-        seasonOptions //TODO: Use EvaluationsSettingsSlice.seasonOptions instead WHEN it becomes available
-    } = useAppSelector((state) => state.forecastSettings);
-
-    const {
-        evaluationSingleViewModel,
-        evaluationHorizon,
-        // evaluationSeasonOptions,
-    } = useAppSelector((state) => state.evaluationsSettings);
+        evaluationsSingleModelViewSelectedStateCode,
+        evaluationsSingleModelViewDateStart,
+        evaluationSingleModelViewDateEnd,
+        evaluationSingleModelViewModel,
+        evaluationSingleModelViewHorizon,
+        // evaluationSingleModelViewSeasonOptions,
+    } = useAppSelector((state) => state.evaluationsSingleModelSettings);
 
 
     // Function to filter ground truth data by selected state and dates
     function filterGroundTruthData(data: DataPoint[], state: string, dateRange: [Date, Date]): DataPoint[] {
         let filteredData = data.filter((d) => d.stateNum === state);
+
+        console.debug("DEBUG: SingleModelHorizonPlot.tsx: filterGroundTruthData: filteredData (using state)", filteredData);
 
         // Filter data by date range
         filteredData = filteredData.filter(
@@ -173,17 +172,19 @@ const SingleModelHorizonPlot = ({viewBoxWidth, viewBoxHeight}: SingleModelHorizo
         // Filter and process data
         const filteredGroundTruth = filterGroundTruthData(
             groundTruthData,
-            USStateNum,
-            [dateStart, dateEnd]
+            evaluationsSingleModelViewSelectedStateCode,
+            [evaluationsSingleModelViewDateStart, evaluationSingleModelViewDateEnd]
         );
+        console.debug("DEBUG: SingleModelHorizonPlot.tsx: renderBoxPlot: filteredGroundTruth", filteredGroundTruth);
 
         const visualizationData = processVisualizationData(
             predictionsData,
-            evaluationSingleViewModel,
-            USStateNum,
-            evaluationHorizon,
-            [dateStart, dateEnd]
+            evaluationSingleModelViewModel,
+            evaluationsSingleModelViewSelectedStateCode,
+            evaluationSingleModelViewHorizon,
+            [evaluationsSingleModelViewDateStart, evaluationSingleModelViewDateEnd]
         );
+        console.debug("DEBUG: SingleModelHorizonPlot.tsx: renderBoxPlot: visualizationData", visualizationData);
 
         const {xScale, yScale, xAxis, yAxis} = createScalesAndAxes(
             filteredGroundTruth,
@@ -207,7 +208,7 @@ const SingleModelHorizonPlot = ({viewBoxWidth, viewBoxHeight}: SingleModelHorizo
                 .attr("y", yScale(d.quantile95))
                 .attr("width", xScale.bandwidth())
                 .attr("height", yScale(d.quantile05) - yScale(d.quantile95))
-                .attr("fill", modelColorMap[evaluationSingleViewModel])
+                .attr("fill", modelColorMap[evaluationSingleModelViewModel])
                 .attr("opacity", 0.3);
 
             // 50% interval box
@@ -216,7 +217,7 @@ const SingleModelHorizonPlot = ({viewBoxWidth, viewBoxHeight}: SingleModelHorizo
                 .attr("y", yScale(d.quantile75))
                 .attr("width", xScale.bandwidth())
                 .attr("height", yScale(d.quantile25) - yScale(d.quantile75))
-                .attr("fill", modelColorMap[evaluationSingleViewModel])
+                .attr("fill", modelColorMap[evaluationSingleModelViewModel])
                 .attr("opacity", 0.6);
 
             // Median point
@@ -248,24 +249,23 @@ const SingleModelHorizonPlot = ({viewBoxWidth, viewBoxHeight}: SingleModelHorizo
     /* NOTE:
         Horizon Plot should react to changes in these Redux slice variables:
     * - Time (Via Season change, no individual change):
-    *   - dateStart: Date
-    *   - dateEnd: Date
+    *   - evaluationsSingleModelViewDateStart: Date
+    *   - evaluationSingleModelViewDateEnd: Date
     * - forecast model but UNLIKE Forecast Page, here only a single model can be selected
     *   - evaluationsSingleViewModel: string
-    * - evaluationHorizon: number
-    * - USStateNum: string
+    * - evaluationSingleModelViewHorizon: number
+    * - evaluationsSingleModelViewSelectedStateCode: string
     *  */
     useEffect(() => {
         if (boxPlotRef.current && groundTruthData.length > 0) {
             renderBoxPlot(d3.select(boxPlotRef.current));
         }
     }, [
-
-        USStateNum,
-        dateStart,
-        dateEnd,
-        evaluationSingleViewModel,
-        evaluationHorizon,
+        evaluationsSingleModelViewSelectedStateCode,
+        evaluationsSingleModelViewDateStart,
+        evaluationSingleModelViewDateEnd,
+        evaluationSingleModelViewModel,
+        evaluationSingleModelViewHorizon,
         groundTruthData,
         predictionsData
     ]);

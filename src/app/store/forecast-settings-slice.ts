@@ -6,6 +6,7 @@ import {parseISO} from "date-fns";
 interface ForecastSettingsState {
     selectedStateName: string;
     USStateNum: string;
+
     forecastModel: string[];
     numOfWeeksAhead: number;
     dateStart: Date;

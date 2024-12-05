@@ -10,7 +10,7 @@ import historicalGroundTruthReducer from './Data/historicalGroundTruthSlice';
 
 // Import Settings Reducers
 import forecastSettingsReducer from './forecast-settings-slice';
-import evaluationsSettingsReducer from './evaluations-settings-slice';
+import evaluationsSingleModelSettingsReducer from './evaluations-single-model-settings-slice';
 
 
 const store = configureStore({
@@ -22,7 +22,7 @@ const store = configureStore({
         nowcastTrends: nowcastTrendsReducer,
         stateThresholds: stateThresholdsReducer,
         historicalGroundTruth: historicalGroundTruthReducer,
-        evaluationsSettings: evaluationsSettingsReducer,
+        evaluationsSingleModelSettings: evaluationsSingleModelSettingsReducer,
     },
 });
 

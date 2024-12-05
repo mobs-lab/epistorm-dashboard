@@ -7,19 +7,17 @@ import {SeasonOption} from '../../../Interfaces/forecast-interfaces';
 
 import SettingsStateMap from "../../../forecasts/forecasts-components/SettingsStateMap";
 
-
 import {useAppDispatch, useAppSelector} from '../../../store/hooks';
+
 import {
-    updateDateEnd,
-    updateDateRange,
-    updateDateStart,
-    updateSelectedState,
-} from '../../../store/forecast-settings-slice';
-import {
-    updateEvaluationSingleViewModel,
-    updateEvaluationHorizon,
-    // updateEvaluationSeasonOptions,
-} from '../../../store/evaluations-settings-slice';
+    updateEvaluationSingleModelViewSelectedState,
+    updateEvaluationSingleModelViewModel,
+    updateEvaluationSingleModelViewHorizon,
+    updateEvaluationSingleModelViewDateStart,
+    updateEvaluationSingleModelViewDateEnd,
+    updateEvaluationsSingleModelViewDateRange
+    // updateEvaluationSingleModelViewSeasonOptions,
+} from '../../../store/evaluations-single-model-settings-slice';
 
 import {Radio, Typography} from "../../../CSS/material-tailwind-wrapper";
 
@@ -34,36 +32,24 @@ const SingleModelSettingsPanel: React.FC = () => {
     const groundTruthData = useAppSelector((state) => state.groundTruth.data);
     const locationData = useAppSelector((state) => state.location.data);
 
-    const {
-        USStateNum, dateStart, dateEnd, dateRange, seasonOptions
-    } = useAppSelector((state) => state.forecastSettings);
-
     // Evaluation-specific state
     const {
-        evaluationSingleViewModel, evaluationHorizon
-    } = useAppSelector((state) => state.evaluationsSettings);
-
-
-    const {earliestDayFromGroundTruthData, latestDayFromGroundTruthData} = useMemo(() => {
-        if (groundTruthData.length === 0) {
-            return {
-                earliestDayFromGroundTruthData: new Date("2022-08-23T12:00:00.000Z"),
-                latestDayFromGroundTruthData: new Date("2024-05-24T12:00:00.000Z")
-            };
-        }
-
-        const sortedData = [...groundTruthData].sort((a, b) => a.date.getTime() - b.date.getTime());
-        return {
-            earliestDayFromGroundTruthData: sortedData[0].date,
-            latestDayFromGroundTruthData: sortedData[sortedData.length - 1].date
-        };
-    }, [groundTruthData]);
+        evaluationSingleModelViewSelectedStateName,
+        evaluationsSingleModelViewSelectedStateCode,
+        evaluationSingleModelViewModel,
+        evaluationSingleModelViewHorizon,
+        evaluationSingleModelViewScores,
+        evaluationsSingleModelViewDateRange,
+        evaluationsSingleModelViewDateStart,
+        evaluationSingleModelViewDateEnd,
+        evaluationSingleModelViewSeasonOptions,
+    } = useAppSelector((state) => state.evaluationsSingleModelSettings);
 
     // State selection handlers (reused from forecast)
     const onStateSelectionChange = (stateNum: string) => {
         const selectedState = locationData.find((state) => state.stateNum === stateNum);
         if (selectedState) {
-            dispatch(updateSelectedState({
+            dispatch(updateEvaluationSingleModelViewSelectedState({
                 stateName: selectedState.stateName,
                 stateNum: selectedState.stateNum
             }));
@@ -72,21 +58,21 @@ const SingleModelSettingsPanel: React.FC = () => {
 
     // Model selection handler (single model only)
     const onModelSelectionChange = (modelName: string) => {
-        dispatch(updateEvaluationSingleViewModel(modelName));
+        dispatch(updateEvaluationSingleModelViewModel(modelName));
     };
 
     // Horizon handler
     const onHorizonChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-        dispatch(updateEvaluationHorizon(Number(event.target.value)));
+        dispatch(updateEvaluationSingleModelViewHorizon(Number(event.target.value)));
     };
 
     // Season selection handler (shared with forecast)
     const onSeasonSelectionChange = (timeValue: string) => {
-        const selectedOption = seasonOptions.find(option => option.timeValue === timeValue);
+        const selectedOption = evaluationSingleModelViewSeasonOptions.find(option => option.timeValue === timeValue);
         if (selectedOption) {
-            dispatch(updateDateRange(timeValue));
-            dispatch(updateDateStart(selectedOption.startDate));
-            dispatch(updateDateEnd(selectedOption.endDate));
+            dispatch(updateEvaluationsSingleModelViewDateRange(timeValue));
+            dispatch(updateEvaluationSingleModelViewDateStart(selectedOption.startDate));
+            dispatch(updateEvaluationSingleModelViewDateEnd(selectedOption.endDate));
         }
     };
 
@@ -102,7 +88,7 @@ const SingleModelSettingsPanel: React.FC = () => {
                     </div>
 
                     <select
-                        value={USStateNum}
+                        value={evaluationsSingleModelViewSelectedStateCode}
                         onChange={(e) => onStateSelectionChange(e.target.value)}
                         className="text-white border-[#5d636a] border-2 font-sans flex-wrap bg-mobs-lab-color-filterspane rounded-md px-2 py-4 w-full h-full"
                     >
@@ -121,13 +107,13 @@ const SingleModelSettingsPanel: React.FC = () => {
                                     <input
                                         type="radio"
                                         className="sr-only"
-                                        checked={evaluationSingleViewModel === model}
+                                        checked={evaluationSingleModelViewModel === model}
                                         onChange={() => onModelSelectionChange(model)}
                                     />
                                     <span
                                         className="w-[1em] h-[1em] border-2 rounded-sm mr-2"
                                         style={{
-                                            backgroundColor: evaluationSingleViewModel === model ? modelColorMap[model] : 'transparent',
+                                            backgroundColor: evaluationSingleModelViewModel === model ? modelColorMap[model] : 'transparent',
                                             borderColor: modelColorMap[model],
                                         }}
                                     />
@@ -148,7 +134,7 @@ const SingleModelSettingsPanel: React.FC = () => {
                                 onChange={onHorizonChange}
                                 className="text-white"
                                 labelProps={{className: "text-white"}}
-                                checked={evaluationHorizon === value}
+                                checked={evaluationSingleModelViewHorizon === value}
                             />
                         ))}
                     </div>
@@ -167,11 +153,11 @@ const SingleModelSettingsPanel: React.FC = () => {
                     <div className="w-full py-4">
                         <Typography variant="h6" className="text-white">Season</Typography>
                         <select
-                            value={dateRange}
+                            value={evaluationsSingleModelViewDateRange}
                             onChange={(e) => onSeasonSelectionChange(e.target.value)}
                             className="text-white border-[#5d636a] border-2 flex-wrap bg-mobs-lab-color-filterspane rounded-md w-full py-2 px-2 overflow-ellipsis"
                         >
-                            {seasonOptions.map((option: SeasonOption) => (
+                            {evaluationSingleModelViewSeasonOptions.map((option: SeasonOption) => (
                                 <option key={option.index} value={option.timeValue}>
                                     {option.displayString}
                                 </option>

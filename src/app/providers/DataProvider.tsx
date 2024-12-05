@@ -1,6 +1,6 @@
 // File: src/app/providers/DataProvider.tsx
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, {createContext, useContext, useEffect, useState} from 'react';
 import * as d3 from "d3";
 import {
     addWeeks,
@@ -16,7 +16,7 @@ import {
     setMonth,
     startOfWeek
 } from "date-fns";
-import { useAppDispatch } from '../store/hooks';
+import {useAppDispatch} from '../store/hooks';
 import {
     DataPoint,
     LocationData,
@@ -28,18 +28,27 @@ import {
 } from "../Interfaces/forecast-interfaces";
 
 // Import actions directly from slices
-import { setGroundTruthData } from '../store/Data/groundTruthSlice';
-import { setPredictionsData } from '../store/Data/predictionsSlice';
-import { setLocationData } from '../store/Data/locationSlice';
-import { setNowcastTrendsData } from '../store/Data/nowcastTrendsSlice';
+import {setGroundTruthData} from '../store/Data/groundTruthSlice';
+import {setPredictionsData} from '../store/Data/predictionsSlice';
+import {setLocationData} from '../store/Data/locationSlice';
+import {setNowcastTrendsData} from '../store/Data/nowcastTrendsSlice';
 import {
     setSeasonOptions,
     updateDateEnd,
     updateDateRange,
     updateDateStart
 } from '../store/forecast-settings-slice';
-import { setStateThresholdsData } from '../store/Data/stateThresholdsSlice';
-import { setHistoricalGroundTruthData } from '../store/Data/historicalGroundTruthSlice';
+
+import {setStateThresholdsData} from '../store/Data/stateThresholdsSlice';
+
+import {setHistoricalGroundTruthData} from '../store/Data/historicalGroundTruthSlice';
+
+import {
+    updateEvaluationSingleModelViewDateStart,
+    updateEvaluationSingleModelViewDateEnd,
+    updateEvaluationsSingleModelViewDateRange,
+    updateEvaluationSingleModelViewSeasonOptions,
+} from "../store/evaluations-single-model-settings-slice";
 
 interface DataContextType {
     loadingStates: LoadingStates;
@@ -50,7 +59,7 @@ const DataContext = createContext<DataContextType | undefined>(undefined);
 
 const modelNames = ['MOBS-GLEAM_FLUH', 'CEPH-Rtrend_fluH', 'MIGHTE-Nsemble', 'NU_UCSD-GLEAM_AI_FLUH', 'FluSight-ensemble'];
 
-export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const DataProvider: React.FC<{ children: React.ReactNode }> = ({children}) => {
     const dispatch = useAppDispatch();
     const [loadingStates, setLoadingStates] = useState<LoadingStates>({
         groundTruth: true,
@@ -198,7 +207,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 updateLoadingState('locations', false);
 
                 // Fetch ground truth and predictions data
-                const groundTruthData = await d3.csv("/data/ground-truth/backup-target-hospital-admissions.csv");
+                const groundTruthData = await d3.csv("/data/ground-truth/target-hospital-admissions.csv");
                 const parsedGroundTruthData = groundTruthData.map((d) => ({
                     date: parseISO(d.date),
                     stateNum: d.location,
@@ -246,11 +255,21 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
                 const seasonOptions = generateSeasonOptions(processedData);
                 dispatch(setSeasonOptions(seasonOptions));
+                dispatch(updateEvaluationSingleModelViewSeasonOptions(seasonOptions));
                 if (seasonOptions.length > 0) {
                     const lastSeason = seasonOptions[seasonOptions.length - 1];
+
+                    /* For Forecast Page Components */
                     dispatch(updateDateRange(lastSeason.timeValue));
                     dispatch(updateDateStart(lastSeason.startDate));
                     dispatch(updateDateEnd(lastSeason.endDate));
+
+                    /* For Evaluations Single Model View Components */
+                    dispatch(updateEvaluationsSingleModelViewDateRange(lastSeason.timeValue));
+                    dispatch(updateEvaluationSingleModelViewDateStart(lastSeason.startDate));
+                    dispatch(updateEvaluationSingleModelViewDateEnd(lastSeason.endDate));
+
+
                 }
                 updateLoadingState('seasonOptions', false);
 
@@ -357,7 +376,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const isFullyLoaded = Object.values(loadingStates).every(state => !state);
 
     return (
-        <DataContext.Provider value={{ loadingStates, isFullyLoaded }}>
+        <DataContext.Provider value={{loadingStates, isFullyLoaded}}>
             {children}
         </DataContext.Provider>
     );
