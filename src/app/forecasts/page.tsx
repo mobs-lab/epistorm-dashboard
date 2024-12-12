@@ -220,7 +220,8 @@ const Page: React.FC = () => {
     const fetchHistoricalGroundTruthData = async () => {
         try {
             const startDate = parseISO('2023-09-23T12:00:00Z');
-            const endDate = parseISO('2024-04-27T12:00:00Z');
+            const today = new Date();
+            const endDate = addWeeks(today, -1);
             const historicalData = [];
 
             for (let date = startDate; date <= endDate; date = addWeeks(date, 1)) {
