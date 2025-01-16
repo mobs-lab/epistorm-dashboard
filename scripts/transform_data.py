@@ -134,7 +134,7 @@ def data_transformation(team_name):
 
 
 # Transform data for all teams.
-teams_list = ["MOBS-GLEAM_FLUH", "MIGHTE-Nsemble", "NU_UCSD-GLEAM_AI_FLUH", "CEPH-Rtrend_fluH", "FluSight-ensemble"]
+teams_list = ["MOBS-GLEAM_FLUH", "MIGHTE-Nsemble", "MIGHTE-Joint", "NU_UCSD-GLEAM_AI_FLUH", "CEPH-Rtrend_fluH", "NEU_ISI-FluBcast", "NEU_ISI_AdaptiveEnsemble", "FluSight-ensemble"]
 for team in teams_list:
     data_transformation(team)
 
