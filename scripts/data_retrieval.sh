@@ -1,5 +1,5 @@
 # Model Names Listed Here
-team_names=("MOBS-GLEAM_FLUH" "MIGHTE-Nsemble" "NU_UCSD-GLEAM_AI_FLUH" "CEPH-Rtrend_fluH" "FluSight-ensemble")
+team_names=("MOBS-GLEAM_FLUH" "MIGHTE-Nsemble" "MIGHTE-Joint" "NU_UCSD-GLEAM_AI_FLUH" "CEPH-Rtrend_fluH" "NEU_ISI-FluBcast" "NEU_ISI_AdaptiveEnsemble" "FluSight-ensemble")
 
 NEW_PREDICTION_DATA_COPIED=false
 NEW_SURVEILLANCE_DATA_COPIED=false
