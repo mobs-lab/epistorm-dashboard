@@ -21,7 +21,7 @@ import SettingsStateMap from "./SettingsStateMap";
 import SettingsStyledDatePicker from "./SettingsStyledDatePicker";
 import Image from "next/image";
 
-const modelNames = ["MOBS-GLEAM_FLUH", "MIGHTE-Nsemble", "MIGHTE-Joint", "NU_UCSD-GLEAM_AI_FLUH", "CEPH-Rtrend_fluH", "NEU_ISI-FluBcast", "NEU_ISI_AdaptiveEnsemble", "FluSight-ensemble"]
+const modelNames = ["MOBS-GLEAM_FLUH", "MIGHTE-Nsemble", "MIGHTE-Joint", "NU_UCSD-GLEAM_AI_FLUH", "CEPH-Rtrend_fluH", "NEU_ISI-FluBcast", "NEU_ISI-AdaptiveEnsemble", "FluSight-ensemble"]
 
 const SettingsPanel: React.FC = () => {
 
