@@ -36,6 +36,16 @@ def data_transformation(team_name):
         f"*{team_name}.csv"
     )
 
+    # Debug print statements
+    print(f"\nProcessing team: {team_name}")
+    print(f"Looking for files in pattern: {team_data_source_pattern}")
+    files_found = glob.glob(team_data_source_pattern)
+    print(f"Files found: {files_found}")
+
+    if not files_found:
+        print(f"No files found for {team_name}, skipping...")
+        return
+
     predictions_target_path = os.path.join(
         project_root,
         "public",
@@ -134,7 +144,7 @@ def data_transformation(team_name):
 
 
 # Transform data for all teams.
-teams_list = ["MOBS-GLEAM_FLUH", "MIGHTE-Nsemble", "MIGHTE-Joint", "NU_UCSD-GLEAM_AI_FLUH", "CEPH-Rtrend_fluH", "NEU_ISI-FluBcast", "NEU_ISI_AdaptiveEnsemble", "FluSight-ensemble"]
+teams_list = ["MOBS-GLEAM_FLUH", "MIGHTE-Nsemble", "MIGHTE-Joint", "NU_UCSD-GLEAM_AI_FLUH", "CEPH-Rtrend_fluH", "NEU_ISI-FluBcast", "NEU_ISI-AdaptiveEnsemble", "FluSight-ensemble"]
 for team in teams_list:
     data_transformation(team)
 
