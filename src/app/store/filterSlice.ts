@@ -25,7 +25,7 @@ interface FilterState {
 const initialState: FilterState = {
     selectedStateName: "United States",
     USStateNum: "US",
-    forecastModel: ['MOBS-GLEAM_FLUH', 'CEPH-Rtrend_fluH', 'MIGHTE-Nsemble', 'NU_UCSD-GLEAM_AI_FLUH', 'FluSight-ensemble'],
+    forecastModel: ["MOBS-GLEAM_FLUH", "MIGHTE-Nsemble", "MIGHTE-Joint", "NU_UCSD-GLEAM_AI_FLUH", "CEPH-Rtrend_fluH", "NEU_ISI-FluBcast", "NEU_ISI-AdaptiveEnsemble", "FluSight-ensemble"],
     numOfWeeksAhead: 3,
     dateRange: "2023-08-01/2024-05-18",
     dateStart: parseISO("2023-08-01T12:00:00Z"),

@@ -50,7 +50,7 @@ def transform_older_data(model_name):
     output_path = f"public/data/processed/{model_name}/predictions_older.csv"
     older_data.to_csv(output_path, index=False)
 
-model_names = ["MOBS-GLEAM_FLUH", "MIGHTE-Nsemble", "MIGHTE-Joint", "NU_UCSD-GLEAM_AI_FLUH", "CEPH-Rtrend_fluH", "NEU_ISI-FluBcast", "NEU_ISI_AdaptiveEnsemble", "FluSight-ensemble"]
+model_names = ["MOBS-GLEAM_FLUH", "MIGHTE-Nsemble", "MIGHTE-Joint", "NU_UCSD-GLEAM_AI_FLUH", "CEPH-Rtrend_fluH", "NEU_ISI-FluBcast", "NEU_ISI-AdaptiveEnsemble", "FluSight-ensemble"]
 
 for model in model_names:
     transform_older_data(model)
