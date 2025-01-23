@@ -27,10 +27,10 @@ export interface PredictionDataPoint {
 }
 
 export interface LocationData {
-    stateNum: string; // state numbers
-    state: string; // state abbreviations
-    stateName: string; // state full names
-    population: number;
+    stateNum: string;   // state numbers
+    state: string;      // state abbreviations
+    stateName: string;  // state full names
+    population: number; // used in nowcast threshold calculation
 }
 
 export interface ModelPrediction {
@@ -75,6 +75,37 @@ export interface HistoricalDataEntry {
     historicalData: DataPoint[];
 }
 
+export interface LoadingStates {
+    groundTruth: boolean;
+    predictions: boolean;
+    locations: boolean;
+    nowcastTrends: boolean;
+    thresholds: boolean;
+    historicalGroundTruth: boolean;
+    seasonOptions: boolean;
+    evaluationScores: boolean;
+}
+
+/* NOTE: For data provider to pass processed fetched data into helper functions*/
+export interface ProcessedDataWithDateRange {
+    data: DataPoint[];
+    earliestDate: Date;
+    latestDate: Date;
+}
+
 export const isUTCDateEqual = (a: Date, b: Date) => {
     return a.getUTCFullYear() === b.getUTCFullYear() && a.getUTCMonth() === b.getUTCMonth() && a.getUTCDate() === b.getUTCDate();
+}
+
+export interface EvaluationsSingleModelScoreDataCollection {
+    modelName: string;
+    scoreMetric: string;    // In our case, "WIS_Ratio" and "MAPE"
+    scoreData: EvaluationsSingleModelScoreData[];
+}
+
+export interface EvaluationsSingleModelScoreData {
+    referenceDate: Date;
+    score: number;
+    location: string;   // Using US state code
+    horizon: number;
 }
