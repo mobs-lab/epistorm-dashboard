@@ -1,11 +1,12 @@
-// File Path: src/app/page.tsx
-
-import DashboardPage from "./forecasts/page"
+// File: src/app/page.tsx
+'use client'
 
 import React from "react";
+import { useDataContext } from './providers/DataProvider';
+import ForecastPage from "./forecasts/page";
 
-export default function Page() {
-    return (
-            <DashboardPage/>
-    )
+export default function RootPage() {
+    const { loadingStates } = useDataContext();
+
+    return <ForecastPage />;
 }

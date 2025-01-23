@@ -106,7 +106,7 @@ const NowcastStateThermo: React.FC = () => {
     const [dimensions, setDimensions] = useState({width: 0, height: 0});
     const {
         selectedStateName, USStateNum, userSelectedRiskLevelModel, userSelectedWeek
-    } = useAppSelector((state) => state.filter);
+    } = useAppSelector((state) => state.forecastSettings);
     const groundTruthData = useAppSelector(state => state.groundTruth.data);
     const predictionsData = useAppSelector(state => state.predictions.data);
     const locationData = useAppSelector(state => state.location.data);
