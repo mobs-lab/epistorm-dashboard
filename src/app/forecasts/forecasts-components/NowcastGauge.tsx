@@ -15,19 +15,20 @@ const LegendBoxes: React.FC = () => {
     ];
 
     return (
-        <div className="flex flex-row justify-evenly items-end h-full w-full">
+        <>
             {legendData.map((item) => (
-                <div key={item.label} className="flex items-center">
+                <div key={item.label} className="flex flex-row justify-stretch align-middle items-center">
                     <div
-                        className="w-[1rem] h-[1rem]"
+                        className="w-[1rem] h-[1rem] size-full"
                         style={{backgroundColor: item.color}}
                     ></div>
-                    <span className="text-sm mx-2">{item.label}</span>
+                    <span className="ml-2">{item.label}</span>
                 </div>
             ))}
-        </div>
+        </>
     );
 };
+
 const NowcastGauge: React.FC<RiskLevelGaugeProps> = ({riskLevel}) => {
     const svgRef = useRef<SVGSVGElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
@@ -40,7 +41,7 @@ const NowcastGauge: React.FC<RiskLevelGaugeProps> = ({riskLevel}) => {
     const updateDimensions = useCallback(() => {
         if (containerRef.current) {
             const {width, height} = containerRef.current.getBoundingClientRect();
-            setContainerDimensions({width, height: height * 0.8}); // Adjust height to leave space for legend
+            setContainerDimensions({width: width * 0.8, height}); // Adjust height to leave space for legend
         }
     }, []);
 
@@ -60,11 +61,11 @@ const NowcastGauge: React.FC<RiskLevelGaugeProps> = ({riskLevel}) => {
         svg.selectAll('*').remove();
 
         const {width, height} = containerDimensions;
-        const margin = {top: 20, right: 20, bottom: 0, left: 20};
+        const margin = {top: 0, right: 0, bottom: 0, left: 0}; // NOTE: Deprecated, remove in future
         const gaugeWidth = width - margin.left - margin.right;
         const gaugeHeight = height - margin.top - margin.bottom;
 
-        const diagonalLength = Math.sqrt((gaugeWidth / 2) ** 2 + gaugeHeight ** 2) * 0.62;
+        const diagonalLength = Math.sqrt((gaugeWidth / 2) ** 2 + gaugeHeight ** 2);
 
         const radius = Math.min(Math.min(gaugeWidth / 2, diagonalLength), gaugeHeight * 1.12);
 
@@ -72,7 +73,7 @@ const NowcastGauge: React.FC<RiskLevelGaugeProps> = ({riskLevel}) => {
             .attr('preserveAspectRatio', 'xMidYMid meet');
 
         const chartGroup = svg.append('g')
-            .attr('transform', `translate(${width / 2}, ${height - margin.bottom})`);
+            .attr('transform', `translate(${width / 2}, ${height})`);
 
         const matchingModelNowcast = nowcastTrendsCollection.find(model => model.modelName === userSelectedRiskLevelModel);
         if (!matchingModelNowcast || !matchingModelNowcast.data.length) return;
@@ -100,8 +101,8 @@ const NowcastGauge: React.FC<RiskLevelGaugeProps> = ({riskLevel}) => {
             .endAngle(Math.PI / 2);
 
         const arc = d3.arc<d3.PieArcDatum<number>>()
-            .innerRadius(radius * 0.78)
-            .outerRadius(radius * 0.96);
+            .innerRadius(radius * 0.76)
+            .outerRadius(radius);
 
         const color = d3.scaleOrdinal<string>()
             .domain(['decrease', 'stable', 'increase', 'no data'])
@@ -124,7 +125,7 @@ const NowcastGauge: React.FC<RiskLevelGaugeProps> = ({riskLevel}) => {
             .attr('stroke', 'lightgray')
             .attr('stroke-width', 2);
 
-        const fontSize = width < height ? 16 : Math.min(24, Math.max(12, radius * 0.1));
+        const fontSize = width < height ? 18 : Math.min(24, Math.max(18, radius * 0.3));
 
         chartGroup.append('text')
             .attr('text-anchor', 'middle')
@@ -203,18 +204,20 @@ const NowcastGauge: React.FC<RiskLevelGaugeProps> = ({riskLevel}) => {
     }, [drawGauge]);
 
     return (
-        <div ref={containerRef} className="flex flex-col h-full items-stretch justify-stretch py-2 relative">
-            <div className="flex-grow relative">
+        <div ref={containerRef} className="flex flex-row justify-around items-stretch align-middle h-full w-full ">
+            <div className="flex flex-shrink h-full w-[20%] min-w-0 flex-col justify-between items-stretch py-4 xs:text-[0.5rem] util-responsive-text-small">
+                <LegendBoxes/>
+            </div>
+            <div className="h-full w-[80%] min-w-0  flex-grow relative py-2">
                 <svg ref={svgRef} className="w-full h-full"/>
                 <div
                     ref={tooltipRef}
-                    className="absolute hidden bg-white text-black rounded shadow-md p-2 text-sm"
+                    className="absolute hidden bg-white text-black rounded shadow-md text-sm"
                     style={{pointerEvents: 'none', zIndex: 10}}
                 ></div>
             </div>
-            <div className="h-1/5">
-                <LegendBoxes/>
-            </div>
+
+
         </div>
     )
 
