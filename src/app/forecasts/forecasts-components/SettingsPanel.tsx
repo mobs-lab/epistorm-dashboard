@@ -24,12 +24,6 @@ const modelNames = ["MOBS-GLEAM_FLUH", "MIGHTE-Nsemble", "MIGHTE-Joint", "NU_UCS
 
 const SettingsPanel: React.FC = () => {
 
-    /*const stateMapInfo = (<div>
-        <p>Use this map to select a specific state for your forecast.</p>
-        <p>Click on a state to zoom in and select it. The map will automatically zoom out after selection.</p>
-        <p>You can also use the dropdown menu below to select a state.</p>
-    </div>);*/
-
     /* Redux-Managed State Variables */
     const dispatch = useAppDispatch();
 
@@ -105,14 +99,13 @@ const SettingsPanel: React.FC = () => {
     };
 
     const handleShowAllDates = () => {
-        //TODO: Implement this again now that earliest and latest dates are calculated using useMemo
         dispatch(updateDateStart(earliestDayFromGroundTruthData));
         dispatch(updateDateEnd(latestDayFromGroundTruthData));
     };
 
 
     const onYAxisScaleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-        console.debug("SettingsPanel update: Y-axis scale changed to: ", event.target.value);
+        // console.debug("SettingsPanel update: Y-axis scale changed to: ", event.target.value);
         dispatch(updateYScale(event.target.value));
     };
 
@@ -126,6 +119,11 @@ const SettingsPanel: React.FC = () => {
         }
         console.debug("SettingsPanel update: Confidence Interval changed to: ", confidenceInterval);
     };
+
+    const handleShowAllModels = () => {
+        dispatch(updateForecastModel(modelNames));
+
+    }
 
     return (
         <div
@@ -173,6 +171,12 @@ const SettingsPanel: React.FC = () => {
                                 </label>))}
                         </div>
                     </div>
+                    <button
+                        className="mb-4 mt-2 bg-[#5d636a] text-white rounded text-sm w-full h-full"
+                        onClick={handleShowAllModels}
+                    >
+                        Show All Models
+                    </button>
 
                     <div className="w-full h-full justify-stretch items-stretch py-4">
                         <Typography variant="h6" className="text-white">Season</Typography>
