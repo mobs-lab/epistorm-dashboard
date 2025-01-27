@@ -163,10 +163,10 @@ const SingleModelScoreLineChart: React.FC = () => {
             const height = chartRef.current.clientHeight;
 
             const margin = {
-                top: height * 0.05,
-                right: width * 0.02,
-                bottom: height * 0.1,
-                left: width * 0.05  // Increased for axis labels
+                top: height * 0.02,
+                right: width * 0.03,
+                bottom: height * 0.15,
+                left: width * 0.04  // Increased for axis labels
             };
 
             const chartWidth = width - margin.left - margin.right;
@@ -208,10 +208,11 @@ const SingleModelScoreLineChart: React.FC = () => {
             const scores = filteredData.map(d => d.score);
             const minScore = Math.min(...scores);
             const maxScore = Math.max(...scores);
-            const yDomain = evaluationSingleModelViewScoresOption === 'MAPE' ?
-                [0, maxScore * 1.1] :  // For MAPE, start at 0
-                [Math.min(minScore, 1.0 - (maxScore - 1.0)),
-                    Math.max(maxScore, 1.0 + (1.0 - minScore))]; // For WIS_ratio, center around 1.0
+            const yDomain = [0, maxScore * 1.02]
+            // const yDomain = evaluationSingleModelViewScoresOption === 'MAPE' ?
+            //     [0, maxScore * 1.1] :  // For MAPE, start at 0
+            //     [Math.min(minScore, 1.0 - (maxScore - 1.0)),
+            //         Math.max(maxScore, 1.0 + (1.0 - minScore))]; // For WIS_ratio, center around 1.0
 
             const yScale = d3.scaleLinear()
                 .domain(yDomain)
@@ -266,21 +267,37 @@ const SingleModelScoreLineChart: React.FC = () => {
                 .tickFormat((d: Date) => {
                     const month = d3.timeFormat('%b')(d);
                     const day = d3.timeFormat('%d')(d);
-                    const year = d.getUTCFullYear();
                     const isFirst = isUTCDateEqual(d, actualStart);
+                    const isFirstTickInNewMonth = d.getDate() < 7 && d.getDate() > 0;
                     const isNearYearChange = d.getMonth() === 0 && d.getDate() <= 7;
 
-                    return isFirst || isNearYearChange ?
-                        `${year}\n${month}\n${day}` :
-                        `${month}\n${day}`;
+
+                    // Adjust label format based on chart width
+                    if (chartWidth < 500) {
+                        // Small width mode: show month only on first day of month, first tick, and near year change
+                        if (isFirst || isFirstTickInNewMonth || isNearYearChange) {
+                            return month;
+                        } else {
+                            return '';
+                        }
+                    } else {
+                        // Normal width mode: show day for every tick, month on first day of month, first tick, and near year change
+                        if (isFirst || isFirstTickInNewMonth || isNearYearChange) {
+                            return `${month}\n${day}`;
+                        } else {
+                            return day;
+                        }
+                    }
                 });
 
             const yAxis = d3.axisLeft(yScale)
-                .tickFormat((d: number) =>
-                    evaluationSingleModelViewScoresOption === 'MAPE' ?
-                        `${d.toFixed(1)}%` :
-                        d.toFixed(2)
-                );
+                .tickFormat((d: number) => {
+                    if (evaluationSingleModelViewScoresOption === 'MAPE') {
+                        return d >= 10 ? `${d.toFixed(0)}%` : `${d.toFixed(1)}%`;
+                    } else {
+                        return d.toFixed(1);
+                    }
+                });
 
             // Add axes
             chart.append('g')

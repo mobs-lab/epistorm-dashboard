@@ -135,23 +135,36 @@ const SingleModelHorizonPlot: React.FC = () => {
         // Generate Saturday ticks
         const saturdayTicks = groundTruthData
             .filter(d => d.date.getDay() === 6)
-            .map(d => d.date);
+            .map(d => d.date)
+            .sort((a, b) => a.getTime() - b.getTime());
 
         // Create x-axis with same formatting as ForecastChart
         const xAxis = d3.axisBottom(xScale)
-            .tickValues(saturdayTicks.map(d => d.toISOString()))
+            .tickValues(saturdayTicks.map(d => d.toISOString()))  // Convert to ISOString to match domain
             .tickFormat((d: string) => {
                 const date = new Date(d);
                 const month = d3.timeFormat("%b")(date);
                 const day = d3.timeFormat("%d")(date);
-                const year = date.getUTCFullYear();
-                const isFirst = date === saturdayTicks[0];
+                const isFirst = isUTCDateEqual(date, saturdayTicks[0]);  // Use isUTCDateEqual
+                const isFirstTickInNewMonth = date.getDate() < 7 && date.getDate() > 0;
                 const isNearYearChange = date.getMonth() === 0 && date.getDate() <= 10;
 
-                return isFirst || isNearYearChange ?
-                    `${year}\n${month}\n${day}` :
-                    `${month}\n${day}`;
+                // Rest of the formatting logic remains the same
+                if (chartWidth < 500) {
+                    if (isFirst || isFirstTickInNewMonth || isNearYearChange) {
+                        return month;
+                    } else {
+                        return '';
+                    }
+                } else {
+                    if (isFirst || isFirstTickInNewMonth || isNearYearChange) {
+                        return `${month}\n${day}`;
+                    } else {
+                        return day;
+                    }
+                }
             });
+
 
         // Create y scale using all possible values
         const allValues = visualData.flatMap(d => [
@@ -231,9 +244,9 @@ const SingleModelHorizonPlot: React.FC = () => {
         // Calculate margins
         const margin = {
             top: height * 0.04,
-            right: width * 0.02,
-            bottom: height * 0.08,
-            left: width * 0.05
+            right: width * 0.03,
+            bottom: height * 0.15,
+            left: width * 0.04
         };
 
         const chartWidth = width - margin.left - margin.right;
@@ -291,6 +304,7 @@ const SingleModelHorizonPlot: React.FC = () => {
             .attr("transform", `translate(0,${chartHeight})`)
             .style("font-family", "var(--font-dm-sans)")
             .call(xAxis);
+
 
         const yAxisGroup = chart.append("g")
             .style("font-family", "var(--font-dm-sans)")
@@ -378,7 +392,7 @@ const SingleModelHorizonPlot: React.FC = () => {
                 .attr("class", "hover-area")
                 .style("cursor", "pointer")
                 .style("pointer-events", "all")
-                .on("mouseover", function(event) {
+                .on("mouseover", function (event) {
                     event.stopPropagation();
 
                     // Highlight effect
@@ -441,7 +455,7 @@ const SingleModelHorizonPlot: React.FC = () => {
                         .attr("transform", `translate(${tooltipX}, 10)`)
                         .style("opacity", 1);
                 })
-                .on("mouseout", function(event) {
+                .on("mouseout", function (event) {
                     event.stopPropagation();
 
                     // Remove highlight
