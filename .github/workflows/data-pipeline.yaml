@@ -73,6 +73,7 @@ jobs:
           
           # Stage submodule changes
           git add FluSight-forecast-hub || true
+          git add epistorm-evaluations || true
           
           # Check if there are changes to commit
           if git diff --staged --quiet; then
@@ -84,7 +85,7 @@ jobs:
           git commit -m "Data update ${TIMESTAMP}
           
           - Updated data files
-          - Updated FluSight-forecast-hub submodule reference"
+          - Updated submodules reference"
           
           # Push changes to main
           if ! git push origin main; then

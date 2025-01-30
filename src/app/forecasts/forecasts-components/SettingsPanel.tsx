@@ -3,7 +3,6 @@
 
 import React, {useEffect, useMemo} from 'react';
 import {modelColorMap} from '../../Interfaces/modelColors';
-import InfoButton from './InfoButton';
 import {SeasonOption} from '../../Interfaces/forecast-interfaces';
 import {Radio, Typography} from "../../CSS/material-tailwind-wrapper";
 import {useAppDispatch, useAppSelector} from '../../store/hooks';
@@ -16,20 +15,14 @@ import {
     updateNumOfWeeksAhead,
     updateSelectedState,
     updateYScale
-} from '../../store/filterSlice';
+} from '../../store/forecast-settings-slice';
 import SettingsStateMap from "./SettingsStateMap";
 import SettingsStyledDatePicker from "./SettingsStyledDatePicker";
 import Image from "next/image";
 
-const modelNames = ["MOBS-GLEAM_FLUH", "MIGHTE-Nsemble", "MIGHTE-Joint", "NU_UCSD-GLEAM_AI_FLUH", "CEPH-Rtrend_fluH", "NEU_ISI-FluBcast", "NEU_ISI-AdaptiveEnsemble", "FluSight-ensemble"]
+const modelNames = ["MOBS-GLEAM_FLUH", "MIGHTE-Nsemble", "MIGHTE-Joint", "NU_UCSD-GLEAM_AI_FLUH", "CEPH-Rtrend_fluH", "NEU_ISI-FluBcast", "NEU_ISI-AdaptiveEnsemble", "FluSight-ensemble"];
 
 const SettingsPanel: React.FC = () => {
-
-    const stateMapInfo = (<div>
-        <p>Use this map to select a specific state for your forecast.</p>
-        <p>Click on a state to zoom in and select it. The map will automatically zoom out after selection.</p>
-        <p>You can also use the dropdown menu below to select a state.</p>
-    </div>);
 
     /* Redux-Managed State Variables */
     const dispatch = useAppDispatch();
@@ -39,7 +32,7 @@ const SettingsPanel: React.FC = () => {
 
     const {
         USStateNum, forecastModel, dateStart, dateEnd, dateRange, confidenceInterval, seasonOptions
-    } = useAppSelector((state) => state.filter);
+    } = useAppSelector((state) => state.forecastSettings);
 
 
     const {earliestDayFromGroundTruthData, latestDayFromGroundTruthData} = useMemo(() => {
@@ -57,13 +50,13 @@ const SettingsPanel: React.FC = () => {
         };
     }, [groundTruthData]);
 
-    /*console.log("DEBUG: earliestDayFromGroundTruthData: ", earliestDayFromGroundTruthData);
-    console.log("DEBUG: latestDayFromGroundTruthData: ", latestDayFromGroundTruthData);*/
+    /*console.debug("DEBUG: earliestDayFromGroundTruthData: ", earliestDayFromGroundTruthData);
+    console.debug("DEBUG: latestDayFromGroundTruthData: ", latestDayFromGroundTruthData);*/
 
     const onStateSelectionChange = (stateNum: string) => {
         const selectedState = locationData.find((state) => state.stateNum === stateNum);
         if (selectedState) {
-            console.log("SettingsPanel update: State selected: ", selectedState.stateName, " with stateNum: ", selectedState.stateNum);
+            console.debug("SettingsPanel update: State selected: ", selectedState.stateName, " with stateNum: ", selectedState.stateNum);
             dispatch(updateSelectedState({stateName: selectedState.stateName, stateNum: selectedState.stateNum}));
         }
     };
@@ -84,7 +77,7 @@ const SettingsPanel: React.FC = () => {
         if (date && date >= earliestDayFromGroundTruthData && date <= dateEnd) {
             dispatch(updateDateStart(date));
         } else {
-            console.log("SettingsPanel.tsx: Invalid dateStart selection");
+            console.debug("SettingsPanel.tsx: Invalid dateStart selection");
         }
     };
 
@@ -92,7 +85,7 @@ const SettingsPanel: React.FC = () => {
         if (date && date >= dateStart && date <= latestDayFromGroundTruthData) {
             dispatch(updateDateEnd(date));
         } else {
-            console.log("SettingsPanel.tsx: Invalid dateEnd selection");
+            console.debug("SettingsPanel.tsx: Invalid dateEnd selection");
         }
     };
 
@@ -106,14 +99,13 @@ const SettingsPanel: React.FC = () => {
     };
 
     const handleShowAllDates = () => {
-        //TODO: Implement this again now that earliest and latest dates are calculated using useMemo
         dispatch(updateDateStart(earliestDayFromGroundTruthData));
         dispatch(updateDateEnd(latestDayFromGroundTruthData));
     };
 
 
     const onYAxisScaleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-        console.log("SettingsPanel update: Y-axis scale changed to: ", event.target.value);
+        // console.debug("SettingsPanel update: Y-axis scale changed to: ", event.target.value);
         dispatch(updateYScale(event.target.value));
     };
 
@@ -125,8 +117,13 @@ const SettingsPanel: React.FC = () => {
         } else {
             dispatch(updateConfidenceInterval(confidenceInterval.filter((model) => model !== interval)));
         }
-        console.log("SettingsPanel update: Confidence Interval changed to: ", confidenceInterval);
+        console.debug("SettingsPanel update: Confidence Interval changed to: ", confidenceInterval);
     };
+
+    const handleShowAllModels = () => {
+        dispatch(updateForecastModel(modelNames));
+
+    }
 
     return (
         <div
@@ -174,6 +171,12 @@ const SettingsPanel: React.FC = () => {
                                 </label>))}
                         </div>
                     </div>
+                    <button
+                        className="mb-4 mt-2 bg-[#5d636a] text-white rounded text-sm w-full h-full"
+                        onClick={handleShowAllModels}
+                    >
+                        Show All Models
+                    </button>
 
                     <div className="w-full h-full justify-stretch items-stretch py-4">
                         <Typography variant="h6" className="text-white">Season</Typography>

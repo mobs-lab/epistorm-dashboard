@@ -1,0 +1,59 @@
+@import '../header.css';
+
+.evaluations-page {
+    display: grid;
+    width: 100vw;
+    height: calc(100vh - var(--header-height));
+    grid-template-columns: 1fr 320px;
+    grid-template-rows: auto 1fr;
+    grid-template-areas:
+    "evaluationsHeader evaluationsSettingsPanel"
+    "evaluationsTabPanel evaluationsSettingsPanel";
+    overflow: hidden;
+}
+
+.evaluations-header {
+    grid-area: evaluationsHeader;
+    padding: 1rem;
+}
+
+.evaluations-settings {
+    grid-area: evaluationsSettingsPanel;
+    overflow-y: auto;
+    background-color: var(--mobs-lab-color);
+}
+
+.evaluations-content {
+    grid-area: evaluationsTabPanel;
+    display: flex;
+    flex-direction: column;
+    min-height: 0; /* Important for Firefox */
+    overflow: hidden;
+}
+
+/* Tab content container styles */
+.evaluations-content .tab-container {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    align-content: stretch;
+    justify-content: stretch;
+    align-items: stretch;
+}
+
+/* Chart grid container styles */
+.chart-grid-container {
+    flex: 1;
+    display: grid;
+    grid-template-rows: 1fr 1fr;
+    gap: 1rem;
+    min-height: 0;
+    overflow: hidden;
+}
+
+.chart-container {
+    min-height: 0;
+    width: 100%;
+    height: 100%;
+}
