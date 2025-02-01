@@ -607,7 +607,10 @@ const ForecastChart: React.FC = () => {
 
         group.attr("transform", `translate(${xPosition + marginLeft}, 0)`);
 
-        group.select("line").attr("stroke", "lightgray").attr("stroke-width", 2);
+        group
+            .select("line")
+            .attr("stroke", "lightgray")
+            .attr("stroke-width", 2);
 
         tooltip
             .attr("x", isLeftSide ? 5 : -5)
@@ -642,131 +645,235 @@ const ForecastChart: React.FC = () => {
         return svg
             .append("g")
             .attr("class", "corner-tooltip")
-            .attr("transform", `translate(${marginLeft + 40}, ${marginTop + 20})`);
+            .attr("transform", `translate(${marginLeft + 40}, ${marginTop})`);
 
     }
 
-    function updateCornerTooltip(data: DataPoint, groundTruthData: DataPoint[], predictionData: any, xScale: d3.ScaleTime<number, number>, chartWidth: number, marginLeft: number, marginTop: number, cornerTooltip: d3.Selection<SVGGElement, unknown, null, undefined>,) {
+    function formatNumber(value: number, isAdmission: boolean = false): string {
+        if (isAdmission) {
+            // Surveillance data should be integer; just in case
+            return Math.round(value).toString();
+        }
+
+        // For other numbers (predictions and confidence intervals)
+        if (Number.isInteger(value)) {
+            // If whole number, return as is
+            return value.toString();
+        }
+
+        // For decimal numbers, use toFixed(2) but trim unnecessary zeros
+        const fixed = value.toFixed(2);
+        // Remove trailing zeros after decimal point, and remove decimal point if no decimals
+        return fixed.replace(/\.?0+$/, '');
+    }
+
+    function updateCornerTooltip(
+        data: DataPoint,
+        groundTruthData: DataPoint[],
+        predictionData: any,
+        xScale: d3.ScaleTime<number, number>,
+        chartWidth: number,
+        marginLeft: number,
+        marginTop: number,
+        cornerTooltip: d3.Selection<SVGGElement, unknown, null, undefined>
+    ) {
         cornerTooltip.selectAll("*").remove();
 
         const padding = 12;
         const lineHeight = 22;
-        let currentY = padding;
+        let currentY = padding + 5;
         let maxWidth = 0;
+
+        /* Position the tooltip box on the side where it won't block the predictions highlighted*/
+        const xPosition = xScale(data.date);
+        const shouldShowOnRightSide = xPosition < chartWidth * 0.48;
 
         // Background rectangle (we'll set its size after calculating content)
         const background = cornerTooltip
             .append('rect')
-            .attr('fill', '#333943') // Darker, more opaque background
-            .attr('rx', 8) // Larger rounded corners
+            .attr('fill', '#333943')
+            .attr('rx', 8)
             .attr('ry', 8);
 
-        // Add Date Information
-        const dateText = cornerTooltip
+        // Add Date Information with non-bold label
+        const dateGroup = cornerTooltip
             .append('text')
-            .attr('x', padding)
+            .attr('x', shouldShowOnRightSide ? maxWidth + padding * 2 - padding : padding)
             .attr('y', currentY)
             .attr('fill', 'white')
-            .attr('font-weight', 'bold')
             .style("font-family", 'var(--font-dm-sans), sans-serif')
-            .attr('font-size', '14px') // Increased font size
-            .text(`Date: ${data.date.toUTCString().slice(5, 16)}`);
+            .attr('font-size', '13px')
+            .attr('text-anchor', shouldShowOnRightSide ? 'end' : 'start');
 
 
-        // Add admissions data
-        const admissionsText = cornerTooltip
+        dateGroup
+            .append('tspan')
+            .text('Date: ')
+            .attr('font-weight', 'normal');
+
+        dateGroup
+            .append('tspan')
+            .text(`${data.date.toUTCString().slice(5, 16)}`)
+            .attr('font-weight', 'bold');
+
+        // Add admissions data with non-bold label
+        const admissionsGroup = cornerTooltip
             .append('text')
-            .attr('x', padding)
+            .attr('x', shouldShowOnRightSide ? maxWidth + padding * 2 - padding : padding)
             .attr('y', currentY + lineHeight)
             .attr('fill', 'white')
-            .attr('font-weight', 'bold')
             .style("font-family", "var(--font-dm-sans)")
-            .attr('font-size', '14px') // Increased font size
-            .text(`Admissions: ${data.admissions !== null && data.admissions !== -1 ? data.admissions : 'N/A'}`);
+            .attr('font-size', '13px')
+            .attr('text-anchor', shouldShowOnRightSide ? 'end' : 'start');
 
-        maxWidth = Math.max(maxWidth, dateText.node().getComputedTextLength());
-        currentY += lineHeight + 2 * padding; // Extra space after admissions
+        admissionsGroup
+            .append('tspan')
+            .text('Admissions: ')
+            .attr('font-weight', 'normal');
+
+        admissionsGroup
+            .append('tspan')
+            .text(`${data.admissions !== null && data.admissions !== -1 ? formatNumber(data.admissions, true) : 'N/A'}`)
+            .attr('font-weight', 'bold');
+
+        maxWidth = Math.max(maxWidth, dateGroup.node().getComputedTextLength());
+        currentY += lineHeight + 2 * padding;
 
         // Find prediction data for the current date
         const currentPredictions = findPredictionsForDate(predictionData, data.date);
 
         if (currentPredictions) {
             Object.entries(currentPredictions).forEach(([modelName, modelData]: [string, any], index) => {
+                // Model name group with color box
+                const modelGroup = cornerTooltip.append('g')
+                    .attr('transform', `translate(${padding}, ${currentY - 14})`);
+
                 // Color rectangle for the model
-                cornerTooltip
+                modelGroup
                     .append('rect')
-                    .attr('x', padding)
-                    .attr('y', currentY - 12)
+                    .attr('class', 'corner-tooltip-model-color-box')
                     .attr('width', 12)
                     .attr('height', 12)
                     .attr('fill', modelColorMap[modelName]);
 
-                const modelText = cornerTooltip
+                // Model name text
+                modelGroup
                     .append('text')
-                    .attr('x', padding + 18)
-                    .attr('y', currentY)
+                    .attr('x', 18)
+                    .attr('y', 11) // Adjusted to align with color box
                     .attr('fill', 'white')
                     .attr('font-weight', 'bold')
                     .style("font-family", "var(--font-dm-sans)")
-                    .attr('font-size', `14px`) // Increased font size
+                    .attr('font-size', '13px')
                     .text(modelName);
 
-                maxWidth = Math.max(maxWidth, modelText.node().getComputedTextLength() + 18);
-                currentY += lineHeight;
+                currentY += lineHeight * 0.6;
 
-                const medianText = cornerTooltip
-                    .append('text')
-                    .attr('x', padding + 18)
-                    .attr('y', currentY)
-                    .attr('fill', 'white')
-                    .attr('font-size', '12px')
-                    .style("font-family", "var(--font-dm-sans)")
-                    .text(`Median: ${modelData.confidence500.toFixed(2)}`);
+                // Create header row for metrics
+                const headerGroup = cornerTooltip.append('g')
+                    .attr('transform', `translate(${padding + 18}, ${currentY})`);
 
-                maxWidth = Math.max(maxWidth, medianText.node().getComputedTextLength() + 18);
-                currentY += lineHeight;
+                const columns = ['Median'];
+                if (confidenceInterval.includes('50')) columns.push('50% CI');
+                if (confidenceInterval.includes('90')) columns.push('90% CI');
+                if (confidenceInterval.includes('95')) columns.push('95% CI');
 
-                confidenceInterval.forEach((interval) => {
-                    const CILowKey = `confidence${interval === '50' ? '250' : interval === '90' ? '050' : '025'}`;
-                    const CIHighKey = `confidence${interval === '50' ? '750' : interval === '90' ? '950' : '975'}`;
+                const columnWidth = 120; // Adjust based on your needs
 
-                    const ciText = cornerTooltip
+                // Add headers
+                columns.forEach((col, i) => {
+                    headerGroup
                         .append('text')
-                        .attr('x', padding + 18)
-                        .attr('y', currentY)
+                        .attr('x', i * columnWidth)
+                        .attr('y', 0)
+                        .attr('text-anchor', 'start')
                         .attr('fill', 'white')
-                        .attr('font-size', '12px')
+                        .attr('font-size', '13px')
                         .style("font-family", "var(--font-dm-sans)")
-                        .text(`${interval}% CI: [${modelData[CILowKey].toFixed(2)}, ${modelData[CIHighKey].toFixed(2)}]`);
-
-                    maxWidth = Math.max(maxWidth, ciText.node().getComputedTextLength() + 18);
-                    currentY += lineHeight;
+                        .text(col);
                 });
 
-                currentY += lineHeight / 2; // Add extra space between models
+                currentY += lineHeight * 0.65;
+
+                // Create values row
+                const valuesGroup = cornerTooltip.append('g')
+                    .attr('transform', `translate(${padding + 18}, ${currentY})`);
+
+                // Add median value
+                valuesGroup
+                    .append('text')
+                    .attr('x', 0)
+                    .attr('y', 0)
+                    .attr('text-anchor', 'start')
+                    .attr('fill', 'white')
+                    .attr('font-size', '14px')
+                    .style("font-family", "var(--font-dm-sans)")
+                    .text(formatNumber(modelData.confidence500));
+
+                // Add CI values
+                let colIndex = 1;
+                if (confidenceInterval.includes('50')) {
+                    valuesGroup
+                        .append('text')
+                        .attr('x', colIndex * columnWidth)
+                        .attr('y', 0)
+                        .attr('text-anchor', 'start')
+                        .attr('fill', 'white')
+                        .attr('font-size', '13px')
+                        .style("font-family", "var(--font-dm-sans)")
+                        .text(`[${formatNumber(modelData.confidence250)}, ${formatNumber(modelData.confidence750)}]`);
+                    colIndex++;
+                }
+
+                if (confidenceInterval.includes('90')) {
+                    valuesGroup
+                        .append('text')
+                        .attr('x', colIndex * columnWidth)
+                        .attr('y', 0)
+                        .attr('text-anchor', 'start')
+                        .attr('fill', 'white')
+                        .attr('font-size', '13px')
+                        .style("font-family", "var(--font-dm-sans)")
+                        .text(`[${formatNumber(modelData.confidence050)}, ${formatNumber(modelData.confidence950)}]`);
+                    colIndex++;
+                }
+
+                if (confidenceInterval.includes('95')) {
+                    valuesGroup
+                        .append('text')
+                        .attr('x', colIndex * columnWidth)
+                        .attr('y', 0)
+                        .attr('text-anchor', 'start')
+                        .attr('fill', 'white')
+                        .attr('font-size', '13px')
+                        .style("font-family", "var(--font-dm-sans)")
+                        .text(`[${formatNumber(modelData.confidence025)}, ${formatNumber(modelData.confidence975)}]`);
+                }
+
+                // Update maxWidth based on the total width of all columns
+                const contentWidth = (columns.length * columnWidth) + padding * 2;
+                maxWidth = Math.max(maxWidth, contentWidth);
+                currentY += lineHeight * 1.15; // Add space before next model
             });
+        }
+
+        if (shouldShowOnRightSide) {
+            dateGroup.attr('x', maxWidth + padding);
+            admissionsGroup.attr('x', maxWidth + padding);
         }
 
         // Set background rectangle size and position
         background
             .attr('width', maxWidth + padding * 2)
-            .attr('height', currentY + padding);
+            .attr('height', currentY);
 
         // Position the tooltip
-        const xPosition = xScale(data.date);
-        const shouldShowOnRightSide = xPosition < chartWidth / 2;
-        const tooltipX = shouldShowOnRightSide ? chartWidth - maxWidth - padding * 2 : 60;
+        const tooltipX = shouldShowOnRightSide ? chartWidth - maxWidth - padding * 2 : marginLeft * 1.5;
         const tooltipY = marginTop;
-
-        /*console.debug('Updating tooltip position:', tooltipX, tooltipY);
-        console.debug('Chart width:', chartWidth);
-        console.debug('Corner Tooltip on upper-right:', shouldShowOnRightSide);
-        console.debug('Max width:', maxWidth);*/
 
         cornerTooltip
             .attr('transform', `translate(${tooltipX}, ${tooltipY})`)
             .style('opacity', 1);
-
     }
 
     function findPredictionsForDate(predictionData: any, date: Date) {
