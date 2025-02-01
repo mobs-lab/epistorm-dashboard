@@ -76,7 +76,7 @@ const SingleModelScoreLineChart: React.FC = () => {
                 .attr('fill', 'white')
                 .attr('font-size', '12px')
                 .style('font-family', 'var(--font-dm-sans)')
-                .attr('y', margin.top - 5);
+                .attr('y', margin.top + 20);
 
             // Corner tooltip
             const cornerTooltip = svg.append('g')
@@ -299,13 +299,47 @@ const SingleModelScoreLineChart: React.FC = () => {
                     }
                 });
 
+
+            /* Helper function to wrap x-axis label*/
+            function wrap(text, width) {
+                text.each(function () {
+                    var text = d3.select(this), words = text.text().split(/\n+/).reverse(), word, line = [], lineNumber = 0,
+                        lineHeight = 1.0, // ems
+                        y = text.attr("y"), dy = parseFloat(text.attr("dy")), tspan = text
+                            .text(null)
+                            .append("tspan")
+                            .attr("x", 0)
+                            .attr("y", y)
+                            .attr("dy", dy + "em");
+                    while ((word = words.pop())) {
+                        line.push(word);
+                        tspan.text(line.join(" "));
+                        if (tspan.node().getComputedTextLength() > width) {
+                            line.pop();
+                            tspan.text(line.join(" "));
+                            line = [word];
+                            tspan = text
+                                .append("tspan")
+                                .attr("x", 0)
+                                .attr("y", 0)
+                                .attr("dy", ++lineNumber * lineHeight + dy + "em")
+                                .text(word);
+                        }
+                    }
+                });
+            }
+
+
             // Add axes
             chart.append('g')
                 .attr('transform', `translate(0,${chartHeight})`)
                 .style('font-family', 'var(--font-dm-sans)')
                 .call(xAxis)
                 .selectAll('text')
-                .style('text-anchor', 'middle');
+                .style("text-anchor", "middle")
+                .style('font-size', '13px')
+                .call(wrap, 20); // 32 is the minimum width to accommodate year number at 1080p 100% zoom view environment, adjust as needed;
+
 
             chart.append('g')
                 .style('font-family', 'var(--font-dm-sans)')
@@ -314,7 +348,8 @@ const SingleModelScoreLineChart: React.FC = () => {
                 .call(g => g.selectAll('.tick line')
                     .attr('stroke-opacity', 0.5)
                     .attr('stroke-dasharray', '2,2')
-                    .attr('x2', chartWidth));
+                    .attr('x2', chartWidth))
+                .style('font-size', '13px');
 
             // Add interactivity
             const {
