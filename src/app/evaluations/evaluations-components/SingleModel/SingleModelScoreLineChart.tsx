@@ -2,6 +2,7 @@ import React, {useEffect, useRef} from 'react';
 import * as d3 from 'd3';
 import {useAppSelector} from '../../../store/hooks';
 import {isUTCDateEqual} from '../../../Interfaces/forecast-interfaces';
+import {useResponsiveSVG} from "../../../Interfaces/responsiveSVG";
 
 interface ScoreDataPoint {
     referenceDate: Date;
@@ -9,6 +10,7 @@ interface ScoreDataPoint {
 }
 
 const SingleModelScoreLineChart: React.FC = () => {
+        const {containerRef, dimensions, isResizing} = useResponsiveSVG();
         const chartRef = useRef<SVGSVGElement>(null);
 
         // Get data and settings from Redux
@@ -22,6 +24,7 @@ const SingleModelScoreLineChart: React.FC = () => {
             evaluationSingleModelViewHorizon
         } = useAppSelector((state) => state.evaluationsSingleModelSettings);
 
+        /* NOTE: All scoring options use the same color for now */
         const chartColor = '#4a9eff';
 
         function findActualDateRange(data: any[]): [Date, Date] {
@@ -153,14 +156,15 @@ const SingleModelScoreLineChart: React.FC = () => {
         }
 
         function renderChart() {
-            if (!chartRef.current) return;
+            if (!chartRef.current || !dimensions.width || !dimensions.height) return;
+            // if (!chartRef.current) return;
 
             const svg = d3.select(chartRef.current);
             svg.selectAll('*').remove();
 
             // Get dimensions and set margins
-            const width = chartRef.current.clientWidth;
-            const height = chartRef.current.clientHeight;
+            const width = dimensions.width;
+            const height = dimensions.height;
 
             const margin = {
                 top: height * 0.02,
@@ -435,19 +439,12 @@ const SingleModelScoreLineChart: React.FC = () => {
         }
 
         useEffect(() => {
-                renderChart();
-                return () => {
-                    // Cleanup event listeners when component unmounts
-                    if (chartRef.current) {
-                        d3.select(chartRef.current).selectAll('.event-overlay')
-                            .on('mousemove', null)
-                            .on('mouseout', null)
-                            .on('mousedown', null)
-                            .on('mouseup', null)
-                            .on('mouseleave', null);
-                    }
-                };
+                if (!isResizing && dimensions.width > 0 && dimensions.height > 0) {
+                    renderChart();
+                }
             }, [
+                dimensions,
+                isResizing,
                 evaluationSingleModelViewModel,
                 evaluationsSingleModelViewSelectedStateCode,
                 evaluationsSingleModelViewDateStart,
@@ -459,12 +456,18 @@ const SingleModelScoreLineChart: React.FC = () => {
         );
 
         return (
-            <div className="w-full h-full">
+            <div ref={containerRef} className="w-full h-full">
                 <svg
                     ref={chartRef}
                     width="100%"
                     height="100%"
                     className="w-full h-full"
+                    style={{
+                        fontFamily: "var(--font-dm-sans)",
+                        visibility: isResizing ? 'hidden' : 'visible'
+                    }}
+                    viewBox={`0 0 ${dimensions.width || 100} ${dimensions.height || 100}`}
+                    preserveAspectRatio="xMidYMid meet"
                 />
             </div>
         );

@@ -12,6 +12,7 @@ import {
     PredictionDataPoint
 } from "../../../Interfaces/forecast-interfaces";
 import {useAppDispatch, useAppSelector} from "../../../store/hooks";
+import {useResponsiveSVG} from "../../../Interfaces/responsiveSVG";
 
 interface HoverData {
     date: Date;
@@ -25,8 +26,15 @@ interface HoverData {
 
 
 const SingleModelHorizonPlot: React.FC = () => {
+    const {containerRef, dimensions, isResizing} = useResponsiveSVG();
+    const svgRef = useRef<SVGSVGElement>(null);
 
-    const boxPlotRef = useRef<SVGSVGElement>(null);
+    // Track active event listeners for cleanup
+    const eventListenersRef = useRef<{
+        overlay?: d3.Selection<any, unknown, null, undefined>;
+        tooltip?: d3.Selection<SVGGElement, unknown, null, undefined>;
+    }>({});
+
 
     // Get the ground and prediction data from store
     const groundTruthData = useAppSelector((state) => state.groundTruth.data);
@@ -231,15 +239,16 @@ const SingleModelHorizonPlot: React.FC = () => {
         ];
     }
 
-    function renderBoxPlot() {
-        if (!boxPlotRef.current) return;
 
-        const svg = d3.select(boxPlotRef.current);
+    function renderBoxPlot() {
+        if (!svgRef.current || !dimensions.width || !dimensions.height) return;
+
+        const svg = d3.select(svgRef.current);
         svg.selectAll("*").remove();
 
         // Get dimensions
-        const width = boxPlotRef.current.clientWidth;
-        const height = boxPlotRef.current.clientHeight;
+        const width = dimensions.width;
+        const height = dimensions.height;
 
         // Calculate margins
         const margin = {
@@ -519,10 +528,12 @@ const SingleModelHorizonPlot: React.FC = () => {
     * - evaluationsSingleModelViewSelectedStateCode: string
     *  */
     useEffect(() => {
-        if (boxPlotRef.current && groundTruthData.length > 0) {
-            renderBoxPlot(d3.select(boxPlotRef.current));
+        if (!isResizing && dimensions.width > 0 && dimensions.height > 0) {
+            renderBoxPlot();
         }
     }, [
+        dimensions,
+        isResizing,
         evaluationsSingleModelViewSelectedStateCode,
         evaluationsSingleModelViewDateStart,
         evaluationSingleModelViewDateEnd,
@@ -533,13 +544,18 @@ const SingleModelHorizonPlot: React.FC = () => {
     ]);
 
     return (
-        <div className="w-full h-full">
+        <div ref={containerRef} className="w-full h-full">
             <svg
-                ref={boxPlotRef}
+                ref={svgRef}
                 width="100%"
                 height="100%"
                 className="w-full h-full"
-                style={{fontFamily: "var(--font-dm-sans)"}}
+                style={{
+                    fontFamily: "var(--font-dm-sans)",
+                    visibility: isResizing ? 'hidden' : 'visible'
+                }}
+                viewBox={`0 0 ${dimensions.width || 100} ${dimensions.height || 100}`}
+                preserveAspectRatio="xMidYMid meet"
             />
         </div>
     )
