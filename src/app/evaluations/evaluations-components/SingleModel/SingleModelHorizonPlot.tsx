@@ -350,7 +350,7 @@ const SingleModelHorizonPlot: React.FC = () => {
                 .attr("stroke-opacity", 0.5)
                 .attr("stroke-dasharray", "2,2")
                 .attr("x2", chartWidth))
-            .style('font-size', '13px');
+            .style('font-size', '18px');
 
         // Create container for all visual elements
         const visualContainer = chart.append('g')
