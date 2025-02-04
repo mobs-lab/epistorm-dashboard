@@ -12,3 +12,7 @@ mkdir -p public/data/processed/NEU_ISI-FluBcast
 
 # For historical ground truth
 mkdir -p public/data/ground-truth/historical-data
+
+
+# For evaluations score data
+mkdir -p public/data/evaluations-score

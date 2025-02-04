@@ -34,10 +34,15 @@ jobs:
         run: |
           ./scripts/setup_directories.sh
 
-      - name: Check and Copy New Files
+      - name: Check and Copy New Prediction Data Files
         id: check-copy
         run: |
           source ./scripts/data_retrieval.sh
+
+      - name: Check and Pull New Evaluations Data
+        id: check-copy-evaluations
+        run: |
+          source ./scripts/evaluations_data_retrieval.sh
 
       # Set up python and run transform_data.py ONLY WHEN new prediction data is copied
       - name: Setup Python
@@ -63,16 +68,17 @@ jobs:
 
       # NOTE: commit back to main branch, and releasing into production branch are done together to avoid timestamp issue
       - name: Commit Changes and Update Production
-        if: ${{ env.NEW_PREDICTION_DATA_COPIED == 'true' || env.NEW_SURVEILLANCE_DATA_COPIED == 'true' || env.NEW_SURVEILLANCE_ARCHIVE_DATA_COPIED == 'true' }}
+        if: ${{ env.NEW_PREDICTION_DATA_COPIED == 'true' || env.NEW_SURVEILLANCE_DATA_COPIED == 'true' || env.NEW_SURVEILLANCE_ARCHIVE_DATA_COPIED == 'true' || env.NEW_EVALUATION_DATA_COPIED == 'true' }}
         run: |
           # Generate timestamp
           TIMESTAMP=$(date +'%Y-%m-%d-%H-%M-%S')
           
           # Stage data changes
-          git add public/data/unprocessed/* public/data/ground-truth/* public/data/processed/* || true
+          git add public/data/unprocessed/* public/data/ground-truth/* public/data/processed/* public/data/evaluations-score/* || true
           
           # Stage submodule changes
           git add FluSight-forecast-hub || true
+          git add epistorm-evaluations || true
           
           # Check if there are changes to commit
           if git diff --staged --quiet; then
@@ -83,8 +89,7 @@ jobs:
           # Create commit in main
           git commit -m "Data update ${TIMESTAMP}
           
-          - Updated data files
-          - Updated FluSight-forecast-hub submodule reference"
+          Updated data files
           
           # Push changes to main
           if ! git push origin main; then
@@ -132,4 +137,4 @@ jobs:
         run: |
           gh workflow run "Deploy to GCP App Engine Default Service"
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} #NOTE: this is not necessary but just in case
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} #NOTE: This is not necessary but just in case
