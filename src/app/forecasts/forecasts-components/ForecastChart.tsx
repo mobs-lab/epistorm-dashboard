@@ -636,7 +636,7 @@ const ForecastChart: React.FC = () => {
             .style("opacity", 0);
     }
 
-    function createCornerTooltip(svg: d3.Selection<SVGSVGElement, unknown, null, undefined>, marginLeft: number, marginTop: number, chartWidth: number,) {
+    function createCornerTooltip(svg: d3.Selection<SVGSVGElement, unknown, null, undefined>, marginLeft: number, marginTop: number,) {
 
         // console.debug('DEBUG: Initial tooltip position:', marginLeft + 20, marginTop + 20);
         return svg
@@ -937,7 +937,7 @@ const ForecastChart: React.FC = () => {
         const {
             group: verticalIndicatorGroup, line: verticalIndicator, tooltip: lineTooltip,
         } = renderVerticalIndicator(svg, xScale, marginLeft, marginTop, height, marginBottom,);
-        const cornerTooltip = createCornerTooltip(svg, marginLeft, marginTop, chartWidth,);
+        const cornerTooltip = createCornerTooltip(svg, marginLeft, marginTop, );
         const eventOverlay = createEventOverlay(svg, marginLeft, marginTop, chartWidth, chartHeight,);
 
         let isDragging = false;

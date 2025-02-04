@@ -2,6 +2,7 @@ import React, {useEffect, useRef} from 'react';
 import * as d3 from 'd3';
 import {useAppSelector} from '../../../store/hooks';
 import {isUTCDateEqual} from '../../../Interfaces/forecast-interfaces';
+import {useResponsiveSVG} from "../../../Interfaces/responsiveSVG";
 
 interface ScoreDataPoint {
     referenceDate: Date;
@@ -9,6 +10,7 @@ interface ScoreDataPoint {
 }
 
 const SingleModelScoreLineChart: React.FC = () => {
+        const {containerRef, dimensions, isResizing} = useResponsiveSVG();
         const chartRef = useRef<SVGSVGElement>(null);
 
         // Get data and settings from Redux
@@ -22,6 +24,7 @@ const SingleModelScoreLineChart: React.FC = () => {
             evaluationSingleModelViewHorizon
         } = useAppSelector((state) => state.evaluationsSingleModelSettings);
 
+        /* NOTE: All scoring options use the same color for now */
         const chartColor = '#4a9eff';
 
         function findActualDateRange(data: any[]): [Date, Date] {
@@ -76,7 +79,7 @@ const SingleModelScoreLineChart: React.FC = () => {
                 .attr('fill', 'white')
                 .attr('font-size', '12px')
                 .style('font-family', 'var(--font-dm-sans)')
-                .attr('y', margin.top - 5);
+                .attr('y', margin.top + 20);
 
             // Corner tooltip
             const cornerTooltip = svg.append('g')
@@ -153,20 +156,21 @@ const SingleModelScoreLineChart: React.FC = () => {
         }
 
         function renderChart() {
-            if (!chartRef.current) return;
+            if (!chartRef.current || !dimensions.width || !dimensions.height) return;
+            // if (!chartRef.current) return;
 
             const svg = d3.select(chartRef.current);
             svg.selectAll('*').remove();
 
             // Get dimensions and set margins
-            const width = chartRef.current.clientWidth;
-            const height = chartRef.current.clientHeight;
+            const width = dimensions.width;
+            const height = dimensions.height;
 
             const margin = {
-                top: height * 0.05,
-                right: width * 0.02,
-                bottom: height * 0.1,
-                left: width * 0.05  // Increased for axis labels
+                top: height * 0.02,
+                right: width * 0.03,
+                bottom: height * 0.15,
+                left: width * 0.04  // Increased for axis labels
             };
 
             const chartWidth = width - margin.left - margin.right;
@@ -208,10 +212,11 @@ const SingleModelScoreLineChart: React.FC = () => {
             const scores = filteredData.map(d => d.score);
             const minScore = Math.min(...scores);
             const maxScore = Math.max(...scores);
-            const yDomain = evaluationSingleModelViewScoresOption === 'MAPE' ?
-                [0, maxScore * 1.1] :  // For MAPE, start at 0
-                [Math.min(minScore, 1.0 - (maxScore - 1.0)),
-                    Math.max(maxScore, 1.0 + (1.0 - minScore))]; // For WIS_ratio, center around 1.0
+            const yDomain = [0, maxScore * 1.02]
+            // const yDomain = evaluationSingleModelViewScoresOption === 'MAPE' ?
+            //     [0, maxScore * 1.1] :  // For MAPE, start at 0
+            //     [Math.min(minScore, 1.0 - (maxScore - 1.0)),
+            //         Math.max(maxScore, 1.0 + (1.0 - minScore))]; // For WIS_ratio, center around 1.0
 
             const yScale = d3.scaleLinear()
                 .domain(yDomain)
@@ -266,21 +271,68 @@ const SingleModelScoreLineChart: React.FC = () => {
                 .tickFormat((d: Date) => {
                     const month = d3.timeFormat('%b')(d);
                     const day = d3.timeFormat('%d')(d);
-                    const year = d.getUTCFullYear();
                     const isFirst = isUTCDateEqual(d, actualStart);
+                    const isFirstTickInNewMonth = d.getDate() < 7 && d.getDate() > 0;
                     const isNearYearChange = d.getMonth() === 0 && d.getDate() <= 7;
 
-                    return isFirst || isNearYearChange ?
-                        `${year}\n${month}\n${day}` :
-                        `${month}\n${day}`;
+
+                    // Adjust label format based on chart width
+                    if (chartWidth < 500) {
+                        // Small width mode: show month only on first day of month, first tick, and near year change
+                        if (isFirst || isFirstTickInNewMonth || isNearYearChange) {
+                            return month;
+                        } else {
+                            return '';
+                        }
+                    } else {
+                        // Normal width mode: show day for every tick, month on first day of month, first tick, and near year change
+                        if (isFirst || isFirstTickInNewMonth || isNearYearChange) {
+                            return `${month}\n${day}`;
+                        } else {
+                            return day;
+                        }
+                    }
                 });
 
             const yAxis = d3.axisLeft(yScale)
-                .tickFormat((d: number) =>
-                    evaluationSingleModelViewScoresOption === 'MAPE' ?
-                        `${d.toFixed(1)}%` :
-                        d.toFixed(2)
-                );
+                .tickFormat((d: number) => {
+                    if (evaluationSingleModelViewScoresOption === 'MAPE') {
+                        return d >= 10 ? `${d.toFixed(0)}%` : `${d.toFixed(1)}%`;
+                    } else {
+                        return d.toFixed(1);
+                    }
+                });
+
+
+            /* Helper function to wrap x-axis label*/
+            function wrap(text, width) {
+                text.each(function () {
+                    var text = d3.select(this), words = text.text().split(/\n+/).reverse(), word, line = [], lineNumber = 0,
+                        lineHeight = 1.0, // ems
+                        y = text.attr("y"), dy = parseFloat(text.attr("dy")), tspan = text
+                            .text(null)
+                            .append("tspan")
+                            .attr("x", 0)
+                            .attr("y", y)
+                            .attr("dy", dy + "em");
+                    while ((word = words.pop())) {
+                        line.push(word);
+                        tspan.text(line.join(" "));
+                        if (tspan.node().getComputedTextLength() > width) {
+                            line.pop();
+                            tspan.text(line.join(" "));
+                            line = [word];
+                            tspan = text
+                                .append("tspan")
+                                .attr("x", 0)
+                                .attr("y", 0)
+                                .attr("dy", ++lineNumber * lineHeight + dy + "em")
+                                .text(word);
+                        }
+                    }
+                });
+            }
+
 
             // Add axes
             chart.append('g')
@@ -288,7 +340,10 @@ const SingleModelScoreLineChart: React.FC = () => {
                 .style('font-family', 'var(--font-dm-sans)')
                 .call(xAxis)
                 .selectAll('text')
-                .style('text-anchor', 'middle');
+                .style("text-anchor", "middle")
+                .style('font-size', '13px')
+                .call(wrap, 20); // 32 is the minimum width to accommodate year number at 1080p 100% zoom view environment, adjust as needed;
+
 
             chart.append('g')
                 .style('font-family', 'var(--font-dm-sans)')
@@ -297,7 +352,8 @@ const SingleModelScoreLineChart: React.FC = () => {
                 .call(g => g.selectAll('.tick line')
                     .attr('stroke-opacity', 0.5)
                     .attr('stroke-dasharray', '2,2')
-                    .attr('x2', chartWidth));
+                    .attr('x2', chartWidth))
+                .style('font-size', '18px');
 
             // Add interactivity
             const {
@@ -383,19 +439,12 @@ const SingleModelScoreLineChart: React.FC = () => {
         }
 
         useEffect(() => {
-                renderChart();
-                return () => {
-                    // Cleanup event listeners when component unmounts
-                    if (chartRef.current) {
-                        d3.select(chartRef.current).selectAll('.event-overlay')
-                            .on('mousemove', null)
-                            .on('mouseout', null)
-                            .on('mousedown', null)
-                            .on('mouseup', null)
-                            .on('mouseleave', null);
-                    }
-                };
+                if (!isResizing && dimensions.width > 0 && dimensions.height > 0) {
+                    renderChart();
+                }
             }, [
+                dimensions,
+                isResizing,
                 evaluationSingleModelViewModel,
                 evaluationsSingleModelViewSelectedStateCode,
                 evaluationsSingleModelViewDateStart,
@@ -407,12 +456,18 @@ const SingleModelScoreLineChart: React.FC = () => {
         );
 
         return (
-            <div className="w-full h-full">
+            <div ref={containerRef} className="w-full h-full">
                 <svg
                     ref={chartRef}
                     width="100%"
                     height="100%"
                     className="w-full h-full"
+                    style={{
+                        fontFamily: "var(--font-dm-sans)",
+                        visibility: isResizing ? 'hidden' : 'visible'
+                    }}
+                    viewBox={`0 0 ${dimensions.width || 100} ${dimensions.height || 100}`}
+                    preserveAspectRatio="xMidYMid meet"
                 />
             </div>
         );

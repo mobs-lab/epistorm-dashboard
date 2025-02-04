@@ -12,6 +12,7 @@ import {
     PredictionDataPoint
 } from "../../../Interfaces/forecast-interfaces";
 import {useAppDispatch, useAppSelector} from "../../../store/hooks";
+import {useResponsiveSVG} from "../../../Interfaces/responsiveSVG";
 
 interface HoverData {
     date: Date;
@@ -25,8 +26,15 @@ interface HoverData {
 
 
 const SingleModelHorizonPlot: React.FC = () => {
+    const {containerRef, dimensions, isResizing} = useResponsiveSVG();
+    const svgRef = useRef<SVGSVGElement>(null);
 
-    const boxPlotRef = useRef<SVGSVGElement>(null);
+    // Track active event listeners for cleanup
+    const eventListenersRef = useRef<{
+        overlay?: d3.Selection<any, unknown, null, undefined>;
+        tooltip?: d3.Selection<SVGGElement, unknown, null, undefined>;
+    }>({});
+
 
     // Get the ground and prediction data from store
     const groundTruthData = useAppSelector((state) => state.groundTruth.data);
@@ -135,23 +143,36 @@ const SingleModelHorizonPlot: React.FC = () => {
         // Generate Saturday ticks
         const saturdayTicks = groundTruthData
             .filter(d => d.date.getDay() === 6)
-            .map(d => d.date);
+            .map(d => d.date)
+            .sort((a, b) => a.getTime() - b.getTime());
 
         // Create x-axis with same formatting as ForecastChart
         const xAxis = d3.axisBottom(xScale)
-            .tickValues(saturdayTicks.map(d => d.toISOString()))
+            .tickValues(saturdayTicks.map(d => d.toISOString()))  // Convert to ISOString to match domain
             .tickFormat((d: string) => {
                 const date = new Date(d);
                 const month = d3.timeFormat("%b")(date);
                 const day = d3.timeFormat("%d")(date);
-                const year = date.getUTCFullYear();
-                const isFirst = date === saturdayTicks[0];
+                const isFirst = isUTCDateEqual(date, saturdayTicks[0]);  // Use isUTCDateEqual
+                const isFirstTickInNewMonth = date.getDate() < 7 && date.getDate() > 0;
                 const isNearYearChange = date.getMonth() === 0 && date.getDate() <= 10;
 
-                return isFirst || isNearYearChange ?
-                    `${year}\n${month}\n${day}` :
-                    `${month}\n${day}`;
+                // Rest of the formatting logic remains the same
+                if (chartWidth < 500) {
+                    if (isFirst || isFirstTickInNewMonth || isNearYearChange) {
+                        return month;
+                    } else {
+                        return '';
+                    }
+                } else {
+                    if (isFirst || isFirstTickInNewMonth || isNearYearChange) {
+                        return `${month}\n${day}`;
+                    } else {
+                        return day;
+                    }
+                }
             });
+
 
         // Create y scale using all possible values
         const allValues = visualData.flatMap(d => [
@@ -218,22 +239,23 @@ const SingleModelHorizonPlot: React.FC = () => {
         ];
     }
 
-    function renderBoxPlot() {
-        if (!boxPlotRef.current) return;
 
-        const svg = d3.select(boxPlotRef.current);
+    function renderBoxPlot() {
+        if (!svgRef.current || !dimensions.width || !dimensions.height) return;
+
+        const svg = d3.select(svgRef.current);
         svg.selectAll("*").remove();
 
         // Get dimensions
-        const width = boxPlotRef.current.clientWidth;
-        const height = boxPlotRef.current.clientHeight;
+        const width = dimensions.width;
+        const height = dimensions.height;
 
         // Calculate margins
         const margin = {
             top: height * 0.04,
-            right: width * 0.02,
-            bottom: height * 0.08,
-            left: width * 0.05
+            right: width * 0.03,
+            bottom: height * 0.15,
+            left: width * 0.04
         };
 
         const chartWidth = width - margin.left - margin.right;
@@ -281,6 +303,35 @@ const SingleModelHorizonPlot: React.FC = () => {
             chartHeight
         );
 
+        /* Helper function to wrap x-axis label*/
+        function wrap(text, width) {
+            text.each(function () {
+                var text = d3.select(this), words = text.text().split(/\n+/).reverse(), word, line = [], lineNumber = 0,
+                    lineHeight = 1.0, // ems
+                    y = text.attr("y"), dy = parseFloat(text.attr("dy")), tspan = text
+                        .text(null)
+                        .append("tspan")
+                        .attr("x", 0)
+                        .attr("y", y)
+                        .attr("dy", dy + "em");
+                while ((word = words.pop())) {
+                    line.push(word);
+                    tspan.text(line.join(" "));
+                    if (tspan.node().getComputedTextLength() > width) {
+                        line.pop();
+                        tspan.text(line.join(" "));
+                        line = [word];
+                        tspan = text
+                            .append("tspan")
+                            .attr("x", 0)
+                            .attr("y", 0)
+                            .attr("dy", ++lineNumber * lineHeight + dy + "em")
+                            .text(word);
+                    }
+                }
+            });
+        }
+
         // Create main chart group
         const chart = svg
             .append("g")
@@ -292,6 +343,14 @@ const SingleModelHorizonPlot: React.FC = () => {
             .style("font-family", "var(--font-dm-sans)")
             .call(xAxis);
 
+        // Style x-axis ticks
+        xAxisGroup
+            .selectAll(".tick text")
+            .style("text-anchor", "middle")
+            .style('font-size', '13px')
+            .call(wrap, 20); // 32 is the minimum width to accommodate year number at 1080p 100% zoom view environment, adjust as needed
+
+
         const yAxisGroup = chart.append("g")
             .style("font-family", "var(--font-dm-sans)")
             .call(yAxis)
@@ -299,7 +358,8 @@ const SingleModelHorizonPlot: React.FC = () => {
             .call(g => g.selectAll(".tick line")
                 .attr("stroke-opacity", 0.5)
                 .attr("stroke-dasharray", "2,2")
-                .attr("x2", chartWidth));
+                .attr("x2", chartWidth))
+            .style('font-size', '18px');
 
         // Create container for all visual elements
         const visualContainer = chart.append('g')
@@ -378,7 +438,7 @@ const SingleModelHorizonPlot: React.FC = () => {
                 .attr("class", "hover-area")
                 .style("cursor", "pointer")
                 .style("pointer-events", "all")
-                .on("mouseover", function(event) {
+                .on("mouseover", function (event) {
                     event.stopPropagation();
 
                     // Highlight effect
@@ -441,7 +501,7 @@ const SingleModelHorizonPlot: React.FC = () => {
                         .attr("transform", `translate(${tooltipX}, 10)`)
                         .style("opacity", 1);
                 })
-                .on("mouseout", function(event) {
+                .on("mouseout", function (event) {
                     event.stopPropagation();
 
                     // Remove highlight
@@ -468,10 +528,12 @@ const SingleModelHorizonPlot: React.FC = () => {
     * - evaluationsSingleModelViewSelectedStateCode: string
     *  */
     useEffect(() => {
-        if (boxPlotRef.current && groundTruthData.length > 0) {
-            renderBoxPlot(d3.select(boxPlotRef.current));
+        if (!isResizing && dimensions.width > 0 && dimensions.height > 0) {
+            renderBoxPlot();
         }
     }, [
+        dimensions,
+        isResizing,
         evaluationsSingleModelViewSelectedStateCode,
         evaluationsSingleModelViewDateStart,
         evaluationSingleModelViewDateEnd,
@@ -482,13 +544,18 @@ const SingleModelHorizonPlot: React.FC = () => {
     ]);
 
     return (
-        <div className="w-full h-full">
+        <div ref={containerRef} className="w-full h-full">
             <svg
-                ref={boxPlotRef}
+                ref={svgRef}
                 width="100%"
                 height="100%"
                 className="w-full h-full"
-                style={{fontFamily: "var(--font-dm-sans)"}}
+                style={{
+                    fontFamily: "var(--font-dm-sans)",
+                    visibility: isResizing ? 'hidden' : 'visible'
+                }}
+                viewBox={`0 0 ${dimensions.width || 100} ${dimensions.height || 100}`}
+                preserveAspectRatio="xMidYMid meet"
             />
         </div>
     )
