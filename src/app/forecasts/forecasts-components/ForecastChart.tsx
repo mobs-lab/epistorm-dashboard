@@ -1,12 +1,13 @@
 // src/app/Components/forecasts-components/ForecastChart.tsx
 "use client";
 
-import React, {useEffect, useRef, useState} from "react";
+import React, { useEffect, useRef, useState } from "react";
 import * as d3 from "d3";
-import {Axis, BaseType, NumberValue, ScaleLinear, ScaleLogarithmic, ScaleTime} from "d3";
-import {subWeeks} from "date-fns";
+import { Axis, BaseType, NumberValue, ScaleLinear, ScaleLogarithmic, ScaleTime } from "d3";
+import { subWeeks } from "date-fns";
 
-import {modelColorMap} from "../../Interfaces/modelColors";
+import { useChartMargins, calculateLabelSpace } from "../../Interfaces/chart-margin-utils";
+import { modelColorMap } from "../../Interfaces/modelColors";
 import {
     DataPoint,
     HistoricalDataEntry,
@@ -15,8 +16,8 @@ import {
     PredictionDataPoint
 } from "../../Interfaces/forecast-interfaces";
 
-import {useAppDispatch, useAppSelector} from "../../store/hooks";
-import {updateUserSelectedWeek} from "../../store/forecast-settings-slice";
+import { useAppDispatch, useAppSelector } from "../../store/hooks";
+import { updateUserSelectedWeek } from "../../store/forecast-settings-slice";
 
 const ForecastChart: React.FC = () => {
 
@@ -320,7 +321,7 @@ const ForecastChart: React.FC = () => {
 
         yAxis.tickSize(-chartWidth);
 
-        return {xScale, yScale, xAxis, yAxis};
+        return { xScale, yScale, xAxis, yAxis };
     }
 
     function generateYAxisTicks(minValue: number, maxValue: number, isLogScale: boolean): number[] {
@@ -597,7 +598,7 @@ const ForecastChart: React.FC = () => {
         /* Change the accompaning tooltip text to DM Sans*/
 
 
-        return {group, line, tooltip};
+        return { group, line, tooltip };
     }
 
     function updateVerticalIndicator(date: Date, xScale: d3.ScaleTime<number, number>, marginLeft: number, chartWidth: number, group: d3.Selection<SVGGElement, unknown, null, undefined>, tooltip: d3.Selection<SVGTextElement, unknown, null, undefined>,) {
@@ -937,7 +938,7 @@ const ForecastChart: React.FC = () => {
         const {
             group: verticalIndicatorGroup, line: verticalIndicator, tooltip: lineTooltip,
         } = renderVerticalIndicator(svg, xScale, marginLeft, marginTop, height, marginBottom,);
-        const cornerTooltip = createCornerTooltip(svg, marginLeft, marginTop, );
+        const cornerTooltip = createCornerTooltip(svg, marginLeft, marginTop,);
         const eventOverlay = createEventOverlay(svg, marginLeft, marginTop, chartWidth, chartHeight,);
 
         let isDragging = false;
@@ -1036,7 +1037,7 @@ const ForecastChart: React.FC = () => {
             // Remove the existing chart elements
             svg.selectAll("*").remove();
 
-            const {marginTop, marginBottom, marginLeft, marginRight} = calculateMargins();
+            const { marginTop, marginBottom, marginLeft, marginRight } = calculateMargins();
 
             const chartWidth = width - marginLeft - marginRight;
             const chartHeight = height - marginTop - marginBottom;
