@@ -1,11 +1,12 @@
 // src/app/Components/forecasts-components/ForecastChart.tsx
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import * as d3 from "d3";
 import { Axis, BaseType, NumberValue, ScaleLinear, ScaleLogarithmic, ScaleTime } from "d3";
 import { subWeeks } from "date-fns";
 
+import {useChartDimensions} from "../../Interfaces/forecast-chart-dimension-observer";
 import { useChartMargins, calculateLabelSpace } from "../../Interfaces/chart-margin-utils";
 import { modelColorMap } from "../../Interfaces/modelColors";
 import {
@@ -18,16 +19,23 @@ import {
 
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import { updateUserSelectedWeek } from "../../store/forecast-settings-slice";
+import debounce from "lodash/debounce";
 
 const ForecastChart: React.FC = () => {
 
     // reference to svg object
     const svgRef = useRef(null);
+    // const [zoomLevel, setZoomLevel] = useState(1);
+    const [containerRef, { width, height, zoomLevel }] = useChartDimensions();
 
-    const chartRef = useRef<HTMLDivElement>(null);
-    const [chartDimensions, setChartDimensions] = useState({
-        width: 0, height: 0,
-    });
+    // Get margins using the utility
+    const margins = useChartMargins(
+        width,
+        height,
+        'default',
+    );
+
+    const dispatch = useAppDispatch();
 
     // Get the ground and prediction data from store
     const groundTruthData = useAppSelector((state) => state.groundTruth.data);
@@ -49,48 +57,8 @@ const ForecastChart: React.FC = () => {
         historicalDataMode,
     } = useAppSelector((state) => state.forecastSettings);
 
-    const dispatch = useAppDispatch();
-
     // State Variables that only the component itself needs to keep track of selected week and whether it is loaded
     const [initialDataLoaded, setInitialDataLoaded] = useState(false);
-
-    // Size set up using dynamic width and height
-    const width = chartDimensions.width;
-    const height = chartDimensions.height;
-
-    const [zoomLevel, setZoomLevel] = useState(1);
-
-    // Function to detect zoom level
-    const detectZoomLevel = () => {
-        const scale = window.devicePixelRatio || 1;
-        setZoomLevel(scale);
-    };
-
-    /* NOTE: Fine-Tune this to change how it responds to size changes in the future */
-    const calculateMargins = () => {
-        const zoomFactor = Math.max(1, zoomLevel);
-
-        const baseMarginTop = Math.max(20 + (zoomFactor * 12), height * 0.1);
-        const baseMarginBottom = Math.max(20 + (zoomFactor * 25), height * 0.15);
-        const baseMarginLeft = Math.max(20 + (zoomFactor * 25), width * 0.038);
-        // console.debug("DEBUG: Base Margin Left:", baseMarginLeft);
-        const baseMarginRight = Math.max(20 - (zoomFactor * 12), width * 0.02);
-
-
-        return {
-            marginTop: baseMarginTop,
-            marginBottom: baseMarginBottom,
-            marginLeft: baseMarginLeft,
-            marginRight: baseMarginRight,
-        };
-    };
-
-    useEffect(() => {
-        detectZoomLevel();
-        window.addEventListener('resize', detectZoomLevel);
-        return () => window.removeEventListener('resize', detectZoomLevel);
-    }, []);
-
 
     // Function to filter ground truth data by selected state and dates
     function filterGroundTruthData(data: DataPoint[], state: string, groundTruthDateRange: [Date, Date]) {
@@ -1014,22 +982,41 @@ const ForecastChart: React.FC = () => {
         dispatch(updateUserSelectedWeek(new Date(date.toISOString()))); // Ensure UTC
     }
 
-    // Use Effect hook for getting the dimensions of chart
+    /* // ResizeObserver for updating chart dimensions
     useEffect(() => {
-        const updateDimensions = () => {
-            if (chartRef.current) {
+        if (!chartRef.current) return;
+
+        const resizeObserver = new ResizeObserver(entries => {
+            const entry = entries[0];
+            if (entry) {
                 setChartDimensions({
-                    width: chartRef.current.clientWidth, height: chartRef.current.clientHeight,
+                    width: entry.contentRect.width,
+                    height: entry.contentRect.height
                 });
             }
-        };
+        });
 
-        updateDimensions();
-        window.addEventListener("resize", updateDimensions);
-        return () => window.removeEventListener("resize", updateDimensions);
+        resizeObserver.observe(chartRef.current);
+
+        return () => resizeObserver.disconnect();
     }, []);
 
+    const debouncedSetDimensions = useCallback(
+        debounce((width: number, height: number) => {
+            setChartDimensions({ width, height });
+        }, 100),
+        []
+    );
 
+    // Zoom level detector
+    useEffect(() => {
+        detectZoomLevel();
+        window.addEventListener('resize', detectZoomLevel);
+        return () => window.removeEventListener('resize', detectZoomLevel);
+    }, []); */
+
+
+    // Use Effect for drawing the chart when settings change
     useEffect(() => {
         if (svgRef.current && groundTruthData.length > 0) {
             const svg = d3.select(svgRef.current);
@@ -1037,10 +1024,8 @@ const ForecastChart: React.FC = () => {
             // Remove the existing chart elements
             svg.selectAll("*").remove();
 
-            const { marginTop, marginBottom, marginLeft, marginRight } = calculateMargins();
-
-            const chartWidth = width - marginLeft - marginRight;
-            const chartHeight = height - marginTop - marginBottom;
+            const chartWidth = width - margins.left - margins.right;
+            const chartHeight = height - margins.top - margins.bottom;
 
             const filteredGroundTruthData = filterGroundTruthData(groundTruthData, USStateNum, [dateStart, dateEnd]);
 
@@ -1058,7 +1043,7 @@ const ForecastChart: React.FC = () => {
             /*Check to see if all available is just placeholders*/
             if (allPlaceholders) {
                 // If so, render a message to inform the user
-                renderMessage(svg, "Not enough data, please extend date range.", chartWidth, chartHeight, marginLeft, marginTop,);
+                renderMessage(svg, "Not enough data, please extend date range.", chartWidth, chartHeight, margins.left, margins.top,);
                 return;
             } else {
                 // This works once for the first time the component is rendered to by default make the latest date as user-selected week
@@ -1085,32 +1070,35 @@ const ForecastChart: React.FC = () => {
                     xScale, yScale, xAxis, yAxis
                 } = createScalesAndAxes(filteredGroundTruthData, processedPredictionData, chartWidth, chartHeight, yAxisScale,);
                 if (historicalDataMode) {
-                    renderHistoricalData(svg, historicalGroundTruthData, xScale, yScale, marginLeft, marginTop);
+                    renderHistoricalData(svg, historicalGroundTruthData, xScale, yScale, margins.left, margins.top);
                 }
-                renderGroundTruthData(svg, filteredGroundTruthData, xScale, yScale, marginLeft, marginTop,);
-                renderPredictionData(svg, processedPredictionData, xScale, yScale, marginLeft, marginTop, confidenceInterval, false,);
+                renderGroundTruthData(svg, filteredGroundTruthData, xScale, yScale, margins.left, margins.top,);
+                renderPredictionData(svg, processedPredictionData, xScale, yScale, margins.left, margins.top, confidenceInterval, false,);
 
-                appendAxes(svg, xAxis, yAxis, xScale, marginLeft, marginTop, chartWidth, chartHeight, dateStart, dateEnd,);
+                appendAxes(svg, xAxis, yAxis, xScale, margins.left, margins.top, chartWidth, chartHeight, dateStart, dateEnd,);
 
                 const {
                     mouseFollowLine, verticalIndicatorGroup, lineTooltip, cornerTooltip,
-                } = renderChartComponents(svg, filteredGroundTruthData, processedPredictionData, xScale, yScale, marginLeft, marginTop, chartWidth, chartHeight, height, marginBottom,);
+                } = renderChartComponents(svg, filteredGroundTruthData, processedPredictionData, xScale, yScale, margins.left, margins.top, chartWidth, chartHeight, height, margins.bottom,);
 
-                updateVerticalIndicator(adjustedUserSelectedWeek || filteredGroundTruthData[0].date, xScale, marginLeft, chartWidth, verticalIndicatorGroup, lineTooltip,);
+                updateVerticalIndicator(adjustedUserSelectedWeek || filteredGroundTruthData[0].date, xScale, margins.left, chartWidth, verticalIndicatorGroup, lineTooltip,);
             }
         }
-    }, [chartDimensions, groundTruthData, predictionsData, USStateNum, forecastModel, numOfWeeksAhead, dateStart, dateEnd, yAxisScale, confidenceInterval, historicalDataMode, userSelectedWeek, historicalDataMode]);
+    }, [width, height, margins, groundTruthData, predictionsData, USStateNum, forecastModel, numOfWeeksAhead, dateStart, dateEnd, yAxisScale, confidenceInterval, historicalDataMode, userSelectedWeek, historicalDataMode]);
 
     // Return the SVG object using reference
     return (
-        <div ref={chartRef} className="flex w-full h-full">
+        <div ref={containerRef} className="flex w-full h-full">
             <svg
                 ref={svgRef}
-                width={"100%"}
-                height={"100%"}
+                width="100%"
+                height="100%"
                 preserveAspectRatio="xMidYMid meet"
-                fontStyle={`fontFamily: "var(--font-dm-sans)"`}
-            ></svg>
+                style={{
+                    fontFamily: "var(--font-dm-sans)",
+                    visibility: width && height ? 'visible' : 'hidden'
+                }}
+            />
         </div>);
 
 

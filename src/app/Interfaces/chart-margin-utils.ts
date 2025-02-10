@@ -16,12 +16,12 @@ const defaultMarginConfigs: Record<string, MarginConfig> = {
   default: {
     minTopMargin: 40,
     minBottomMargin: 60,
-    minLeftMargin: 60,
-    minRightMargin: 30,
+    minLeftMargin: 40,
+    minRightMargin: 40,
     topMarginRatio: 0.08,
     bottomMarginRatio: 0.12,
-    leftMarginRatio: 0.1,
-    rightMarginRatio: 0.05
+    leftMarginRatio: 0.04,
+    rightMarginRatio: 0.04
   },
   dense: {
     minTopMargin: 30,
@@ -70,8 +70,8 @@ export function useChartMargins(
         minMargin,
         dimension * ratio * zoomFactor
       );
-      // Ensure margin doesn't exceed 25% of the dimension
-      return Math.min(responsiveMargin, dimension * 0.25);
+      // Ensure margin doesn't exceed 22% of the dimension
+      return Math.min(responsiveMargin, dimension * 0.22);
     };
 
     const newMargins = {
