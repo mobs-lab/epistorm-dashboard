@@ -11,7 +11,7 @@ interface EvaluationsSettingsState {
     /* Model Related*/
     evaluationSingleModelViewModel: string; //Single Model view page allows only 1 model to be selected at a time
     evaluationSingleModelViewHorizon: number; //how many weeks ahead from reference date (matching surveillance week's number) should we look for as target_end_date in predictions to draw the intervals
-    evaluationSingleModelViewScoresOption: any; //TODO: Implement after discussion
+    evaluationSingleModelViewScoresOption: any;
 
     /* Time Range Related */
     evaluationsSingleModelViewDateStart: Date;
@@ -67,8 +67,6 @@ const evaluationsSingleModelSettingsSlice = createSlice({
             // console.debug("DEBUG: Redux: evaluations-single-model-settings-slice.ts: updateEvaluationsSingleModelViewDateRange", action.payload);
             state.evaluationsSingleModelViewDateRange = action.payload;
         },
-
-        /*TODO: Implement reducer for scores once discussed*/
         updateEvaluationScores: (state, action: PayloadAction<any>) => {
             console.debug("DEBUG: Redux: evaluations-single-model-settings-slice.ts: updateEvaluationScores", action.payload);
             state.evaluationSingleModelViewScoresOption = action.payload;
@@ -84,7 +82,6 @@ export const {
     updateEvaluationSingleModelViewDateStart,
     updateEvaluationSingleModelViewDateEnd,
     updateEvaluationsSingleModelViewDateRange,
-    /* TODO: uncomment this after scores options are implemented */
     updateEvaluationScores
 } = evaluationsSingleModelSettingsSlice.actions;
 

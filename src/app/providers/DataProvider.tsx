@@ -272,8 +272,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({children}
                     dispatch(updateEvaluationsSingleModelViewDateRange(lastSeason.timeValue));
                     dispatch(updateEvaluationSingleModelViewDateStart(lastSeason.startDate));
                     dispatch(updateEvaluationSingleModelViewDateEnd(lastSeason.endDate));
-
-
                 }
                 updateLoadingState('seasonOptions', false);
 

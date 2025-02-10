@@ -1,18 +1,18 @@
 'use client'
 
-import React, {useEffect, useRef, useState} from "react";
+import React, { useEffect, useRef, useState } from "react";
 import * as d3 from "d3";
-import {subWeeks} from "date-fns";
+import { subWeeks } from "date-fns";
 
-import {modelColorMap} from "../../../Interfaces/modelColors";
+import { modelColorMap } from "../../../Interfaces/modelColors";
 import {
     DataPoint,
     isUTCDateEqual,
     ModelPrediction,
     PredictionDataPoint
 } from "../../../Interfaces/forecast-interfaces";
-import {useAppDispatch, useAppSelector} from "../../../store/hooks";
-import {useResponsiveSVG} from "../../../Interfaces/responsiveSVG";
+import { useAppDispatch, useAppSelector } from "../../../store/hooks";
+import { useResponsiveSVG } from "../../../Interfaces/responsiveSVG";
 
 interface HoverData {
     date: Date;
@@ -26,7 +26,7 @@ interface HoverData {
 
 
 const SingleModelHorizonPlot: React.FC = () => {
-    const {containerRef, dimensions, isResizing} = useResponsiveSVG();
+    const { containerRef, dimensions, isResizing } = useResponsiveSVG();
     const svgRef = useRef<SVGSVGElement>(null);
 
     // Track active event listeners for cleanup
@@ -196,7 +196,7 @@ const SingleModelHorizonPlot: React.FC = () => {
                 return d3.format(".1f")(val);
             });
 
-        return {xScale, yScale, xAxis, yAxis};
+        return { xScale, yScale, xAxis, yAxis };
     }
 
     function findActualDataRange(
@@ -206,7 +206,8 @@ const SingleModelHorizonPlot: React.FC = () => {
         state: string,
         dateRange: [Date, Date]
     ): [Date, Date] {
-        // Filter ground truth data for valid entries (admissions >= 0)
+
+        // Filter ground truth data for valid entries (with valid admissions, including placeholders)
         const validGroundTruth = groundTruthData.filter(d =>
             d.stateNum === state &&
             d.admissions >= -1 &&
@@ -216,13 +217,14 @@ const SingleModelHorizonPlot: React.FC = () => {
 
         // Get the model's prediction data
         const modelPrediction = predictionsData.find(model => model.modelName === modelName);
+        // Check each date for valid predictions, only dates with predictions are included
         const validPredictions = modelPrediction?.predictionData.filter(d =>
             d.stateNum === state &&
             d.referenceDate >= dateRange[0] &&
             d.referenceDate <= dateRange[1]
         ) || [];
 
-        // Find the earliest and latest dates with actual data
+        // Find the earliest and latest dates with actual data, only those that both have valid admission value & has predictions made on that day
         const startDates = [
             validGroundTruth.length > 0 ? validGroundTruth[0].date : dateRange[1],
             validPredictions.length > 0 ? validPredictions[0].referenceDate : dateRange[1]
@@ -233,6 +235,7 @@ const SingleModelHorizonPlot: React.FC = () => {
             validPredictions.length > 0 ? validPredictions[validPredictions.length - 1].referenceDate : dateRange[0]
         ];
 
+        // Use max and min to cut the ones missing prediction/admission, and we end up with range with actual concrete data values
         return [
             new Date(Math.max(...startDates.map(d => d.getTime()))),
             new Date(Math.min(...endDates.map(d => d.getTime())))
@@ -296,7 +299,7 @@ const SingleModelHorizonPlot: React.FC = () => {
         }
 
         // Create scales and chart group
-        const {xScale, yScale, xAxis, yAxis} = createScalesAndAxes(
+        const { xScale, yScale, xAxis, yAxis } = createScalesAndAxes(
             filteredGroundTruth,
             visualizationData,
             chartWidth,
