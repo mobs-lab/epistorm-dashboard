@@ -1,12 +1,12 @@
 // src/app/Components/forecasts-components/ForecastChart.tsx
 "use client";
 
-import React, {useEffect, useRef, useState} from "react";
+import React, { useEffect, useRef, useState } from "react";
 import * as d3 from "d3";
-import {Axis, BaseType, NumberValue, ScaleLinear, ScaleLogarithmic, ScaleTime} from "d3";
-import {subWeeks} from "date-fns";
+import { Axis, BaseType, NumberValue, ScaleLinear, ScaleLogarithmic, ScaleTime } from "d3";
+import { subWeeks } from "date-fns";
 
-import {modelColorMap} from "../../Interfaces/modelColors";
+import { modelColorMap } from "../../Interfaces/modelColors";
 import {
     DataPoint,
     HistoricalDataEntry,
@@ -15,8 +15,9 @@ import {
     PredictionDataPoint
 } from "../../Interfaces/forecast-interfaces";
 
-import {useAppDispatch, useAppSelector} from "../../store/hooks";
-import {updateUserSelectedWeek} from "../../store/forecast-settings-slice";
+import { useAppDispatch, useAppSelector } from "../../store/hooks";
+import { updateUserSelectedWeek } from "../../store/forecast-settings-slice";
+import { log } from "console";
 
 const ForecastChart: React.FC = () => {
 
@@ -320,7 +321,7 @@ const ForecastChart: React.FC = () => {
 
         yAxis.tickSize(-chartWidth);
 
-        return {xScale, yScale, xAxis, yAxis};
+        return { xScale, yScale, xAxis, yAxis };
     }
 
     function generateYAxisTicks(minValue: number, maxValue: number, isLogScale: boolean): number[] {
@@ -597,7 +598,7 @@ const ForecastChart: React.FC = () => {
         /* Change the accompaning tooltip text to DM Sans*/
 
 
-        return {group, line, tooltip};
+        return { group, line, tooltip };
     }
 
     function updateVerticalIndicator(date: Date, xScale: d3.ScaleTime<number, number>, marginLeft: number, chartWidth: number, group: d3.Selection<SVGGElement, unknown, null, undefined>, tooltip: d3.Selection<SVGTextElement, unknown, null, undefined>,) {
@@ -650,6 +651,10 @@ const ForecastChart: React.FC = () => {
     }
 
     function formatNumber(value: number, isAdmission: boolean = false): string {
+        if (Number.isNaN(value)){
+            return "N/A";
+        }
+
         if (isAdmission) {
             // Surveillance data should be integer; just in case
             return Math.round(value).toString();
@@ -671,11 +676,13 @@ const ForecastChart: React.FC = () => {
         data: DataPoint,
         groundTruthData: DataPoint[],
         predictionData: any,
+        historicalGroundTruthData: HistoricalDataEntry[],
         xScale: d3.ScaleTime<number, number>,
         chartWidth: number,
         marginLeft: number,
         marginTop: number,
-        cornerTooltip: d3.Selection<SVGGElement, unknown, null, undefined>
+        cornerTooltip: d3.Selection<SVGGElement, unknown, null, undefined>,
+        isHistoricalDataMode: boolean
     ) {
         cornerTooltip.selectAll("*").remove();
 
@@ -739,10 +746,47 @@ const ForecastChart: React.FC = () => {
         maxWidth = Math.max(maxWidth, dateGroup.node().getComputedTextLength());
         currentY += lineHeight + 2 * padding;
 
+
+        /* TODO: when historical data mode is on, the tooltips should show historical admission values info as well */
+        if (isHistoricalDataMode) {
+            const historicalAdmissionValue = historicalGroundTruthData.find(
+                (file) => isUTCDateEqual(file.associatedDate, subWeeks(userSelectedWeek, 1))
+            )?.historicalData.find(
+                (entry) => (isUTCDateEqual(entry.date, data.date) && entry.stateNum === data.stateNum)
+            )?.admissions;
+
+            const historicalGroup = cornerTooltip
+                .append('text')
+                .attr('x', shouldShowOnRightSide ? maxWidth + padding * 2 - padding : padding)
+                .attr('y', currentY)
+                .attr('fill', 'white')
+                .style("font-family", "var(--font-dm-sans)")
+                .attr('font-size', '13px')
+                .attr('text-anchor', shouldShowOnRightSide ? 'end' : 'start');
+
+            historicalGroup
+                .append('tspan')
+                .text('Historical Admissions: ')
+                .attr('font-weight', 'normal');
+
+            historicalGroup
+                .append('tspan')
+                .text(`${(historicalAdmissionValue !== null || !historicalAdmissionValue || Number.isNaN(historicalAdmissionValue)) ? formatNumber(historicalAdmissionValue, true) : 'N/A'}`)
+                .attr('font-weight', 'bold');
+
+            // Update maxWidth and currentY again
+            maxWidth = Math.max(maxWidth, historicalGroup.node().getComputedTextLength());
+            currentY += 2 * padding;  // Add padding after historical data
+        } else {
+            currentY += 2 * padding;  // Keep original padding if no historical data
+        }
+
         // Find prediction data for the current date
         const currentPredictions = findPredictionsForDate(predictionData, data.date);
 
         if (currentPredictions) {
+
+            /*  */
             Object.entries(currentPredictions).forEach(([modelName, modelData]: [string, any], index) => {
                 // Model name group with color box
                 const modelGroup = cornerTooltip.append('g')
@@ -760,7 +804,7 @@ const ForecastChart: React.FC = () => {
                 modelGroup
                     .append('text')
                     .attr('x', 18)
-                    .attr('y', 11) // Adjusted to align with color box
+                    .attr('y', 11)
                     .attr('fill', 'white')
                     .attr('font-weight', 'bold')
                     .style("font-family", "var(--font-dm-sans)")
@@ -769,7 +813,7 @@ const ForecastChart: React.FC = () => {
 
                 currentY += lineHeight * 0.6;
 
-                // Create header row for metrics
+                // Create header row for the table-like CI info display
                 const headerGroup = cornerTooltip.append('g')
                     .attr('transform', `translate(${padding + 18}, ${currentY})`);
 
@@ -778,7 +822,8 @@ const ForecastChart: React.FC = () => {
                 if (confidenceInterval.includes('90')) columns.push('90% CI');
                 if (confidenceInterval.includes('95')) columns.push('95% CI');
 
-                const columnWidth = 120; // Adjust based on your needs
+                /* */
+                const columnWidth = 120;
 
                 // Add headers
                 columns.forEach((col, i) => {
@@ -901,6 +946,7 @@ const ForecastChart: React.FC = () => {
     }
 
     function appendAxes(svg: d3.Selection<d3.BaseType, unknown, HTMLElement, any>, xAxis: Axis<NumberValue>, yAxis: Axis<NumberValue>, xScale: d3.ScaleTime<number, number, never>, marginLeft: number, marginTop: number, chartWidth: number, chartHeight: number, dateStart: Date, dateEnd: Date,) {
+
         // Append x-axis
         const xAxisGroup = svg
             .append("g")
@@ -1037,7 +1083,7 @@ const ForecastChart: React.FC = () => {
         return combinedData.sort((a, b) => a.date.getTime() - b.date.getTime());
     }
 
-    function renderChartComponents(svg: d3.Selection<BaseType, unknown, null, undefined>, filteredGroundTruthData: DataPoint[], processedPredictionData: any, xScale: d3.ScaleTime<number, number>, yScale: d3.ScaleLinear<number, number>, marginLeft: number, marginTop: number, chartWidth: number, chartHeight: number, height: number, marginBottom: number,) {
+    function renderChartComponents(svg: d3.Selection<BaseType, unknown, null, undefined>, filteredGroundTruthData: DataPoint[], processedPredictionData: any, historicalGroundTruthData: HistoricalDataEntry[], xScale: d3.ScaleTime<number, number>, yScale: d3.ScaleLinear<number, number>, marginLeft: number, marginTop: number, chartWidth: number, chartHeight: number, height: number, marginBottom: number,) {
         const combinedData = createCombinedDataset(filteredGroundTruthData, processedPredictionData,);
 
         const mouseFollowLine = createMouseFollowLine(svg, marginLeft, marginTop, height, marginBottom,);
@@ -1059,7 +1105,7 @@ const ForecastChart: React.FC = () => {
                 .attr("transform", `translate(${snappedX + marginLeft}, 0)`)
                 .style("opacity", 1);
 
-            updateCornerTooltip(closestData, filteredGroundTruthData, processedPredictionData, xScale, chartWidth, marginLeft, marginTop, cornerTooltip);
+            updateCornerTooltip(closestData, filteredGroundTruthData, processedPredictionData, historicalGroundTruthData, xScale, chartWidth, marginLeft, marginTop, cornerTooltip, historicalDataMode);
         }
 
         function updateVerticalIndicatorPosition(event: any) {
@@ -1083,12 +1129,18 @@ const ForecastChart: React.FC = () => {
             const closestData = findNearestDataPoint(combinedData, date);
 
             bubbleUserSelectedWeek(closestData.date);
-            updateVerticalIndicator(closestData.date, xScale, marginLeft, chartWidth, verticalIndicatorGroup, lineTooltip,);
+            updateVerticalIndicator(closestData.date, xScale, marginLeft, chartWidth, verticalIndicatorGroup, lineTooltip);
+            updateCornerTooltip(closestData, filteredGroundTruthData, processedPredictionData, historicalGroundTruthData, xScale, chartWidth, marginLeft, marginTop, cornerTooltip, historicalDataMode);
         }
 
         function handleMouseDown(event: any) {
+            const [mouseX] = d3.pointer(event);
+            const date = xScale.invert(mouseX - marginLeft);
+            const closestData = findNearestDataPoint(combinedData, date);
+            
             isDragging = true;
             updateVerticalIndicatorPosition(event);
+            updateCornerTooltip(closestData, filteredGroundTruthData, processedPredictionData, historicalGroundTruthData, xScale, chartWidth, marginLeft, marginTop, cornerTooltip, historicalDataMode);
         }
 
         function handleMouseUp() {
@@ -1097,7 +1149,7 @@ const ForecastChart: React.FC = () => {
 
         function handleMouseOut() {
             mouseFollowLine.style("opacity", 0);
-            cornerTooltip.style("opacity", 0);
+            // cornerTooltip.style("opacity", 0);
             if (isDragging) {
                 isDragging = false;
             }
@@ -1143,7 +1195,7 @@ const ForecastChart: React.FC = () => {
             // Remove the existing chart elements
             svg.selectAll("*").remove();
 
-            const {marginTop, marginBottom, marginLeft, marginRight} = calculateMargins();
+            const { marginTop, marginBottom, marginLeft, marginRight } = calculateMargins();
 
             const chartWidth = width - marginLeft - marginRight;
             const chartHeight = height - marginTop - marginBottom;
@@ -1200,7 +1252,7 @@ const ForecastChart: React.FC = () => {
 
                 const {
                     mouseFollowLine, verticalIndicatorGroup, lineTooltip, cornerTooltip,
-                } = renderChartComponents(svg, filteredGroundTruthData, processedPredictionData, xScale, yScale, marginLeft, marginTop, chartWidth, chartHeight, height, marginBottom,);
+                } = renderChartComponents(svg, filteredGroundTruthData, processedPredictionData, historicalGroundTruthData, xScale, yScale, marginLeft, marginTop, chartWidth, chartHeight, height, marginBottom,);
 
                 updateVerticalIndicator(adjustedUserSelectedWeek || filteredGroundTruthData[0].date, xScale, marginLeft, chartWidth, verticalIndicatorGroup, lineTooltip,);
             }
