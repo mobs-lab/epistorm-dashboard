@@ -1,6 +1,6 @@
 // File: src/app/providers/DataProvider.tsx
 
-import React, {createContext, useContext, useEffect, useState} from 'react';
+import React, { createContext, useContext, useEffect, useState } from 'react';
 import * as d3 from "d3";
 import {
     addWeeks,
@@ -16,7 +16,7 @@ import {
     setMonth,
     startOfWeek
 } from "date-fns";
-import {useAppDispatch} from '../store/hooks';
+import { useAppDispatch } from '../store/hooks';
 import {
     DataPoint,
     LocationData,
@@ -28,10 +28,10 @@ import {
 } from "../Interfaces/forecast-interfaces";
 
 // Import actions directly from slices
-import {setGroundTruthData} from '../store/Data/groundTruthSlice';
-import {setPredictionsData} from '../store/Data/predictionsSlice';
-import {setLocationData} from '../store/Data/locationSlice';
-import {setNowcastTrendsData} from '../store/Data/nowcastTrendsSlice';
+import { setGroundTruthData } from '../store/Data/groundTruthSlice';
+import { setPredictionsData } from '../store/Data/predictionsSlice';
+import { setLocationData } from '../store/Data/locationSlice';
+import { setNowcastTrendsData } from '../store/Data/nowcastTrendsSlice';
 
 import {
     setSeasonOptions,
@@ -40,11 +40,11 @@ import {
     updateDateStart
 } from '../store/forecast-settings-slice';
 
-import {setStateThresholdsData} from '../store/Data/stateThresholdsSlice';
+import { setStateThresholdsData } from '../store/Data/stateThresholdsSlice';
 
-import {setHistoricalGroundTruthData} from '../store/Data/historicalGroundTruthSlice';
+import { setHistoricalGroundTruthData } from '../store/Data/historicalGroundTruthSlice';
 
-import {setEvaluationsSingleModelScoreData} from "../store/Data/evaluationsSingleModelScoreDataSlice";
+import { setEvaluationsSingleModelScoreData } from "../store/Data/evaluationsSingleModelScoreDataSlice";
 
 import {
     updateEvaluationSingleModelViewDateStart,
@@ -62,7 +62,7 @@ const DataContext = createContext<DataContextType | undefined>(undefined);
 
 const modelNames = ["MOBS-GLEAM_FLUH", "MIGHTE-Nsemble", "MIGHTE-Joint", "NU_UCSD-GLEAM_AI_FLUH", "CEPH-Rtrend_fluH", "NEU_ISI-FluBcast", "NEU_ISI-AdaptiveEnsemble", "FluSight-ensemble"];
 
-export const DataProvider: React.FC<{ children: React.ReactNode }> = ({children}) => {
+export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const dispatch = useAppDispatch();
     const [loadingStates, setLoadingStates] = useState<LoadingStates>({
         evaluationScores: true,
@@ -109,9 +109,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({children}
         });
 
         const allSaturdays = eachWeekOfInterval({
-            start: startOfWeek(earliestDate, {weekStartsOn: 6}),
-            end: endOfWeek(latestDate, {weekStartsOn: 6})
-        }, {weekStartsOn: 6});
+            start: startOfWeek(earliestDate, { weekStartsOn: 6 }),
+            end: endOfWeek(latestDate, { weekStartsOn: 6 })
+        }, { weekStartsOn: 6 });
 
         const existingDataMap = new Map(groundTruthData.map(d => [format(d.date, 'yyyy-MM-dd'), d]));
         const placeholderData: DataPoint[] = [];
@@ -142,7 +142,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({children}
 
     const generateSeasonOptions = (processedData: ProcessedDataWithDateRange): SeasonOption[] => {
         const options: SeasonOption[] = [];
-        const {earliestDate, latestDate} = processedData;
+        const { earliestDate, latestDate } = processedData;
 
         if (!earliestDate || !latestDate) {
             return options;
@@ -226,7 +226,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({children}
 
                     if (!newPredictions && !oldPredictions) {
                         console.warn(`No prediction data found for model: ${team_model}`);
-                        return {modelName: team_model, predictionData: []};
+                        return { modelName: team_model, predictionData: [] };
                     }
 
                     const predictionData: PredictionDataPoint[] =
@@ -245,7 +245,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({children}
                             confidence_high: +d['0.5'],
                         }));
 
-                    return {modelName: team_model, predictionData: predictionData};
+                    return { modelName: team_model, predictionData: predictionData };
                 }));
 
                 const validPredictionsData = predictionsData.filter(Boolean);
@@ -300,7 +300,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({children}
                 modelNames.map(async (modelName) => {
                     const response = await safeCSVFetch(`/data/processed/${modelName}/nowcast_trends.csv`);
                     if (!response) {
-                        return {modelName, data: []};
+                        return { modelName, data: [] };
                     }
                     const responseParsed = response.map((d) => ({
                         location: d.location,
@@ -309,7 +309,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({children}
                         increase: +d.increase,
                         stable: +d.stable,
                     }));
-                    return {modelName, data: responseParsed};
+                    return { modelName, data: responseParsed };
                 }));
             dispatch(setNowcastTrendsData(nowcastTrendsData.filter(Boolean)));
             updateLoadingState('nowcastTrends', false);
@@ -357,7 +357,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({children}
                             stateName: record.location_name ?? record['location_name'],
                             admissions: +(record.value ?? record['value']),
                             weeklyRate: +(record.weekly_rate ?? record['weekly_rate']),
-                        }))
+                        })).sort((a, b) => a.date.getTime() - b.date.getTime())
                     });
                 } catch (error) {
                     console.warn(`File not found or error parsing: ${fileName}`);
@@ -456,7 +456,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({children}
     };
 
     const updateLoadingState = (key: keyof LoadingStates, value: boolean) => {
-        setLoadingStates(prev => ({...prev, [key]: value}));
+        setLoadingStates(prev => ({ ...prev, [key]: value }));
     };
 
     useEffect(() => {
@@ -466,7 +466,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({children}
     const isFullyLoaded = Object.values(loadingStates).every(state => !state);
 
     return (
-        <DataContext.Provider value={{loadingStates, isFullyLoaded}}>
+        <DataContext.Provider value={{ loadingStates, isFullyLoaded }}>
             {children}
         </DataContext.Provider>
     );
