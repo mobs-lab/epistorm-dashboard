@@ -17,7 +17,7 @@ SURVEILLANCE_ARCHIVE_DATA_SOURCE_LOCATION='FluSight-forecast-hub/auxiliary-data/
 SURVEILLANCE_ARCHIVE_DATA_TARGET_LOCATION='public/data/ground-truth/historical-data'
 
 EVALUATION_DATA_SOURCE_LOCATION='epistorm-evaluations/evaluations'
-EVALUATION_DATA_TARGET_LOCATION='public/data/evaluations-score
+EVALUATION_DATA_TARGET_LOCATION='public/data/evaluations-score'
 
 # Function to get the most recent files in a directory
 get_most_recent_files() {
