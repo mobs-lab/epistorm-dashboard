@@ -26,8 +26,8 @@ jobs:
           git config user.name github-actions
           git config user.email github-actions@github.com
           git pull origin main
-          git submodule init
           git submodule update --remote
+          git submodule update
           git submodule foreach git pull origin main
 
       - name: Create subdirectory for all target locations for all data
@@ -53,21 +53,26 @@ jobs:
           pip install numpy pandas glob2
 
       - name: Execute Data Transformation
-        if: ${{ env.NEW_PREDICTION_DATA_COPIED == 'true' }}
+        if: ${{ env.NEW_PREDICTION_DATA_COPIED == 'true' || env.NEW_SURVEILLANCE_DATA_COPIED == 'true' }}
         run: python scripts/transform_data.py
       # End of python setup and execution
 
+      # Clean up after surveillance data
       - name: Execute Surveillance Data Cleaning
         if: ${{ env.NEW_SURVEILLANCE_DATA_COPIED == 'true'|| env.NEW_SURVEILLANCE_ARCHIVE_DATA_COPIED == 'true'}}
         run: python scripts/clean_surveillance_data.py
 
-      # NOTE: commit back to main branch, and releasing into production branch are done together to avoid timestamp issue
-      - name: Commit Changes and Update Production
-        if: ${{ env.NEW_PREDICTION_DATA_COPIED == 'true' || env.NEW_SURVEILLANCE_DATA_COPIED == 'true' || env.NEW_SURVEILLANCE_ARCHIVE_DATA_COPIED == 'true' }}
+      # Commit back to main branch, and releasing into production/demo branch are done together to avoid timestamp issue
+      - name: Commit Changes to Main and Update Branches
+        if: ${{ env.NEW_PREDICTION_DATA_COPIED == 'true' || env.NEW_SURVEILLANCE_DATA_COPIED == 'true' || env.NEW_SURVEILLANCE_ARCHIVE_DATA_COPIED == 'true' || env.NEW_EVALUATIONS_DATA_COPIED == 'true' }}
         run: |
           # Generate timestamp
           TIMESTAMP=$(date +'%Y-%m-%d-%H-%M-%S')
-          
+
+          echo "======================="
+          echo "Updating main branch..."
+          echo "-----------------------"
+
           # Stage data changes
           git add public/data/unprocessed/* public/data/ground-truth/* public/data/processed/* || true
           
@@ -76,61 +81,95 @@ jobs:
           git add epistorm-evaluations || true
           
           # Check if there are changes to commit
-          if git diff --staged --quiet; then
-            echo "No changes to commit"
-            exit 0
-          fi
-          
-          # Create commit in main
-          git commit -m "Data update ${TIMESTAMP}
-          
-          - Updated data files
-          - Updated submodules reference"
-          
-          # Push changes to main
-          if ! git push origin main; then
-            echo "Failed to push to main"
-            exit 1
-          fi
-          
-          # Create and push tag
-          TAG_NAME="data-update/${TIMESTAMP}"
-          git tag -a "${TAG_NAME}" -m "Data update at ${TIMESTAMP}"
-          
-          if ! git push origin "${TAG_NAME}"; then
-            echo "Failed to push tag"
-            exit 1
+          if ! git diff --staged --quiet; then
+            git commit -m "Data update ${TIMESTAMP}
+            
+            - Updated data files
+            - Updated submodules reference"
+            
+            # Push changes to main
+            if ! git push origin main; then
+              echo "Failed to push to main"
+              exit 1
+            fi
+            
+            # Create and push main tag
+            MAIN_TAG="data-update/main/${TIMESTAMP}"
+            git tag -a "${MAIN_TAG}" -m "Data update at ${TIMESTAMP}"
+            git push origin "${MAIN_TAG}"
           fi
           
           # Update production branch
+          echo "Updating production branch..."
           git fetch origin production:production
           git checkout production
           
-          # Merge the tagged snapshot of main branch with data update into production
-          if ! git merge --no-ff "${TAG_NAME}" -m "Merge data update ${TIMESTAMP} into production
+          # Get data directory from main
+          git checkout main -- public/data/
           
-          Source: ${TAG_NAME}"; then
-            echo "Merge conflict detected - aborting"
-            git merge --abort
-            exit 1
+          # Stage all the date updates
+          git add public/data/
+          
+          # Commit and push udpates if there are changes
+          if ! git diff --staged --quiet; then
+            git commit -m "Data update ${TIMESTAMP} [skip ci]
+            
+            - Synced data files from main"
+            
+            # Create production tag
+            PROD_TAG="data-update/production/${TIMESTAMP}"
+            git tag -a "${PROD_TAG}" -m "Production data update at ${TIMESTAMP}"
+            
+            # Push production changes and tag
+            if ! git push origin production && git push origin "${PROD_TAG}"; then
+              echo "Failed to push to production"
+              exit 1
+            fi
+            
+            echo "PRODUCTION_UPDATED=true" >> $GITHUB_ENV
           fi
           
-          # Push to production
-          if ! git push origin production; then
-            echo "Failed to push to production"
-            exit 1
+          # Update demo branch
+          echo "Updating demo branch..."
+          git fetch origin demo:demo
+          git checkout demo
+          
+          # Copy data directory from main
+          git checkout main -- public/data/
+          
+          # Stage demo changes
+          git add public/data/
+          
+          # Commit and push demo if there are changes
+          if ! git diff --staged --quiet; then
+            git commit -m "Data update ${TIMESTAMP} [skip ci]
+            
+            - Synced data files from main"
+            
+            # Create demo tag
+            DEMO_TAG="data-update/demo/${TIMESTAMP}"
+            git tag -a "${DEMO_TAG}" -m "Demo data update at ${TIMESTAMP}"
+            
+            # Push demo changes and tag
+            if ! git push origin demo && git push origin "${DEMO_TAG}"; then
+              echo "Failed to push to demo"
+              exit 1
+            fi
+            
+            echo "DEMO_UPDATED=true" >> $GITHUB_ENV
           fi
-          
-          echo "Successfully updated main and production branches with tag: ${TAG_NAME}"
-          
-          # Set an output to indicate successful push
-          echo "PRODUCTION_UPDATED=true" >> $GITHUB_ENV
 
-        # GitHub bans workflow calling workflows
-        # So we deliberately call a workflow_dispatch event to trigger deployment-to-gcp.yaml workflow
-      - name: Trigger Deployment Workflow
+      # 4. Trigger respective deployments
+      - name: Trigger Production Deployment
         if: ${{ env.PRODUCTION_UPDATED == 'true' }}
         run: |
           gh workflow run "Deploy to GCP App Engine Default Service"
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} #NOTE: this is not necessary but just in case
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Trigger Demo Deployment
+        if: ${{ env.DEMO_UPDATED == 'true' }}
+        run: |
+          gh workflow run "Deploy to GCP App Engine Demo Service"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
