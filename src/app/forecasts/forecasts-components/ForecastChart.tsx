@@ -25,7 +25,7 @@ import {
   useChartMargins,
   calculateLabelSpace,
 } from "../../Interfaces/chart-margin-utils";
-import { modelColorMap } from "../../Interfaces/modelColors";
+import { modelColorMap } from "../../Interfaces/epistorm-constants";
 
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import { updateUserSelectedWeek } from "../../store/forecast-settings-slice";

@@ -44,29 +44,6 @@ const SettingsStateMap: React.FC = () => {
         };
     }, [updateDimensions]);
 
-    /*const initializeZoom = useCallback(() => {
-        if (!svgRef.current || !gRef.current) return;
-
-        const svg = d3.select(svgRef.current);
-        const g = d3.select(gRef.current);
-
-        // Allow 20% extra space on each side
-        const extraSpace = 0.2;
-        const minX = -dimensions.width * extraSpace;
-        const minY = -dimensions.height * extraSpace;
-        const maxX = dimensions.width * (1 + extraSpace);
-        const maxY = dimensions.height * (1 + extraSpace);
-
-        zoomBehaviorRef.current = zoom<SVGSVGElement, unknown>()
-            .scaleExtent([1, 8])
-            .translateExtent([[minX, minY], [maxX, maxY]])
-            .on("zoom", (event) => {
-                g.attr("transform", event.transform);
-            });
-
-        svg.call(zoomBehaviorRef.current);
-    }, [dimensions]);*/
-
     const initializeZoom = useCallback(() => {
         if (!svgRef.current || !gRef.current) return;
 
@@ -183,7 +160,6 @@ const SettingsStateMap: React.FC = () => {
             svg.transition().duration(750).call(zoomBehaviorRef.current.transform, initialTransform);
         }
     };
-
 
     return (
         <div ref={containerRef} className="w-full h-full relative" style={{minHeight: '240px', maxHeight: '360px'}}>

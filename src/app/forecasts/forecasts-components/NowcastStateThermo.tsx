@@ -13,21 +13,22 @@ const riskColors = ["#363b43", "#7cd8c9", "#2bafe2", "#435fce"];
 /* Color legend boxes */
 const ThermoLegendBoxes: React.FC = () => {
   return (
-    <div className='flex flex-grow justify-evenly items-end h-full w-full'>
+    <div className="flex flex-grow justify-evenly items-end h-full w-full">
       {riskLevels
         .filter((rl) => {
           return rl !== "No Data";
         })
         .map((level, index) => (
-          <div key={level} className='flex items-center'>
+          <div key={level} className="flex items-center">
             <div
-              className='w-[1rem] h-[1rem]'
+              className="w-[1rem] h-[1rem]"
               style={{
                 backgroundColor: riskColors.filter((rl) => {
                   return rl !== "#363b43";
                 })[index],
-              }}></div>
-            <span className='text-sm mx-2'>{level}</span>
+              }}
+            ></div>
+            <span className="text-sm mx-2">{level}</span>
           </div>
         ))}
     </div>
@@ -56,28 +57,28 @@ const ThermoLegendArea: React.FC<{
   };
 
   return (
-    <div className='flex flex-col h-full justify-stretch items-stretch bg-mobs-lab-color-filterspane rounded util-no-sb-length py-2 pl-1 pr-4'>
-      <div className='self-center sm:text-xs md:text-sm lg:text-sm xl:text-base font-bold text-center'>
+    <div className="flex flex-col h-full justify-stretch items-stretch bg-mobs-lab-color-filterspane rounded util-no-sb-length py-2 pl-1 pr-4">
+      <div className="self-center sm:text-xs md:text-sm lg:text-sm xl:text-base font-bold text-center">
         Activity level
       </div>
-      <div className='flex flex-col justify-stretch items-stretch flex-grow min-h-0 max-w-full min-w-[10%]'>
+      <div className="flex flex-col justify-stretch items-stretch flex-grow min-h-0 max-w-full min-w-[10%]">
         <LegendItem
-          title='Forecasted week'
+          title="Forecasted week"
           week={currentWeek}
           riskLevel={currentRiskLevel}
           color={getRiskColor(currentRiskLevel)}
-          lineType='solid'
+          lineType="solid"
         />
         {/*Use svg to draw a horizontal divider line that is gray colored*/}
-        <svg width='100%' height='10%' className='mt-2'>
-          <line x1='0' y1='1' x2='100%' y2='1' stroke='gray' strokeWidth='1' />
+        <svg width="100%" height="10%" className="mt-2">
+          <line x1="0" y1="1" x2="100%" y2="1" stroke="gray" strokeWidth="1" />
         </svg>
         <LegendItem
-          title='Previous week'
+          title="Previous week"
           week={previousWeek}
           riskLevel={previousRiskLevel}
           color={getRiskColor(previousRiskLevel)}
-          lineType='dashed'
+          lineType="dashed"
         />
       </div>
     </div>
@@ -91,27 +92,29 @@ const LegendItem: React.FC<{
   color: string;
   lineType: "solid" | "dashed";
 }> = ({ title, week, riskLevel, color, lineType }) => (
-  <div className='flex flex-row flex-shrink justify-stretch items-center h-full w-full'>
-    <svg width='20' height='3' className='flex-shrink-0 pr-1'>
+  <div className="flex flex-row flex-shrink justify-stretch items-center h-full w-full">
+    <svg width="20" height="3" className="flex-shrink-0 pr-1">
       <line
-        x1='0'
-        y1='1'
-        x2='18'
-        y2='1'
-        stroke='white'
-        strokeWidth='2'
+        x1="0"
+        y1="1"
+        x2="18"
+        y2="1"
+        stroke="white"
+        strokeWidth="2"
         strokeDasharray={lineType === "dashed" ? "2,2" : "none"}
       />
     </svg>
     <div
       className={
         "justify-self-stretch flex flex-col justify-stretch items-stretch flex-shrink util-responsive-text-small w-full overflow-ellipsis"
-      }>
+      }
+    >
       <div>{title}</div>
-      <div className='font-bold'>{week}</div>
+      <div className="font-bold">{week}</div>
       <div
         className={"flex items-center justify-center rounded"}
-        style={{ backgroundColor: color }}>
+        style={{ backgroundColor: color }}
+      >
         {riskLevel}
       </div>
     </div>
@@ -312,12 +315,10 @@ const NowcastStateThermo: React.FC = () => {
       let yPosition = 0;
 
       /* Cap the prediction line to the top when it exceeds the veryHigh threshold */
-      if(value >= stateThresholds.veryHigh){
+      if (value >= stateThresholds.veryHigh) {
         riskLevel = "High";
-        yPosition = 1;
-      }
-
-      if (value >= stateThresholds.high) {
+        yPosition = yScale(99.5); // Domain is 0–100, 99.5 displays nicer
+      } else if (value >= stateThresholds.high) {
         riskLevel = "High";
         const fraction =
           (value - stateThresholds.high) /
@@ -352,6 +353,7 @@ const NowcastStateThermo: React.FC = () => {
         yPosition = -1;
       }
 
+      console.debug("Forecast/NowcastStateThermo/Thermometer/line calculation: risk level and yPosition: ", riskLevel, yPosition);
       return { riskLevel, yPosition };
     };
 
@@ -564,28 +566,30 @@ const NowcastStateThermo: React.FC = () => {
   return (
     <div
       ref={containerRef}
-      className='nowcast-state-thermo-grid-layout text-white w-min-full h-min-full py-2'>
-      <div className='map-svg'>
+      className="nowcast-state-thermo-grid-layout text-white w-min-full h-min-full py-2"
+    >
+      <div className="map-svg">
         <svg
           ref={mapSvgRef}
-          width='100%'
-          height='100%'
-          preserveAspectRatio='xMidYMid meet'
+          width="100%"
+          height="100%"
+          preserveAspectRatio="xMidYMid meet"
         />
       </div>
-      <div className='thermometer'>
+      <div className="thermometer">
         <svg
           ref={thermometerSvgRef}
-          width='100%'
-          height='100%'
-          preserveAspectRatio='xMidYMid meet'
+          width="100%"
+          height="100%"
+          preserveAspectRatio="xMidYMid meet"
         />
         <div
           ref={tooltipRef}
-          className='absolute hidden bg-white text-black rounded shadow-md text-sm'
-          style={{ pointerEvents: "none", zIndex: 10 }}></div>
+          className="absolute hidden bg-white text-black rounded shadow-md text-sm"
+          style={{ pointerEvents: "none", zIndex: 10 }}
+        ></div>
       </div>
-      <div className='thermo-legend-area'>
+      <div className="thermo-legend-area">
         <ThermoLegendArea
           currentWeek={currentWeek}
           previousWeek={previousWeek}
@@ -593,7 +597,7 @@ const NowcastStateThermo: React.FC = () => {
           previousRiskLevel={previousRiskLevel}
         />
       </div>
-      <div className='thermo-legend-boxes'>
+      <div className="thermo-legend-boxes">
         <ThermoLegendBoxes />
       </div>
     </div>

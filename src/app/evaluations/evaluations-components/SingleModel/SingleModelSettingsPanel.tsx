@@ -2,7 +2,7 @@
 
 import React, {useMemo, useState} from 'react';
 
-import {modelColorMap} from '../../../Interfaces/modelColors';
+import {modelColorMap, modelNames} from '../../../Interfaces/epistorm-constants';
 import {SeasonOption} from '../../../Interfaces/forecast-interfaces';
 
 import SettingsStateMap from "../../../forecasts/forecasts-components/SettingsStateMap";
@@ -11,7 +11,7 @@ import {useAppDispatch, useAppSelector} from '../../../store/hooks';
 
 import {
     updateEvaluationSingleModelViewSelectedState,
-    updateEvaluationSingleModelViewModel,
+    updateEvaluationsSingleModelViewModel,
     updateEvaluationSingleModelViewHorizon,
     updateEvaluationSingleModelViewDateStart,
     updateEvaluationSingleModelViewDateEnd,
@@ -22,8 +22,6 @@ import {
 import {Radio, Typography} from "../../../CSS/material-tailwind-wrapper";
 
 import Image from "next/image";
-
-const modelNames = ['MOBS-GLEAM_FLUH', 'CEPH-Rtrend_fluH', 'MIGHTE-Nsemble', 'NU_UCSD-GLEAM_AI_FLUH', 'FluSight-ensemble'];
 
 const SingleModelSettingsPanel: React.FC = () => {
     /* Redux-Managed State Variables */
@@ -38,7 +36,7 @@ const SingleModelSettingsPanel: React.FC = () => {
     const {
         evaluationSingleModelViewSelectedStateName,
         evaluationsSingleModelViewSelectedStateCode,
-        evaluationSingleModelViewModel,
+        evaluationsSingleModelViewModel,
         evaluationSingleModelViewHorizon,
         evaluationSingleModelViewScoresOption,
         evaluationsSingleModelViewDateRange,
@@ -60,7 +58,7 @@ const SingleModelSettingsPanel: React.FC = () => {
 
     // Model selection handler (single model only)
     const onModelSelectionChange = (modelName: string) => {
-        dispatch(updateEvaluationSingleModelViewModel(modelName));
+        dispatch(updateEvaluationsSingleModelViewModel(modelName));
     };
 
     // Horizon handler
@@ -114,13 +112,13 @@ const SingleModelSettingsPanel: React.FC = () => {
                                     <input
                                         type="radio"
                                         className="sr-only"
-                                        checked={evaluationSingleModelViewModel === model}
+                                        checked={evaluationsSingleModelViewModel === model}
                                         onChange={() => onModelSelectionChange(model)}
                                     />
                                     <span
                                         className="w-[1em] h-[1em] border-2 rounded-sm mr-2"
                                         style={{
-                                            backgroundColor: evaluationSingleModelViewModel === model ? modelColorMap[model] : 'transparent',
+                                            backgroundColor: evaluationsSingleModelViewModel === model ? modelColorMap[model] : 'transparent',
                                             borderColor: modelColorMap[model],
                                         }}
                                     />

@@ -8,7 +8,7 @@ interface ChartDimensions {
 }
 
 export function useChartDimensions(
-  debounceMs: number = 100
+  debounceMs: number = 150
 ): [React.RefObject<HTMLDivElement>, ChartDimensions] {
   const containerRef = useRef<HTMLDivElement>(null);
   const [dimensions, setDimensions] = useState<ChartDimensions>({
