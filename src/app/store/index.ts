@@ -1,13 +1,13 @@
 import {configureStore} from '@reduxjs/toolkit';
 
 // Import Data Reducers
-import groundTruthReducer from './Data/groundTruthSlice';
-import predictionsReducer from './Data/predictionsSlice';
-import locationReducer from './Data/locationSlice';
-import nowcastTrendsReducer from './Data/nowcastTrendsSlice';
-import stateThresholdsReducer from "./Data/stateThresholdsSlice";
-import historicalGroundTruthReducer from './Data/historicalGroundTruthSlice';
-import evaluationsSingleModelScoreDataReducer from "./Data/evaluationsSingleModelScoreDataSlice";
+import groundTruthReducer from './data/groundTruthSlice';
+import predictionsReducer from './data/predictionsSlice';
+import locationReducer from './data/locationSlice';
+import nowcastTrendsReducer from './data/nowcastTrendsSlice';
+import stateThresholdsReducer from "./data/stateThresholdsSlice";
+import historicalGroundTruthReducer from './data/historicalGroundTruthSlice';
+import evaluationsSingleModelScoreDataReducer from "./data/evaluationsSingleModelScoreDataSlice";
 
 // Import Settings Reducers
 import forecastSettingsReducer from './forecast-settings-slice';

@@ -1,6 +1,6 @@
 // src/app/store/forecastSettingsSlice.ts
 import {createSlice, PayloadAction} from '@reduxjs/toolkit';
-import {SeasonOption} from '../Interfaces/forecast-interfaces';
+import {SeasonOption} from '../interfaces/forecast-interfaces';
 import {parseISO} from "date-fns";
 
 interface EvaluationsSettingsState {

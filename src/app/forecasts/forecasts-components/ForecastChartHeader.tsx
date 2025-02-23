@@ -1,6 +1,6 @@
 import InfoButton from "./InfoButton";
 import React from "react";
-import { Switch } from "../../CSS/material-tailwind-wrapper";
+import { Switch } from "../../css/material-tailwind-wrapper";
 import { useAppDispatch, useAppSelector } from "../../Store/hooks";
 import { updateHistoricalDataMode } from "../../Store/forecast-settings-slice";
 

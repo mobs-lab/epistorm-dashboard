@@ -26,16 +26,16 @@ import {
   LoadingStates,
   ProcessedDataWithDateRange,
   EvaluationsSingleModelScoreDataCollection,
-} from "../Interfaces/forecast-interfaces";
-import { modelNames } from "../Interfaces/epistorm-constants";
+} from "../interfaces/forecast-interfaces";
+import { modelNames } from "../interfaces/epistorm-constants";
 
 // Forecast Actions and Reducers
-import { setGroundTruthData } from "../Store/Data/groundTruthSlice";
-import { setPredictionsData } from "../Store/Data/predictionsSlice";
-import { setLocationData } from "../Store/Data/locationSlice";
-import { setNowcastTrendsData } from "../Store/Data/nowcastTrendsSlice";
-import { setStateThresholdsData } from "../Store/Data/stateThresholdsSlice";
-import { setHistoricalGroundTruthData } from "../Store/Data/historicalGroundTruthSlice";
+import { setGroundTruthData } from "../store/data/groundTruthSlice";
+import { setPredictionsData } from "../store/data/predictionsSlice";
+import { setLocationData } from "../store/data/locationSlice";
+import { setNowcastTrendsData } from "../store/data/nowcastTrendsSlice";
+import { setStateThresholdsData } from "../store/data/stateThresholdsSlice";
+import { setHistoricalGroundTruthData } from "../store/data/historicalGroundTruthSlice";
 import {
   setSeasonOptions,
   updateDateEnd,
@@ -45,7 +45,7 @@ import {
 } from "../Store/forecast-settings-slice";
 
 // Evaluations Actions and Reducers
-import { setEvaluationsSingleModelScoreData } from "../Store/Data/evaluationsSingleModelScoreDataSlice";
+import { setEvaluationsSingleModelScoreData } from "../store/data/evaluationsSingleModelScoreDataSlice";
 import {
   updateEvaluationSingleModelViewDateStart,
   updateEvaluationSingleModelViewDateEnd,

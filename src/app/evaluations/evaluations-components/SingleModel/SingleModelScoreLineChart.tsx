@@ -3,9 +3,9 @@ import * as d3 from 'd3';
 
 import { useAppSelector } from '../../../Store/hooks';
 
-import { DataPoint, isUTCDateEqual, ModelPrediction } from '../../../Interfaces/forecast-interfaces';
-import { useResponsiveSVG } from "../../../Interfaces/responsiveSVG";
-import { modelColorMap } from "../../../Interfaces/epistorm-constants";
+import { DataPoint, isUTCDateEqual, ModelPrediction } from '../../../interfaces/forecast-interfaces';
+import { useResponsiveSVG } from "../../../interfaces/responsiveSVG";
+import { modelColorMap } from "../../../interfaces/epistorm-constants";
 
 interface ScoreDataPoint {
     referenceDate: Date;

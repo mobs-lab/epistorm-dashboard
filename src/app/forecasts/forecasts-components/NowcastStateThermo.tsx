@@ -3,7 +3,7 @@ import * as d3 from "d3";
 import * as topojson from "topojson-client";
 import { useAppSelector } from "../../Store/hooks";
 import { format, subDays } from "date-fns";
-import { isUTCDateEqual } from "../../Interfaces/forecast-interfaces";
+import { isUTCDateEqual } from "../../interfaces/forecast-interfaces";
 
 const shapeFile = "/states-10m.json";
 

@@ -1,6 +1,6 @@
 `use client`
 
-import BackgroundInfoContent from "../Components/BackgroundInfoContent";
+import BackgroundInfoContent from "../components/BackgroundInfoContent";
 
 export default function Page() {
     return (

@@ -2,9 +2,9 @@
 "use client";
 
 import React, { useEffect, useMemo } from "react";
-import { modelColorMap, modelNames } from "../../Interfaces/epistorm-constants";
-import { SeasonOption } from "../../Interfaces/forecast-interfaces";
-import { Radio, Typography } from "../../CSS/material-tailwind-wrapper";
+import { modelColorMap, modelNames } from "../../interfaces/epistorm-constants";
+import { SeasonOption } from "../../interfaces/forecast-interfaces";
+import { Radio, Typography } from "../../css/material-tailwind-wrapper";
 import { useAppDispatch, useAppSelector } from "../../Store/hooks";
 import {
   updateConfidenceInterval,
@@ -16,7 +16,7 @@ import {
   updateSelectedState,
   updateYScale,
 } from "../../Store/forecast-settings-slice";
-import SettingsStateMap from "../../Components/SettingsStateMap";
+import SettingsStateMap from "../../components/SettingsStateMap";
 import SettingsStyledDatePicker from "./SettingsStyledDatePicker";
 import Image from "next/image";
 

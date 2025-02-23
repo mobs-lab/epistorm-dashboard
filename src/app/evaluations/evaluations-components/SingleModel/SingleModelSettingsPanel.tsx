@@ -2,10 +2,10 @@
 
 import React, {useMemo, useState} from 'react';
 
-import {modelColorMap, modelNames} from '../../../Interfaces/epistorm-constants';
-import {SeasonOption} from '../../../Interfaces/forecast-interfaces';
+import {modelColorMap, modelNames} from '../../../interfaces/epistorm-constants';
+import {SeasonOption} from '../../../interfaces/forecast-interfaces';
 
-import SettingsStateMap from "../../../Components/SettingsStateMap";
+import SettingsStateMap from "../../../components/SettingsStateMap";
 
 import {useAppDispatch, useAppSelector} from '../../../Store/hooks';
 
@@ -19,7 +19,7 @@ import {
     // updateEvaluationSingleModelViewSeasonOptions,
 } from '../../../Store/evaluations-single-model-settings-slice';
 
-import {Radio, Typography} from "../../../CSS/material-tailwind-wrapper";
+import {Radio, Typography} from "../../../css/material-tailwind-wrapper";
 
 import Image from "next/image";
 
