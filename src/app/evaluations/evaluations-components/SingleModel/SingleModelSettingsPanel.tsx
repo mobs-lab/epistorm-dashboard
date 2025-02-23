@@ -83,8 +83,8 @@ const SingleModelSettingsPanel: React.FC = () => {
 
     return (
         <div
-            className="bg-mobs-lab-color-filterspane text-white fill-white flex flex-col h-full rounded-md overflow-scroll util-responsive-text-settings">
-            <div className="p-4">
+            className="bg-mobs-lab-color-filterspane text-white fill-white flex flex-col h-full rounded-md overflow-hidden util-responsive-text-settings">
+            <div className="flex-grow overflow-y-auto p-4">
                 <div className="flex flex-col flex-wrap justify-stretch items-start w-full">
                     <h2>Select Location</h2>
 

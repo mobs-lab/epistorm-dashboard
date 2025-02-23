@@ -62,9 +62,6 @@ const ForecastChart: React.FC = () => {
 
   const dispatch = useAppDispatch();
 
-  // State Variables that only the component itself needs to keep track of selected week and whether it is loaded
-  const [initialDataLoaded, setInitialDataLoaded] = useState(false);
-
   // Function to filter ground truth data by selected state and dates
   function filterGroundTruthData(
     data: DataPoint[],
@@ -1520,31 +1517,7 @@ const ForecastChart: React.FC = () => {
 
         return;
       } else {
-        // This works once for the first time the component is rendered to by default make the latest date as user-selected week
-        if (!initialDataLoaded) {
-          const filteredGroundTruthDataWithoutPlaceholders =
-            filteredGroundTruthData.filter((d) => d.admissions !== -1);
-          // console.debug("DEBUG: ForecastChart: Initial data loaded, setting user selected week to latest date:", filteredGroundTruthDataWithoutPlaceholders);
-          const latestDate = d3.max(
-            filteredGroundTruthDataWithoutPlaceholders,
-            (d) => d.date
-          ) as Date;
-          // ensure latestDate is UTC
-          const latestDateUTC = new Date(latestDate.toISOString());
-          bubbleUserSelectedWeek(latestDateUTC);
-          setInitialDataLoaded(true);
-        }
-
-        // Safety Clamping for when date range is changed by user and userSelectedWeek falls out of the range as a result
-        if (userSelectedWeek < dateStart || userSelectedWeek > dateEnd) {
-          // Re-find the nearest data point which should be new date range's endpoints
-          const closestDataPoint = findNearestDataPoint(
-            filteredGroundTruthData,
-            userSelectedWeek
-          );
-          // bubbleUserSelectedWeek(new Date(closestDataPoint.date.toISOString()));
-        }
-
+        /* Find desired prediction data */
         const processedPredictionData = processPredictionData(
           predictionsData,
           forecastModel,
@@ -1653,16 +1626,17 @@ const ForecastChart: React.FC = () => {
 
   // Return the SVG object using reference
   return (
-    <div ref={containerRef} className='flex w-full h-full'>
+    <div ref={containerRef} className="flex w-full h-full">
       <svg
         ref={svgRef}
         width={"100%"}
         height={"100%"}
-        preserveAspectRatio='xMidYMid meet'
+        preserveAspectRatio="xMidYMid meet"
         style={{
           fontFamily: "var(--font-dm-sans)",
           visibility: width && height ? "visible" : "hidden",
-        }}></svg>
+        }}
+      ></svg>
     </div>
   );
 };

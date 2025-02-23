@@ -317,7 +317,7 @@ const SettingsPanel: React.FC = () => {
                 <label key={interval} className="flex items-center text-white">
                   <input
                     type="checkbox"
-                    className="form-∑checkbox text-blue-600 mr-2"
+                    className="form-checkbox text-blue-600 mr-2"
                     checked={confidenceInterval.includes(
                       interval.split("%")[0]
                     )}
@@ -342,6 +342,7 @@ const SettingsPanel: React.FC = () => {
           </div>
         </div>
       </div>
+      
       <div className="mx-auto p-2">
         <Image
           src="/epistorm-logo.png"
