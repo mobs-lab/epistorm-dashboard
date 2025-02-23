@@ -5,9 +5,9 @@ import React, {useMemo, useState} from 'react';
 import {modelColorMap, modelNames} from '../../../Interfaces/epistorm-constants';
 import {SeasonOption} from '../../../Interfaces/forecast-interfaces';
 
-import SettingsStateMap from "../../../forecasts/forecasts-components/SettingsStateMap";
+import SettingsStateMap from "../../../Components/SettingsStateMap";
 
-import {useAppDispatch, useAppSelector} from '../../../store/hooks';
+import {useAppDispatch, useAppSelector} from '../../../Store/hooks';
 
 import {
     updateEvaluationSingleModelViewSelectedState,
@@ -17,7 +17,7 @@ import {
     updateEvaluationSingleModelViewDateEnd,
     updateEvaluationsSingleModelViewDateRange, updateEvaluationScores
     // updateEvaluationSingleModelViewSeasonOptions,
-} from '../../../store/evaluations-single-model-settings-slice';
+} from '../../../Store/evaluations-single-model-settings-slice';
 
 import {Radio, Typography} from "../../../CSS/material-tailwind-wrapper";
 
@@ -34,7 +34,7 @@ const SingleModelSettingsPanel: React.FC = () => {
 
     // Evaluation-specific state
     const {
-        evaluationSingleModelViewSelectedStateName,
+        evaluationsSingleModelViewSelectedStateName: evaluationSingleModelViewSelectedStateName,
         evaluationsSingleModelViewSelectedStateCode,
         evaluationsSingleModelViewModel,
         evaluationSingleModelViewHorizon,
@@ -89,7 +89,7 @@ const SingleModelSettingsPanel: React.FC = () => {
                     <h2>Select Location</h2>
 
                     <div className="mb-4 w-full">
-                        <SettingsStateMap/>
+                        <SettingsStateMap pageSelected='evaluations'/>
                     </div>
 
                     <select

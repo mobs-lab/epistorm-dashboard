@@ -5,7 +5,7 @@ import {parseISO} from "date-fns";
 
 interface EvaluationsSettingsState {
     /* Location Related */
-    evaluationSingleModelViewSelectedStateName: string; // Single model view's selected U.S. State code "US" or something like "05"
+    evaluationsSingleModelViewSelectedStateName: string; // Single model view's selected U.S. State code "US" or something like "05"
     evaluationsSingleModelViewSelectedStateCode: string;
 
     /* Model Related*/
@@ -22,7 +22,7 @@ interface EvaluationsSettingsState {
 
 const initialState: EvaluationsSettingsState = {
     /* Location Defaults */
-    evaluationSingleModelViewSelectedStateName: "US",
+    evaluationsSingleModelViewSelectedStateName: "US",
     evaluationsSingleModelViewSelectedStateCode: "US",
 
     /* Model Defaults*/
@@ -45,7 +45,7 @@ const evaluationsSingleModelSettingsSlice = createSlice({
             stateName: string;
             stateNum: string
         }>) => {
-            state.evaluationSingleModelViewSelectedStateName = action.payload.stateName;
+            state.evaluationsSingleModelViewSelectedStateName = action.payload.stateName;
             state.evaluationsSingleModelViewSelectedStateCode = action.payload.stateNum;
         },
         updateEvaluationsSingleModelViewModel: (state, action: PayloadAction<string>) => {

@@ -11,7 +11,7 @@ import {
     ModelPrediction,
     PredictionDataPoint
 } from "../../../Interfaces/forecast-interfaces";
-import { useAppDispatch, useAppSelector } from "../../../store/hooks";
+import { useAppDispatch, useAppSelector } from "../../../Store/hooks";
 import { useResponsiveSVG } from "../../../Interfaces/responsiveSVG";
 
 interface HoverData {

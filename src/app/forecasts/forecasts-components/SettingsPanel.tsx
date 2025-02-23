@@ -5,7 +5,7 @@ import React, { useEffect, useMemo } from "react";
 import { modelColorMap, modelNames } from "../../Interfaces/epistorm-constants";
 import { SeasonOption } from "../../Interfaces/forecast-interfaces";
 import { Radio, Typography } from "../../CSS/material-tailwind-wrapper";
-import { useAppDispatch, useAppSelector } from "../../store/hooks";
+import { useAppDispatch, useAppSelector } from "../../Store/hooks";
 import {
   updateConfidenceInterval,
   updateDateEnd,
@@ -15,8 +15,8 @@ import {
   updateNumOfWeeksAhead,
   updateSelectedState,
   updateYScale,
-} from "../../store/forecast-settings-slice";
-import SettingsStateMap from "./SettingsStateMap";
+} from "../../Store/forecast-settings-slice";
+import SettingsStateMap from "../../Components/SettingsStateMap";
 import SettingsStyledDatePicker from "./SettingsStyledDatePicker";
 import Image from "next/image";
 
@@ -162,7 +162,7 @@ const SettingsPanel: React.FC = () => {
           <h2> Select Location </h2>
 
           <div className="mb-4 w-full">
-            <SettingsStateMap />
+            <SettingsStateMap pageSelected="forecast" />
           </div>
 
           <select

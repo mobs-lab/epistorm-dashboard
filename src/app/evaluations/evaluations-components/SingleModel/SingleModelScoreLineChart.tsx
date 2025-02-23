@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import * as d3 from 'd3';
 
-import { useAppSelector } from '../../../store/hooks';
+import { useAppSelector } from '../../../Store/hooks';
 
 import { DataPoint, isUTCDateEqual, ModelPrediction } from '../../../Interfaces/forecast-interfaces';
 import { useResponsiveSVG } from "../../../Interfaces/responsiveSVG";

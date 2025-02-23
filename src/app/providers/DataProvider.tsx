@@ -16,7 +16,7 @@ import {
   setMonth,
   startOfWeek,
 } from "date-fns";
-import { useAppDispatch } from "../store/hooks";
+import { useAppDispatch } from "../Store/hooks";
 import {
   DataPoint,
   LocationData,
@@ -30,28 +30,28 @@ import {
 import { modelNames } from "../Interfaces/epistorm-constants";
 
 // Forecast Actions and Reducers
-import { setGroundTruthData } from "../store/Data/groundTruthSlice";
-import { setPredictionsData } from "../store/Data/predictionsSlice";
-import { setLocationData } from "../store/Data/locationSlice";
-import { setNowcastTrendsData } from "../store/Data/nowcastTrendsSlice";
-import { setStateThresholdsData } from "../store/Data/stateThresholdsSlice";
-import { setHistoricalGroundTruthData } from "../store/Data/historicalGroundTruthSlice";
+import { setGroundTruthData } from "../Store/Data/groundTruthSlice";
+import { setPredictionsData } from "../Store/Data/predictionsSlice";
+import { setLocationData } from "../Store/Data/locationSlice";
+import { setNowcastTrendsData } from "../Store/Data/nowcastTrendsSlice";
+import { setStateThresholdsData } from "../Store/Data/stateThresholdsSlice";
+import { setHistoricalGroundTruthData } from "../Store/Data/historicalGroundTruthSlice";
 import {
   setSeasonOptions,
   updateDateEnd,
   updateDateRange,
   updateDateStart,
   updateUserSelectedWeek,
-} from "../store/forecast-settings-slice";
+} from "../Store/forecast-settings-slice";
 
 // Evaluations Actions and Reducers
-import { setEvaluationsSingleModelScoreData } from "../store/Data/evaluationsSingleModelScoreDataSlice";
+import { setEvaluationsSingleModelScoreData } from "../Store/Data/evaluationsSingleModelScoreDataSlice";
 import {
   updateEvaluationSingleModelViewDateStart,
   updateEvaluationSingleModelViewDateEnd,
   updateEvaluationsSingleModelViewDateRange,
   updateEvaluationSingleModelViewSeasonOptions,
-} from "../store/evaluations-single-model-settings-slice";
+} from "../Store/evaluations-single-model-settings-slice";
 
 interface DataContextType {
   loadingStates: LoadingStates;
