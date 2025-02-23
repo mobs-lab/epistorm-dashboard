@@ -7,7 +7,7 @@ import {SeasonOption} from '../../../interfaces/forecast-interfaces';
 
 import SettingsStateMap from "../../../components/SettingsStateMap";
 
-import {useAppDispatch, useAppSelector} from '../../../Store/hooks';
+import {useAppDispatch, useAppSelector} from '../../../store/hooks';
 
 import {
     updateEvaluationSingleModelViewSelectedState,
@@ -17,7 +17,7 @@ import {
     updateEvaluationSingleModelViewDateEnd,
     updateEvaluationsSingleModelViewDateRange, updateEvaluationScores
     // updateEvaluationSingleModelViewSeasonOptions,
-} from '../../../Store/evaluations-single-model-settings-slice';
+} from '../../../store/evaluations-single-model-settings-slice';
 
 import {Radio, Typography} from "../../../css/material-tailwind-wrapper";
 

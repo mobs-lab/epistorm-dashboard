@@ -1,5 +1,4 @@
 // File: src/app/providers/DataProvider.tsx
-
 import React, { createContext, useContext, useEffect, useState } from "react";
 import * as d3 from "d3";
 import {
@@ -16,7 +15,7 @@ import {
   setMonth,
   startOfWeek,
 } from "date-fns";
-import { useAppDispatch } from "../Store/hooks";
+import { useAppDispatch } from "../store/hooks";
 import {
   DataPoint,
   LocationData,
@@ -42,7 +41,7 @@ import {
   updateDateRange,
   updateDateStart,
   updateUserSelectedWeek,
-} from "../Store/forecast-settings-slice";
+} from "../store/forecast-settings-slice";
 
 // Evaluations Actions and Reducers
 import { setEvaluationsSingleModelScoreData } from "../store/data/evaluationsSingleModelScoreDataSlice";
@@ -51,7 +50,7 @@ import {
   updateEvaluationSingleModelViewDateEnd,
   updateEvaluationsSingleModelViewDateRange,
   updateEvaluationSingleModelViewSeasonOptions,
-} from "../Store/evaluations-single-model-settings-slice";
+} from "../store/evaluations-single-model-settings-slice";
 
 interface DataContextType {
   loadingStates: LoadingStates;

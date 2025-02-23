@@ -4,8 +4,8 @@
 import React from "react";
 
 import {Provider} from 'react-redux';
-import store from './Store';
-import { DataProvider } from './Providers/DataProvider';
+import store from './store';
+import { DataProvider } from './providers/DataProvider';
 
 import Header from './components/Header';
 

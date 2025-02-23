@@ -5,7 +5,7 @@ import React, { useEffect, useMemo } from "react";
 import { modelColorMap, modelNames } from "../../interfaces/epistorm-constants";
 import { SeasonOption } from "../../interfaces/forecast-interfaces";
 import { Radio, Typography } from "../../css/material-tailwind-wrapper";
-import { useAppDispatch, useAppSelector } from "../../Store/hooks";
+import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import {
   updateConfidenceInterval,
   updateDateEnd,
@@ -15,7 +15,7 @@ import {
   updateNumOfWeeksAhead,
   updateSelectedState,
   updateYScale,
-} from "../../Store/forecast-settings-slice";
+} from "../../store/forecast-settings-slice";
 import SettingsStateMap from "../../components/SettingsStateMap";
 import SettingsStyledDatePicker from "./SettingsStyledDatePicker";
 import Image from "next/image";

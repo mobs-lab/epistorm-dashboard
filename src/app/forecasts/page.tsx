@@ -3,7 +3,7 @@
 'use client'
 
 import React from "react";
-import {useDataContext} from '../Providers/DataProvider';
+import {useDataContext} from '../providers/DataProvider';
 import ForecastChart from "./forecasts-components/ForecastChart";
 import SettingsPanel from "./forecasts-components/SettingsPanel";
 import NowcastStateThermo from "./forecasts-components/NowcastStateThermo";

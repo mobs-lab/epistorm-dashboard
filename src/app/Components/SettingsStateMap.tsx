@@ -2,9 +2,9 @@ import React, { useEffect, useRef, useState, useCallback } from "react";
 import * as topojson from "topojson-client";
 import * as d3 from "d3";
 import { zoom, zoomIdentity, ZoomBehavior } from "d3-zoom";
-import { useAppDispatch, useAppSelector } from "../Store/hooks";
-import { updateSelectedState } from "../Store/forecast-settings-slice";
-import { updateEvaluationSingleModelViewSelectedState } from "../Store/evaluations-single-model-settings-slice";
+import { useAppDispatch, useAppSelector } from "../store/hooks";
+import { updateSelectedState } from "../store/forecast-settings-slice";
+import { updateEvaluationSingleModelViewSelectedState } from "../store/evaluations-single-model-settings-slice";
 
 interface SettingsStateMapProps {
   pageSelected: string;
