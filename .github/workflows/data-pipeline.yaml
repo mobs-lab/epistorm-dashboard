@@ -74,7 +74,7 @@ jobs:
           echo "-----------------------"
 
           # Stage data changes
-          git add public/data/unprocessed/* public/data/ground-truth/* public/data/processed/* || true
+          git add public/data/unprocessed/* public/data/ground-truth/* public/data/processed/* public/data/evaluations-score/* || true
 
           # Stage submodule changes
           git add FluSight-forecast-hub || true
