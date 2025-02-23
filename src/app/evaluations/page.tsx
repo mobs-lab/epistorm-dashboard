@@ -7,7 +7,7 @@
 'use client'
 
 import React, {useEffect, useRef, useState} from "react";
-import {useDataContext} from '../providers/DataProvider';
+import {useDataContext} from '../Providers/DataProvider';
 import {Card} from "../CSS/material-tailwind-wrapper";
 import {SeasonOverviewSettings} from "./evaluations-components/SeasonOverview/SeasonOverviewSettingsPanel";
 import SingleModelSettingsPanel from "./evaluations-components/SingleModel/SingleModelSettingsPanel";
@@ -83,7 +83,7 @@ const EvaluationsPage = () => {
                             className={`px-6 py-2 text-sm relative ${
                                 activeTab === 'season-overview'
                                     ? 'text-white bg-gray-800 border-t border-l border-r border-gray-700'
-                                    : 'text-gray-400 hover:text-white'
+                                    : 'text-white hover:text-white'
                             }`}
                             style={{
                                 marginBottom: '-1px',
@@ -97,7 +97,7 @@ const EvaluationsPage = () => {
                             className={`px-6 py-2 text-sm relative ${
                                 activeTab === 'single-model'
                                     ? 'text-white bg-gray-800 border-t border-l border-r border-gray-700'
-                                    : 'text-gray-400 hover:text-white'
+                                    : 'text-white hover:text-white'
                             }`}
                             style={{
                                 marginBottom: '-1px',
@@ -111,7 +111,7 @@ const EvaluationsPage = () => {
                 </div>
 
                 <div className="tab-container">
-                    <Card className="flex-1 bg-mobs-lab-color min-h-0">
+                    <Card className="flex-1 bg-mobs-lab-color text-white min-h-0">
                         {renderContent()}
                     </Card>
                 </div>

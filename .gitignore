@@ -328,3 +328,5 @@ cython_debug/
 # GCP App Engine service-specific files
 .demo-env
 *.demo.env
+
+.prettierrc
