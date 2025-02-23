@@ -29,7 +29,6 @@ import { modelColorMap } from "../../Interfaces/epistorm-constants";
 
 import { useAppDispatch, useAppSelector } from "../../Store/hooks";
 import { updateUserSelectedWeek } from "../../Store/forecast-settings-slice";
-import debounce from "lodash/debounce";
 
 const ForecastChart: React.FC = () => {
   // reference to svg object
