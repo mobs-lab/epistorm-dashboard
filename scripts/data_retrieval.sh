@@ -138,13 +138,12 @@ for file in "${evaluation_files[@]}"; do
            ! cmp -s "$EVALUATION_DATA_SOURCE_LOCATION/$file" "$EVALUATION_DATA_TARGET_LOCATION/$file"; then
             cp "$EVALUATION_DATA_SOURCE_LOCATION/$file" "$EVALUATION_DATA_TARGET_LOCATION/$file"
             echo "Copied $file to $EVALUATION_DATA_TARGET_LOCATION/"
-            NEW_EVALUATION_DATA_COPIED=true
+            NEW_EVALUATIONS_DATA_COPIED=true
         fi
     else
         echo "Warning: $file not found in source location"
     fi
 done
-
 #endregion
 
 

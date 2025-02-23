@@ -2,8 +2,8 @@ name: Weekly Data Update
 
 on:
   schedule:
-    - cron: '30 6-21/3 * * 4'  # Runs every Thursday, starting from 6:30 AM UTC until 9:30 PM UTC, every 3 hours
-    - cron: '30 21 * * 5,6'   # Separately runs another two times, on every Friday and Saturday at 9:30 PM UTC
+    - cron: "30 6-21/3 * * 4" # Runs every Thursday, starting from 6:30 AM UTC until 9:30 PM UTC, every 3 hours
+    - cron: "30 21 * * 5,6" # Separately runs another two times, on every Friday and Saturday at 9:30 PM UTC
   workflow_dispatch:
 
 concurrency:
@@ -17,9 +17,9 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          submodules: 'recursive'
+          submodules: "recursive"
           fetch-depth: 0
-          ref: main  # Explicitly checkout main
+          ref: main # Explicitly checkout main
 
       - name: Update Submodule
         run: |
@@ -44,7 +44,7 @@ jobs:
         if: ${{ env.NEW_PREDICTION_DATA_COPIED == 'true' || env.NEW_SURVEILLANCE_DATA_COPIED == 'true'}}
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: "3.11"
 
       - name: Install Python Dependencies
         if: ${{ env.NEW_PREDICTION_DATA_COPIED == 'true' || env.NEW_SURVEILLANCE_DATA_COPIED == 'true'}}
@@ -75,11 +75,11 @@ jobs:
 
           # Stage data changes
           git add public/data/unprocessed/* public/data/ground-truth/* public/data/processed/* || true
-          
+
           # Stage submodule changes
           git add FluSight-forecast-hub || true
           git add epistorm-evaluations || true
-          
+
           # Check if there are changes to commit
           if ! git diff --staged --quiet; then
             git commit -m "Data update ${TIMESTAMP}
@@ -98,18 +98,18 @@ jobs:
             git tag -a "${MAIN_TAG}" -m "Data update at ${TIMESTAMP}"
             git push origin "${MAIN_TAG}"
           fi
-          
+
           # Update production branch
           echo "Updating production branch..."
           git fetch origin production:production
           git checkout production
-          
+
           # Get data directory from main
           git checkout main -- public/data/
-          
+
           # Stage all the date updates
           git add public/data/
-          
+
           # Commit and push udpates if there are changes
           if ! git diff --staged --quiet; then
             git commit -m "Data update ${TIMESTAMP} [skip ci]
@@ -128,18 +128,18 @@ jobs:
             
             echo "PRODUCTION_UPDATED=true" >> $GITHUB_ENV
           fi
-          
+
           # Update demo branch
           echo "Updating demo branch..."
           git fetch origin demo:demo
           git checkout demo
-          
+
           # Copy data directory from main
           git checkout main -- public/data/
-          
+
           # Stage demo changes
           git add public/data/
-          
+
           # Commit and push demo if there are changes
           if ! git diff --staged --quiet; then
             git commit -m "Data update ${TIMESTAMP} [skip ci]
