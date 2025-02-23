@@ -1,7 +1,7 @@
 import React, {useCallback, useEffect, useRef, useState} from 'react';
 import * as d3 from 'd3';
 import {useAppSelector} from "../../Store/hooks";
-import {isUTCDateEqual} from "../../Interfaces/forecast-interfaces";
+import {isUTCDateEqual} from "../../interfaces/forecast-interfaces";
 
 interface RiskLevelGaugeProps {
     riskLevel: string;

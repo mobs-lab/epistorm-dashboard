@@ -19,13 +19,13 @@ import {
   isUTCDateEqual,
   ModelPrediction,
   PredictionDataPoint,
-} from "../../Interfaces/forecast-interfaces";
-import { useChartDimensions } from "../../Interfaces/forecast-chart-dimension-observer";
+} from "../../interfaces/forecast-interfaces";
+import { useChartDimensions } from "../../interfaces/forecast-chart-dimension-observer";
 import {
   useChartMargins,
   calculateLabelSpace,
-} from "../../Interfaces/chart-margin-utils";
-import { modelColorMap } from "../../Interfaces/epistorm-constants";
+} from "../../interfaces/chart-margin-utils";
+import { modelColorMap } from "../../interfaces/epistorm-constants";
 
 import { useAppDispatch, useAppSelector } from "../../Store/hooks";
 import { updateUserSelectedWeek } from "../../Store/forecast-settings-slice";

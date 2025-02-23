@@ -1,5 +1,5 @@
 import {createSlice, PayloadAction} from '@reduxjs/toolkit';
-import { HistoricalDataEntry} from '../../Interfaces/forecast-interfaces';
+import { HistoricalDataEntry} from '../../interfaces/forecast-interfaces';
 
 
 interface HistoricalGroundTruthState {

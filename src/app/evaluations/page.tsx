@@ -8,7 +8,7 @@
 
 import React, {useEffect, useRef, useState} from "react";
 import {useDataContext} from '../Providers/DataProvider';
-import {Card} from "../CSS/material-tailwind-wrapper";
+import {Card} from "../css/material-tailwind-wrapper";
 import {SeasonOverviewSettings} from "./evaluations-components/SeasonOverview/SeasonOverviewSettingsPanel";
 import SingleModelSettingsPanel from "./evaluations-components/SingleModel/SingleModelSettingsPanel";
 import SingleModelHorizonPlot from "./evaluations-components/SingleModel/SingleModelHorizonPlot";

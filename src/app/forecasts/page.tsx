@@ -12,7 +12,7 @@ import NowcastHeader from "./forecasts-components/NowcastHeader";
 import ForecastChartHeader from "./forecasts-components/ForecastChartHeader";
 
 
-import '../CSS/component_styles/forecast-page.css';
+import '../css/component_styles/forecast-page.css';
 
 
 const ForecastPage: React.FC = () => {

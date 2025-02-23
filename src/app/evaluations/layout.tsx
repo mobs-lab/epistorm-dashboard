@@ -1,5 +1,5 @@
 import React from "react";
-import '../CSS/evaluations/evaluations-page-grid.css';
+import '../css/evaluations/evaluations-page-grid.css';
 
 export default function ContactLayout({
                                           children,

@@ -1,6 +1,6 @@
 // src/app/store/predictionsSlice.ts
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { ModelPrediction } from '../../Interfaces/forecast-interfaces';
+import { ModelPrediction } from '../../interfaces/forecast-interfaces';
 
 interface PredictionsState {
     data: ModelPrediction[];

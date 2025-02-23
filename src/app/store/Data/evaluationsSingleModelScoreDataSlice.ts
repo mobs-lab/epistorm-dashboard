@@ -3,7 +3,7 @@
 import {createSlice, PayloadAction} from '@reduxjs/toolkit';
 import {
     EvaluationsSingleModelScoreDataCollection,
-} from '../../Interfaces/forecast-interfaces';
+} from '../../interfaces/forecast-interfaces';
 
 interface EvaluationsSingleModelScoreDataState {
     data: EvaluationsSingleModelScoreDataCollection[];
