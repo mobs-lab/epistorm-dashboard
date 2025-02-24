@@ -319,7 +319,7 @@ const NowcastStateThermo: React.FC = () => {
 
       if (value >= stateThresholds.veryHigh) {
         riskLevel = "High";
-        yPosition = yScale(92); // 100 does not look good. Note this value may change --- see the domain declaration for yScale above
+        yPosition = yScale(99); // 100 does not look good. Note this value may change --- see the domain declaration for yScale above
       } else if (value >= stateThresholds.high) {
         riskLevel = "High";
         const fraction =
