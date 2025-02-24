@@ -1,4 +1,4 @@
-// src/app/Components/forecasts-components/ForecastChart.tsx
+// src/app/components/forecasts-components/ForecastChart.tsx
 "use client";
 
 import React, { useCallback, useEffect, useRef, useState } from "react";

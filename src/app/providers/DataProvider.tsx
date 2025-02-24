@@ -346,12 +346,12 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({
         if (seasonOptions.length > 0) {
           const lastSeason = seasonOptions[seasonOptions.length - 1];
 
-          /* For Forecast Page Components */
+          /* For Forecast Page components */
           dispatch(updateDateRange(lastSeason.timeValue));
           dispatch(updateDateStart(lastSeason.startDate));
           dispatch(updateDateEnd(lastSeason.endDate));
 
-          /* For Evaluations Single Model View Components */
+          /* For Evaluations Single Model View components */
           dispatch(
             updateEvaluationsSingleModelViewDateRange(lastSeason.timeValue)
           );
