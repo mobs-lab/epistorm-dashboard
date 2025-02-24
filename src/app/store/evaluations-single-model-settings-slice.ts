@@ -1,15 +1,15 @@
 // src/app/store/forecastSettingsSlice.ts
 import {createSlice, PayloadAction} from '@reduxjs/toolkit';
-import {SeasonOption} from '../Interfaces/forecast-interfaces';
+import {SeasonOption} from '../interfaces/forecast-interfaces';
 import {parseISO} from "date-fns";
 
 interface EvaluationsSettingsState {
     /* Location Related */
-    evaluationSingleModelViewSelectedStateName: string; // Single model view's selected U.S. State code "US" or something like "05"
+    evaluationsSingleModelViewSelectedStateName: string; // Single model view's selected U.S. State code "US" or something like "05"
     evaluationsSingleModelViewSelectedStateCode: string;
 
     /* Model Related*/
-    evaluationSingleModelViewModel: string; //Single Model view page allows only 1 model to be selected at a time
+    evaluationsSingleModelViewModel: string; //Single Model view page allows only 1 model to be selected at a time
     evaluationSingleModelViewHorizon: number; //how many weeks ahead from reference date (matching surveillance week's number) should we look for as target_end_date in predictions to draw the intervals
     evaluationSingleModelViewScoresOption: any; //TODO: Implement after discussion
 
@@ -22,11 +22,11 @@ interface EvaluationsSettingsState {
 
 const initialState: EvaluationsSettingsState = {
     /* Location Defaults */
-    evaluationSingleModelViewSelectedStateName: "US",
+    evaluationsSingleModelViewSelectedStateName: "US",
     evaluationsSingleModelViewSelectedStateCode: "US",
 
     /* Model Defaults*/
-    evaluationSingleModelViewModel: "MOBS-GLEAM_FLUH",
+    evaluationsSingleModelViewModel: "MOBS-GLEAM_FLUH",
     evaluationSingleModelViewHorizon: 0,
     evaluationSingleModelViewScoresOption: "MAPE",
 
@@ -45,11 +45,11 @@ const evaluationsSingleModelSettingsSlice = createSlice({
             stateName: string;
             stateNum: string
         }>) => {
-            state.evaluationSingleModelViewSelectedStateName = action.payload.stateName;
+            state.evaluationsSingleModelViewSelectedStateName = action.payload.stateName;
             state.evaluationsSingleModelViewSelectedStateCode = action.payload.stateNum;
         },
-        updateEvaluationSingleModelViewModel: (state, action: PayloadAction<string>) => {
-            state.evaluationSingleModelViewModel = action.payload;
+        updateEvaluationsSingleModelViewModel: (state, action: PayloadAction<string>) => {
+            state.evaluationsSingleModelViewModel = action.payload;
         },
         updateEvaluationSingleModelViewHorizon: (state, action: PayloadAction<number>) => {
             state.evaluationSingleModelViewHorizon = action.payload;
@@ -77,7 +77,7 @@ const evaluationsSingleModelSettingsSlice = createSlice({
 });
 
 export const {
-    updateEvaluationSingleModelViewModel,
+    updateEvaluationsSingleModelViewModel,
     updateEvaluationSingleModelViewHorizon,
     updateEvaluationSingleModelViewSeasonOptions,
     updateEvaluationSingleModelViewSelectedState,

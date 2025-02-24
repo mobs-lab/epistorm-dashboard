@@ -7,9 +7,9 @@ import {Provider} from 'react-redux';
 import store from './store';
 import { DataProvider } from './providers/DataProvider';
 
-import Header from './Components/Header';
+import Header from './components/Header';
 
-import './CSS/globals.css';
+import './css/globals.css';
 import {DM_Sans} from 'next/font/google'
 
 // Importing original styles for react-date-picker from npm

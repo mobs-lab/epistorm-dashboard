@@ -3,7 +3,7 @@
 * Use Prop to pass in different information
 * */
 
-// Use import to use existing Components
+// Use import to use existing components
 
 
 import React from "react";

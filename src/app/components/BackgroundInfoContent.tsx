@@ -14,7 +14,7 @@ const BackgroundInfoContent: React.FC = () => {
                     containerRef.current.innerHTML = html;
                 }
 
-                // Load Webflow CSS
+                // Load Webflow css
                 const linkElement = document.createElement('link');
                 linkElement.rel = 'stylesheet';
                 linkElement.href = '/BackgroundPage/css/epistorm-draft-ffcbb516d1146b52f094f8f5.webflow.css';

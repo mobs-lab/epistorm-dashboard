@@ -11,3 +11,5 @@ export const modelColorMap: Record<string, string> = {
     "NEU_ISI-FluBcast": "#ffeaae",
 //     Add more here in the future...
 };
+
+export const modelNames: string[] = ["MOBS-GLEAM_FLUH", "MIGHTE-Nsemble", "MIGHTE-Joint", "NU_UCSD-GLEAM_AI_FLUH", "CEPH-Rtrend_fluH", "NEU_ISI-FluBcast", "NEU_ISI-AdaptiveEnsemble", "FluSight-ensemble"];
