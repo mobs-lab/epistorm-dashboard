@@ -42,7 +42,7 @@ const EvaluationsPage = () => {
     const [activeTab, setActiveTab] = useState('season-overview');
     const {loadingStates, isFullyLoaded} = useDataContext();
 
-    // Determine which data is needed for each tab
+    // Determine which data-slices is needed for each tab
     const seasonOverviewReady = !loadingStates.groundTruth && !loadingStates.predictions;
     const singleModelReady = !loadingStates.groundTruth && !loadingStates.predictions;
 
