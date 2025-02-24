@@ -17,12 +17,12 @@ const SingleModelScoreLineChart: React.FC = () => {
     const chartRef = useRef<SVGSVGElement>(null);
     const isDraggingRef = useRef(false);
 
-    // Get the ground and prediction data from store
+    // Get the ground and prediction data-slices from store
     const groundTruthData = useAppSelector((state) => state.groundTruth.data);
     // console.debug("DEBUG: SingleModelHorizonPlot.tsx: groundTruthData", groundTruthData);
 
     const predictionsData = useAppSelector((state) => state.predictions.data);
-    // Get data and settings from Redux
+    // Get data-slices and settings from Redux
     const evaluationsScoreData = useAppSelector((state) => state.evaluationsSingleModelScoreData.data);
     const {
         evaluationsSingleModelViewModel,
@@ -41,7 +41,7 @@ const SingleModelScoreLineChart: React.FC = () => {
         dateRange: [Date, Date]
     ): [Date, Date] {
 
-        // Filter ground truth data for valid entries (with valid admissions, including placeholders)
+        // Filter ground truth data-slices for valid entries (with valid admissions, including placeholders)
         const validGroundTruth = groundTruthData.filter(d =>
             d.stateNum === state &&
             d.admissions >= -1 &&
@@ -49,7 +49,7 @@ const SingleModelScoreLineChart: React.FC = () => {
             d.date <= dateRange[1]
         );
 
-        // Get the model's prediction data
+        // Get the model's prediction data-slices
         const modelPrediction = predictionsData.find(model => model.modelName === modelName);
         // Check each date for valid predictions, only dates with predictions are included
         const validPredictions = modelPrediction?.predictionData.filter(d =>
@@ -58,7 +58,7 @@ const SingleModelScoreLineChart: React.FC = () => {
             d.referenceDate <= dateRange[1]
         ) || [];
 
-        // Find the earliest and latest dates with actual data, only those that both have valid admission value & has predictions made on that day
+        // Find the earliest and latest dates with actual data-slices, only those that both have valid admission value & has predictions made on that day
         const startDates = [
             validGroundTruth.length > 0 ? validGroundTruth[0].date : dateRange[1],
             validPredictions.length > 0 ? validPredictions[0].referenceDate : dateRange[1]
@@ -69,7 +69,7 @@ const SingleModelScoreLineChart: React.FC = () => {
             validPredictions.length > 0 ? validPredictions[validPredictions.length - 1].referenceDate : dateRange[0]
         ];
 
-        // Use max and min to cut the ones missing prediction/admission, and we end up with range with actual concrete data values
+        // Use max and min to cut the ones missing prediction/admission, and we end up with range with actual concrete data-slices values
         return [
             new Date(Math.max(...startDates.map(d => d.getTime()))),
             new Date(Math.min(...endDates.map(d => d.getTime())))
@@ -222,7 +222,7 @@ const SingleModelScoreLineChart: React.FC = () => {
         if (index < 0) return filteredData[0];
         if (index >= dates.length) return filteredData[filteredData.length - 1];
 
-        // Find the actual data point closest to this date
+        // Find the actual data-slices point closest to this date
         const targetDate = dates[index];
         return filteredData.reduce((closest, current) => {
             if (!closest) return current;
@@ -418,7 +418,7 @@ const SingleModelScoreLineChart: React.FC = () => {
         const chartWidth = width - margin.left - margin.right;
         const chartHeight = height - margin.top - margin.bottom;
 
-        // Get data range and prepare data
+        // Get data-slices range and prepare data-slices
         const [actualStart, actualEnd] = findActualDataRange(
             groundTruthData,
             predictionsData,
@@ -439,7 +439,7 @@ const SingleModelScoreLineChart: React.FC = () => {
                 d.horizon == evaluationSingleModelViewHorizon
             ) || [];
 
-        // Handle when no data is present: just display a information
+        // Handle when no data-slices is present: just display a information
         if (filteredData.length === 0) {
             svg.append('text')
                 .attr('x', width / 2)

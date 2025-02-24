@@ -29,12 +29,12 @@ import {
 import { modelNames } from "../interfaces/epistorm-constants";
 
 // Forecast Actions and Reducers
-import { setGroundTruthData } from "../store/data/groundTruthSlice";
-import { setPredictionsData } from "../store/data/predictionsSlice";
-import { setLocationData } from "../store/data/locationSlice";
-import { setNowcastTrendsData } from "../store/data/nowcastTrendsSlice";
-import { setStateThresholdsData } from "../store/data/stateThresholdsSlice";
-import { setHistoricalGroundTruthData } from "../store/data/historicalGroundTruthSlice";
+import { setGroundTruthData } from "../store/data-slices/groundTruthSlice";
+import { setPredictionsData } from "../store/data-slices/predictionsSlice";
+import { setLocationData } from "../store/data-slices/locationSlice";
+import { setNowcastTrendsData } from "../store/data-slices/nowcastTrendsSlice";
+import { setStateThresholdsData } from "../store/data-slices/stateThresholdsSlice";
+import { setHistoricalGroundTruthData } from "../store/data-slices/historicalGroundTruthSlice";
 import {
   setSeasonOptions,
   updateDateEnd,
@@ -44,7 +44,7 @@ import {
 } from "../store/forecast-settings-slice";
 
 // Evaluations Actions and Reducers
-import { setEvaluationsSingleModelScoreData } from "../store/data/evaluationsSingleModelScoreDataSlice";
+import { setEvaluationsSingleModelScoreData } from "../store/data-slices/evaluationsSingleModelScoreDataSlice";
 import {
   updateEvaluationSingleModelViewDateStart,
   updateEvaluationSingleModelViewDateEnd,
@@ -75,7 +75,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({
   });
   const [dataFetchStarted, setDataFetchStarted] = useState(false);
 
-  // Move all your existing data fetching functions here
+  // Move all your existing data-slices fetching functions here
   // (addBackEmptyDatesWithPrediction, generateSeasonOptions, etc.)
 
   const safeCSVFetch = async (url: string) => {
@@ -228,7 +228,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({
 
     try {
       {
-        // Fetch location data first as it's needed for processing ground truth data
+        // Fetch location data-slices first as it's needed for processing ground truth data-slices
         const locationData = await d3.csv("/data/locations.csv");
         const parsedLocationData = locationData.map((d) => ({
           stateNum: d.location,
@@ -239,7 +239,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({
         dispatch(setLocationData(parsedLocationData));
         updateLoadingState("locations", false);
 
-        // Fetch ground truth and predictions data
+        // Fetch ground truth and predictions data-slices
         const groundTruthData = await d3.csv(
           "/data/ground-truth/target-hospital-admissions.csv"
         );
@@ -251,14 +251,14 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({
           weeklyRate: +d["weekly_rate"],
         }));
 
-        /* Get latest valid surveillance data point's date info */
+        /* Get latest valid surveillance data-slices point's date info */
         const latestValidSurveillanceDate = parsedGroundTruthData
           .filter((d) => !isNaN(d.admissions))
           .reduce((latest, current) =>
             isAfter(current.date, latest.date) ? current : latest
           ).date;
 
-        /*  Keep track of latest valid prediction data point's date info
+        /*  Keep track of latest valid prediction data-slices point's date info
             NOTE: extract from all avaialble models because that is the initialized default 
             (See `src/app/store/forecast-settings-slice.ts`)
         */
@@ -362,7 +362,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({
         }
         updateLoadingState("seasonOptions", false);
 
-        // Fetch other data in parallel
+        // Fetch other data-slices in parallel
         await Promise.all([
           fetchNowcastTrendsData(),
           fetchThresholdsData(),
@@ -402,7 +402,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({
       dispatch(setNowcastTrendsData(nowcastTrendsData));
       updateLoadingState("nowcastTrends", false);
     } catch (error) {
-      console.error("Error fetching nowcast trends data:", error);
+      console.error("Error fetching nowcast trends data-slices:", error);
       updateLoadingState("nowcastTrends", false);
     }
   };
@@ -419,7 +419,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({
       dispatch(setStateThresholdsData(parsedThresholdsData));
       updateLoadingState("thresholds", false);
     } catch (error) {
-      console.error("Error fetching thresholds data:", error);
+      console.error("Error fetching thresholds data-slices:", error);
       updateLoadingState("thresholds", false);
     }
   };
@@ -459,7 +459,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({
       dispatch(setHistoricalGroundTruthData(historicalData));
       updateLoadingState("historicalGroundTruth", false);
     } catch (error) {
-      console.error("Error fetching historical ground truth data:", error);
+      console.error("Error fetching historical ground truth data-slices:", error);
       updateLoadingState("historicalGroundTruth", false);
     }
   };
@@ -467,12 +467,12 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({
   /* Fetch the `/public/evaluations-score/` path's `WIS_ratio.csv` and `MAPE.csv` asyncly, then organize them into model and metrics respectively;
    *  WIS_ratio.csv produces EvaluationsSingleModelScoreDataCollection with scoreMetric as "WIS_Ratio", while MAPE.csv produces "MAPE" respectively;
    *  modelName can be found in each CSV files' entries' 'Model' column;
-   * in each score data point, (again, consult the custom interfaces), referenceDate is the date of the score, and score is the actual score value:
+   * in each score data-slices point, (again, consult the custom interfaces), referenceDate is the date of the score, and score is the actual score value:
    *   - MAPE: the column is literally named 'MAPE'
    *   - WIS_Ratio: the column is literally named 'wis_ratio'
    * Note: I am keeping the number float point precision to as much as possible, until the limit of d3.js' precision, which is 16 digits (?)
    *
-   * Then in the end we push the data into store using dispatch(setEvaluationsSingleModelScoreData(data));
+   * Then in the end we push the data-slices into store using dispatch(setEvaluationsSingleModelScoreData(data-slices));
    *  */
   const fetchEvaluationsSingleModelScoreData = async () => {
     try {
@@ -481,7 +481,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({
         d3.csv("/data/evaluations-score/MAPE.csv"),
       ]);
 
-      // Process WIS Ratio data
+      // Process WIS Ratio data-slices
       const wisRatioByModel = new Map<
         string,
         {
@@ -508,7 +508,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({
         wisRatioByModel.get(key)?.push(scoreData);
       });
 
-      // Process MAPE data - Note the capital L in Location
+      // Process MAPE data-slices - Note the capital L in Location
       const mapeByModel = new Map<
         string,
         { referenceDate: Date; score: number; location: string }[]
@@ -532,7 +532,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({
       // Combine into final format
       const evaluationsData: EvaluationsSingleModelScoreDataCollection[] = [];
 
-      // Add WIS Ratio data
+      // Add WIS Ratio data-slices
       wisRatioByModel.forEach((scoreData, modelName) => {
         evaluationsData.push({
           modelName,
@@ -543,7 +543,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({
         });
       });
 
-      // Add MAPE data
+      // Add MAPE data-slices
       mapeByModel.forEach((scoreData, modelName) => {
         evaluationsData.push({
           modelName,
@@ -557,7 +557,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({
       dispatch(setEvaluationsSingleModelScoreData(evaluationsData));
       updateLoadingState("evaluationScores", false);
     } catch (error) {
-      console.error("Error fetching evaluation score data:", error);
+      console.error("Error fetching evaluation score data-slices:", error);
       updateLoadingState("evaluationScores", false);
     }
   };

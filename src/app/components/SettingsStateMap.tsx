@@ -145,7 +145,7 @@ const SettingsStateMap: React.FC<SettingsStateMapProps> = ({
           svg.call(zoomBehaviorRef.current.transform, newInitialTransform);
         }
       } catch (error) {
-        console.error("Error loading map data:", error);
+        console.error("Error loading map data-slices:", error);
       }
     };
 
