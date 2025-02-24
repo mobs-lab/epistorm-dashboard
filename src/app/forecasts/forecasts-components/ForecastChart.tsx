@@ -37,7 +37,7 @@ const ForecastChart: React.FC = () => {
   const [containerRef, { width, height, zoomLevel }] = useChartDimensions();
   const margins = useChartMargins(width, height, "default");
 
-  // Get the ground and prediction data from store
+  // Get the ground and prediction data-slices from store
   const groundTruthData = useAppSelector((state) => state.groundTruth.data);
   const predictionsData = useAppSelector((state) => state.predictions.data);
 
@@ -61,7 +61,7 @@ const ForecastChart: React.FC = () => {
 
   const dispatch = useAppDispatch();
 
-  // Function to filter ground truth data by selected state and dates
+  // Function to filter ground truth data-slices by selected state and dates
   function filterGroundTruthData(
     data: DataPoint[],
     state: string,
@@ -71,7 +71,7 @@ const ForecastChart: React.FC = () => {
       (d) => d.stateNum === state
     );
 
-    // Filter data by extracting those entries that fall within the selected date range
+    // Filter data-slices by extracting those entries that fall within the selected date range
     filteredGroundTruthDataByState = filteredGroundTruthDataByState.filter(
       (d) =>
         d.date >= groundTruthDateRange[0] && d.date <= groundTruthDateRange[1]
@@ -93,11 +93,11 @@ const ForecastChart: React.FC = () => {
     weeksAhead: number,
     confidenceIntervals: string[]
   ) {
-    // Create an object to store the prediction data for each selected model
+    // Create an object to store the prediction data-slices for each selected model
     let modelData: any = {};
 
     // First check which models are selected by user
-    // Then filter the prediction data by state for each model
+    // Then filter the prediction data-slices by state for each model
     selectedModels.forEach((modelName) => {
       const modelPrediction = allPredictions.find(
         (model) => model.modelName === modelName
@@ -112,7 +112,7 @@ const ForecastChart: React.FC = () => {
       }
     });
 
-    // Filter the prediction data by referenceDate and targetEndDate for each model
+    // Filter the prediction data-slices by referenceDate and targetEndDate for each model
     let filteredModelData = {};
     Object.entries(modelData).forEach(([modelName, predictionData]) => {
       let filteredByReferenceDate = predictionData.filter((d) =>
@@ -134,7 +134,7 @@ const ForecastChart: React.FC = () => {
       });
     });
 
-    // Create an object to store the confidence interval data for each model
+    // Create an object to store the confidence interval data-slices for each model
     let confidenceIntervalData = {};
 
     // Iterate over each model's predictions
@@ -172,7 +172,7 @@ const ForecastChart: React.FC = () => {
             });
           });
         } else {
-          // No confidence intervals selected, use the original prediction data
+          // No confidence intervals selected, use the original prediction data-slices
           confidenceIntervalData[modelName].push({
             interval: "",
             data: modelPredictions.map((d) => ({
@@ -195,10 +195,10 @@ const ForecastChart: React.FC = () => {
     chartHeight: number,
     yAxisScale: string
   ) {
-    // Find the maximum date in the ground truth data
+    // Find the maximum date in the ground truth data-slices
     const maxGroundTruthDate = d3.max(ground, (d) => d.date) as Date;
 
-    // Find the maximum date in the prediction data
+    // Find the maximum date in the prediction data-slices
     const maxPredictionDate = Object.values(predictions)
       .flatMap((modelData: any) => modelData[0]?.data || [])
       .reduce((maxDate: Date, dataPoint: PredictionDataPoint) => {
@@ -445,7 +445,7 @@ const ForecastChart: React.FC = () => {
     marginLeft: number,
     marginTop: number
   ) {
-    // Remove existing ground truth data paths and circles
+    // Remove existing ground truth data-slices paths and circles
     svg.selectAll(".ground-truth-path, .ground-truth-dot").remove();
 
     const line = d3
@@ -466,7 +466,7 @@ const ForecastChart: React.FC = () => {
       .attr("d", line)
       .attr("transform", `translate(${marginLeft}, ${marginTop})`);
 
-    // Add circles for ground truth data points (including placeholders)
+    // Add circles for ground truth data-slices points (including placeholders)
     svg
       .selectAll(".ground-truth-dot")
       .data(surveillanceData)
@@ -494,7 +494,7 @@ const ForecastChart: React.FC = () => {
     marginTop: number
   ) {
     console.debug(
-      "DEBUG: ForecastChart: Rendering historical data:",
+      "DEBUG: ForecastChart: Rendering historical data-slices:",
       historicalData
     );
     console.debug(
@@ -502,7 +502,7 @@ const ForecastChart: React.FC = () => {
       userSelectedWeek
     );
 
-    // Find the historical data file that is 1 week before the user selected week,
+    // Find the historical data-slices file that is 1 week before the user selected week,
     // While accounting for day light saving time transitions, using a 2-hour buffer, using isUTCDateEqual
     const matchingHistoricalData = historicalData.find((entry) =>
       isUTCDateEqual(entry.associatedDate, subWeeks(userSelectedWeek, 1))
@@ -512,15 +512,15 @@ const ForecastChart: React.FC = () => {
 
     if (!matchingHistoricalData) {
       console.debug(
-        "DEBUG: No matching historical data found for:",
+        "DEBUG: No matching historical data-slices found for:",
         userSelectedWeek.toISOString()
       );
       return;
     }
 
-    console.debug("DEBUG: Matching historical data:", matchingHistoricalData);
+    console.debug("DEBUG: Matching historical data-slices:", matchingHistoricalData);
 
-    /*Ensure the historical data to be drawn is cutoff before dateStart*/
+    /*Ensure the historical data-slices to be drawn is cutoff before dateStart*/
     const historicalDataToDraw = matchingHistoricalData.historicalData.filter(
       (d) => d.date >= dateStart
     );
@@ -543,7 +543,7 @@ const ForecastChart: React.FC = () => {
       )
       .attr("class", "historical-ground-truth-path")
       .attr("fill", "none")
-      .attr("stroke", "#FFA500") // Orange color for historical data
+      .attr("stroke", "#FFA500") // Orange color for historical data-slices
       .attr("stroke-width", 3)
       .attr("d", historicalLine)
       .attr("transform", `translate(${marginLeft}, ${marginTop})`);
@@ -578,7 +578,7 @@ const ForecastChart: React.FC = () => {
     confidenceInterval: string[],
     isGroundTruthDataPlaceHolderOnly: boolean
   ) {
-    // Remove existing prediction data paths and circles
+    // Remove existing prediction data-slices paths and circles
     svg
       .selectAll(".prediction-path, .prediction-dot, .confidence-area")
       .remove();
@@ -594,14 +594,14 @@ const ForecastChart: React.FC = () => {
           const modelColor =
             modelColorMap[modelName] || `hsl(${index * 60}, 100%, 50%)`;
 
-          // Render prediction data points
+          // Render prediction data-slices points
           const line = d3
             .line<any>()
             .x((d) => xScale(new Date(d.targetEndDate)))
             .y((d) => yScale(d.confidence500));
 
           if (isGroundTruthDataPlaceHolderOnly) {
-            // If there is only a placeholder data point, render the prediction data as its own branch
+            // If there is only a placeholder data-slices point, render the prediction data-slices as its own branch
             svg
               .append("path")
               .datum(predictions[0].data)
@@ -612,7 +612,7 @@ const ForecastChart: React.FC = () => {
               .attr("d", line)
               .attr("transform", `translate(${marginLeft}, ${marginTop})`);
           } else {
-            // Render prediction data points as usual
+            // Render prediction data-slices points as usual
             svg
               .append("path")
               .datum(predictions[0].data)
@@ -623,7 +623,7 @@ const ForecastChart: React.FC = () => {
               .attr("d", line)
               .attr("transform", `translate(${marginLeft}, ${marginTop})`);
 
-            // Add circles for prediction data points
+            // Add circles for prediction data-slices points
             svg
               .selectAll(`.prediction-dot-${index}`)
               .data(predictions[0].data)
@@ -780,7 +780,7 @@ const ForecastChart: React.FC = () => {
     }
 
     if (isAdmission) {
-      // Surveillance data should be integer; just in case
+      // Surveillance data-slices should be integer; just in case
       return Math.round(value).toString();
     }
 
@@ -846,7 +846,7 @@ const ForecastChart: React.FC = () => {
       .text(`${data.date.toUTCString().slice(5, 16)}`)
       .attr("font-weight", "bold");
 
-    // Add admissions data with non-bold label
+    // Add admissions data-slices with non-bold label
     const admissionsGroup = cornerTooltip
       .append("text")
       .attr(
@@ -878,7 +878,7 @@ const ForecastChart: React.FC = () => {
     maxWidth = Math.max(maxWidth, dateGroup.node().getComputedTextLength());
     currentY += lineHeight + 2 * padding;
 
-    /* TODO: when historical data mode is on, the tooltips should show historical admission values info as well */
+    /* TODO: when historical data-slices mode is on, the tooltips should show historical admission values info as well */
     if (isHistoricalDataMode) {
       const historicalAdmissionValue = historicalGroundTruthData
         .find((file) =>
@@ -925,12 +925,12 @@ const ForecastChart: React.FC = () => {
         maxWidth,
         historicalGroup.node().getComputedTextLength()
       );
-      currentY += 2 * padding; // Add padding after historical data
+      currentY += 2 * padding; // Add padding after historical data-slices
     } else {
-      currentY += 2 * padding; // Keep original padding if no historical data
+      currentY += 2 * padding; // Keep original padding if no historical data-slices
     }
 
-    // Find prediction data for the current date
+    // Find prediction data-slices for the current date
     const currentPredictions = findPredictionsForDate(
       predictionData,
       data.date
@@ -1093,7 +1093,7 @@ const ForecastChart: React.FC = () => {
     const foundPredictions = {};
     Object.entries(predictionData).forEach(
       ([modelName, modelPredictions]: [string, any]) => {
-        // const prediction = modelPredictions[0].data.find((p: any) => new Date(p.targetEndDate).getTime() === date.getTime());
+        // const prediction = modelPredictions[0].data-slices.find((p: any) => new Date(p.targetEndDate).getTime() === date.getTime());
         const prediction = modelPredictions[0].data.find((p: any) =>
           isUTCDateEqual(new Date(p.targetEndDate), date)
         );
@@ -1264,12 +1264,12 @@ const ForecastChart: React.FC = () => {
     groundTruthData: DataPoint[],
     predictionData: any
   ): DataPoint[] {
-    // First deconstruct the whole of ground truth data into a new array
+    // First deconstruct the whole of ground truth data-slices into a new array
     let combinedData = [...groundTruthData];
 
     // Then iterate over each model's predictions
     Object.values(predictionData).forEach((modelPredictions: any) => {
-      // For each prediction, check if a data point already exists for that
+      // For each prediction, check if a data-slices point already exists for that
       modelPredictions[0].data.forEach((prediction: any) => {
         // const existingPoint = combinedData.find((d) => d.date.getTime() === new Date(prediction.targetEndDate).getTime());
         const existingPoint = combinedData.find((d) =>
@@ -1507,7 +1507,7 @@ const ForecastChart: React.FC = () => {
         // If so, render a message to inform the user
         renderMessage(
           svg,
-          "Not enough data, please extend date range.",
+          "Not enough data-slices, please extend date range.",
           chartWidth,
           chartHeight,
           marginLeft,
@@ -1516,7 +1516,7 @@ const ForecastChart: React.FC = () => {
 
         return;
       } else {
-        /* Find desired prediction data */
+        /* Find desired prediction data-slices */
         const processedPredictionData = processPredictionData(
           predictionsData,
           forecastModel,

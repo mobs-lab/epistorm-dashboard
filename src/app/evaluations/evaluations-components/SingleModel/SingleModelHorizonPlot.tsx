@@ -36,7 +36,7 @@ const SingleModelHorizonPlot: React.FC = () => {
     }>({});
 
 
-    // Get the ground and prediction data from store
+    // Get the ground and prediction data-slices from store
     const groundTruthData = useAppSelector((state) => state.groundTruth.data);
     // console.debug("DEBUG: SingleModelHorizonPlot.tsx: groundTruthData", groundTruthData);
 
@@ -52,13 +52,13 @@ const SingleModelHorizonPlot: React.FC = () => {
     } = useAppSelector((state) => state.evaluationsSingleModelSettings);
 
 
-    // Function to filter ground truth data by selected state and dates
+    // Function to filter ground truth data-slices by selected state and dates
     function filterGroundTruthData(data: DataPoint[], state: string, dateRange: [Date, Date]): DataPoint[] {
         let filteredData = data.filter((d) => d.stateNum === state);
 
         // console.debug("DEBUG: SingleModelHorizonPlot.tsx: filterGroundTruthData: filteredData (using state)", filteredData);
 
-        // Filter data by date range
+        // Filter data-slices by date range
         filteredData = filteredData.filter(
             (d) => d.date >= dateRange[0] && d.date <= dateRange[1]
         );
@@ -66,7 +66,7 @@ const SingleModelHorizonPlot: React.FC = () => {
         return filteredData;
     }
 
-    // Process data function
+    // Process data-slices function
     function processVisualizationData(
         predictions: ModelPrediction[],
         modelName: string,
@@ -207,7 +207,7 @@ const SingleModelHorizonPlot: React.FC = () => {
         dateRange: [Date, Date]
     ): [Date, Date] {
 
-        // Filter ground truth data for valid entries (with valid admissions, including placeholders)
+        // Filter ground truth data-slices for valid entries (with valid admissions, including placeholders)
         const validGroundTruth = groundTruthData.filter(d =>
             d.stateNum === state &&
             d.admissions >= -1 &&
@@ -215,7 +215,7 @@ const SingleModelHorizonPlot: React.FC = () => {
             d.date <= dateRange[1]
         );
 
-        // Get the model's prediction data
+        // Get the model's prediction data-slices
         const modelPrediction = predictionsData.find(model => model.modelName === modelName);
         // Check each date for valid predictions, only dates with predictions are included
         const validPredictions = modelPrediction?.predictionData.filter(d =>
@@ -224,7 +224,7 @@ const SingleModelHorizonPlot: React.FC = () => {
             d.referenceDate <= dateRange[1]
         ) || [];
 
-        // Find the earliest and latest dates with actual data, only those that both have valid admission value & has predictions made on that day
+        // Find the earliest and latest dates with actual data-slices, only those that both have valid admission value & has predictions made on that day
         const startDates = [
             validGroundTruth.length > 0 ? validGroundTruth[0].date : dateRange[1],
             validPredictions.length > 0 ? validPredictions[0].referenceDate : dateRange[1]
@@ -235,7 +235,7 @@ const SingleModelHorizonPlot: React.FC = () => {
             validPredictions.length > 0 ? validPredictions[validPredictions.length - 1].referenceDate : dateRange[0]
         ];
 
-        // Use max and min to cut the ones missing prediction/admission, and we end up with range with actual concrete data values
+        // Use max and min to cut the ones missing prediction/admission, and we end up with range with actual concrete data-slices values
         return [
             new Date(Math.max(...startDates.map(d => d.getTime()))),
             new Date(Math.min(...endDates.map(d => d.getTime())))
@@ -264,7 +264,7 @@ const SingleModelHorizonPlot: React.FC = () => {
         const chartWidth = width - margin.left - margin.right;
         const chartHeight = height - margin.top - margin.bottom;
 
-        // Get data range and filter data
+        // Get data-slices range and filter data-slices
         const [actualStart, actualEnd] = findActualDataRange(
             groundTruthData,
             predictionsData,

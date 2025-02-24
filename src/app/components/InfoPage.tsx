@@ -1,5 +1,5 @@
 /*TODO
-* This component is for pages that display mostly just text (or anything with data visualization)
+* This component is for pages that display mostly just text (or anything with data-slices visualization)
 * Use Prop to pass in different information
 * */
 

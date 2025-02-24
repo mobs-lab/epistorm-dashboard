@@ -438,7 +438,7 @@ const NowcastStateThermo: React.FC = () => {
       .on("mouseover", function (event, d) {
         const level = d.toLowerCase();
         // Fix: Get the correct index by using the original case from riskLevels
-        const levelIndex = riskLevels.indexOf(d); // d is already in correct case from the data
+        const levelIndex = riskLevels.indexOf(d); // d is already in correct case from the data-slices
 
         tooltip.html(`
                     <div class="lg:text-sm">

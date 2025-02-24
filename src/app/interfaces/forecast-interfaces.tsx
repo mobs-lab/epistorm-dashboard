@@ -1,5 +1,5 @@
 /* Interface: DataPoint
-*  In raw data, state number, state's full name are given as strings (even though state number is coded as numbers)
+*  In raw data-slices, state number, state's full name are given as strings (even though state number is coded as numbers)
 *  Date is string, so convert to Date, NOTE: leap year issue in 2024 February is not automatically handled
 *  Admissions are cast into number from string
 * */
@@ -86,7 +86,7 @@ export interface LoadingStates {
     evaluationScores: boolean;
 }
 
-/* NOTE: For data provider to pass processed fetched data into helper functions*/
+/* NOTE: For data-slices provider to pass processed fetched data-slices into helper functions*/
 export interface ProcessedDataWithDateRange {
     data: DataPoint[];
     earliestDate: Date;

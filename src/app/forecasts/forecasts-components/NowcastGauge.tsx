@@ -104,7 +104,7 @@ const NowcastGauge: React.FC<RiskLevelGaugeProps> = ({riskLevel}) => {
             .outerRadius(radius * 0.96);
 
         const color = d3.scaleOrdinal<string>()
-            .domain(['decrease', 'stable', 'increase', 'no data'])
+            .domain(['decrease', 'stable', 'increase', 'no data-slices'])
             .range(['#478791', '#b9d6d6', '#eae78b', 'rgba(200, 200, 200, 0.1)']);
 
         const data = trendToUse
@@ -113,7 +113,7 @@ const NowcastGauge: React.FC<RiskLevelGaugeProps> = ({riskLevel}) => {
                 Math.max(0.001, trendToUse.stable),
                 Math.max(0.001, trendToUse.increase)
             ]
-            : [1]; // Single slice for "no data"
+            : [1]; // Single slice for "no data-slices"
 
         const paths = chartGroup.selectAll('path')
             .data(pie(data))
@@ -147,7 +147,7 @@ const NowcastGauge: React.FC<RiskLevelGaugeProps> = ({riskLevel}) => {
         paths.on('mouseover', function (event, d) {
             let label, value;
             if (!trendToUse) {
-                label = 'No data';
+                label = 'No data-slices';
                 value = 'N/A';
             } else if (d.index === 0) {
                 label = 'Decrease';
