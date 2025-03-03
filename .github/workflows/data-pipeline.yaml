@@ -62,24 +62,22 @@ jobs:
         if: ${{ env.NEW_SURVEILLANCE_DATA_COPIED == 'true'|| env.NEW_SURVEILLANCE_ARCHIVE_DATA_COPIED == 'true'}}
         run: python scripts/clean_surveillance_data.py
 
-      # Commit back to main branch, and releasing into production/demo branch are done together to avoid timestamp issue
-      - name: Commit Changes to Main and Update Branches
+      - name: Update Main Branch
         if: ${{ env.NEW_PREDICTION_DATA_COPIED == 'true' || env.NEW_SURVEILLANCE_DATA_COPIED == 'true' || env.NEW_SURVEILLANCE_ARCHIVE_DATA_COPIED == 'true' || env.NEW_EVALUATIONS_DATA_COPIED == 'true' }}
         run: |
           # Generate timestamp
           TIMESTAMP=$(date +'%Y-%m-%d-%H-%M-%S')
-
-          echo "======================="
-          echo "Updating main branch..."
-          echo "-----------------------"
-
+          echo "TIMESTAMP=${TIMESTAMP}" >> $GITHUB_ENV
+          
+          echo "Updating main branch with data changes..."
+          
           # Stage data changes
           git add public/data/unprocessed/* public/data/ground-truth/* public/data/processed/* public/data/evaluations-score/* || true
-
+          
           # Stage submodule changes
           git add FluSight-forecast-hub || true
           git add epistorm-evaluations || true
-
+          
           # Check if there are changes to commit
           if ! git diff --staged --quiet; then
             git commit -m "Data update ${TIMESTAMP}
@@ -97,69 +95,91 @@ jobs:
             MAIN_TAG="data-update/main/${TIMESTAMP}"
             git tag -a "${MAIN_TAG}" -m "Data update at ${TIMESTAMP}"
             git push origin "${MAIN_TAG}"
+            
+            echo "DATA_UPDATED=true" >> $GITHUB_ENV
+          else
+            echo "No changes detected to commit"
+            exit 0
           fi
 
-          # Update production branch
+      # Create a release branch from the updated main
+      - name: Create Release Branch
+        if: ${{ env.DATA_UPDATED == 'true' }}
+        run: |
+          # Release branch from updated main
+          RELEASE_BRANCH="release/data-update/${TIMESTAMP}"
+          echo "RELEASE_BRANCH=${RELEASE_BRANCH}" >> $GITHUB_ENV
+          
+          echo "Creating release branch ${RELEASE_BRANCH} from main..."
+          git checkout -b "${RELEASE_BRANCH}" main
+          
+          # Push the release branch
+          if ! git push -u origin "${RELEASE_BRANCH}"; then
+            echo "Failed to push release branch"
+            exit 1
+          fi
+
+      # Update production branch via a merge PR from the release branch
+      - name: Update Production Branch
+        if: ${{ env.DATA_UPDATED == 'true' }}
+        run: |
           echo "Updating production branch..."
           git fetch origin production:production
           git checkout production
-
-          # Get data directory from main
-          git checkout main -- public/data/
-
-          # Stage all the date updates
-          git add public/data/
-
-          # Commit and push udpates if there are changes
-          if ! git diff --staged --quiet; then
-            git commit -m "Data update ${TIMESTAMP} [skip ci]
+          
+          # Merge the release branch into production with --no-ff for clean history
+          if ! git merge --no-ff "${RELEASE_BRANCH}" -m "Release data update ${TIMESTAMP} [skip ci]"; then
+            echo "Merge conflict detected. Attempting resolution strategy..."
             
-            - Synced data files from main"
-            
-            # Create production tag
-            PROD_TAG="data-update/production/${TIMESTAMP}"
-            git tag -a "${PROD_TAG}" -m "Production data update at ${TIMESTAMP}"
-            
-            # Push production changes and tag
-            if ! git push origin production && git push origin "${PROD_TAG}"; then
-              echo "Failed to push to production"
-              exit 1
-            fi
-            
-            echo "PRODUCTION_UPDATED=true" >> $GITHUB_ENV
+            # In case of conflicts, favor the incoming changes from the release branch
+            git checkout --theirs public/data/
+            git add public/data/
+            git commit -m "Resolve merge conflicts for data update ${TIMESTAMP} [skip ci]"
           fi
+          
+          # Create production tag
+          PROD_TAG="data-update/production/${TIMESTAMP}"
+          git tag -a "${PROD_TAG}" -m "Production data update at ${TIMESTAMP}"
+          
+          # Push production changes and tag
+          if ! git push origin production && git push origin "${PROD_TAG}"; then
+            echo "Failed to push to production"
+            exit 1
+          fi
+          
+          echo "PRODUCTION_UPDATED=true" >> $GITHUB_ENV
 
-          # Update demo branch
+      # Update demo branch via a merge PR from the release branch
+      - name: Update Demo Branch
+        if: ${{ env.DATA_UPDATED == 'true' }}
+        run: |
           echo "Updating demo branch..."
           git fetch origin demo:demo
           git checkout demo
-
-          # Copy data directory from main
-          git checkout main -- public/data/
-
-          # Stage demo changes
-          git add public/data/
-
-          # Commit and push demo if there are changes
-          if ! git diff --staged --quiet; then
-            git commit -m "Data update ${TIMESTAMP} [skip ci]
+          
+          # Merge the release branch into demo with --no-ff for clean history
+          if ! git merge --no-ff "${RELEASE_BRANCH}" -m "Release data update ${TIMESTAMP} [skip ci]"; then
+            echo "Merge conflict detected. Attempting resolution strategy..."
             
-            - Synced data files from main"
-            
-            # Create demo tag
-            DEMO_TAG="data-update/demo/${TIMESTAMP}"
-            git tag -a "${DEMO_TAG}" -m "Demo data update at ${TIMESTAMP}"
-            
-            # Push demo changes and tag
-            if ! git push origin demo && git push origin "${DEMO_TAG}"; then
-              echo "Failed to push to demo"
-              exit 1
-            fi
-            
-            echo "DEMO_UPDATED=true" >> $GITHUB_ENV
+            # In case of conflicts, favor the incoming changes from the release branch
+            git checkout --theirs public/data/
+            git add public/data/
+            git commit -m "Resolve merge conflicts for data update ${TIMESTAMP} [skip ci]"
           fi
+          
+          # Create demo tag
+          DEMO_TAG="data-update/demo/${TIMESTAMP}"
+          git tag -a "${DEMO_TAG}" -m "Demo data update at ${TIMESTAMP}"
+          
+          # Push demo changes and tag
+          if ! git push origin demo && git push origin "${DEMO_TAG}"; then
+            echo "Failed to push to demo"
+            exit 1
+          fi
+          
+          echo "DEMO_UPDATED=true" >> $GITHUB_ENV
 
-      # 4. Trigger respective deployments
+      # Trigger respective deployments
       - name: Trigger Production Deployment
         if: ${{ env.PRODUCTION_UPDATED == 'true' }}
         run: |
