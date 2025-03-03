@@ -66,6 +66,7 @@ jobs:
         if: ${{ env.NEW_PREDICTION_DATA_COPIED == 'true' || env.NEW_SURVEILLANCE_DATA_COPIED == 'true' || env.NEW_SURVEILLANCE_ARCHIVE_DATA_COPIED == 'true' || env.NEW_EVALUATIONS_DATA_COPIED == 'true' }}
         run: |
           # Generate timestamp
+          # The timestamp is created once then put into env for easier access
           TIMESTAMP=$(date +'%Y-%m-%d-%H-%M-%S')
           echo "TIMESTAMP=${TIMESTAMP}" >> $GITHUB_ENV
           
@@ -128,6 +129,7 @@ jobs:
           git checkout production
           
           # Merge the release branch into production with --no-ff for clean history
+          # The [skip ci] is just in case GitHub decides to change workflow-calling restriction
           if ! git merge --no-ff "${RELEASE_BRANCH}" -m "Release data update ${TIMESTAMP} [skip ci]"; then
             echo "Merge conflict detected. Attempting resolution strategy..."
             
@@ -157,7 +159,6 @@ jobs:
           git fetch origin demo:demo
           git checkout demo
           
-          # Merge the release branch into demo with --no-ff for clean history
           if ! git merge --no-ff "${RELEASE_BRANCH}" -m "Release data update ${TIMESTAMP} [skip ci]"; then
             echo "Merge conflict detected. Attempting resolution strategy..."
             
