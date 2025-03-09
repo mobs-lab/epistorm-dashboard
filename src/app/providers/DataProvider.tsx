@@ -24,7 +24,7 @@ import {
   SeasonOption,
   LoadingStates,
   ProcessedDataWithDateRange,
-  EvaluationsSingleModelScoreDataCollection,
+  EvaluationsScoreDataCollection,
 } from "../interfaces/forecast-interfaces";
 import { modelNames } from "../interfaces/epistorm-constants";
 
@@ -511,7 +511,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({
       // Process MAPE data-slices - Note the capital L in Location
       const mapeByModel = new Map<
         string,
-        { referenceDate: Date; score: number; location: string }[]
+        { referenceDate: Date; score: number; location: string; horizon: string }[]
       >();
       mapeData.forEach((entry) => {
         const modelName = entry.Model;
@@ -530,7 +530,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({
       });
 
       // Combine into final format
-      const evaluationsData: EvaluationsSingleModelScoreDataCollection[] = [];
+      const evaluationsData: EvaluationsScoreDataCollection[] = [];
 
       // Add WIS Ratio data-slices
       wisRatioByModel.forEach((scoreData, modelName) => {

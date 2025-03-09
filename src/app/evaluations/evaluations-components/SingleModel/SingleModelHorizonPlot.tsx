@@ -196,7 +196,7 @@ const SingleModelHorizonPlot: React.FC = () => {
     );
 
     const maxPredictionValue = d3.max(allValues);
-    const maxSurveillanceValue = d3.max(allValuesFromSurveillanceData);
+    const maxSurveillanceValue = d3.max(allValuesFromSurveillanceData) || 1;
 
     const maxValue =
       maxPredictionValue > maxSurveillanceValue
@@ -612,7 +612,8 @@ const SingleModelHorizonPlot: React.FC = () => {
         className='w-full h-full'
         style={{
           fontFamily: "var(--font-dm-sans)",
-          visibility: isResizing ? "hidden" : "visible",
+          opacity: isResizing ? 0.5 : 1,
+          transition: "opacity 0.2s ease",
         }}
         viewBox={`0 0 ${dimensions.width || 100} ${dimensions.height || 100}`}
         preserveAspectRatio='xMidYMid meet'
