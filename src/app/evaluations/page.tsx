@@ -10,7 +10,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { useDataContext } from "../providers/DataProvider";
 import { Card } from "../css/material-tailwind-wrapper";
 
-import SeasonOverviewLocationAggregatedScoreChart from "./evaluations-components/SeasonOverview/SeasonOverviewLocationAggregatedScoreChart";
+import SeasonOverviewLocationAggregatedScoreChart, { TooltipDirection } from "./evaluations-components/SeasonOverview/SeasonOverviewLocationAggregatedScoreChart";
 import SeasonOverviewPIChart from "./evaluations-components/SeasonOverview/SeasonOverviewPIChart";
 import SeasonOverviewUSStateMap from "./evaluations-components/SeasonOverview/SeasonOverviewUSStateMap";
 import { SeasonOverviewSettings } from "./evaluations-components/SeasonOverview/SeasonOverviewSettingsPanel";
@@ -33,13 +33,13 @@ const SeasonOverviewContent: React.FC = () => {
   return (
     <div className='flex flex-col h-full px-4 py-2 gap-4 overflow-y-auto overflow-x-hidden util-no-sb-length'>
       {/* Top charts section - 3 charts in a row */}
-      <div className='grid grid-cols-3 gap-4 min-h-[360px] max-h-[480px]'>
+      <div className='grid grid-cols-3 gap-4 min-h-[480px]'>
         <Card className='bg-mobs-lab-color text-white overflow-hidden'>
           <div className='p-1 border-b border-gray-700'>
             <h3 className='text-lg font-medium'>WIS/Baseline</h3>
           </div>
           <div className='w-full h-[92%]'>
-            <SeasonOverviewLocationAggregatedScoreChart type='wis' />
+            <SeasonOverviewLocationAggregatedScoreChart type='wis' tooltipDirection={TooltipDirection.BOTTOM}/>
           </div>
         </Card>
 
@@ -69,7 +69,7 @@ const SeasonOverviewContent: React.FC = () => {
         <div className='px-4 py-2 border-t border-gray-700'>
           <h3 className='text-lg font-medium'>Title</h3>
         </div>
-        <div className='w-full aspect-[16/9] max-h-[500px]'>
+        <div className='w-full aspect-[16/9] min-h-[360px] max-h-[480px]'>
           <SeasonOverviewUSStateMap />
         </div>
       </Card>
