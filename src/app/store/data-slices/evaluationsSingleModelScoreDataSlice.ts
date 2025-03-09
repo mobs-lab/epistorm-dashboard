@@ -2,11 +2,11 @@
 
 import {createSlice, PayloadAction} from '@reduxjs/toolkit';
 import {
-    EvaluationsSingleModelScoreDataCollection,
+    EvaluationsScoreDataCollection,
 } from '../../interfaces/forecast-interfaces';
 
 interface EvaluationsSingleModelScoreDataState {
-    data: EvaluationsSingleModelScoreDataCollection[];
+    data: EvaluationsScoreDataCollection[];
 }
 
 const initialState: EvaluationsSingleModelScoreDataState = {
@@ -17,7 +17,7 @@ const evaluationsSingleModelScoreDataSlice = createSlice({
     name: 'evaluationsSingleModelScoreData',
     initialState,
     reducers: {
-        setEvaluationsSingleModelScoreData: (state, action: PayloadAction<EvaluationsSingleModelScoreDataCollection[]>) => {
+        setEvaluationsSingleModelScoreData: (state, action: PayloadAction<EvaluationsScoreDataCollection[]>) => {
             state.data = action.payload;
         },
     },

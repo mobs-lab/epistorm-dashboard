@@ -196,7 +196,7 @@ const SingleModelHorizonPlot: React.FC = () => {
     );
 
     const maxPredictionValue = d3.max(allValues);
-    const maxSurveillanceValue = d3.max(allValuesFromSurveillanceData);
+    const maxSurveillanceValue = d3.max(allValuesFromSurveillanceData) || 1;
 
     const maxValue =
       maxPredictionValue > maxSurveillanceValue
