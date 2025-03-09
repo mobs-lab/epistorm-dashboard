@@ -12,83 +12,107 @@ import { EvaluationsSeasonOverviewSeasonOption } from "../../../interfaces/forec
 import { useAppDispatch, useAppSelector } from "../../../store/hooks";
 
 import {
-  updateEvaluationSeasonOverviewViewHorizon,
-  updateEvaluationSeasonOverviewViewSeasonOptions,
+  updateEvaluationSeasonOverviewHorizon,
+  updateSelectedAggregationPeriod,
 } from "../../../store/evaluations-season-overview-settings-slice";
 
 import { Radio, Typography } from "../../../css/material-tailwind-wrapper";
 
 import Image from "next/image";
+import { parseISO, subMonths } from "date-fns";
 
 // Season Overview Settings Panel
 export const SeasonOverviewSettings = () => {
   const dispatch = useAppDispatch();
 
+  const [selectedAggregationPeriod, setSelectedAggregationPeriod] =
+    useState("current-season");
+
+  const {
+    evaluationSeasonOverviewHorizon,
+    evaluationSeasonOverviewSeasonOptions,
+    aggregationPeriods,
+  } = useAppSelector((state) => state.evaluationsSeasonOverviewSettings);
+
+  // Horizon handler
+  const onHorizonChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    dispatch(updateEvaluationSeasonOverviewHorizon(Number(event.target.value)));
+  };
+
+  // Aggregation period change handler
+  const onAggregationPeriodChange = (periodId: string) => {
+    dispatch(updateSelectedAggregationPeriod(periodId));
+  };
+
   return (
-    <div className='bg-mobs-lab-color-filterspane text-white fill-white flex flex-col h-full rounded-md overflow-hidden util-responsive-text-settings'>
-      <div className='flex-grow overflow-y-auto p-4'>
-        <div className='flex flex-col flex-wrap justify-stretch items-start w-full'>
-          <div className='my-2 w-full h-full'>
-            <Typography variant='h6' className='text-white'>
-              Horizon
-            </Typography>
-            {[0, 1, 2, 3].map((value) => (
-              <Radio
-                key={value}
-                name='horizonRadioBtn'
-                value={value.toString()}
-                label={value.toString()}
-                onChange={onHorizonChange}
-                className='text-white'
-                labelProps={{ className: "text-white" }}
-                checked={evaluationSeasonOverviewViewHorizon === value}
-              />
+    <div className='bg-mobs-lab-color-filterspane text-white flex flex-col h-full rounded-md util-responsive-text-settings util-no-sb-length'>
+      <div className='flex-grow nowrap overflow-y-auto p-4 util-no-sb-length'>
+        <div className='mb-6'>
+          <Typography variant='h6' className='text-white mb-2'>
+            Model Legend
+          </Typography>
+          <div className='space-y-2'>
+            {modelNames.map((model) => (
+              <div key={model} className='flex items-center'>
+                <div
+                  className='w-4 h-4 rounded-sm mr-3 flex-shrink-0'
+                  style={{ backgroundColor: modelColorMap[model] }}
+                />
+                <span className='text-sm text-wrap'>{model}</span>
+              </div>
             ))}
           </div>
+        </div>
+        <div className='mb-6'>
+          <Typography variant='h6' className='text-white mb-2'>
+            Horizon
+          </Typography>
+          {[0, 1, 2, 3].map((value) => (
+            /* SO stands for "Season Overview" */
+            <Radio
+              key={value}
+              name='evalsSOhorizonRadioBtn'
+              value={value.toString()}
+              label={value.toString()}
+              onChange={onHorizonChange}
+              className='text-white'
+              labelProps={{ className: "text-white" }}
+              checked={evaluationSeasonOverviewHorizon === value}
+            />
+          ))}
+        </div>
 
-          {/* Score selection placeholder */}
-          <div className='w-full justify-stretch items-stretch py-4'>
-            <Typography variant='h6' className='text-white'>
-              Score
-            </Typography>
-            <select
-              value={evaluationSingleModelViewScoresOption}
-              onChange={(e) => onScoreSelectionChange(e.target.value)}
-              className='text-white border-[#5d636a] border-2 bg-mobs-lab-color-filterspane rounded-md w-full p-2'>
-              {scoreOptions.map((option) => (
-                <option key={option} value={option}>
-                  {option}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className='w-full py-4'>
-            <Typography variant='h6' className='text-white'>
-              Season
-            </Typography>
-            <select
-              value={evaluationsSingleModelViewDateRange}
-              onChange={(e) => onSeasonSelectionChange(e.target.value)}
-              className='text-white border-[#5d636a] border-2 flex-wrap bg-mobs-lab-color-filterspane rounded-md w-full py-2 px-2 overflow-ellipsis'>
-              {evaluationSingleModelViewSeasonOptions.map(
-                (option: SeasonOption) => (
-                  <option key={option.index} value={option.timeValue}>
-                    {option.displayString}
-                  </option>
-                )
-              )}
-            </select>
+        <div className='mb-6'>
+          <Typography variant='h6' className='text-white mb-2'>
+            Time Period
+          </Typography>
+          <div>
+            {aggregationPeriods.map((period) => (
+              <div key={period.id} className='w-full mb-1'>
+                <Radio
+                  name='seasonAggregationRadioBtn'
+                  value={period.id}
+                  label={period.label}
+                  onChange={() => onAggregationPeriodChange(period.id)}
+                  className='text-white'
+                  labelProps={{
+                    className: "text-white w-full",
+                  }}
+                  checked={selectedAggregationPeriod === period.id}
+                />
+              </div>
+            ))}
           </div>
         </div>
       </div>
 
-      <div className='mx-auto p-2'>
+      <div className='mt-auto p-2 border-t border-gray-700'>
         <Image
           src='/epistorm-logo.png'
           width={300}
           height={120}
           alt='Epistorm Logo'
+          className='mx-auto'
         />
       </div>
     </div>

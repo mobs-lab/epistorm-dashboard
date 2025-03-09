@@ -122,3 +122,11 @@ export interface EvaluationsSeasonOverviewSeasonOption {
     startDate: Date;
     endDate: Date;
 }
+/* Aggregated format for Evals-Season-Overview-SettingsPanel to use */
+export interface AggregationPeriod {
+  id: string;
+  label: string;
+  startDate: Date;
+  endDate: Date;
+  isDynamic?: boolean;
+}
