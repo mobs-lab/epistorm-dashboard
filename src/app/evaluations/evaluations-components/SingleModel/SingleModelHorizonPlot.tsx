@@ -139,7 +139,8 @@ const SingleModelHorizonPlot: React.FC = () => {
     groundTruthData: DataPoint[],
     visualData: any[],
     chartWidth: number,
-    chartHeight: number
+    chartHeight: number,
+    saturdayTicks: Date[]
   ) {
     // Create band scale for x-axis
     const xScale = d3
@@ -148,37 +149,25 @@ const SingleModelHorizonPlot: React.FC = () => {
       .range([0, chartWidth])
       .padding(0.1);
 
-    // Generate Saturday ticks
-    const saturdayTicks = groundTruthData
-      .filter((d) => d.date.getDay() === 6)
-      .map((d) => d.date)
-      .sort((a, b) => a.getTime() - b.getTime());
-
     // Create x-axis with same formatting as ForecastChart
     const xAxis = d3
       .axisBottom(xScale)
-      .tickValues(saturdayTicks.map((d) => d.toISOString())) // Convert to ISOString to match domain
+      .tickValues(saturdayTicks.map((d) => d.toISOString()))
       .tickFormat((d: string) => {
         const date = new Date(d);
-        const year = d3.timeFormat("%y")(date);
+        const year = d3.timeFormat("%Y")(date);
         const month = d3.timeFormat("%b")(date);
         const day = d3.timeFormat("%d")(date);
-        
+
         // First date in a new year - show year+month+date
         const isFirstInYear = date.getMonth() === 0 && date.getDate() <= 7;
-        
-        // Calculate days from month boundaries (start/end)
-        const dayOfMonth = date.getDate();
-        const lastDayOfMonth = new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
-        const daysFromMonthStart = dayOfMonth - 1;
-        const daysToMonthEnd = lastDayOfMonth - dayOfMonth;
-        
-        // Check if date is within 7 days of month boundary
-        const isNearMonthBoundary = daysFromMonthStart <= 7 ;
-        
-        // Check if this is first tick or near month boundaries
-        const isFirst = isUTCDateEqual(date, saturdayTicks[0]);
-        
+
+        // Check if date is within first 7 days of month
+        const isNearMonthBoundary = date.getDate() <= 7;
+
+        // Check if this is first tick
+        const isFirst = date.getTime() === saturdayTicks[0].getTime();
+
         if (chartWidth < 500) {
           // For narrow charts, only show month labels
           if (isFirst || isNearMonthBoundary) {
@@ -188,7 +177,7 @@ const SingleModelHorizonPlot: React.FC = () => {
         } else {
           // For wider charts, show more detailed labels
           if (isFirstInYear) {
-            return `${year}\n${month}\n${day}`;
+            return `${year}\n${month}\n${day}`; // Three separate lines
           } else if (isFirst || isNearMonthBoundary) {
             return `${month}\n${day}`;
           }
@@ -225,7 +214,7 @@ const SingleModelHorizonPlot: React.FC = () => {
     // Create y-axis with same formatting as ForecastChart
     const yAxis = d3.axisLeft(yScale).tickFormat((d) => {
       const val = d.valueOf();
-      if(val >= 10000) return d3.format(".2s")(val);
+      if (val >= 10000) return d3.format(".2s")(val);
       if (val >= 1000) return d3.format(".2s")(val);
       if (val >= 100) return d3.format(".0f")(val);
       return d3.format(".0f")(val);
@@ -299,9 +288,9 @@ const SingleModelHorizonPlot: React.FC = () => {
 
     // Calculate margins
     const margin = {
-      top: height * 0.04,
+      top: Math.max(height*0.02, 10),
       right: Math.max(width * 0.02, 25),
-      bottom: height * 0.1,
+      bottom: height * 0.14,
       left: Math.max(width * 0.05, 60),
     };
 
@@ -343,35 +332,48 @@ const SingleModelHorizonPlot: React.FC = () => {
       return;
     }
 
+    const saturdayTicks = filteredGroundTruth
+      .filter((d) => d.date.getDay() === 6)
+      .map((d) => d.date)
+      .sort((a, b) => a.getTime() - b.getTime());
+
     // Create scales and chart group
     const { xScale, yScale, xAxis, yAxis } = createScalesAndAxes(
       filteredGroundTruth,
       visualizationData,
       chartWidth,
-      chartHeight
+      chartHeight,
+      saturdayTicks
     );
 
     /* Helper function to wrap x-axis label*/
     function wrap(text, width) {
       text.each(function() {
-        var text = d3.select(this),
-            words = text.text().split(/\n+/).reverse(), // Split by newline
-            word,
-            lineNumber = 0,
-            lineHeight = 1.2, // Increased line height for better spacing
-            y = text.attr("y"),
-            dy = parseFloat(text.attr("dy"));
+        const text = d3.select(this);
+        const lines = text.text().split(/\n+/);
+        const x = text.attr("x") || 0;
+        const y = text.attr("y") || 0;
+        const dy = parseFloat(text.attr("dy") || 0);
         
         // Clear existing content
         text.text(null);
         
-        // For each part (year, month, day), create a separate tspan
-        words.forEach((part, i) => {
+        // Calculate appropriate line heights based on number of lines
+        // More lines need more spacing to avoid overlap
+        const lineHeight = lines.length > 2 ? 1.8 : 1.6;
+        
+        // Create a tspan for each line with progressively increasing offsets
+        lines.forEach((line, i) => {
+          // For 3-line labels, increase vertical spacing between lines 2 and 3
+          const currentDy = i === 0 
+            ? dy 
+            : (i === 2 ? lineHeight * 1.6: lineHeight);
+          
           text.append("tspan")
-              .attr("x", 0)
-              .attr("y", y)
-              .attr("dy", (i === 0 ? dy : lineHeight) + "em")
-              .text(part);
+            .attr("x", x)
+            .attr("y", y)
+            .attr("dy", (i === 0 ? dy : currentDy) + "em")
+            .text(line);
         });
       });
     }
@@ -381,19 +383,19 @@ const SingleModelHorizonPlot: React.FC = () => {
       .append("g")
       .attr("transform", `translate(${margin.left},${margin.top})`);
 
-    // Create axes first (bottom layer)
+    // Then in the x-axis group creation:
     const xAxisGroup = chart
       .append("g")
       .attr("transform", `translate(0,${chartHeight})`)
       .style("font-family", "var(--font-dm-sans)")
       .call(xAxis);
 
-    // Style x-axis ticks
+    // Apply the wrap function to all tick text elements
     xAxisGroup
       .selectAll(".tick text")
       .style("text-anchor", "middle")
       .style("font-size", "13px")
-      .call(wrap, 20); // 20 is the minimum width to accommodate year number at 1080p 100% zoom view environment, adjust as needed
+      .call(wrap, 20);
 
     const yAxisGroup = chart
       .append("g")
@@ -561,7 +563,7 @@ const SingleModelHorizonPlot: React.FC = () => {
 
           const tooltipX = isRightSide
             ? chartWidth - maxWidth - padding * 2 - 10
-            : 10 ;
+            : 10;
 
           tooltipGroup
             .attr("transform", `translate(${tooltipX}, 10)`)
