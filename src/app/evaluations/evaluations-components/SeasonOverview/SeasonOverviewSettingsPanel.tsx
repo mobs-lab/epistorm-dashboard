@@ -45,7 +45,7 @@ export const SeasonOverviewSettings = () => {
   };
 
   return (
-    <div className='bg-mobs-lab-color-filterspane text-white flex flex-col h-full rounded-md util-responsive-text-settings util-no-sb-length'>
+    <div className='bg-mobs-lab-color-filterspane text-white fill-white flex flex-col h-full rounded-md overflow-hidden util-responsive-text-settings'>
       <div className='flex-grow nowrap overflow-y-auto p-4 util-no-sb-length'>
         <div className='mb-6'>
           <Typography variant='h6' className='text-white mb-2'>
@@ -58,7 +58,7 @@ export const SeasonOverviewSettings = () => {
                   className='w-4 h-4 rounded-sm mr-3 flex-shrink-0'
                   style={{ backgroundColor: modelColorMap[model] }}
                 />
-                <span className='text-sm text-wrap'>{model}</span>
+                <span className='xs:text-sm sm:text-base text-wrap'>{model}</span>
               </div>
             ))}
           </div>

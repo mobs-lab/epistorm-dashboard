@@ -177,8 +177,8 @@ const SingleModelScoreLineChart: React.FC = () => {
             .attr('height', 60);
 
         const tooltipX = isRightSide ?
-            chartWidth - textWidth - padding * 2 - 10 :
-            10;
+            chartWidth - textWidth + padding * 3:
+            padding * 5;
 
         tooltip
             .attr('transform', `translate(${tooltipX}, 10)`)
@@ -355,7 +355,7 @@ const SingleModelScoreLineChart: React.FC = () => {
         scoreOption: string
     ) {
         // Draw reference line at y = 1 for WIS_ratio
-        if (scoreOption === 'WIS_Ratio') {
+        if (scoreOption === 'WIS/Baseline') {
             chart.append('line')
                 .attr('x1', 0)
                 .attr('x2', xScale.range()[1])
@@ -411,7 +411,7 @@ const SingleModelScoreLineChart: React.FC = () => {
         const height = dimensions.height;
         const margin = {
             top: height * 0.04,
-            right: Math.max(width * 0.03, 25),
+            right: Math.max(width * 0.02, 25),
             bottom: height * 0.15,
             left: Math.max(width * 0.05, 60)
         };
@@ -436,7 +436,7 @@ const SingleModelScoreLineChart: React.FC = () => {
                 d.location === evaluationsSingleModelViewSelectedStateCode &&
                 d.referenceDate >= actualStart &&
                 d.referenceDate <= actualEnd &&
-                d.horizon == evaluationSingleModelViewHorizon
+                Number.parseInt(d.horizon) == evaluationSingleModelViewHorizon
             ) || [];
 
         // Handle when no data-slices is present: just display a information

@@ -30,7 +30,7 @@ const SingleModelSettingsPanel: React.FC = () => {
     const groundTruthData = useAppSelector((state) => state.groundTruth.data);
     const locationData = useAppSelector((state) => state.location.data);
 
-    const [scoreOptions] = useState(['WIS_Ratio', 'MAPE']);
+    const [scoreOptions] = useState(['WIS/Baseline', 'MAPE']);
 
     // Evaluation-specific state
     const {

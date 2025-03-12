@@ -10,7 +10,9 @@ import React, { useEffect, useRef, useState } from "react";
 import { useDataContext } from "../providers/DataProvider";
 import { Card } from "../css/material-tailwind-wrapper";
 
-import SeasonOverviewLocationAggregatedScoreChart, { TooltipDirection } from "./evaluations-components/SeasonOverview/SeasonOverviewLocationAggregatedScoreChart";
+import SeasonOverviewLocationAggregatedScoreChart, {
+  TooltipDirection,
+} from "./evaluations-components/SeasonOverview/SeasonOverviewLocationAggregatedScoreChart";
 import SeasonOverviewPIChart from "./evaluations-components/SeasonOverview/SeasonOverviewPIChart";
 import SeasonOverviewUSStateMap from "./evaluations-components/SeasonOverview/SeasonOverviewUSStateMap";
 import { SeasonOverviewSettings } from "./evaluations-components/SeasonOverview/SeasonOverviewSettingsPanel";
@@ -39,7 +41,10 @@ const SeasonOverviewContent: React.FC = () => {
             <h3 className='text-lg font-medium'>WIS/Baseline</h3>
           </div>
           <div className='w-full h-[92%]'>
-            <SeasonOverviewLocationAggregatedScoreChart type='wis' tooltipDirection={TooltipDirection.BOTTOM}/>
+            <SeasonOverviewLocationAggregatedScoreChart
+              type='wis'
+              tooltipDirection={TooltipDirection.BOTTOM}
+            />
           </div>
         </Card>
 
@@ -141,16 +146,16 @@ const EvaluationsPage = () => {
 
       <div className='evaluations-content'>
         <div>
-          <div className='flex'>
+          <div className='flex bg-gray-800 border-b border-gray-700'>
             <button
               onClick={() => setActiveTab("season-overview")}
               className={`px-6 py-2 text-sm relative ${
                 activeTab === "season-overview"
-                  ? "text-white bg-gray-800 border-t border-l border-r border-gray-700"
-                  : "text-white hover:text-white"
+                  ? "text-white hover:text-white bg-mobs-lab-color border-t border-l border-r border-gray-700"
+                  : "text-gray-300 hover:text-white"
               }`}
               style={{
-                marginBottom: "-1px",
+                marginBottom: activeTab === "season-overview" ? "-1px" : "0",
                 zIndex: activeTab === "season-overview" ? 1 : 0,
               }}>
               Season Overview
@@ -159,11 +164,11 @@ const EvaluationsPage = () => {
               onClick={() => setActiveTab("single-model")}
               className={`px-6 py-2 text-sm relative ${
                 activeTab === "single-model"
-                  ? "text-white bg-gray-800 border-t border-l border-r border-gray-700"
-                  : "text-white hover:text-white"
+                  ? "text-white hover:text-white bg-mobs-lab-color border-t border-l border-r border-gray-700"
+                  : "text-gray-300 hover:text-white border-r border-gray-700"
               }`}
               style={{
-                marginBottom: "-1px",
+                marginBottom: activeTab === "single-model" ? "-1px" : "0",
                 zIndex: activeTab === "single-model" ? 1 : 0,
               }}>
               Single Model
@@ -172,7 +177,7 @@ const EvaluationsPage = () => {
         </div>
 
         <div className='tab-container'>
-          <Card className='flex-1 bg-mobs-lab-color text-white min-h-0'>
+          <Card className='p-4 flex-1 bg-mobs-lab-color text-white min-h-0'>
             {renderContent()}
           </Card>
         </div>

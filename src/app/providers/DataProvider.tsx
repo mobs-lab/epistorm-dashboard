@@ -536,7 +536,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({
       wisRatioByModel.forEach((scoreData, modelName) => {
         evaluationsData.push({
           modelName,
-          scoreMetric: "WIS_Ratio",
+          scoreMetric: "WIS/Baseline",
           scoreData: scoreData.sort(
             (a, b) => a.referenceDate.getTime() - b.referenceDate.getTime()
           ),
