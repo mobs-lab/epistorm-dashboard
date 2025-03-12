@@ -383,14 +383,13 @@ const SingleModelHorizonPlot: React.FC = () => {
       .append("g")
       .attr("transform", `translate(${margin.left},${margin.top})`);
 
-    // Then in the x-axis group creation:
     const xAxisGroup = chart
       .append("g")
       .attr("transform", `translate(0,${chartHeight})`)
       .style("font-family", "var(--font-dm-sans)")
       .call(xAxis);
 
-    // Apply the wrap function to all tick text elements
+    // Apply the wrap function to all x-axis label elements
     xAxisGroup
       .selectAll(".tick text")
       .style("text-anchor", "middle")
