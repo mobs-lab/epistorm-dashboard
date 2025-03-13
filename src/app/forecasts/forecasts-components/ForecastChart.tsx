@@ -242,23 +242,29 @@ const ForecastChart: React.FC = () => {
     const xAxis = d3
       .axisBottom(xScale)
       .tickValues(selectedTicks)
-      .tickFormat((d: Date, i: number) => {
-        const month = d3.timeFormat("%b")(d);
-        const day = d3.timeFormat("%d")(d);
-        const year = d.getUTCFullYear();
+      .tickFormat((d: string) => {
+        const date = new Date(d);
+        const month = d3.timeFormat("%b")(date);
+        const day = d3.timeFormat("%d")(date);
+        const isFirst = isUTCDateEqual(date, selectedTicks[0]);  // Use isUTCDateEqual
+        const isFirstTickInNewMonth = date.getDate() < 7 && date.getDate() > 0;
+        const isNearYearChange = date.getMonth() === 0 && date.getDate() <= 10;
 
-        /*TODO: Add year to the very first tick (earliest since dateStart)*/
-        if (i === 0) {
-          return `${year}\n${month}\n${day}`;
+        // Rest of the formatting logic remains the same
+        if (chartWidth < 500) {
+            if (isFirst || isFirstTickInNewMonth || isNearYearChange) {
+                return month;
+            } else {
+                return '';
+            }
+        } else {
+            if (isFirst || isFirstTickInNewMonth || isNearYearChange) {
+                return `${month}\n${day}`;
+            } else {
+                return day;
+            }
         }
-
-        // Check if the date is near the beginning of the year
-        const isNearYearChange = d.getMonth() === 0 && d.getDate() <= 10;
-
-        return isNearYearChange
-          ? `${year}\n${month}\n${day}`
-          : `${month}\n${day}`;
-      });
+    });
 
     xAxis.tickSize(14); // Increase tick size to accommodate multi-line labels
 
