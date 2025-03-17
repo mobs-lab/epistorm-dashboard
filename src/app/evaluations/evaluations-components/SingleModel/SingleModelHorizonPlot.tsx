@@ -4,15 +4,15 @@ import React, { useEffect, useRef, useState } from "react";
 import * as d3 from "d3";
 import { subWeeks } from "date-fns";
 
-import { modelColorMap } from "../../../interfaces/epistorm-constants";
+import { modelColorMap } from "@/interfaces/epistorm-constants";
 import {
   DataPoint,
   isUTCDateEqual,
   ModelPrediction,
   PredictionDataPoint,
-} from "../../../interfaces/forecast-interfaces";
-import { useAppDispatch, useAppSelector } from "../../../store/hooks";
-import { useResponsiveSVG } from "../../../interfaces/responsiveSVG";
+} from "@/interfaces/forecast-interfaces";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { useResponsiveSVG } from "@/interfaces/responsiveSVG";
 
 interface HoverData {
   date: Date;

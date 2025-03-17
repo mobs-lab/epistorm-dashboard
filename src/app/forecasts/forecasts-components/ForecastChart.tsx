@@ -19,16 +19,16 @@ import {
   isUTCDateEqual,
   ModelPrediction,
   PredictionDataPoint,
-} from "../../interfaces/forecast-interfaces";
-import { useChartDimensions } from "../../interfaces/forecast-chart-dimension-observer";
+} from "@/interfaces/forecast-interfaces";
+import { useChartDimensions } from "@/interfaces/forecast-chart-dimension-observer";
 import {
   useChartMargins,
   calculateLabelSpace,
-} from "../../interfaces/chart-margin-utils";
-import { modelColorMap } from "../../interfaces/epistorm-constants";
+} from "@/interfaces/chart-margin-utils";
+import { modelColorMap } from "@/interfaces/epistorm-constants";
 
-import { useAppDispatch, useAppSelector } from "../../store/hooks";
-import { updateUserSelectedWeek } from "../../store/forecast-settings-slice";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { updateUserSelectedWeek } from "@/store/forecast-settings-slice";
 
 const ForecastChart: React.FC = () => {
   // reference to svg object
@@ -272,16 +272,16 @@ const ForecastChart: React.FC = () => {
         const year = d3.timeFormat("%Y")(date);
         const month = d3.timeFormat("%b")(date);
         const day = d3.timeFormat("%d")(date);
-        
+
         // First tick always gets full treatment
         if (i === 0) {
           return `${year}\n${month}\n${day}`;
         }
-        
+
         const prevDate = selectedTicks[i - 1];
         const isNewYear = date.getUTCFullYear() > prevDate.getUTCFullYear();
         const isNewMonth = date.getUTCMonth() !== prevDate.getUTCMonth();
-        
+
         if (chartWidth < 500) {
           // Compact mode for narrow charts
           if (isNewYear) {
@@ -857,7 +857,7 @@ const ForecastChart: React.FC = () => {
     const padding = 12;
     const lineHeight = 22;
     let currentY = padding + 5;
-    let maxWidth = 0;
+    let maxWidth = 400;
 
     /* Position the tooltip box on the side where it won't block the predictions highlighted*/
     const xPosition = xScale(data.date);
@@ -873,10 +873,7 @@ const ForecastChart: React.FC = () => {
     // Add Date Information with non-bold label
     const dateGroup = cornerTooltip
       .append("text")
-      .attr(
-        "x",
-        shouldShowOnRightSide ? maxWidth + padding * 2 - padding : padding
-      )
+      .attr("x", shouldShowOnRightSide ? maxWidth + padding : padding)
       .attr("y", currentY)
       .attr("fill", "white")
       .style("font-family", "var(--font-dm-sans), sans-serif")
@@ -890,13 +887,12 @@ const ForecastChart: React.FC = () => {
       .text(`${data.date.toUTCString().slice(5, 16)}`)
       .attr("font-weight", "bold");
 
+    maxWidth = Math.min(maxWidth, dateGroup.node().getComputedTextLength());
+
     // Add admissions data-slices with non-bold label
     const admissionsGroup = cornerTooltip
       .append("text")
-      .attr(
-        "x",
-        shouldShowOnRightSide ? maxWidth + padding * 2 - padding : padding
-      )
+      .attr("x", shouldShowOnRightSide ? maxWidth + padding : padding)
       .attr("y", currentY + lineHeight)
       .attr("fill", "white")
       .style("font-family", "var(--font-dm-sans)")
@@ -919,10 +915,11 @@ const ForecastChart: React.FC = () => {
       )
       .attr("font-weight", "bold");
 
-    maxWidth = Math.max(maxWidth, dateGroup.node().getComputedTextLength());
     currentY += lineHeight + 2 * padding;
 
-    /* TODO: when historical data-slices mode is on, the tooltips should show historical admission values info as well */
+    /* Initialize a historicalGroup placeholder */
+    let historicalGroup;
+
     if (isHistoricalDataMode) {
       const historicalAdmissionValue = historicalGroundTruthData
         .find((file) =>
@@ -936,10 +933,7 @@ const ForecastChart: React.FC = () => {
 
       const historicalGroup = cornerTooltip
         .append("text")
-        .attr(
-          "x",
-          shouldShowOnRightSide ? maxWidth + padding * 2 - padding : padding
-        )
+        .attr("x", shouldShowOnRightSide ? maxWidth + padding : padding)
         .attr("y", currentY)
         .attr("fill", "white")
         .style("font-family", "var(--font-dm-sans)")
@@ -969,7 +963,8 @@ const ForecastChart: React.FC = () => {
         maxWidth,
         historicalGroup.node().getComputedTextLength()
       );
-      currentY += 2 * padding; // Add padding after historical data-slices
+      currentY += lineHeight + 2 * padding;
+      // Add padding after historical data-slices
     } else {
       currentY += 2 * padding; // Keep original padding if no historical data-slices
     }
@@ -1117,6 +1112,11 @@ const ForecastChart: React.FC = () => {
     if (shouldShowOnRightSide) {
       dateGroup.attr("x", maxWidth + padding);
       admissionsGroup.attr("x", maxWidth + padding);
+      if (historicalDataMode) {
+        if (historicalGroup !== undefined) {
+          historicalGroup.attr("x", maxWidth + padding);
+        }
+      }
     }
 
     // Set background rectangle size and position

@@ -5,18 +5,18 @@ import React, { useMemo, useState } from "react";
 import {
   modelColorMap,
   modelNames,
-} from "../../../interfaces/epistorm-constants";
+} from "@/interfaces/epistorm-constants";
 
-import { EvaluationsSeasonOverviewSeasonOption } from "../../../interfaces/forecast-interfaces";
+import { EvaluationsSeasonOverviewSeasonOption } from "@/interfaces/forecast-interfaces";
 
-import { useAppDispatch, useAppSelector } from "../../../store/hooks";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
 
 import {
   updateEvaluationSeasonOverviewHorizon,
   updateSelectedAggregationPeriod,
-} from "../../../store/evaluations-season-overview-settings-slice";
+} from "@/store/evaluations-season-overview-settings-slice";
 
-import { Radio, Typography } from "../../../css/material-tailwind-wrapper";
+import { Radio, Typography } from "@/styles/material-tailwind-wrapper";
 
 import Image from "next/image";
 import { parseISO, subMonths } from "date-fns";

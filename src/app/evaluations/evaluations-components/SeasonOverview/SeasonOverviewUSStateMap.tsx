@@ -4,7 +4,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import * as d3 from "d3";
 import * as topojson from "topojson-client";
-import { useResponsiveSVG } from "../../../interfaces/responsiveSVG";
+import { useResponsiveSVG } from "@/interfaces/responsiveSVG";
 
 const SeasonOverviewUSStateOverviewMap: React.FC = () => {
   const { containerRef, dimensions, isResizing } = useResponsiveSVG();

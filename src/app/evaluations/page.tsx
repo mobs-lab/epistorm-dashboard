@@ -7,8 +7,8 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
-import { useDataContext } from "../providers/DataProvider";
-import { Card } from "../css/material-tailwind-wrapper";
+import { useDataContext } from "@/providers/DataProvider";
+import { Card } from "@/styles/material-tailwind-wrapper";
 
 import SeasonOverviewLocationAggregatedScoreChart, {
   TooltipDirection,

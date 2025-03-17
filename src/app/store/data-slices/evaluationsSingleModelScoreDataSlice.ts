@@ -1,9 +1,7 @@
-// src/app/store/Data/evaluationsSingleModelScoreDataSlice.ts
-
 import {createSlice, PayloadAction} from '@reduxjs/toolkit';
 import {
     EvaluationsScoreDataCollection,
-} from '../../interfaces/forecast-interfaces';
+} from '@/interfaces/forecast-interfaces';
 
 interface EvaluationsSingleModelScoreDataState {
     data: EvaluationsScoreDataCollection[];

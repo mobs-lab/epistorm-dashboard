@@ -3,11 +3,11 @@
 
 import React, { useEffect, useRef } from "react";
 import * as d3 from "d3";
-import { useResponsiveSVG } from "../../../interfaces/responsiveSVG";
+import { useResponsiveSVG } from "@/interfaces/responsiveSVG";
 import {
   modelColorMap,
   modelNames,
-} from "../../../interfaces/epistorm-constants";
+} from "@/interfaces/epistorm-constants";
 
 const SeasonOverviewPIChart: React.FC = () => {
   const { containerRef, dimensions, isResizing } = useResponsiveSVG();

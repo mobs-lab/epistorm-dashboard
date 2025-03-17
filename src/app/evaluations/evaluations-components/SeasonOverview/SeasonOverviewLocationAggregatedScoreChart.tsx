@@ -3,12 +3,12 @@
 
 import React, { useEffect, useRef } from "react";
 import * as d3 from "d3";
-import { useAppSelector } from "../../../store/hooks";
+import { useAppSelector } from "@/store/hooks";
 import {
   modelColorMap,
   modelNames,
-} from "../../../interfaces/epistorm-constants";
-import { useResponsiveSVG } from "../../../interfaces/responsiveSVG";
+} from "@/interfaces/epistorm-constants";
+import { useResponsiveSVG } from "@/interfaces/responsiveSVG";
 
 // Options for controlling to which direction tooltip appears relative to the mouse pointer
 export enum TooltipDirection {
