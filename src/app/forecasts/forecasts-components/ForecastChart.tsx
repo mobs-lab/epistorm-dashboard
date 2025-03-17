@@ -224,45 +224,80 @@ const ForecastChart: React.FC = () => {
 
     // console.debug("DEBUG: ForecastChart: createScalesAndAxes(): allSaturdayTracker: ", allSaturdayTracker);
 
-    // Determine the ideal number of ticks
-    const idealTickCount = Math.min(
-      Math.max(10, allSaturdayTracker.length),
-      20
+    // Determine ideal tick count based on chart width
+    const getIdealTickCount = (width: number, totalTicks: number) => {
+      if (width < 500) {
+        // Short width mode: 6-12 ticks
+        return Math.min(Math.max(6, Math.min(totalTicks, 12)), 12);
+      } else {
+        // Normal width mode: 8-18 ticks
+        return Math.min(Math.max(8, Math.min(totalTicks, 18)), 18);
+      }
+    };
+
+    const idealTickCount = getIdealTickCount(
+      chartWidth,
+      allSaturdayTracker.length
     );
 
-    // Select evenly spaced Saturdays
-    const tickInterval = Math.max(
-      1,
-      Math.floor(allSaturdayTracker.length / idealTickCount)
-    );
-    const selectedTicks = allSaturdayTracker.filter(
-      (_, i) => i % tickInterval === 0
-    );
+    // Select evenly spaced Saturdays if we have too many
+    let selectedTicks = allSaturdayTracker;
+    if (allSaturdayTracker.length > idealTickCount) {
+      const tickInterval = Math.max(
+        1,
+        Math.floor(allSaturdayTracker.length / idealTickCount)
+      );
+      selectedTicks = allSaturdayTracker.filter(
+        (_, i) => i % tickInterval === 0
+      );
+
+      // Always ensure the first and last ticks are included
+      if (!isUTCDateEqual(selectedTicks[0], allSaturdayTracker[0])) {
+        selectedTicks.unshift(allSaturdayTracker[0]);
+      }
+      /* if (
+        !isUTCDateEqual(
+          selectedTicks[selectedTicks.length - 1],
+          allSaturdayTracker[allSaturdayTracker.length - 1]
+        )
+      ) {
+        selectedTicks.push(allSaturdayTracker[allSaturdayTracker.length - 1]);
+      } */
+    }
 
     const xAxis = d3
       .axisBottom(xScale)
       .tickValues(selectedTicks)
-      .tickFormat((d: string) => {
-        const date = new Date(d);
+      .tickFormat((date, i) => {
+        const year = d3.timeFormat("%Y")(date);
         const month = d3.timeFormat("%b")(date);
         const day = d3.timeFormat("%d")(date);
-        const isFirst = isUTCDateEqual(date, selectedTicks[0]); // Use isUTCDateEqual
-        const isFirstTickInNewMonth = date.getDate() < 7 && date.getDate() > 0;
-        const isNearYearChange = date.getMonth() === 0 && date.getDate() <= 10;
-
-        // Rest of the formatting logic remains the same
+        
+        // First tick always gets full treatment
+        if (i === 0) {
+          return `${year}\n${month}\n${day}`;
+        }
+        
+        const prevDate = selectedTicks[i - 1];
+        const isNewYear = date.getUTCFullYear() > prevDate.getUTCFullYear();
+        const isNewMonth = date.getUTCMonth() !== prevDate.getUTCMonth();
+        
         if (chartWidth < 500) {
-          if (isFirst || isFirstTickInNewMonth || isNearYearChange) {
+          // Compact mode for narrow charts
+          if (isNewYear) {
+            return `${year}\n${month}`;
+          } else if (isNewMonth) {
             return month;
-          } else {
-            return "";
           }
+          return ""; // Hide other labels to reduce clutter
         } else {
-          if (isFirst || isFirstTickInNewMonth || isNearYearChange) {
+          // Full mode for wider charts
+          if (isNewYear) {
+            return `${year}\n${month}\n${day}`;
+          } else if (isNewMonth) {
             return `${month}\n${day}`;
-          } else {
-            return day;
           }
+          return day;
         }
       });
 
