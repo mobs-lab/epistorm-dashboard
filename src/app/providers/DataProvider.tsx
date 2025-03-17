@@ -15,7 +15,7 @@ import {
   setMonth,
   startOfWeek,
 } from "date-fns";
-import { useAppDispatch } from "../store/hooks";
+import { useAppDispatch } from "@/store/hooks";
 import {
   DataPoint,
   LocationData,
@@ -24,33 +24,33 @@ import {
   SeasonOption,
   LoadingStates,
   ProcessedDataWithDateRange,
-  EvaluationsSingleModelScoreDataCollection,
-} from "../interfaces/forecast-interfaces";
-import { modelNames } from "../interfaces/epistorm-constants";
+  EvaluationsScoreDataCollection,
+} from "@/interfaces/forecast-interfaces";
+import { modelNames } from "@/interfaces/epistorm-constants";
 
 // Forecast Actions and Reducers
-import { setGroundTruthData } from "../store/data-slices/groundTruthSlice";
-import { setPredictionsData } from "../store/data-slices/predictionsSlice";
-import { setLocationData } from "../store/data-slices/locationSlice";
-import { setNowcastTrendsData } from "../store/data-slices/nowcastTrendsSlice";
-import { setStateThresholdsData } from "../store/data-slices/stateThresholdsSlice";
-import { setHistoricalGroundTruthData } from "../store/data-slices/historicalGroundTruthSlice";
+import { setGroundTruthData } from "@/store/data-slices/groundTruthSlice";
+import { setPredictionsData } from "@/store/data-slices/predictionsSlice";
+import { setLocationData } from "@/store//data-slices/locationSlice";
+import { setNowcastTrendsData } from "@/store//data-slices/nowcastTrendsSlice";
+import { setStateThresholdsData } from "@/store//data-slices/stateThresholdsSlice";
+import { setHistoricalGroundTruthData } from "@/store//data-slices/historicalGroundTruthSlice";
 import {
   setSeasonOptions,
   updateDateEnd,
   updateDateRange,
   updateDateStart,
   updateUserSelectedWeek,
-} from "../store/forecast-settings-slice";
+} from "@/store//forecast-settings-slice";
 
 // Evaluations Actions and Reducers
-import { setEvaluationsSingleModelScoreData } from "../store/data-slices/evaluationsSingleModelScoreDataSlice";
+import { setEvaluationsSingleModelScoreData } from "@/store//data-slices/evaluationsSingleModelScoreDataSlice";
 import {
   updateEvaluationSingleModelViewDateStart,
   updateEvaluationSingleModelViewDateEnd,
   updateEvaluationsSingleModelViewDateRange,
   updateEvaluationSingleModelViewSeasonOptions,
-} from "../store/evaluations-single-model-settings-slice";
+} from "@/store//evaluations-single-model-settings-slice";
 
 interface DataContextType {
   loadingStates: LoadingStates;
@@ -465,7 +465,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   /* Fetch the `/public/evaluations-score/` path's `WIS_ratio.csv` and `MAPE.csv` asyncly, then organize them into model and metrics respectively;
-   *  WIS_ratio.csv produces EvaluationsSingleModelScoreDataCollection with scoreMetric as "WIS_Ratio", while MAPE.csv produces "MAPE" respectively;
+   *  WIS_ratio.csv produces EvaluationsScoreDataCollection with scoreMetric as "WIS_Ratio", while MAPE.csv produces "MAPE" respectively;
    *  modelName can be found in each CSV files' entries' 'Model' column;
    * in each score data-slices point, (again, consult the custom interfaces), referenceDate is the date of the score, and score is the actual score value:
    *   - MAPE: the column is literally named 'MAPE'
@@ -511,7 +511,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({
       // Process MAPE data-slices - Note the capital L in Location
       const mapeByModel = new Map<
         string,
-        { referenceDate: Date; score: number; location: string }[]
+        { referenceDate: Date; score: number; location: string; horizon: string }[]
       >();
       mapeData.forEach((entry) => {
         const modelName = entry.Model;
@@ -530,13 +530,13 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({
       });
 
       // Combine into final format
-      const evaluationsData: EvaluationsSingleModelScoreDataCollection[] = [];
+      const evaluationsData: EvaluationsScoreDataCollection[] = [];
 
       // Add WIS Ratio data-slices
       wisRatioByModel.forEach((scoreData, modelName) => {
         evaluationsData.push({
           modelName,
-          scoreMetric: "WIS_Ratio",
+          scoreMetric: "WIS/Baseline",
           scoreData: scoreData.sort(
             (a, b) => a.referenceDate.getTime() - b.referenceDate.getTime()
           ),

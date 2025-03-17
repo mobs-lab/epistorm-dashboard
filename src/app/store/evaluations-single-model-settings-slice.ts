@@ -1,6 +1,6 @@
 // src/app/store/forecastSettingsSlice.ts
 import {createSlice, PayloadAction} from '@reduxjs/toolkit';
-import {SeasonOption} from '../interfaces/forecast-interfaces';
+import {SeasonOption} from '@/interfaces/forecast-interfaces';
 import {parseISO} from "date-fns";
 
 interface EvaluationsSettingsState {
@@ -11,7 +11,7 @@ interface EvaluationsSettingsState {
     /* Model Related*/
     evaluationsSingleModelViewModel: string; //Single Model view page allows only 1 model to be selected at a time
     evaluationSingleModelViewHorizon: number; //how many weeks ahead from reference date (matching surveillance week's number) should we look for as target_end_date in predictions to draw the intervals
-    evaluationSingleModelViewScoresOption: any; //TODO: Implement after discussion
+    evaluationSingleModelViewScoresOption: any; 
 
     /* Time Range Related */
     evaluationsSingleModelViewDateStart: Date;
@@ -70,7 +70,7 @@ const evaluationsSingleModelSettingsSlice = createSlice({
 
         /*TODO: Implement reducer for scores once discussed*/
         updateEvaluationScores: (state, action: PayloadAction<any>) => {
-            console.debug("DEBUG: Redux: evaluations-single-model-settings-slice.ts: updateEvaluationScores", action.payload);
+            // console.debug("DEBUG: Redux: evaluations-single-model-settings-slice.ts: updateEvaluationScores", action.payload);
             state.evaluationSingleModelViewScoresOption = action.payload;
         },
     },
@@ -89,5 +89,3 @@ export const {
 } = evaluationsSingleModelSettingsSlice.actions;
 
 export default evaluationsSingleModelSettingsSlice.reducer;
-
-

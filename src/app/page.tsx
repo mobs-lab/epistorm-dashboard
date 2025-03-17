@@ -2,7 +2,7 @@
 'use client'
 
 import React from "react";
-import { useDataContext } from './providers/DataProvider';
+import { useDataContext } from '@/providers/DataProvider';
 import ForecastPage from "./forecasts/page";
 
 export default function RootPage() {
