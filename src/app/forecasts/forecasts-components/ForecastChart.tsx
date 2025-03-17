@@ -852,33 +852,49 @@ const ForecastChart: React.FC = () => {
     cornerTooltip: d3.Selection<SVGGElement, unknown, null, undefined>,
     isHistoricalDataMode: boolean
   ) {
+    // Clear existing content
     cornerTooltip.selectAll("*").remove();
 
-    const padding = 12;
-    const lineHeight = 22;
-    let currentY = padding + 5;
-    let maxWidth = 400;
+    // Layout constants
+    const layout = {
+      padding: 14,
+      lineHeight: 18,
+      itemSpacing: 8,
+      fontSize: {
+        normal: 12,
+        header: 13,
+        value: 13,
+      },
+      modelColorBoxSize: 12,
+      medianColumnWidth: 90, // Smaller width for median column
+      ciColumnWidth: 140, // Regular width for CI columns
+    };
 
-    /* Position the tooltip box on the side where it won't block the predictions highlighted*/
+    // Tooltip positioning
     const xPosition = xScale(data.date);
     const shouldShowOnRightSide = xPosition < chartWidth * 0.48;
 
-    // Background rectangle (we'll set its size after calculating content)
+    // State for tracking content layout
+    let currentY = layout.padding + 5;
+    let contentWidth = 0;
+
+    // Background rectangle (size will be set after content calculation)
     const background = cornerTooltip
       .append("rect")
       .attr("fill", "#333943")
       .attr("rx", 8)
       .attr("ry", 8);
 
-    // Add Date Information with non-bold label
+    // ===== Section 1: Date Information =====
     const dateGroup = cornerTooltip
       .append("text")
-      .attr("x", shouldShowOnRightSide ? maxWidth + padding : padding)
+      .attr("class", "info-text")
+      .attr("x", layout.padding)
       .attr("y", currentY)
       .attr("fill", "white")
       .style("font-family", "var(--font-dm-sans), sans-serif")
-      .attr("font-size", "13px")
-      .attr("text-anchor", shouldShowOnRightSide ? "end" : "start");
+      .attr("font-size", `${layout.fontSize.normal}px`)
+      .attr("text-anchor", "start");
 
     dateGroup.append("tspan").text("Date: ").attr("font-weight", "normal");
 
@@ -887,17 +903,22 @@ const ForecastChart: React.FC = () => {
       .text(`${data.date.toUTCString().slice(5, 16)}`)
       .attr("font-weight", "bold");
 
-    maxWidth = Math.min(maxWidth, dateGroup.node().getComputedTextLength());
+    contentWidth = Math.max(
+      contentWidth,
+      dateGroup.node().getComputedTextLength()
+    );
+    currentY += layout.lineHeight;
 
-    // Add admissions data-slices with non-bold label
+    // ===== Section 2: Current Admissions =====
     const admissionsGroup = cornerTooltip
       .append("text")
-      .attr("x", shouldShowOnRightSide ? maxWidth + padding : padding)
-      .attr("y", currentY + lineHeight)
+      .attr("class", "info-text")
+      .attr("x", layout.padding)
+      .attr("y", currentY)
       .attr("fill", "white")
       .style("font-family", "var(--font-dm-sans)")
-      .attr("font-size", "13px")
-      .attr("text-anchor", shouldShowOnRightSide ? "end" : "start");
+      .attr("font-size", `${layout.fontSize.normal}px`)
+      .attr("text-anchor", "start");
 
     admissionsGroup
       .append("tspan")
@@ -907,19 +928,19 @@ const ForecastChart: React.FC = () => {
     admissionsGroup
       .append("tspan")
       .text(
-        `${
-          data.admissions !== null && data.admissions !== -1
-            ? formatNumber(data.admissions, true)
-            : "N/A"
-        }`
+        data.admissions !== null && data.admissions !== -1
+          ? formatNumber(data.admissions, true)
+          : "N/A"
       )
       .attr("font-weight", "bold");
 
-    currentY += lineHeight + 2 * padding;
+    contentWidth = Math.max(
+      contentWidth,
+      admissionsGroup.node().getComputedTextLength()
+    );
+    currentY += layout.lineHeight;
 
-    /* Initialize a historicalGroup placeholder */
-    let historicalGroup;
-
+    // ===== Section 3: Historical Admissions (if enabled) =====
     if (isHistoricalDataMode) {
       const historicalAdmissionValue = historicalGroundTruthData
         .find((file) =>
@@ -933,12 +954,13 @@ const ForecastChart: React.FC = () => {
 
       const historicalGroup = cornerTooltip
         .append("text")
-        .attr("x", shouldShowOnRightSide ? maxWidth + padding : padding)
+        .attr("class", "info-text")
+        .attr("x", layout.padding)
         .attr("y", currentY)
         .attr("fill", "white")
         .style("font-family", "var(--font-dm-sans)")
-        .attr("font-size", "13px")
-        .attr("text-anchor", shouldShowOnRightSide ? "end" : "start");
+        .attr("font-size", `${layout.fontSize.normal}px`)
+        .attr("text-anchor", "start");
 
       historicalGroup
         .append("tspan")
@@ -948,189 +970,244 @@ const ForecastChart: React.FC = () => {
       historicalGroup
         .append("tspan")
         .text(
-          `${
-            historicalAdmissionValue !== null ||
-            !historicalAdmissionValue ||
-            Number.isNaN(historicalAdmissionValue)
-              ? formatNumber(historicalAdmissionValue, true)
-              : "N/A"
-          }`
+          historicalAdmissionValue !== undefined &&
+            historicalAdmissionValue !== null &&
+            !Number.isNaN(historicalAdmissionValue)
+            ? formatNumber(historicalAdmissionValue, true)
+            : "N/A"
         )
         .attr("font-weight", "bold");
 
-      // Update maxWidth and currentY again
-      maxWidth = Math.max(
-        maxWidth,
+      contentWidth = Math.max(
+        contentWidth,
         historicalGroup.node().getComputedTextLength()
       );
-      currentY += lineHeight + 2 * padding;
-      // Add padding after historical data-slices
-    } else {
-      currentY += 2 * padding; // Keep original padding if no historical data-slices
+      currentY += layout.lineHeight;
     }
-
-    // Find prediction data-slices for the current date
+    // ===== Section 4: Prediction Data =====
     const currentPredictions = findPredictionsForDate(
       predictionData,
       data.date
     );
 
     if (currentPredictions) {
-      /*  */
-      Object.entries(currentPredictions).forEach(
-        ([modelName, modelData]: [string, any], index) => {
-          // Model name group with color box
-          const modelGroup = cornerTooltip
-            .append("g")
-            .attr("transform", `translate(${padding}, ${currentY - 14})`);
+      // Get confidence interval options to display
+      const ciOptions = [];
+      if (confidenceInterval.includes("50"))
+        ciOptions.push({
+          label: "50% CI",
+          low: "confidence250",
+          high: "confidence750",
+        });
+      if (confidenceInterval.includes("90"))
+        ciOptions.push({
+          label: "90% CI",
+          low: "confidence050",
+          high: "confidence950",
+        });
+      if (confidenceInterval.includes("95"))
+        ciOptions.push({
+          label: "95% CI",
+          low: "confidence025",
+          high: "confidence975",
+        });
 
-          // Color rectangle for the model
+      // Calculate table dimensions
+      const numColumns = 1 + ciOptions.length; // Median + CIs
+      const tableWidth =
+        layout.medianColumnWidth + ciOptions.length * layout.ciColumnWidth;
+      contentWidth = Math.max(contentWidth, tableWidth);
+
+      // Create a container for all prediction-related content
+      const predictionContainer = cornerTooltip
+        .append("g")
+        .attr("class", "prediction-container");
+
+      // Process each model
+      Object.entries(currentPredictions).forEach(
+        ([modelName, modelData]: [string, any], modelIndex) => {
+          // Model header with color indicator
+          const modelGroupY = currentY;
+          const modelGroup = predictionContainer
+            .append("g")
+            .attr("class", "model-group")
+            .attr("transform", `translate(${layout.padding}, ${modelGroupY})`);
+
+          // Color box is always positioned at the left
           modelGroup
             .append("rect")
-            .attr("class", "corner-tooltip-model-color-box")
-            .attr("width", 12)
-            .attr("height", 12)
+            .attr("class", "model-color-box")
+            .attr("width", layout.modelColorBoxSize)
+            .attr("height", layout.modelColorBoxSize)
             .attr("fill", modelColorMap[modelName]);
 
-          // Model name text
+          // Model name
           modelGroup
             .append("text")
-            .attr("x", 18)
-            .attr("y", 11)
+            .attr("class", "model-name")
+            .attr("x", layout.modelColorBoxSize + 6)
+            .attr("y", layout.modelColorBoxSize)
             .attr("fill", "white")
             .attr("font-weight", "bold")
             .style("font-family", "var(--font-dm-sans)")
-            .attr("font-size", "13px")
+            .attr("font-size", `${layout.fontSize.normal}px`)
             .text(modelName);
 
-          currentY += lineHeight * 0.6;
+          currentY += layout.lineHeight + layout.itemSpacing;
 
-          // Create header row for the table-like CI info display
-          const headerGroup = cornerTooltip
+          // Create table for CI values
+          const tableGroupY = currentY;
+          const tableGroup = predictionContainer
             .append("g")
-            .attr("transform", `translate(${padding + 18}, ${currentY})`);
+            .attr("class", "ci-table")
+            .attr("transform", `translate(${layout.padding}, ${tableGroupY})`);
 
-          const columns = ["Median"];
-          if (confidenceInterval.includes("50")) columns.push("50% CI");
-          if (confidenceInterval.includes("90")) columns.push("90% CI");
-          if (confidenceInterval.includes("95")) columns.push("95% CI");
-
-          /* */
-          const columnWidth = 120;
-
-          // Add headers
-          columns.forEach((col, i) => {
-            headerGroup
-              .append("text")
-              .attr("x", i * columnWidth)
-              .attr("y", 0)
-              .attr("text-anchor", "start")
-              .attr("fill", "white")
-              .attr("font-size", "13px")
-              .style("font-family", "var(--font-dm-sans)")
-              .text(col);
-          });
-
-          currentY += lineHeight * 0.65;
-
-          // Create values row
-          const valuesGroup = cornerTooltip
+          // Table headers row
+          const headerRow = tableGroup
             .append("g")
-            .attr("transform", `translate(${padding + 18}, ${currentY})`);
+            .attr("class", "table-header-row");
 
-          // Add median value
-          valuesGroup
+          // First column header - Median
+          headerRow
             .append("text")
+            .attr("class", "column-header median-header")
             .attr("x", 0)
             .attr("y", 0)
             .attr("text-anchor", "start")
             .attr("fill", "white")
-            .attr("font-size", "14px")
+            .attr("font-size", `${layout.fontSize.normal}px`)
+            .style("font-family", "var(--font-dm-sans)")
+            .text("Median");
+
+          // Add CI column headers with updated positioning
+          ciOptions.forEach((ci, i) => {
+            headerRow
+              .append("text")
+              .attr("class", "column-header ci-header")
+              .attr("x", layout.medianColumnWidth + i * layout.ciColumnWidth)
+              .attr("y", 0)
+              .attr("text-anchor", "start")
+              .attr("fill", "white")
+              .attr("font-size", `${layout.fontSize.normal}px`)
+              .style("font-family", "var(--font-dm-sans)")
+              .text(ci.label);
+          });
+
+          currentY += layout.lineHeight;
+
+          // Table data row
+          const dataRow = tableGroup
+            .append("g")
+            .attr("class", "table-data-row")
+            .attr("transform", `translate(0, ${layout.lineHeight})`);
+
+          // Median value
+          dataRow
+            .append("text")
+            .attr("class", "column-value median-value")
+            .attr("x", 0)
+            .attr("y", 0)
+            .attr("text-anchor", "start")
+            .attr("fill", "white")
+            .attr("font-size", `${layout.fontSize.value}px`)
             .style("font-family", "var(--font-dm-sans)")
             .text(formatNumber(modelData.confidence500));
 
-          // Add CI values
-          let colIndex = 1;
-          if (confidenceInterval.includes("50")) {
-            valuesGroup
+          // CI values with updated positioning
+          ciOptions.forEach((ci, i) => {
+            dataRow
               .append("text")
-              .attr("x", colIndex * columnWidth)
+              .attr("class", "column-value ci-value")
+              .attr("x", layout.medianColumnWidth + i * layout.ciColumnWidth)
               .attr("y", 0)
               .attr("text-anchor", "start")
               .attr("fill", "white")
-              .attr("font-size", "13px")
+              .attr("font-size", `${layout.fontSize.normal}px`)
               .style("font-family", "var(--font-dm-sans)")
               .text(
-                `[${formatNumber(modelData.confidence250)}, ${formatNumber(
-                  modelData.confidence750
+                `[${formatNumber(modelData[ci.low])}, ${formatNumber(
+                  modelData[ci.high]
                 )}]`
               );
-            colIndex++;
-          }
+          });
 
-          if (confidenceInterval.includes("90")) {
-            valuesGroup
-              .append("text")
-              .attr("x", colIndex * columnWidth)
-              .attr("y", 0)
-              .attr("text-anchor", "start")
-              .attr("fill", "white")
-              .attr("font-size", "13px")
-              .style("font-family", "var(--font-dm-sans)")
-              .text(
-                `[${formatNumber(modelData.confidence050)}, ${formatNumber(
-                  modelData.confidence950
-                )}]`
-              );
-            colIndex++;
-          }
-
-          if (confidenceInterval.includes("95")) {
-            valuesGroup
-              .append("text")
-              .attr("x", colIndex * columnWidth)
-              .attr("y", 0)
-              .attr("text-anchor", "start")
-              .attr("fill", "white")
-              .attr("font-size", "13px")
-              .style("font-family", "var(--font-dm-sans)")
-              .text(
-                `[${formatNumber(modelData.confidence025)}, ${formatNumber(
-                  modelData.confidence975
-                )}]`
-              );
-          }
-
-          // Update maxWidth based on the total width of all columns
-          const contentWidth = columns.length * columnWidth + padding * 2;
-          maxWidth = Math.max(maxWidth, contentWidth);
-          currentY += lineHeight * 1.15; // Add space before next model
+          currentY += layout.lineHeight * 2 + layout.itemSpacing;
         }
       );
     }
 
-    if (shouldShowOnRightSide) {
-      dateGroup.attr("x", maxWidth + padding);
-      admissionsGroup.attr("x", maxWidth + padding);
-      if (historicalDataMode) {
-        if (historicalGroup !== undefined) {
-          historicalGroup.attr("x", maxWidth + padding);
-        }
-      }
-    }
+    // Calculate final tooltip dimensions
+    const maxWidth = contentWidth + layout.padding * 2;
 
-    // Set background rectangle size and position
-    background.attr("width", maxWidth + padding * 2).attr("height", currentY);
+    // Finalize the background size
+    background
+      .attr("width", maxWidth)
+      .attr("height", currentY + layout.padding);
 
-    // Position the tooltip
+    // Position the tooltip on the appropriate side
     const tooltipX = shouldShowOnRightSide
-      ? chartWidth - maxWidth - padding * 2
+      ? chartWidth - maxWidth - layout.padding * 2
       : marginLeft * 1.5;
-    const tooltipY = marginTop;
 
     cornerTooltip
-      .attr("transform", `translate(${tooltipX}, ${tooltipY})`)
+      .attr("transform", `translate(${tooltipX}, ${marginTop})`)
       .style("opacity", 1);
+
+    // If right-aligned, adjust all text elements for proper alignment
+    if (shouldShowOnRightSide) {
+      // Adjust main info texts (date, admissions, historical)
+      cornerTooltip
+        .selectAll(".info-text")
+        .attr("x", maxWidth - layout.padding)
+        .attr("text-anchor", "end");
+
+      // Adjust model names by repositioning their parent groups
+      cornerTooltip.selectAll(".model-group").each(function () {
+        const transform = d3.select(this).attr("transform");
+        const match = /translate\(([^,]+),\s*([^)]+)\)/.exec(transform);
+        if (match) {
+          const y = match[2];
+
+          // Reposition the color box to the right
+          const colorBox = d3.select(this).select(".model-color-box");
+          colorBox.attr(
+            "x",
+            maxWidth - layout.padding - layout.modelColorBoxSize
+          );
+
+          // Reposition the model name text
+          d3.select(this)
+            .select(".model-name")
+            .attr("x", maxWidth - layout.padding - 2 * layout.modelColorBoxSize)
+            .attr("text-anchor", "end");
+        }
+      });
+
+      cornerTooltip
+        .selectAll(".median-header, .median-value")
+        .each(function () {
+          d3.select(this)
+            .attr("x", maxWidth - layout.padding)
+            .attr("text-anchor", "end");
+        });
+
+      cornerTooltip.selectAll(".ci-header, .ci-value").each(function () {
+        const x = parseFloat(d3.select(this).attr("x"));
+        // Calculate which CI column this is (0-based index)
+        const ciColumnIndex = Math.floor(
+          (x - layout.medianColumnWidth) / layout.ciColumnWidth
+        );
+
+        // Position from right side
+        const rightPos =
+          maxWidth -
+          layout.padding -
+          layout.medianColumnWidth -
+          ciColumnIndex * layout.ciColumnWidth;
+
+        d3.select(this).attr("x", rightPos).attr("text-anchor", "end");
+      });
+    }
   }
 
   function findPredictionsForDate(predictionData: any, date: Date) {
