@@ -148,7 +148,7 @@ const EvaluationsPage = () => {
         <div>
           <div className='flex bg-gray-800 border-b border-gray-700'>
             {/* NOTE: Temporarily disabled Season Overview Page until production-ready */}
-          <button
+            {/* <button
               onClick={() => setActiveTab("")}
               className={`px-6 py-2 text-sm relative ${
                 activeTab === "season-overview"
@@ -160,8 +160,8 @@ const EvaluationsPage = () => {
                 zIndex: activeTab === "season-overview" ? 1 : 0,
               }}>
               Season Overview
-            </button>
-            {/* <button
+            </button> */}
+            <button
               onClick={() => setActiveTab("season-overview")}
               className={`px-6 py-2 text-sm relative ${
                 activeTab === "season-overview"
@@ -173,7 +173,7 @@ const EvaluationsPage = () => {
                 zIndex: activeTab === "season-overview" ? 1 : 0,
               }}>
               Season Overview
-            </button> */}
+            </button>
             <button
               onClick={() => setActiveTab("single-model")}
               className={`px-6 py-2 text-sm relative ${
