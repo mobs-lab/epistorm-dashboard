@@ -144,7 +144,21 @@ const SingleModelSettingsPanel: React.FC = () => {
                         ))}
                     </div>
 
-                    {/* Score selection placeholder */}
+                    <div className="w-full py-4">
+                        <Typography variant="h6" className="text-white">Season</Typography>
+                        <select
+                            value={evaluationsSingleModelViewDateRange}
+                            onChange={(e) => onSeasonSelectionChange(e.target.value)}
+                            className="text-white border-[#5d636a] border-2 flex-wrap bg-mobs-lab-color-filterspane rounded-md w-full py-2 px-2 overflow-ellipsis"
+                        >
+                        {evaluationSingleModelViewSeasonOptions.map((option: SeasonOption) => (
+                                <option key={option.index} value={option.timeValue}>
+                                    {option.displayString}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+
                     <div className="w-full justify-stretch items-stretch py-4">
                         <Typography variant="h6" className="text-white">Score</Typography>
                         <select
@@ -160,20 +174,7 @@ const SingleModelSettingsPanel: React.FC = () => {
                         </select>
                     </div>
 
-                    <div className="w-full py-4">
-                        <Typography variant="h6" className="text-white">Season</Typography>
-                        <select
-                            value={evaluationsSingleModelViewDateRange}
-                            onChange={(e) => onSeasonSelectionChange(e.target.value)}
-                            className="text-white border-[#5d636a] border-2 flex-wrap bg-mobs-lab-color-filterspane rounded-md w-full py-2 px-2 overflow-ellipsis"
-                        >
-                        {evaluationSingleModelViewSeasonOptions.map((option: SeasonOption) => (
-                                <option key={option.index} value={option.timeValue}>
-                                    {option.displayString}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
+                    
                 </div>
             </div>
 
