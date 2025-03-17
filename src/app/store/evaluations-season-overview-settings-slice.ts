@@ -3,7 +3,7 @@ import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import {
   EvaluationsSeasonOverviewSeasonOption,
   AggregationPeriod,
-} from "../interfaces/forecast-interfaces";
+} from "@/interfaces/forecast-interfaces";
 import { parseISO, subWeeks } from "date-fns";
 
 interface EvaluationsSeasonOverviewSettingsState {

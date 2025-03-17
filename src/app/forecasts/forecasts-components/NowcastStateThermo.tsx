@@ -1,9 +1,9 @@
 import React, { useEffect, useRef, useState } from "react";
 import * as d3 from "d3";
 import * as topojson from "topojson-client";
-import { useAppSelector } from "../../store/hooks";
+import { useAppSelector } from "@/store/hooks";
 import { format, subDays } from "date-fns";
-import { isUTCDateEqual } from "../../interfaces/forecast-interfaces";
+import { isUTCDateEqual } from "@/interfaces/forecast-interfaces";
 
 const shapeFile = "/states-10m.json";
 

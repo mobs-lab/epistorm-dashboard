@@ -1,15 +1,15 @@
 import React, { useEffect, useRef } from "react";
 import * as d3 from "d3";
 
-import { useAppSelector } from "../../../store/hooks";
+import { useAppSelector } from "@/store/hooks";
 
 import {
   DataPoint,
   isUTCDateEqual,
   ModelPrediction,
-} from "../../../interfaces/forecast-interfaces";
-import { useResponsiveSVG } from "../../../interfaces/responsiveSVG";
-import { modelColorMap } from "../../../interfaces/epistorm-constants";
+} from "@/interfaces/forecast-interfaces";
+import { useResponsiveSVG } from "@/interfaces/responsiveSVG";
+import { modelColorMap } from "@/interfaces/epistorm-constants";
 
 interface ScoreDataPoint {
   referenceDate: Date;

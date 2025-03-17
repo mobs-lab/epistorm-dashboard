@@ -1,5 +1,5 @@
 import React, {useState} from 'react';
-import {Button, Dialog, DialogHeader, DialogBody, DialogFooter} from "../../css/material-tailwind-wrapper";
+import {Button, Dialog, DialogHeader, DialogBody, DialogFooter} from "@/styles/material-tailwind-wrapper";
 import {InformationCircleIcon} from "@heroicons/react/24/outline";
 
 interface InfoButtonProps {

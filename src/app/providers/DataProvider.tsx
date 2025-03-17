@@ -15,7 +15,7 @@ import {
   setMonth,
   startOfWeek,
 } from "date-fns";
-import { useAppDispatch } from "../store/hooks";
+import { useAppDispatch } from "@/store/hooks";
 import {
   DataPoint,
   LocationData,
@@ -25,32 +25,32 @@ import {
   LoadingStates,
   ProcessedDataWithDateRange,
   EvaluationsScoreDataCollection,
-} from "../interfaces/forecast-interfaces";
-import { modelNames } from "../interfaces/epistorm-constants";
+} from "@/interfaces/forecast-interfaces";
+import { modelNames } from "@/interfaces/epistorm-constants";
 
 // Forecast Actions and Reducers
-import { setGroundTruthData } from "../store/data-slices/groundTruthSlice";
-import { setPredictionsData } from "../store/data-slices/predictionsSlice";
-import { setLocationData } from "../store/data-slices/locationSlice";
-import { setNowcastTrendsData } from "../store/data-slices/nowcastTrendsSlice";
-import { setStateThresholdsData } from "../store/data-slices/stateThresholdsSlice";
-import { setHistoricalGroundTruthData } from "../store/data-slices/historicalGroundTruthSlice";
+import { setGroundTruthData } from "@/store/data-slices/groundTruthSlice";
+import { setPredictionsData } from "@/store/data-slices/predictionsSlice";
+import { setLocationData } from "@/store//data-slices/locationSlice";
+import { setNowcastTrendsData } from "@/store//data-slices/nowcastTrendsSlice";
+import { setStateThresholdsData } from "@/store//data-slices/stateThresholdsSlice";
+import { setHistoricalGroundTruthData } from "@/store//data-slices/historicalGroundTruthSlice";
 import {
   setSeasonOptions,
   updateDateEnd,
   updateDateRange,
   updateDateStart,
   updateUserSelectedWeek,
-} from "../store/forecast-settings-slice";
+} from "@/store//forecast-settings-slice";
 
 // Evaluations Actions and Reducers
-import { setEvaluationsSingleModelScoreData } from "../store/data-slices/evaluationsSingleModelScoreDataSlice";
+import { setEvaluationsSingleModelScoreData } from "@/store//data-slices/evaluationsSingleModelScoreDataSlice";
 import {
   updateEvaluationSingleModelViewDateStart,
   updateEvaluationSingleModelViewDateEnd,
   updateEvaluationsSingleModelViewDateRange,
   updateEvaluationSingleModelViewSeasonOptions,
-} from "../store/evaluations-single-model-settings-slice";
+} from "@/store//evaluations-single-model-settings-slice";
 
 interface DataContextType {
   loadingStates: LoadingStates;

@@ -1,8 +1,8 @@
 import InfoButton from "./InfoButton";
 import React from "react";
-import { Switch } from "../../css/material-tailwind-wrapper";
-import { useAppDispatch, useAppSelector } from "../../store/hooks";
-import { updateHistoricalDataMode } from "../../store/forecast-settings-slice";
+import { Switch } from "@/styles/material-tailwind-wrapper";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { updateHistoricalDataMode } from "@/store/forecast-settings-slice";
 
 const ForecastChartHeader: React.FC = () => {
   const dispatch = useAppDispatch();
