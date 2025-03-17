@@ -24,7 +24,7 @@ import {
   SeasonOption,
   LoadingStates,
   ProcessedDataWithDateRange,
-  EvaluationsSingleModelScoreDataCollection,
+  EvaluationsScoreDataCollection,
 } from "../interfaces/forecast-interfaces";
 import { modelNames } from "../interfaces/epistorm-constants";
 
@@ -465,7 +465,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   /* Fetch the `/public/evaluations-score/` path's `WIS_ratio.csv` and `MAPE.csv` asyncly, then organize them into model and metrics respectively;
-   *  WIS_ratio.csv produces EvaluationsSingleModelScoreDataCollection with scoreMetric as "WIS_Ratio", while MAPE.csv produces "MAPE" respectively;
+   *  WIS_ratio.csv produces EvaluationsScoreDataCollection with scoreMetric as "WIS_Ratio", while MAPE.csv produces "MAPE" respectively;
    *  modelName can be found in each CSV files' entries' 'Model' column;
    * in each score data-slices point, (again, consult the custom interfaces), referenceDate is the date of the score, and score is the actual score value:
    *   - MAPE: the column is literally named 'MAPE'
@@ -511,7 +511,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({
       // Process MAPE data-slices - Note the capital L in Location
       const mapeByModel = new Map<
         string,
-        { referenceDate: Date; score: number; location: string }[]
+        { referenceDate: Date; score: number; location: string; horizon: string }[]
       >();
       mapeData.forEach((entry) => {
         const modelName = entry.Model;
@@ -530,13 +530,13 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({
       });
 
       // Combine into final format
-      const evaluationsData: EvaluationsSingleModelScoreDataCollection[] = [];
+      const evaluationsData: EvaluationsScoreDataCollection[] = [];
 
       // Add WIS Ratio data-slices
       wisRatioByModel.forEach((scoreData, modelName) => {
         evaluationsData.push({
           modelName,
-          scoreMetric: "WIS_Ratio",
+          scoreMetric: "WIS/Baseline",
           scoreData: scoreData.sort(
             (a, b) => a.referenceDate.getTime() - b.referenceDate.getTime()
           ),

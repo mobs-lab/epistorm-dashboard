@@ -246,25 +246,25 @@ const ForecastChart: React.FC = () => {
         const date = new Date(d);
         const month = d3.timeFormat("%b")(date);
         const day = d3.timeFormat("%d")(date);
-        const isFirst = isUTCDateEqual(date, selectedTicks[0]);  // Use isUTCDateEqual
+        const isFirst = isUTCDateEqual(date, selectedTicks[0]); // Use isUTCDateEqual
         const isFirstTickInNewMonth = date.getDate() < 7 && date.getDate() > 0;
         const isNearYearChange = date.getMonth() === 0 && date.getDate() <= 10;
 
         // Rest of the formatting logic remains the same
         if (chartWidth < 500) {
-            if (isFirst || isFirstTickInNewMonth || isNearYearChange) {
-                return month;
-            } else {
-                return '';
-            }
+          if (isFirst || isFirstTickInNewMonth || isNearYearChange) {
+            return month;
+          } else {
+            return "";
+          }
         } else {
-            if (isFirst || isFirstTickInNewMonth || isNearYearChange) {
-                return `${month}\n${day}`;
-            } else {
-                return day;
-            }
+          if (isFirst || isFirstTickInNewMonth || isNearYearChange) {
+            return `${month}\n${day}`;
+          } else {
+            return day;
+          }
         }
-    });
+      });
 
     xAxis.tickSize(14); // Increase tick size to accommodate multi-line labels
 
@@ -524,7 +524,10 @@ const ForecastChart: React.FC = () => {
       return;
     }
 
-    console.debug("DEBUG: Matching historical data-slices:", matchingHistoricalData);
+    console.debug(
+      "DEBUG: Matching historical data-slices:",
+      matchingHistoricalData
+    );
 
     /*Ensure the historical data-slices to be drawn is cutoff before dateStart*/
     const historicalDataToDraw = matchingHistoricalData.historicalData.filter(
@@ -1631,17 +1634,16 @@ const ForecastChart: React.FC = () => {
 
   // Return the SVG object using reference
   return (
-    <div ref={containerRef} className="flex w-full h-full">
+    <div ref={containerRef} className='flex w-full h-full'>
       <svg
         ref={svgRef}
         width={"100%"}
         height={"100%"}
-        preserveAspectRatio="xMidYMid meet"
+        preserveAspectRatio='xMidYMid meet'
         style={{
           fontFamily: "var(--font-dm-sans)",
           visibility: width && height ? "visible" : "hidden",
-        }}
-      ></svg>
+        }}></svg>
     </div>
   );
 };
