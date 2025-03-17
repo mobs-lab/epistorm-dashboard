@@ -866,8 +866,8 @@ const ForecastChart: React.FC = () => {
         value: 13,
       },
       modelColorBoxSize: 12,
-      medianColumnWidth: 90, // Smaller width for median column
-      ciColumnWidth: 140, // Regular width for CI columns
+      medianColumnWidth: 60, // Smaller width for median column
+      ciColumnWidth: 120, // Regular width for CI columns
     };
 
     // Tooltip positioning
@@ -982,7 +982,7 @@ const ForecastChart: React.FC = () => {
         contentWidth,
         historicalGroup.node().getComputedTextLength()
       );
-      currentY += layout.lineHeight;
+      currentY += layout.lineHeight * 0.6;
     }
     // ===== Section 4: Prediction Data =====
     const currentPredictions = findPredictionsForDate(
@@ -1131,7 +1131,7 @@ const ForecastChart: React.FC = () => {
               );
           });
 
-          currentY += layout.lineHeight * 2 + layout.itemSpacing;
+          currentY += layout.lineHeight * 0.8;
         }
       );
     }
