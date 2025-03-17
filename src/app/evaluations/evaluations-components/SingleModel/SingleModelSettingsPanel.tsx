@@ -30,7 +30,7 @@ const SingleModelSettingsPanel: React.FC = () => {
     const groundTruthData = useAppSelector((state) => state.groundTruth.data);
     const locationData = useAppSelector((state) => state.location.data);
 
-    const [scoreOptions] = useState(['WIS_Ratio', 'MAPE']);
+    const [scoreOptions] = useState(['WIS/Baseline', 'MAPE']);
 
     // Evaluation-specific state
     const {
@@ -144,7 +144,21 @@ const SingleModelSettingsPanel: React.FC = () => {
                         ))}
                     </div>
 
-                    {/* Score selection placeholder */}
+                    <div className="w-full py-4">
+                        <Typography variant="h6" className="text-white">Season</Typography>
+                        <select
+                            value={evaluationsSingleModelViewDateRange}
+                            onChange={(e) => onSeasonSelectionChange(e.target.value)}
+                            className="text-white border-[#5d636a] border-2 flex-wrap bg-mobs-lab-color-filterspane rounded-md w-full py-2 px-2 overflow-ellipsis"
+                        >
+                        {evaluationSingleModelViewSeasonOptions.map((option: SeasonOption) => (
+                                <option key={option.index} value={option.timeValue}>
+                                    {option.displayString}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+
                     <div className="w-full justify-stretch items-stretch py-4">
                         <Typography variant="h6" className="text-white">Score</Typography>
                         <select
@@ -160,24 +174,11 @@ const SingleModelSettingsPanel: React.FC = () => {
                         </select>
                     </div>
 
-                    <div className="w-full py-4">
-                        <Typography variant="h6" className="text-white">Season</Typography>
-                        <select
-                            value={evaluationsSingleModelViewDateRange}
-                            onChange={(e) => onSeasonSelectionChange(e.target.value)}
-                            className="text-white border-[#5d636a] border-2 flex-wrap bg-mobs-lab-color-filterspane rounded-md w-full py-2 px-2 overflow-ellipsis"
-                        >
-                        {evaluationSingleModelViewSeasonOptions.map((option: SeasonOption) => (
-                                <option key={option.index} value={option.timeValue}>
-                                    {option.displayString}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
+                    
                 </div>
             </div>
 
-            <div className="mx-auto p-2">
+            <div className="mt-auto p-2 border-t border-gray-700">
                 <Image src="/epistorm-logo.png" width={300} height={120} alt="Epistorm Logo"/>
             </div>
         </div>

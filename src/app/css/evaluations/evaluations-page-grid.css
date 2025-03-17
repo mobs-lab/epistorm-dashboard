@@ -4,7 +4,7 @@
     display: grid;
     width: 100vw;
     height: calc(100vh - var(--header-height));
-    grid-template-columns: 1fr 320px;
+    grid-template-columns: 1fr minmax(200px, 350px);
     grid-template-rows: auto 1fr;
     grid-template-areas:
     "evaluationsHeader evaluationsSettingsPanel"
@@ -43,7 +43,7 @@
 }
 
 /* Chart grid container styles */
-.chart-grid-container {
+.eval-single-model-chart-grid-container {
     flex: 1;
     display: grid;
     grid-template-rows: 1fr 1fr;
