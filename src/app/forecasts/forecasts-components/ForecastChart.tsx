@@ -29,7 +29,6 @@ import { modelColorMap } from "@/interfaces/epistorm-constants";
 
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { updateUserSelectedWeek } from "@/store/forecast-settings-slice";
-import { useResponsiveSVG } from "@/interfaces/responsiveSVG";
 
 const ForecastChart: React.FC = () => {
   // reference to svg object
