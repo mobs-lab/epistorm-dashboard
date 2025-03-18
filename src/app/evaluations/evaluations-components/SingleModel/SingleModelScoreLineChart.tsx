@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from "react";
 import * as d3 from "d3";
+import { addWeeks } from "date-fns";
 
 import { useAppSelector } from "@/store/hooks";
 
@@ -44,15 +45,20 @@ const SingleModelScoreLineChart: React.FC = () => {
     predictionsData: ModelPrediction[],
     modelName: string,
     state: string,
-    dateRange: [Date, Date]
+    dateRange: [Date, Date],
+    horizon: number
   ): [Date, Date] {
+
+    /* First use the horizon to calculate the conditional buffer  */
+    const endDateWithHorizon = addWeeks(dateRange[1], horizon);
+
     // Filter ground truth data-slices for valid entries (with valid admissions, including placeholders)
     const validGroundTruth = groundTruthData.filter(
       (d) =>
         d.stateNum === state &&
         d.admissions >= -1 &&
         d.date >= dateRange[0] &&
-        d.date <= dateRange[1]
+        d.date <= endDateWithHorizon
     );
 
     // Get the model's prediction data-slices
@@ -65,15 +71,17 @@ const SingleModelScoreLineChart: React.FC = () => {
         (d) =>
           d.stateNum === state &&
           d.referenceDate >= dateRange[0] &&
-          d.referenceDate <= dateRange[1]
+          d.referenceDate <= endDateWithHorizon
       ) || [];
+
+      console.debug("Valid Predictions: ", validPredictions);
 
     // Find the earliest and latest dates with actual data-slices, only those that both have valid admission value & has predictions made on that day
     const startDates = [
-      validGroundTruth.length > 0 ? validGroundTruth[0].date : dateRange[1],
+      validGroundTruth.length > 0 ? validGroundTruth[0].date : endDateWithHorizon,
       validPredictions.length > 0
         ? validPredictions[0].referenceDate
-        : dateRange[1],
+        : endDateWithHorizon,
     ];
 
     const endDates = [
@@ -81,14 +89,18 @@ const SingleModelScoreLineChart: React.FC = () => {
         ? validGroundTruth[validGroundTruth.length - 1].date
         : dateRange[0],
       validPredictions.length > 0
-        ? validPredictions[validPredictions.length - 1].referenceDate
+        ? addWeeks(validPredictions[validPredictions.length - 1].referenceDate, horizon)
         : dateRange[0],
     ];
 
+    const finalStartingDate = new Date(Math.max(...startDates.map((d) => d.getTime())));
+    const finalEndingDate = new Date(Math.min(...endDates.map((d) => d.getTime())));
+    console.debug("Final starting and ending date for drawing single model line chart is: ", [finalStartingDate, finalEndingDate])
+
     // Use max and min to cut the ones missing prediction/admission, and we end up with range with actual concrete data-slices values
     return [
-      new Date(Math.max(...startDates.map((d) => d.getTime()))),
-      new Date(Math.min(...endDates.map((d) => d.getTime()))),
+      finalStartingDate,
+      finalEndingDate,
     ];
   }
 
@@ -266,6 +278,7 @@ const SingleModelScoreLineChart: React.FC = () => {
       return currentDiff < closestDiff ? current : closest;
     }, null as ScoreDataPoint | null);
   }
+
   function createScalesAndAxes(
     saturdayDates: Date[],
     filteredData: ScoreDataPoint[],
@@ -421,8 +434,8 @@ const SingleModelScoreLineChart: React.FC = () => {
         .attr("y2", yScale(1))
         .attr("stroke", "white")
         .attr("stroke-width", 1)
-        .attr("stroke-dasharray", "2,2")
-        .attr("opacity", 0.5);
+        .attr("stroke-dasharray", "1,0")
+        .attr("opacity", 0.8);
     }
 
     // Create container for all visual elements
@@ -491,11 +504,13 @@ const SingleModelScoreLineChart: React.FC = () => {
       predictionsData,
       evaluationsSingleModelViewModel,
       evaluationsSingleModelViewSelectedStateCode,
-      [evaluationsSingleModelViewDateStart, evaluationSingleModelViewDateEnd]
+      [evaluationsSingleModelViewDateStart, evaluationSingleModelViewDateEnd],
+      evaluationSingleModelViewHorizon
     );
 
     const saturdayDates = generateSaturdayDates(actualStart, actualEnd);
 
+    /* Logic for deciding what data should show up on the screen */
     const filteredData =
       evaluationsScoreData
         .find(
@@ -508,7 +523,7 @@ const SingleModelScoreLineChart: React.FC = () => {
             d.location === evaluationsSingleModelViewSelectedStateCode &&
             d.referenceDate >= actualStart &&
             d.referenceDate <= actualEnd &&
-            Number.parseInt(d.horizon) == evaluationSingleModelViewHorizon
+            Number.parseInt(d.horizon) === evaluationSingleModelViewHorizon
         ) || [];
 
     // Handle when no data-slices is present: just display a information
