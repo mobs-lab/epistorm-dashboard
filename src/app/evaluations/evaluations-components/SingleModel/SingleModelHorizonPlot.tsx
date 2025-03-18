@@ -89,10 +89,10 @@ const SingleModelHorizonPlot: React.FC = () => {
         d.referenceDate <= dateRange[1]
     );
 
-    console.debug(
+    /* console.debug(
       "SingleModelHorizonPlot/processVisualizationData()/check stateData: ",
       stateData
-    );
+    ); */
 
     // Group by target end date to ensure the horizons are correctly mapped
     const groupedData = d3.group(stateData, (d) =>
@@ -101,7 +101,7 @@ const SingleModelHorizonPlot: React.FC = () => {
 
     // Process each group
     return Array.from(groupedData, ([date, group]) => {
-      console.debug("groupedData and each date:", [date, group]);
+      // console.debug("groupedData and each date:", [date, group]);
       const targetWeekData = group.filter((d) => {
         // Calculate expected target date for this horizon
         const expectedTargetDate = new Date(d.referenceDate);
@@ -242,10 +242,10 @@ const SingleModelHorizonPlot: React.FC = () => {
 
     const numsOfWeekAhead = horizon;
     const endDateWithHorizon = addWeeks(dateRange[1], numsOfWeekAhead);
-    console.log(
+    /* console.log(
       "end date calculated considering horizon: ",
       endDateWithHorizon
-    );
+    ); */
 
     // Filter ground truth data-slices for valid entries (with valid admissions, including placeholders)
     const validGroundTruth = groundTruthData.filter(
@@ -650,7 +650,7 @@ const SingleModelHorizonPlot: React.FC = () => {
           d3.select(this).attr("fill", "transparent");
 
           // Hide tooltip
-          tooltipGroup.style("opacity", 0);
+          // tooltipGroup.style("opacity", 0);
         });
     });
 
