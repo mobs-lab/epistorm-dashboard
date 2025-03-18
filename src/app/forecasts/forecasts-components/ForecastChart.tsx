@@ -29,6 +29,7 @@ import { modelColorMap } from "@/interfaces/epistorm-constants";
 
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { updateUserSelectedWeek } from "@/store/forecast-settings-slice";
+import { useResponsiveSVG } from "@/interfaces/responsiveSVG";
 
 const ForecastChart: React.FC = () => {
   // reference to svg object
@@ -1632,7 +1633,7 @@ const ForecastChart: React.FC = () => {
         // If so, render a message to inform the user
         renderMessage(
           svg,
-          "Not enough data-slices, please extend date range.",
+          "Not enough data, please extend date range.",
           chartWidth,
           chartHeight,
           marginLeft,
@@ -1760,7 +1761,9 @@ const ForecastChart: React.FC = () => {
         ref={svgRef}
         width={"100%"}
         height={"100%"}
+        className='w-full h-full'
         preserveAspectRatio='xMidYMid meet'
+        viewBox={`0 0 ${dimensions.width || 100} ${dimensions.height || 100}`}
         style={{
           fontFamily: "var(--font-dm-sans)",
           opacity: isResizing ? 0.6 : 1,
