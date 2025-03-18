@@ -20,7 +20,7 @@ import {
   ModelPrediction,
   PredictionDataPoint,
 } from "@/interfaces/forecast-interfaces";
-import { useChartDimensions } from "@/interfaces/forecast-chart-dimension-observer";
+import { useResponsiveSVG } from "@/interfaces/responsiveSVG";
 import {
   useChartMargins,
   calculateLabelSpace,
@@ -1736,17 +1736,22 @@ const ForecastChart: React.FC = () => {
     isResizing,
     margins,
     groundTruthData,
+    historicalGroundTruthData,
     predictionsData,
     USStateNum,
     forecastModel,
     numOfWeeksAhead,
     dateStart,
+    historicalDataMode,
     dateEnd,
     yAxisScale,
     confidenceInterval,
-    historicalDataMode,
     userSelectedWeek,
-    historicalDataMode,
+    dispatch,
+    createScalesAndAxes,
+    renderChartComponents,
+    updateVerticalIndicator,
+    renderHistoricalData,
   ]);
 
   // Return the SVG object using reference
@@ -1761,8 +1766,8 @@ const ForecastChart: React.FC = () => {
         viewBox={`0 0 ${dimensions.width || 100} ${dimensions.height || 100}`}
         style={{
           fontFamily: "var(--font-dm-sans)",
-          opacity: isResizing ? 0.5 : 1,
-          transition: "opacity 0.1s ease",
+          opacity: isResizing ? 0.6 : 1,
+          transition: "opacity 0.005s ease",
         }}></svg>
     </div>
   );

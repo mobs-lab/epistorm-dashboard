@@ -113,7 +113,7 @@ export interface DataPoint {
     referenceDate: Date;
     score: number;
     location: string; // Using US state code
-    horizon: string;
+    horizon: number;
   }
   
   /* Season Aggregation Options, used by Season Overview Page */
