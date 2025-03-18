@@ -20,7 +20,7 @@ import {
   ModelPrediction,
   PredictionDataPoint,
 } from "@/interfaces/forecast-interfaces";
-import { useChartDimensions } from "@/interfaces/forecast-chart-dimension-observer";
+import { useResponsiveSVG } from "@/interfaces/responsiveSVG";
 import {
   useChartMargins,
   calculateLabelSpace,
@@ -29,13 +29,18 @@ import { modelColorMap } from "@/interfaces/epistorm-constants";
 
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { updateUserSelectedWeek } from "@/store/forecast-settings-slice";
+import { useResponsiveSVG } from "@/interfaces/responsiveSVG";
 
 const ForecastChart: React.FC = () => {
   // reference to svg object
   const svgRef = useRef(null);
 
-  const [containerRef, { width, height, zoomLevel }] = useChartDimensions();
-  const margins = useChartMargins(width, height, "default");
+  const { containerRef, dimensions, isResizing } = useResponsiveSVG();
+  const margins = useChartMargins(
+    dimensions.width,
+    dimensions.height,
+    "default"
+  );
 
   // Get the ground and prediction data-slices from store
   const groundTruthData = useAppSelector((state) => state.groundTruth.data);
@@ -701,10 +706,10 @@ const ForecastChart: React.FC = () => {
               confidenceIntervalData.interval === "50"
                 ? 0.4
                 : confidenceIntervalData.interval === "90"
-                ? 0.2
-                : confidenceIntervalData.interval === "95"
-                ? 0.1
-                : 1;
+                  ? 0.2
+                  : confidenceIntervalData.interval === "95"
+                    ? 0.1
+                    : 1;
 
             const color = d3.color(modelColor);
             color.opacity = opacity;
@@ -1594,8 +1599,8 @@ const ForecastChart: React.FC = () => {
       // Remove the existing chart elements
       svg.selectAll("*").remove();
 
-      const chartWidth = width - margins.left - margins.right;
-      const chartHeight = height - margins.top - margins.bottom;
+      const chartWidth = dimensions.width - margins.left - margins.right;
+      const chartHeight = dimensions.height - margins.top - margins.bottom;
       let marginLeft = margins.left;
       let marginRight = margins.right;
       let marginTop = margins.top;
@@ -1628,7 +1633,7 @@ const ForecastChart: React.FC = () => {
         // If so, render a message to inform the user
         renderMessage(
           svg,
-          "Not enough data-slices, please extend date range.",
+          "Not enough data, please extend date range.",
           chartWidth,
           chartHeight,
           marginLeft,
@@ -1712,7 +1717,7 @@ const ForecastChart: React.FC = () => {
           marginTop,
           chartWidth,
           chartHeight,
-          height,
+          dimensions.height,
           marginBottom
         );
 
@@ -1727,21 +1732,26 @@ const ForecastChart: React.FC = () => {
       }
     }
   }, [
-    width,
-    height,
+    dimensions,
+    isResizing,
     margins,
     groundTruthData,
+    historicalGroundTruthData,
     predictionsData,
     USStateNum,
     forecastModel,
     numOfWeeksAhead,
     dateStart,
+    historicalDataMode,
     dateEnd,
     yAxisScale,
     confidenceInterval,
-    historicalDataMode,
     userSelectedWeek,
-    historicalDataMode,
+    dispatch,
+    createScalesAndAxes,
+    renderChartComponents,
+    updateVerticalIndicator,
+    renderHistoricalData,
   ]);
 
   // Return the SVG object using reference
@@ -1751,10 +1761,13 @@ const ForecastChart: React.FC = () => {
         ref={svgRef}
         width={"100%"}
         height={"100%"}
+        className='w-full h-full'
         preserveAspectRatio='xMidYMid meet'
+        viewBox={`0 0 ${dimensions.width || 100} ${dimensions.height || 100}`}
         style={{
           fontFamily: "var(--font-dm-sans)",
-          visibility: width && height ? "visible" : "hidden",
+          opacity: isResizing ? 0.6 : 1,
+          transition: "opacity 0.005s ease",
         }}></svg>
     </div>
   );
