@@ -459,7 +459,10 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({
       dispatch(setHistoricalGroundTruthData(historicalData));
       updateLoadingState("historicalGroundTruth", false);
     } catch (error) {
-      console.error("Error fetching historical ground truth data-slices:", error);
+      console.error(
+        "Error fetching historical ground truth data-slices:",
+        error
+      );
       updateLoadingState("historicalGroundTruth", false);
     }
   };
@@ -488,7 +491,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({
           referenceDate: Date;
           score: number;
           location: string;
-          horizon: string;
+          horizon: number;
         }[]
       >();
 
@@ -498,7 +501,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({
           referenceDate: parseISO(entry.reference_date),
           score: +entry.wis_ratio,
           location: entry.location,
-          horizon: entry.horizon,
+          horizon: +entry.horizon,
         };
 
         const key = modelName;
@@ -511,7 +514,12 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({
       // Process MAPE data-slices - Note the capital L in Location
       const mapeByModel = new Map<
         string,
-        { referenceDate: Date; score: number; location: string; horizon: string }[]
+        {
+          referenceDate: Date;
+          score: number;
+          location: string;
+          horizon: number;
+        }[]
       >();
       mapeData.forEach((entry) => {
         const modelName = entry.Model;
@@ -519,7 +527,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({
           referenceDate: parseISO(entry.reference_date),
           score: +entry.MAPE * 100,
           location: entry.Location, // Changed from entry.location
-          horizon: entry.horizon,
+          horizon: +entry.horizon,
         };
 
         const key = modelName;
