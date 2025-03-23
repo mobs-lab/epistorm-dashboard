@@ -25,7 +25,8 @@
       "@/store/*": ["store/*"],
       "@/styles/*": ["css/*"],
       "@/evaluations/*": ["evaluations/*"],
-      "@/forecasts/*": ["forecasts/*"]
+      "@/forecasts/*": ["forecasts/*"],
+      "@/utils/*": ["utils/*"]
     }
   },
   "include": ["next-env.d.ts", ".next/types/**/*.ts", "**/*.ts", "**/*.tsx"],
