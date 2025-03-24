@@ -19,7 +19,7 @@ export const isFeatureEnabled = (feature: FeatureFlag): boolean => {
 
   // For demo-only features, only enable them in the demo environment
   if (demoOnlyFeatures.includes(feature)) {
-    return environment === 'demo';
+    return environment == 'demo';
   }
 
   // Default to enabled for any other features

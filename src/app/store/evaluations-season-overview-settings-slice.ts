@@ -8,7 +8,7 @@ import { parseISO, subWeeks } from "date-fns";
 
 interface EvaluationsSeasonOverviewSettingsState {
   /* Model Related*/
-  evaluationSeasonOverviewHorizon: number; //how many weeks ahead from reference date (matching surveillance week's number) should we look for as target_end_date in predictions to draw the intervals
+  evaluationSeasonOverviewHorizon: number[]; //how many weeks ahead from reference date (matching surveillance week's number) should we look for as target_end_date in predictions to draw the intervals
 
   /* Time Range Related */
   evaluationSeasonOverviewSeasonOptions: EvaluationsSeasonOverviewSeasonOption[];
@@ -59,7 +59,7 @@ const predefinedAggregationPeriods: AggregationPeriod[] = [
 
 const initialState: EvaluationsSeasonOverviewSettingsState = {
   /* Model Defaults*/
-  evaluationSeasonOverviewHorizon: 0,
+  evaluationSeasonOverviewHorizon: [Number(0)],
 
   /* Time Range Defaults*/
   evaluationSeasonOverviewSeasonOptions: [],
@@ -72,9 +72,9 @@ const evaluationsSeasonOverviewSettingsSlice = createSlice({
   name: "evaluations-single-model-settings-slice",
   initialState,
   reducers: {
-    updateEvaluationSeasonOverviewHorizon: (
+    setEvaluationSeasonOverviewHorizon: (
       state,
-      action: PayloadAction<number>
+      action: PayloadAction<number[]>
     ) => {
       state.evaluationSeasonOverviewHorizon = action.payload;
     },
@@ -120,7 +120,7 @@ const evaluationsSeasonOverviewSettingsSlice = createSlice({
 });
 
 export const {
-  updateEvaluationSeasonOverviewHorizon,
+  setEvaluationSeasonOverviewHorizon,
   updateEvaluationSeasonOverviewSeasonOptions,
   updateSelectedAggregationPeriod,
   refreshDynamicDateRanges
