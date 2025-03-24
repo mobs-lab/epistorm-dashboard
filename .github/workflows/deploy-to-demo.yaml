@@ -28,6 +28,12 @@ jobs:
           rm -rf node_modules
           npm cache clean --force
           npm install
+      
+      - name: Build with demo environment
+        env:
+          NEXT_PUBLIC_GAE_SERVICE: "demo"
+        run: |
+          npm run build
 
       - id: "auth"
         name: "Authenticate to Google Cloud"
