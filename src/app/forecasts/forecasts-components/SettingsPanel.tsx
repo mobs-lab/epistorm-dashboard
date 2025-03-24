@@ -390,86 +390,6 @@ const SettingsPanel: React.FC = () => {
             Show All
           </button>
 
-<<<<<<< Updated upstream
-          <div className="my-2 w-full h-full">
-            <Typography variant="h6" className="text-white">
-              {" "}
-              Horizon{" "}
-            </Typography>
-            {[0, 1, 2, 3].map((value) => (
-              <Radio
-                key={value}
-                name="weeksAheadRadioBtn"
-                value={value.toString()}
-                label={value.toString()}
-                onChange={(e) => onNumOfWeeksAheadChange(e)}
-                className="text-white"
-                labelProps={{ className: "text-white" }}
-                defaultChecked={value === 3}
-              />
-            ))}
-          </div>
-          <div className="mb-4 w-full h-full">
-            <Typography variant="h6" className="text-white">
-              Y-Axis Scale
-            </Typography>
-            {["linear", "log"].map((value) => (
-              <Radio
-                key={value}
-                name="yAxisRadioBtn"
-                value={value}
-                label={value === "linear" ? "Linear" : "Logarithmic"}
-                onChange={(e) => onYAxisScaleChange(e)}
-                className="text-white"
-                labelProps={{ className: "text-white" }}
-                defaultChecked={value === "linear"}
-              />
-            ))}
-          </div>
-
-          <div className="mb-4 flex-col justify-stretch items-stretch flex-wrap w-full h-full">
-            <Typography variant="h6" className="text-white">
-              Confidence Interval
-            </Typography>
-            <div className="flex flex-row flex-wrap justify-between items-center">
-              {["50%", "90%", "95%"].map((interval) => (
-                <label key={interval} className="flex items-center text-white">
-                  <input
-                    type="checkbox"
-                    className="form-checkbox text-blue-600 mr-2"
-                    checked={confidenceInterval.includes(
-                      interval.split("%")[0]
-                    )}
-                    onChange={(e) =>
-                      onConfidenceIntervalChange(interval, e.target.checked)
-                    }
-                  />
-                  <span>{interval}</span>
-                </label>
-              ))}
-              <button
-                className={`flex flex-wrap rounded p-1 ${
-                  confidenceInterval.length === 0
-                    ? "bg-[] text-white"
-                    : "bg-[#5d636a] text-white"
-                }`}
-                onClick={() => dispatch(updateConfidenceInterval([]))}
-              >
-                None
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      <div className="mx-auto p-2">
-        <Image
-          src="/epistorm-logo.png"
-          width={300}
-          height={120}
-          alt="Epistorm Logo"
-        />
-=======
         <div className='flex-col justify-stretch items-stretch flex-wrap w-full h-full'>
           <Typography variant='h6' className='text-white'>
             Confidence Interval
@@ -497,7 +417,6 @@ const SettingsPanel: React.FC = () => {
 
       <div className='mt-auto p-2 border-t border-gray-700'>
         <Image src='/epistorm-logo.png' width={300} height={120} alt='Epistorm Logo' />
->>>>>>> Stashed changes
       </div>
     </div>
   );
