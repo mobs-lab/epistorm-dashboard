@@ -27,48 +27,32 @@ const SettingsPanel: React.FC = () => {
   const groundTruthData = useAppSelector((state) => state.groundTruth.data);
   const locationData = useAppSelector((state) => state.location.data);
 
-  const {
-    USStateNum,
-    forecastModel,
-    dateStart,
-    dateEnd,
-    dateRange,
-    confidenceInterval,
-    seasonOptions,
-  } = useAppSelector((state) => state.forecastSettings);
+  const { USStateNum, forecastModel, dateStart, dateEnd, dateRange, confidenceInterval, seasonOptions } = useAppSelector(
+    (state) => state.forecastSettings
+  );
 
-  const { earliestDayFromGroundTruthData, latestDayFromGroundTruthData } =
-    useMemo(() => {
-      if (groundTruthData.length === 0) {
-        return {
-          earliestDayFromGroundTruthData: new Date("2022-08-23T12:00:00.000Z"),
-          latestDayFromGroundTruthData: new Date("2024-05-24T12:00:00.000Z"),
-        };
-      }
-
-      const sortedData = [...groundTruthData].sort(
-        (a, b) => a.date.getTime() - b.date.getTime()
-      );
+  const { earliestDayFromGroundTruthData, latestDayFromGroundTruthData } = useMemo(() => {
+    if (groundTruthData.length === 0) {
       return {
-        earliestDayFromGroundTruthData: sortedData[0].date,
-        latestDayFromGroundTruthData: sortedData[sortedData.length - 1].date,
+        earliestDayFromGroundTruthData: new Date("2022-08-23T12:00:00.000Z"),
+        latestDayFromGroundTruthData: new Date("2024-05-24T12:00:00.000Z"),
       };
-    }, [groundTruthData]);
+    }
+
+    const sortedData = [...groundTruthData].sort((a, b) => a.date.getTime() - b.date.getTime());
+    return {
+      earliestDayFromGroundTruthData: sortedData[0].date,
+      latestDayFromGroundTruthData: sortedData[sortedData.length - 1].date,
+    };
+  }, [groundTruthData]);
 
   /*console.debug("DEBUG: earliestDayFromGroundTruthData: ", earliestDayFromGroundTruthData);
     console.debug("DEBUG: latestDayFromGroundTruthData: ", latestDayFromGroundTruthData);*/
 
   const onStateSelectionChange = (stateNum: string) => {
-    const selectedState = locationData.find(
-      (state) => state.stateNum === stateNum
-    );
+    const selectedState = locationData.find((state) => state.stateNum === stateNum);
     if (selectedState) {
-      console.debug(
-        "SettingsPanel update: State selected: ",
-        selectedState.stateName,
-        " with stateNum: ",
-        selectedState.stateNum
-      );
+      console.debug("SettingsPanel update: State selected: ", selectedState.stateName, " with stateNum: ", selectedState.stateNum);
       dispatch(
         updateSelectedState({
           stateName: selectedState.stateName,
@@ -82,17 +66,11 @@ const SettingsPanel: React.FC = () => {
     if (checked) {
       dispatch(updateForecastModel([...forecastModel, modelName]));
     } else {
-      dispatch(
-        updateForecastModel(
-          forecastModel.filter((model) => model !== modelName)
-        )
-      );
+      dispatch(updateForecastModel(forecastModel.filter((model) => model !== modelName)));
     }
   };
 
-  const onNumOfWeeksAheadChange = (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
+  const onNumOfWeeksAheadChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     dispatch(updateNumOfWeeksAhead(Number(event.target.value)));
   };
 
@@ -113,9 +91,7 @@ const SettingsPanel: React.FC = () => {
   };
 
   const onSeasonSelectionChange = (timeValue: string) => {
-    const selectedOption = seasonOptions.find(
-      (option) => option.timeValue === timeValue
-    );
+    const selectedOption = seasonOptions.find((option) => option.timeValue === timeValue);
     if (selectedOption) {
       dispatch(updateDateRange(timeValue));
       dispatch(updateDateStart(selectedOption.startDate));
@@ -139,16 +115,9 @@ const SettingsPanel: React.FC = () => {
     if (checked) {
       dispatch(updateConfidenceInterval([...confidenceInterval, interval]));
     } else {
-      dispatch(
-        updateConfidenceInterval(
-          confidenceInterval.filter((model) => model !== interval)
-        )
-      );
+      dispatch(updateConfidenceInterval(confidenceInterval.filter((model) => model !== interval)));
     }
-    console.debug(
-      "SettingsPanel update: Confidence Interval changed to: ",
-      confidenceInterval
-    );
+    console.debug("SettingsPanel update: Confidence Interval changed to: ", confidenceInterval);
   };
 
   const handleShowAllModels = () => {
@@ -276,27 +245,28 @@ const SettingsPanel: React.FC = () => {
               labelProps={{ className: "text-white" }}
               defaultChecked={value === 3}
             />
-          </div>
-          <div className="pt-2 w-full h-full">
-            <Typography variant="h6" className="text-white">
-              End Date
-            </Typography>
-            <SettingsStyledDatePicker
-              value={dateEnd}
-              onChange={onDateEndSelectionChange}
-              minDate={dateStart}
-              maxDate={latestDayFromGroundTruthData}
-              className="w-full border-[#5d636a] border-2 rounded-md"
-            />
-          </div>
-          <button
-            className="mb-4 mt-2 bg-[#5d636a] text-white rounded text-sm w-full h-full"
-            onClick={handleShowAllDates}
-          >
-            Show All
-          </button>
+          ))}
+        </div>
 
-        <div className='flex-col justify-stretch items-stretch flex-wrap w-full h-full'>
+        <div className='mb-4 w-full h-full'>
+          <Typography variant='h6' className='text-white'>
+            Y-Axis Scale
+          </Typography>
+          {["linear", "log"].map((value) => (
+            <Radio
+              key={value}
+              name='yAxisRadioBtn'
+              value={value}
+              label={value === "linear" ? "Linear" : "Logarithmic"}
+              onChange={(e) => onYAxisScaleChange(e)}
+              className='text-white'
+              labelProps={{ className: "text-white" }}
+              defaultChecked={value === "linear"}
+            />
+          ))}
+        </div>
+
+        <div className='mb-2 flex-col justify-stretch items-stretch flex-wrap w-full h-full'>
           <Typography variant='h6' className='text-white'>
             Confidence Interval
           </Typography>
