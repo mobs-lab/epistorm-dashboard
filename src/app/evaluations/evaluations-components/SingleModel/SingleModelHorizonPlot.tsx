@@ -241,11 +241,10 @@ const SingleModelHorizonPlot: React.FC = () => {
     /* First calcualte using horizon number, a buffer for how many weeks ahead we should seek for end date within the final range */
 
     const numsOfWeekAhead = horizon;
-    const endDateWithHorizon = addWeeks(dateRange[1], numsOfWeekAhead);
-    /* console.log(
+    console.log(
       "end date calculated considering horizon: ",
-      endDateWithHorizon
-    ); */
+      dateRange[1]
+    );
 
     // Filter ground truth data-slices for valid entries (with valid admissions, including placeholders)
     const validGroundTruth = groundTruthData.filter(
@@ -253,7 +252,7 @@ const SingleModelHorizonPlot: React.FC = () => {
         d.stateNum === state &&
         d.admissions >= -1 &&
         d.date >= dateRange[0] &&
-        d.date <= endDateWithHorizon
+        d.date <= dateRange[1]
     );
 
     // Get the model's prediction data-slices
@@ -266,20 +265,20 @@ const SingleModelHorizonPlot: React.FC = () => {
         (d) =>
           d.stateNum === state &&
           d.referenceDate >= dateRange[0] &&
-          d.referenceDate <= endDateWithHorizon
+          d.targetEndDate <= dateRange[1]
       ) || [];
 
     // Find the earliest and latest dates with actual data-slices, only those that both have valid admission value & has predictions made on that day
     const startDates = [
       validGroundTruth.length > 0
         ? validGroundTruth[0].date
-        : endDateWithHorizon,
+        : dateRange[1],
       validPredictions.length > 0
         ? validPredictions[0].referenceDate
-        : endDateWithHorizon,
+        : dateRange[1],
     ];
 
-    // const endDates = [endDateWithHorizon];
+    // const endDates = [dateRange[1]];
 
     const endDates = [
       validGroundTruth.length > 0

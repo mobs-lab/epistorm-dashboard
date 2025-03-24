@@ -1,29 +1,43 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 
 import { modelColorMap, modelNames } from "@/interfaces/epistorm-constants";
-
 import { EvaluationsSeasonOverviewSeasonOption } from "@/interfaces/forecast-interfaces";
 
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-
-import { setEvaluationSeasonOverviewHorizon, updateSelectedAggregationPeriod } from "@/store/evaluations-season-overview-settings-slice";
+import { setEvaluationSeasonOverviewHorizon, updateSelectedAggregationPeriod, refreshDynamicDateRanges } from "@/store/evaluations-season-overview-settings-slice";
 
 import { Radio, Typography } from "@/styles/material-tailwind-wrapper";
-
 import Image from "next/image";
-import { parseISO, subMonths } from "date-fns";
+
+import { format, parseISO, subMonths } from "date-fns";
 
 // Season Overview Settings Panel
 export const SeasonOverviewSettings = () => {
   const dispatch = useAppDispatch();
 
-  const [selectedAggregationPeriod, setSelectedAggregationPeriod] = useState("current-season");
+  const predictionsData = useAppSelector((state) => state.predictions.data);
 
-  const { evaluationSeasonOverviewHorizon, evaluationSeasonOverviewSeasonOptions, aggregationPeriods } = useAppSelector(
+  const { evaluationSeasonOverviewHorizon, selectedAggregationPeriod, aggregationPeriods } = useAppSelector(
     (state) => state.evaluationsSeasonOverviewSettings
   );
+
+  // Effect to refresh dynamic date ranges when horizons change
+  useEffect(() => {
+    if (predictionsData.length > 0) {
+      // Find the maximum horizon for proper date range calculation
+      const maxHorizon = evaluationSeasonOverviewHorizon.length > 0 
+        ? Math.max(...evaluationSeasonOverviewHorizon)
+        : 0;
+      
+      // Refresh dynamic date ranges
+      dispatch(refreshDynamicDateRanges({ 
+        predictions: predictionsData,
+        maxHorizon
+      }));
+    }
+  }, [dispatch, evaluationSeasonOverviewHorizon, predictionsData]);
 
   // Horizon handler
   const onHorizonChange = (selected: number, checked: boolean) => {
@@ -40,6 +54,11 @@ export const SeasonOverviewSettings = () => {
   // Aggregation period change handler
   const onAggregationPeriodChange = (periodId: string) => {
     dispatch(updateSelectedAggregationPeriod(periodId));
+  };
+
+  // Format date range for display
+  const formatDateRange = (startDate: Date, endDate: Date) => {
+    return `(${format(startDate, "MMM d, yyyy")} - ${format(endDate, "MMM d, yyyy")})`;
   };
 
   return (
@@ -79,7 +98,6 @@ export const SeasonOverviewSettings = () => {
           </div>
         </div>
 
-        {/* TODO: Refactor this */}
         <div className='mb-6'>
           <Typography variant='h6' className='text-white mb-2'>
             Time Period
@@ -90,7 +108,16 @@ export const SeasonOverviewSettings = () => {
                 <Radio
                   name='seasonAggregationRadioBtn'
                   value={period.id}
-                  label={period.label}
+                  label={
+                    <>
+                      {period.label}
+                      {period.isDynamic && (
+                        <span className="text-sm ml-1 opacity-80">
+                          {formatDateRange(period.startDate, period.endDate)}
+                        </span>
+                      )}
+                    </>
+                  }
                   onChange={() => onAggregationPeriodChange(period.id)}
                   className='text-white'
                   labelProps={{
