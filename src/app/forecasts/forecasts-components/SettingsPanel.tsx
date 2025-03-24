@@ -156,6 +156,7 @@ const SettingsPanel: React.FC = () => {
   };
 
   return (
+<<<<<<< Updated upstream
     <div className="bg-mobs-lab-color-filterspane text-white fill-white flex flex-col h-full rounded-md overflow-hidden util-responsive-text-settings">
       <div className="flex-grow overflow-y-auto p-4">
         <div className="flex flex-col flex-wrap justify-stretch items-start w-full">
@@ -243,6 +244,85 @@ const SettingsPanel: React.FC = () => {
 
           <div className="pt-4 w-full h-full">
             <Typography variant="h6" className="text-white">
+=======
+    <div className='bg-mobs-lab-color-filterspane text-white fill-white flex flex-col h-full w-full rounded-md overflow-hidden util-responsive-text-settings'>
+      <div className='flex flex-col overflow-y-auto p-4 justify-stretch items-start w-full util-no-sb-length'>
+        <div className='mb-6 w-full h-full justify-stretch items-stretch'>
+          <Typography variant='h6' className='text-white'>
+            Select Location
+          </Typography>
+
+          <div className='w-full'>
+            <SettingsStateMap pageSelected='forecast' />
+          </div>
+
+          <select
+            value={USStateNum}
+            onChange={(e) => onStateSelectionChange(e.target.value)}
+            className={"text-white border-[#5d636a] border-2 bg-mobs-lab-color-filterspane rounded-md w-full py-4 px-2 overflow-ellipsis"}>
+            {locationData.map((state) => (
+              <option key={state.state} value={state.stateNum}>
+                {state.stateName}
+                {/*{state.stateNum} : {state.stateName}*/}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/*NOTE: Revisit for potential improvement*/}
+        <div className='mb-2 w-full h-full overflow-ellipsis'>
+          <Typography variant='h6' className='text-white'>
+            Model
+          </Typography>
+          <div className='flex flex-col text-wrap'>
+            {modelNames.map((model) => (
+              <label key={model} className='inline-flex items-center text-white'>
+                <span
+                  className='w-[1em] h-[1em] border-2 rounded-sm mr-2 '
+                  style={{
+                    backgroundColor: forecastModel.includes(model) ? modelColorMap[model] : "transparent",
+                    borderColor: modelColorMap[model],
+                  }}
+                />
+                <input
+                  type='checkbox'
+                  className='sr-only'
+                  checked={forecastModel.includes(model)}
+                  onChange={(e) => onModelSelectionChange(model, e.target.checked)}
+                />
+                <span className='ml-2 text-wrap xs:text-sm '>{model}</span>
+              </label>
+            ))}
+          </div>
+          <button className='mt-2 bg-[#5d636a] text-white rounded text-sm w-full' onClick={handleShowAllModels}>
+            Show All Models
+          </button>
+        </div>
+
+        {/* Season Selector */}
+        <div className='mb-4 w-full h-full justify-stretch items-stretch py-4'>
+          <div className='mb-2 w-full'>
+            <Typography variant='h6' className='text-white'>
+              Season
+            </Typography>
+            <select
+              id={"settings-panel-season-select"}
+              value={dateRange}
+              onChange={(e) => onSeasonSelectionChange(e.target.value)}
+              className={
+                "text-white border-[#5d636a] border-2 flex-wrap bg-mobs-lab-color-filterspane rounded-md w-full py-2 px-2 overflow-ellipsis"
+              }>
+              {seasonOptions.map((option: SeasonOption) => (
+                <option key={option.index} value={option.timeValue}>
+                  {option.displayString}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className='mb-2 w-full'>
+            <Typography variant='h6' className='text-white'>
+>>>>>>> Stashed changes
               Start Date
             </Typography>
             <SettingsStyledDatePicker
@@ -250,7 +330,45 @@ const SettingsPanel: React.FC = () => {
               onChange={onDateStartSelectionChange}
               minDate={earliestDayFromGroundTruthData}
               maxDate={dateEnd}
+<<<<<<< Updated upstream
               className="w-full border-[#5d636a] border-2 rounded-md"
+=======
+              className='w-full border-[#5d636a] border-2 rounded-md'
+            />
+          </div>
+
+          <div className='mb-2 w-full'>
+            <Typography variant='h6' className='text-white'>
+              End Date
+            </Typography>
+            <SettingsStyledDatePicker
+              value={dateEnd}
+              onChange={onDateEndSelectionChange}
+              minDate={dateStart}
+              maxDate={latestDayFromGroundTruthData}
+              className='w-full border-[#5d636a] border-2 rounded-md'
+            />
+          </div>
+          <button className=' bg-[#5d636a] text-white rounded text-sm w-full ' onClick={handleShowAllDates}>
+            Show All
+          </button>
+        </div>
+
+        <div className='mb-4 w-full h-full'>
+          <Typography variant='h6' className='text-white'>
+            Horizon
+          </Typography>
+          {[0, 1, 2, 3].map((value) => (
+            <Radio
+              key={value}
+              name='weeksAheadRadioBtn'
+              value={value.toString()}
+              label={value.toString()}
+              onChange={(e) => onNumOfWeeksAheadChange(e)}
+              className='text-white'
+              labelProps={{ className: "text-white" }}
+              defaultChecked={value === 3}
+>>>>>>> Stashed changes
             />
           </div>
           <div className="pt-2 w-full h-full">
@@ -272,84 +390,33 @@ const SettingsPanel: React.FC = () => {
             Show All
           </button>
 
-          <div className="my-2 w-full h-full">
-            <Typography variant="h6" className="text-white">
-              {" "}
-              Horizon{" "}
-            </Typography>
-            {[0, 1, 2, 3].map((value) => (
-              <Radio
-                key={value}
-                name="weeksAheadRadioBtn"
-                value={value.toString()}
-                label={value.toString()}
-                onChange={(e) => onNumOfWeeksAheadChange(e)}
-                className="text-white"
-                labelProps={{ className: "text-white" }}
-                defaultChecked={value === 3}
-              />
+        <div className='flex-col justify-stretch items-stretch flex-wrap w-full h-full'>
+          <Typography variant='h6' className='text-white'>
+            Confidence Interval
+          </Typography>
+          <div className='flex flex-row flex-wrap justify-between items-center'>
+            {["50%", "90%", "95%"].map((interval) => (
+              <label key={interval} className='flex items-center text-white'>
+                <input
+                  type='checkbox'
+                  className='form-checkbox text-blue-600 mr-2'
+                  checked={confidenceInterval.includes(interval.split("%")[0])}
+                  onChange={(e) => onConfidenceIntervalChange(interval, e.target.checked)}
+                />
+                <span>{interval}</span>
+              </label>
             ))}
-          </div>
-          <div className="mb-4 w-full h-full">
-            <Typography variant="h6" className="text-white">
-              Y-Axis Scale
-            </Typography>
-            {["linear", "log"].map((value) => (
-              <Radio
-                key={value}
-                name="yAxisRadioBtn"
-                value={value}
-                label={value === "linear" ? "Linear" : "Logarithmic"}
-                onChange={(e) => onYAxisScaleChange(e)}
-                className="text-white"
-                labelProps={{ className: "text-white" }}
-                defaultChecked={value === "linear"}
-              />
-            ))}
-          </div>
-
-          <div className="mb-4 flex-col justify-stretch items-stretch flex-wrap w-full h-full">
-            <Typography variant="h6" className="text-white">
-              Confidence Interval
-            </Typography>
-            <div className="flex flex-row flex-wrap justify-between items-center">
-              {["50%", "90%", "95%"].map((interval) => (
-                <label key={interval} className="flex items-center text-white">
-                  <input
-                    type="checkbox"
-                    className="form-checkbox text-blue-600 mr-2"
-                    checked={confidenceInterval.includes(
-                      interval.split("%")[0]
-                    )}
-                    onChange={(e) =>
-                      onConfidenceIntervalChange(interval, e.target.checked)
-                    }
-                  />
-                  <span>{interval}</span>
-                </label>
-              ))}
-              <button
-                className={`flex flex-wrap rounded p-1 ${
-                  confidenceInterval.length === 0
-                    ? "bg-[] text-white"
-                    : "bg-[#5d636a] text-white"
-                }`}
-                onClick={() => dispatch(updateConfidenceInterval([]))}
-              >
-                None
-              </button>
-            </div>
+            <button
+              className={`flex flex-wrap rounded p-1 ${confidenceInterval.length === 0 ? "bg-blue-600 text-white" : "bg-[#5d636a] text-white"}`}
+              onClick={() => dispatch(updateConfidenceInterval([]))}>
+              None
+            </button>
           </div>
         </div>
       </div>
-      
-      <div className="mx-auto p-2">
-        <Image
-          src="/epistorm-logo.png"
-          width={300}
-          height={120}
-          alt="Epistorm Logo"
-        />
+
+      <div className='mt-auto p-2 border-t border-gray-700'>
+        <Image src='/epistorm-logo.png' width={300} height={120} alt='Epistorm Logo' />
       </div>
     </div>
   );
