@@ -156,95 +156,6 @@ const SettingsPanel: React.FC = () => {
   };
 
   return (
-<<<<<<< Updated upstream
-    <div className="bg-mobs-lab-color-filterspane text-white fill-white flex flex-col h-full rounded-md overflow-hidden util-responsive-text-settings">
-      <div className="flex-grow overflow-y-auto p-4">
-        <div className="flex flex-col flex-wrap justify-stretch items-start w-full">
-          <h2> Select Location </h2>
-
-          <div className="mb-4 w-full">
-            <SettingsStateMap pageSelected="forecast" />
-          </div>
-
-          <select
-            value={USStateNum}
-            onChange={(e) => onStateSelectionChange(e.target.value)}
-            className={
-              "text-white border-[#5d636a] border-2 font-sans flex-wrap bg-mobs-lab-color-filterspane rounded-md px-2 py-4 w-full h-full"
-            }
-          >
-            {locationData.map((state) => (
-              <option key={state.state} value={state.stateNum}>
-                {state.stateName}
-                {/*{state.stateNum} : {state.stateName}*/}
-              </option>
-            ))}
-          </select>
-
-          {/*NOTE: Revisit for potential improvement*/}
-          <div className="my-2 w-full h-full overflow-ellipsis">
-            <Typography variant="h6" className="text-white">
-              Model
-            </Typography>
-            <div className="flex flex-col text-wrap">
-              {modelNames.map((model) => (
-                <label
-                  key={model}
-                  className="inline-flex items-center text-white"
-                >
-                  <span
-                    className="w-[1em] h-[1em] border-2 rounded-sm mr-2 "
-                    style={{
-                      backgroundColor: forecastModel.includes(model)
-                        ? modelColorMap[model]
-                        : "transparent",
-                      borderColor: modelColorMap[model],
-                    }}
-                  />
-                  <input
-                    type="checkbox"
-                    className="sr-only"
-                    checked={forecastModel.includes(model)}
-                    onChange={(e) =>
-                      onModelSelectionChange(model, e.target.checked)
-                    }
-                  />
-                  <span className="ml-2 text-wrap xs:text-sm ">{model}</span>
-                </label>
-              ))}
-            </div>
-          </div>
-          <button
-            className="mb-4 mt-2 bg-[#5d636a] text-white rounded text-sm w-full h-full"
-            onClick={handleShowAllModels}
-          >
-            Show All Models
-          </button>
-
-          <div className="w-full h-full justify-stretch items-stretch py-4">
-            <Typography variant="h6" className="text-white">
-              Season
-            </Typography>
-            <select
-              id={"settings-panel-season-select"}
-              // value={'2023-08-01/2024-05-18'}
-              value={dateRange}
-              onChange={(e) => onSeasonSelectionChange(e.target.value)}
-              className={
-                "text-white border-[#5d636a] border-2 flex-wrap bg-mobs-lab-color-filterspane rounded-md w-full h-full py-2 px-2 overflow-ellipsis"
-              }
-            >
-              {seasonOptions.map((option: SeasonOption) => (
-                <option key={option.index} value={option.timeValue}>
-                  {option.displayString}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="pt-4 w-full h-full">
-            <Typography variant="h6" className="text-white">
-=======
     <div className='bg-mobs-lab-color-filterspane text-white fill-white flex flex-col h-full w-full rounded-md overflow-hidden util-responsive-text-settings'>
       <div className='flex flex-col overflow-y-auto p-4 justify-stretch items-start w-full util-no-sb-length'>
         <div className='mb-6 w-full h-full justify-stretch items-stretch'>
@@ -322,7 +233,6 @@ const SettingsPanel: React.FC = () => {
 
           <div className='mb-2 w-full'>
             <Typography variant='h6' className='text-white'>
->>>>>>> Stashed changes
               Start Date
             </Typography>
             <SettingsStyledDatePicker
@@ -330,9 +240,6 @@ const SettingsPanel: React.FC = () => {
               onChange={onDateStartSelectionChange}
               minDate={earliestDayFromGroundTruthData}
               maxDate={dateEnd}
-<<<<<<< Updated upstream
-              className="w-full border-[#5d636a] border-2 rounded-md"
-=======
               className='w-full border-[#5d636a] border-2 rounded-md'
             />
           </div>
@@ -368,7 +275,6 @@ const SettingsPanel: React.FC = () => {
               className='text-white'
               labelProps={{ className: "text-white" }}
               defaultChecked={value === 3}
->>>>>>> Stashed changes
             />
           </div>
           <div className="pt-2 w-full h-full">
