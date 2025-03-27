@@ -60,8 +60,6 @@ const SingleModelScoreLineChart: React.FC = () => {
   ): [Date, Date] {
     /* First calcualte using horizon number, a buffer for how many weeks ahead we should seek for end date within the final range */
 
-    const numsOfWeekAhead = horizon;
-    const endDateWithHorizon = addWeeks(dateRange[1], numsOfWeekAhead);
     /* console.log(
       "end date calculated considering horizon: ",
       endDateWithHorizon
@@ -73,7 +71,7 @@ const SingleModelScoreLineChart: React.FC = () => {
         d.stateNum === state &&
         d.admissions >= -1 &&
         d.date >= dateRange[0] &&
-        d.date <= endDateWithHorizon
+        d.date <= dateRange[1]
     );
 
     // Get the model's prediction data-slices
@@ -86,17 +84,17 @@ const SingleModelScoreLineChart: React.FC = () => {
         (d) =>
           d.stateNum === state &&
           d.referenceDate >= dateRange[0] &&
-          d.referenceDate <= endDateWithHorizon
+          d.referenceDate <= dateRange[1]
       ) || [];
 
     // Find the earliest and latest dates with actual data-slices, only those that both have valid admission value & has predictions made on that day
     const startDates = [
       validGroundTruth.length > 0
         ? validGroundTruth[0].date
-        : endDateWithHorizon,
+        : dateRange[1],
       validPredictions.length > 0
         ? validPredictions[0].referenceDate
-        : endDateWithHorizon,
+        : dateRange[1],
     ];
 
     // const endDates = [endDateWithHorizon];
