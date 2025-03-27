@@ -4,6 +4,10 @@ import { EvaluationsSeasonOverviewSeasonOption, AggregationPeriod, ModelPredicti
 import { parseISO, subWeeks, format, addWeeks } from "date-fns";
 
 interface EvaluationsSeasonOverviewSettingsState {
+  /* Location Related */
+  evaluationSeasonOverviewSelectedStateCode: string;
+  evaluationSeasonOverviewSelectedStateName: string;
+
   /* Model Related*/
   evaluationSeasonOverviewHorizon: number[]; //how many weeks ahead from reference date (matching surveillance week's number) should we look for as target_end_date in predictions to draw the intervals
 
@@ -11,7 +15,6 @@ interface EvaluationsSeasonOverviewSettingsState {
   evaluationSeasonOverviewSeasonOptions: EvaluationsSeasonOverviewSeasonOption[];
   aggregationPeriods: AggregationPeriod[];
   selectedAggregationPeriod: string;
-
   // store the reference date for SO Settings Panel
   latestReferenceDate: Date | null;
 }
@@ -62,6 +65,10 @@ const predefinedAggregationPeriods: AggregationPeriod[] = [
 ];
 
 const initialState: EvaluationsSeasonOverviewSettingsState = {
+  /* Location Defaults */
+  evaluationSeasonOverviewSelectedStateCode: "US",
+  evaluationSeasonOverviewSelectedStateName: "United States",
+
   /* Model Defaults*/
   evaluationSeasonOverviewHorizon: [],
 
@@ -100,6 +107,13 @@ const evaluationsSeasonOverviewSettingsSlice = createSlice({
     updateSelectedAggregationPeriod: (state, action: PayloadAction<string>) => {
       state.selectedAggregationPeriod = action.payload;
     },
+    updateEvaluationSeasonOverviewSelectedState: (
+      state,
+      action: PayloadAction<{ stateCode: string; stateName: string }>
+    ) => {
+      state.evaluationSeasonOverviewSelectedStateCode = action.payload.stateCode;
+      state.evaluationSeasonOverviewSelectedStateName = action.payload.stateName;
+    },
 
     // Refresh dynamic date ranges based on latest reference date and selected horizons
     // Triggered by Data Provider after surveillance + predictions are loaded
@@ -121,19 +135,19 @@ const evaluationsSeasonOverviewSettingsSlice = createSlice({
           if (period.id === "last-2-weeks") {
             return {
               ...period,
-              startDate: subWeeks(referenceEndDate, 2),
+              startDate: subWeeks(latestReferenceDate, 2),
               endDate: referenceEndDate,
             };
           } else if (period.id === "last-4-weeks") {
             return {
               ...period,
-              startDate: subWeeks(referenceEndDate, 4),
+              startDate: subWeeks(latestReferenceDate, 4),
               endDate: referenceEndDate,
             };
           } else if (period.id === "last-8-weeks") {
             return {
               ...period,
-              startDate: subWeeks(referenceEndDate, 8),
+              startDate: subWeeks(latestReferenceDate, 8),
               endDate: referenceEndDate,
             };
           }
@@ -147,6 +161,7 @@ const evaluationsSeasonOverviewSettingsSlice = createSlice({
 export const {
   setEvaluationSeasonOverviewHorizon,
   updateEvaluationSeasonOverviewSeasonOptions,
+  updateEvaluationSeasonOverviewSelectedState,
   updateSelectedAggregationPeriod,
   refreshDynamicDateRanges,
 } = evaluationsSeasonOverviewSettingsSlice.actions;

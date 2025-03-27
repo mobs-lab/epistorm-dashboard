@@ -6,7 +6,11 @@ import { modelColorMap, modelNames } from "@/interfaces/epistorm-constants";
 import { EvaluationsSeasonOverviewSeasonOption } from "@/interfaces/forecast-interfaces";
 
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { setEvaluationSeasonOverviewHorizon, updateSelectedAggregationPeriod, refreshDynamicDateRanges } from "@/store/evaluations-season-overview-settings-slice";
+import {
+  setEvaluationSeasonOverviewHorizon,
+  updateSelectedAggregationPeriod,
+  refreshDynamicDateRanges,
+} from "@/store/evaluations-season-overview-settings-slice";
 
 import { Radio, Typography } from "@/styles/material-tailwind-wrapper";
 import Image from "next/image";
@@ -27,15 +31,15 @@ export const SeasonOverviewSettings = () => {
   useEffect(() => {
     if (predictionsData.length > 0) {
       // Find the maximum horizon for proper date range calculation
-      const maxHorizon = evaluationSeasonOverviewHorizon.length > 0 
-        ? Math.max(...evaluationSeasonOverviewHorizon)
-        : 0;
-      
+      const maxHorizon = evaluationSeasonOverviewHorizon.length > 0 ? Math.max(...evaluationSeasonOverviewHorizon) : 0;
+
       // Refresh dynamic date ranges
-      dispatch(refreshDynamicDateRanges({ 
-        predictions: predictionsData,
-        maxHorizon
-      }));
+      dispatch(
+        refreshDynamicDateRanges({
+          predictions: predictionsData,
+          maxHorizon,
+        })
+      );
     }
   }, [dispatch, evaluationSeasonOverviewHorizon, predictionsData]);
 
@@ -111,10 +115,9 @@ export const SeasonOverviewSettings = () => {
                   label={
                     <>
                       {period.label}
-                      {period.isDynamic && (
-                        <span className="text-sm ml-1 opacity-80">
-                          {formatDateRange(period.startDate, period.endDate)}
-                        </span>
+                      {/* Only show date range if this option is both dynamic AND selected */}
+                      {period.isDynamic && period.id === selectedAggregationPeriod && (
+                        <span className='text-sm ml-1 opacity-80'>{formatDateRange(period.startDate, period.endDate)}</span>
                       )}
                     </>
                   }
