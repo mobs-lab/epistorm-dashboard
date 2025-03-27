@@ -14,6 +14,7 @@ import {
   setDate,
   setMonth,
   startOfWeek,
+  subWeeks,
 } from "date-fns";
 import { useAppDispatch } from "@/store/hooks";
 import {
@@ -51,6 +52,7 @@ import {
   updateEvaluationsSingleModelViewDateRange,
   updateEvaluationSingleModelViewSeasonOptions,
 } from "@/store//evaluations-single-model-settings-slice";
+import { updateDynamicPeriods } from "@/store/evaluations-season-overview-settings-slice";
 
 interface DataContextType {
   loadingStates: LoadingStates;
@@ -59,9 +61,7 @@ interface DataContextType {
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
 
-export const DataProvider: React.FC<{ children: React.ReactNode }> = ({
-  children,
-}) => {
+export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const dispatch = useAppDispatch();
   const [loadingStates, setLoadingStates] = useState<LoadingStates>({
     evaluationScores: true,
@@ -115,9 +115,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({
       { weekStartsOn: 6 }
     );
 
-    const existingDataMap = new Map(
-      groundTruthData.map((d) => [format(d.date, "yyyy-MM-dd"), d])
-    );
+    const existingDataMap = new Map(groundTruthData.map((d) => [format(d.date, "yyyy-MM-dd"), d]));
     const placeholderData: DataPoint[] = [];
 
     allSaturdays.forEach((date) => {
@@ -135,9 +133,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({
       }
     });
 
-    const combinedData = [...groundTruthData, ...placeholderData].sort(
-      (a, b) => a.date.getTime() - b.date.getTime()
-    );
+    const combinedData = [...groundTruthData, ...placeholderData].sort((a, b) => a.date.getTime() - b.date.getTime());
 
     return {
       data: combinedData,
@@ -146,9 +142,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({
     };
   };
 
-  const generateSeasonOptions = (
-    processedData: ProcessedDataWithDateRange
-  ): SeasonOption[] => {
+  const generateSeasonOptions = (processedData: ProcessedDataWithDateRange): SeasonOption[] => {
     const options: SeasonOption[] = [];
     const { earliestDate, latestDate } = processedData;
 
@@ -156,10 +150,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({
       return options;
     }
 
-    const getSeasonEnd = (year: number) =>
-      setDate(setMonth(new Date(year, 0, 1), 6), 31);
-    const getSeasonStart = (year: number) =>
-      setDate(setMonth(new Date(year - 1, 0, 1), 7), 1);
+    const getSeasonEnd = (year: number) => setDate(setMonth(new Date(year, 0, 1), 6), 31);
+    const getSeasonStart = (year: number) => setDate(setMonth(new Date(year - 1, 0, 1), 7), 1);
 
     let currentYear = getYear(latestDate);
     let currentSeasonEnd = getSeasonEnd(currentYear);
@@ -170,47 +162,28 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({
       options.push({
         index: optionIndex++,
         displayString: `${currentYear}-${currentYear + 1} (Ongoing)`,
-        timeValue: `${format(nextSeasonStart, "yyyy-MM-dd")}/${format(
-          latestDate,
-          "yyyy-MM-dd"
-        )}`,
+        timeValue: `${format(nextSeasonStart, "yyyy-MM-dd")}/${format(latestDate, "yyyy-MM-dd")}`,
         startDate: nextSeasonStart,
         endDate: latestDate,
       });
     }
 
-    while (
-      isAfter(currentSeasonEnd, earliestDate) ||
-      isSameDay(currentSeasonEnd, earliestDate)
-    ) {
+    while (isAfter(currentSeasonEnd, earliestDate) || isSameDay(currentSeasonEnd, earliestDate)) {
       const seasonStart = getSeasonStart(currentYear);
-      const adjustedStart = isBefore(seasonStart, earliestDate)
-        ? earliestDate
-        : seasonStart;
-      const adjustedEnd = isBefore(latestDate, currentSeasonEnd)
-        ? latestDate
-        : currentSeasonEnd;
+      const adjustedStart = isBefore(seasonStart, earliestDate) ? earliestDate : seasonStart;
+      const adjustedEnd = isBefore(latestDate, currentSeasonEnd) ? latestDate : currentSeasonEnd;
 
       let displayString = `${currentYear - 1}-${currentYear}`;
-      if (
-        isSameDay(adjustedEnd, latestDate) &&
-        isBefore(latestDate, currentSeasonEnd)
-      ) {
+      if (isSameDay(adjustedEnd, latestDate) && isBefore(latestDate, currentSeasonEnd)) {
         displayString += " (Ongoing)";
-      } else if (
-        isSameDay(adjustedStart, earliestDate) &&
-        isAfter(earliestDate, seasonStart)
-      ) {
+      } else if (isSameDay(adjustedStart, earliestDate) && isAfter(earliestDate, seasonStart)) {
         displayString = `Partial ${displayString}`;
       }
 
       options.push({
         index: optionIndex++,
         displayString,
-        timeValue: `${format(adjustedStart, "yyyy-MM-dd")}/${format(
-          adjustedEnd,
-          "yyyy-MM-dd"
-        )}`,
+        timeValue: `${format(adjustedStart, "yyyy-MM-dd")}/${format(adjustedEnd, "yyyy-MM-dd")}`,
         startDate: adjustedStart,
         endDate: adjustedEnd,
       });
@@ -240,10 +213,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({
         updateLoadingState("locations", false);
 
         // Fetch ground truth and predictions data-slices
-        const groundTruthData = await d3.csv(
-          "/data/ground-truth/target-hospital-admissions.csv"
-        );
-        const parsedGroundTruthData = groundTruthData.map((d) => ({
+        const groundTruthData = await d3.csv("/data/ground-truth/target-hospital-admissions.csv");
+        const parsedGroundTruthData: DataPoint[] = groundTruthData.map((d) => ({
           date: parseISO(d.date),
           stateNum: d.location,
           stateName: d.location_name,
@@ -251,12 +222,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({
           weeklyRate: +d["weekly_rate"],
         }));
 
-        /* Get latest valid surveillance data-slices point's date info */
-        const latestValidSurveillanceDate = parsedGroundTruthData
-          .filter((d) => !isNaN(d.admissions))
-          .reduce((latest, current) =>
-            isAfter(current.date, latest.date) ? current : latest
-          ).date;
+        // console.debug("DataProvider: latestValidSurveillanceDate: ", latestValidSurveillanceDate);
 
         /*  Keep track of latest valid prediction data-slices point's date info
             NOTE: extract from all avaialble models because that is the initialized default 
@@ -264,22 +230,15 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({
         */
         const predictionsData = await Promise.all(
           modelNames.map(async (team_model) => {
-            const newPredictions = await safeCSVFetch(
-              `/data/processed/${team_model}/predictions.csv`
-            );
-            const oldPredictions = await safeCSVFetch(
-              `/data/processed/${team_model}/predictions_older.csv`
-            );
+            const newPredictions = await safeCSVFetch(`/data/processed/${team_model}/predictions.csv`);
+            const oldPredictions = await safeCSVFetch(`/data/processed/${team_model}/predictions_older.csv`);
 
             if (!newPredictions && !oldPredictions) {
               console.warn(`No prediction data found for model: ${team_model}`);
               return { modelName: team_model, predictionData: [] };
             }
 
-            const predictionData: PredictionDataPoint[] = [
-              ...(newPredictions || []),
-              ...(oldPredictions || []),
-            ].map((d) => ({
+            const predictionData: PredictionDataPoint[] = [...(newPredictions || []), ...(oldPredictions || [])].map((d) => ({
               referenceDate: parseISO(d.reference_date),
               targetEndDate: parseISO(d.target_end_date),
               stateNum: d.location,
@@ -298,41 +257,61 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({
           })
         );
 
+        // Find latest valid surveillance date
+        const latestValidSurveillanceDate = parsedGroundTruthData.reduce(
+          (latest, current) => (isAfter(current.date, latest.date) ? current : latest),
+          { date: new Date(0) } as DataPoint
+        ).date;
+
         // Find latest reference date across all models
-        const latestValidPredictionDate = predictionsData.reduce(
-          (latestDate, model) => {
-            if (!model.predictionData.length) return latestDate;
+        const latestValidPredictionDate = predictionsData.reduce((latestDate, model) => {
+          if (!model.predictionData.length) return latestDate;
+          const modelLatestRef = model.predictionData.reduce(
+            (latest, pred) => (isAfter(pred.referenceDate, latest) ? pred.referenceDate : latest),
+            new Date(0)
+          );
+          return isAfter(modelLatestRef, latestDate) ? modelLatestRef : latestDate;
+        }, new Date(0));
 
-            const modelLatestRef = model.predictionData.reduce(
-              (latest, pred) =>
-                isAfter(pred.referenceDate, latest)
-                  ? pred.referenceDate
-                  : latest,
-              new Date(0)
-            );
+        // Use the later date between prediction and surveillance
+        const latestValidReferenceDate = isBefore(latestValidPredictionDate, latestValidSurveillanceDate)
+          ? latestValidPredictionDate
+          : latestValidSurveillanceDate;
 
-            return isAfter(modelLatestRef, latestDate)
-              ? modelLatestRef
-              : latestDate;
+        // Calculate dynamic periods
+        // See the calculation documentation for why its 1,3,7
+        const dynamicPeriods = {
+          last2Weeks: {
+            startDate: subWeeks(latestValidReferenceDate, 1),
+            endDate: latestValidReferenceDate,
           },
-          new Date(0)
+          last4Weeks: {
+            startDate: subWeeks(latestValidReferenceDate, 3),
+            endDate: latestValidReferenceDate,
+          },
+          last8Weeks: {
+            startDate: subWeeks(latestValidReferenceDate, 7),
+            endDate: latestValidReferenceDate,
+          },
+        };
+        console.debug("Data Provider: generated dynamic season overview periods:", dynamicPeriods);
+
+        // Initialize dynamic date ranges for Season Overview
+        dispatch(
+          updateDynamicPeriods({
+            latestReferenceDate: latestValidReferenceDate,
+            dynamicPeriods,
+          })
         );
 
-        const mostRecentDate = isAfter(
-          latestValidPredictionDate,
-          latestValidSurveillanceDate
-        )
+        const mostRecentDate = isAfter(latestValidPredictionDate, latestValidSurveillanceDate)
           ? latestValidPredictionDate
           : latestValidSurveillanceDate;
 
         // Update user selected week to the most recent valid date
         dispatch(updateUserSelectedWeek(mostRecentDate));
 
-        const processedData = addBackEmptyDatesWithPrediction(
-          parsedGroundTruthData,
-          predictionsData,
-          parsedLocationData
-        );
+        const processedData = addBackEmptyDatesWithPrediction(parsedGroundTruthData, predictionsData, parsedLocationData);
 
         dispatch(setGroundTruthData(processedData.data));
         updateLoadingState("groundTruth", false);
@@ -352,12 +331,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({
           dispatch(updateDateEnd(lastSeason.endDate));
 
           /* For Evaluations Single Model View components */
-          dispatch(
-            updateEvaluationsSingleModelViewDateRange(lastSeason.timeValue)
-          );
-          dispatch(
-            updateEvaluationSingleModelViewDateStart(lastSeason.startDate)
-          );
+          dispatch(updateEvaluationsSingleModelViewDateRange(lastSeason.timeValue));
+          dispatch(updateEvaluationSingleModelViewDateStart(lastSeason.startDate));
           dispatch(updateEvaluationSingleModelViewDateEnd(lastSeason.endDate));
         }
         updateLoadingState("seasonOptions", false);
@@ -383,9 +358,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({
     try {
       const nowcastTrendsData = await Promise.all(
         modelNames.map(async (modelName) => {
-          const response = await safeCSVFetch(
-            `/data/processed/${modelName}/nowcast_trends.csv`
-          );
+          const response = await safeCSVFetch(`/data/processed/${modelName}/nowcast_trends.csv`);
           if (!response) {
             return { modelName, data: [] };
           }
@@ -432,10 +405,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({
       const historicalData = [];
 
       for (let date = startDate; date <= endDate; date = addWeeks(date, 1)) {
-        const fileName = `target-hospital-admissions_${format(
-          date,
-          "yyyy-MM-dd"
-        )}.csv`;
+        const fileName = `target-hospital-admissions_${format(date, "yyyy-MM-dd")}.csv`;
         const filePath = `/data/ground-truth/historical-data/${fileName}`;
 
         try {
@@ -459,10 +429,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({
       dispatch(setHistoricalGroundTruthData(historicalData));
       updateLoadingState("historicalGroundTruth", false);
     } catch (error) {
-      console.error(
-        "Error fetching historical ground truth data-slices:",
-        error
-      );
+      console.error("Error fetching historical ground truth data-slices:", error);
       updateLoadingState("historicalGroundTruth", false);
     }
   };
@@ -497,6 +464,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({
 
       wisRatioData.forEach((entry) => {
         const modelName = entry.Model;
+        /* Filter out needed models here! */
         const scoreData = {
           referenceDate: parseISO(entry.reference_date),
           score: +entry.wis_ratio,
@@ -545,9 +513,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({
         evaluationsData.push({
           modelName,
           scoreMetric: "WIS/Baseline",
-          scoreData: scoreData.sort(
-            (a, b) => a.referenceDate.getTime() - b.referenceDate.getTime()
-          ),
+          scoreData: scoreData.sort((a, b) => a.referenceDate.getTime() - b.referenceDate.getTime()),
         });
       });
 
@@ -556,9 +522,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({
         evaluationsData.push({
           modelName,
           scoreMetric: "MAPE",
-          scoreData: scoreData.sort(
-            (a, b) => a.referenceDate.getTime() - b.referenceDate.getTime()
-          ),
+          scoreData: scoreData.sort((a, b) => a.referenceDate.getTime() - b.referenceDate.getTime()),
         });
       });
 
@@ -580,11 +544,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const isFullyLoaded = Object.values(loadingStates).every((state) => !state);
 
-  return (
-    <DataContext.Provider value={{ loadingStates, isFullyLoaded }}>
-      {children}
-    </DataContext.Provider>
-  );
+  return <DataContext.Provider value={{ loadingStates, isFullyLoaded }}>{children}</DataContext.Provider>;
 };
 
 export const useDataContext = () => {
