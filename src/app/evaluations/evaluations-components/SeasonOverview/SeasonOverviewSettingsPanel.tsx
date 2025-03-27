@@ -7,7 +7,7 @@ import { modelColorMap, modelNames } from "@/interfaces/epistorm-constants";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { setEvaluationSeasonOverviewHorizon, updateSelectedAggregationPeriod } from "@/store/evaluations-season-overview-settings-slice";
 
-import { Radio, Typography } from "@/styles/material-tailwind-wrapper";
+import { Radio, Typography, Card, List, ListItem, ListItemPrefix } from "@/styles/material-tailwind-wrapper";
 import Image from "next/image";
 
 import { format, parseISO, subDays, subMonths } from "date-fns";
@@ -83,10 +83,20 @@ export const SeasonOverviewSettings = () => {
     return horizon >= 2 && isLastTwoWeeksSelected;
   };
 
+  const handleShowAllHorizons = () => {
+    if (isLastTwoWeeksSelected) {
+      // Only show 0 and 1 for Last 2 Weeks period
+      dispatch(setEvaluationSeasonOverviewHorizon([0, 1]));
+    } else {
+      // Show all horizons
+      dispatch(setEvaluationSeasonOverviewHorizon([0, 1, 2, 3]));
+    }
+  };
+
   return (
     <div className='bg-mobs-lab-color-filterspane text-white fill-white flex flex-col h-full rounded-md overflow-hidden util-responsive-text-settings'>
       <div className='flex-grow nowrap overflow-y-auto p-4 util-no-sb-length'>
-        <div className='mb-6'>
+        <div className='mb-4'>
           <Typography variant='h6' className='text-white mb-2'>
             Model Legend
           </Typography>
@@ -101,7 +111,7 @@ export const SeasonOverviewSettings = () => {
         </div>
 
         <div className='mb-4 flex-col flex-nowrap'>
-          <Typography variant='h6' className='text-white mb-2'>
+          <Typography variant='h6' className='text-white mb-1'>
             Horizon
           </Typography>
           <div className='flex flex-row justify-start items-center'>
@@ -120,11 +130,18 @@ export const SeasonOverviewSettings = () => {
                 <span>{hrzn}</span>
               </label>
             ))}
+            <button
+              onClick={handleShowAllHorizons}
+              className='text-xs bg-blue-500 hover:bg-blue-600 text-white py-1 px-2 rounded'
+            >
+              Show All
+            </button>
           </div>
+          
         </div>
 
         <div className='mb-6'>
-          <Typography variant='h6' className='text-white mb-2'>
+          <Typography variant='h6' className='text-white mb-1'>
             Time Period
           </Typography>
           <div>
@@ -137,12 +154,12 @@ export const SeasonOverviewSettings = () => {
                     <>
                       {period.label}
                       {period.isDynamic && period.id === selectedAggregationPeriod && (
-                        <span className='text-sm ml-1 opacity-80'>{formatDateRange(subDays(period.startDate, 6), period.endDate)}</span>
+                        <span className='text-xs ml-1 opacity-80'>{formatDateRange(subDays(period.startDate, 6), period.endDate)}</span>
                       )}
                     </>
                   }
                   onChange={() => onAggregationPeriodChange(period.id)}
-                  className='text-white'
+                  className='text-white text-sm p-1'
                   labelProps={{
                     className: `text-white w-full ${isTimePeriodDisabled(period.id) ? "opacity-50" : ""}`,
                   }}
