@@ -5,10 +5,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { modelColorMap, modelNames } from "@/interfaces/epistorm-constants";
 
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import {
-  setEvaluationSeasonOverviewHorizon,
-  updateSelectedAggregationPeriod,
-} from "@/store/evaluations-season-overview-settings-slice";
+import { setEvaluationSeasonOverviewHorizon, updateSelectedAggregationPeriod } from "@/store/evaluations-season-overview-settings-slice";
 
 import { Radio, Typography } from "@/styles/material-tailwind-wrapper";
 import Image from "next/image";
@@ -18,35 +15,40 @@ import { format, parseISO, subDays, subMonths } from "date-fns";
 // Season Overview Settings Panel
 export const SeasonOverviewSettings = () => {
   const dispatch = useAppDispatch();
-
-  const predictionsData = useAppSelector((state) => state.predictions.data);
-
   const { evaluationSeasonOverviewHorizon, selectedAggregationPeriod, aggregationPeriods } = useAppSelector(
     (state) => state.evaluationsSeasonOverviewSettings
   );
 
-  // Effect to refresh dynamic date ranges when horizons change
-  /* useEffect(() => {
-    if (predictionsData.length > 0) {
-      // Find the maximum horizon for proper date range calculation
-      const maxHorizon = evaluationSeasonOverviewHorizon.length > 0 ? Math.max(...evaluationSeasonOverviewHorizon) : 0;
+  // Check if "Last 2 Weeks" is selected
+  const isLastTwoWeeksSelected = selectedAggregationPeriod === "last-2-weeks";
 
-      // Refresh dynamic date ranges
-      dispatch(
-        refreshDynamicDateRanges({
-          predictions: predictionsData,
-          maxHorizon,
-        })
-      );
+  // Check if horizons 2 or 3 are selected
+  const hasIncompatibleHorizonsSelected = evaluationSeasonOverviewHorizon.some((h) => h >= 2);
+
+  // Effect to enforce mutual exclusivity when time period changes
+  useEffect(() => {
+    if (isLastTwoWeeksSelected && hasIncompatibleHorizonsSelected) {
+      // If "Last 2 Weeks" is selected, remove horizons 2 and 3
+      const compatibleHorizons = evaluationSeasonOverviewHorizon.filter((h) => h < 2);
+      dispatch(setEvaluationSeasonOverviewHorizon(compatibleHorizons));
+      console.debug("Automatically removed incompatible horizons for Last 2 Weeks period");
     }
-  }, [dispatch, evaluationSeasonOverviewHorizon, predictionsData]); */
+  }, [selectedAggregationPeriod, dispatch]);
 
   // Horizon handler
   const onHorizonChange = (selected: number, checked: boolean) => {
     let newHorizons: number[] = [];
     if (checked) {
+      // Adding a horizon
+      if (selected >= 2 && isLastTwoWeeksSelected) {
+        // If trying to select horizon 2 or 3 while "Last 2 Weeks" is selected,
+        // show a warning or notification to user (or handle silently)
+        console.debug("Cannot select horizon 2 or 3 with Last 2 Weeks period");
+        return; // Prevent selection
+      }
       newHorizons = [...evaluationSeasonOverviewHorizon, selected];
     } else {
+      // Removing a horizon
       newHorizons = evaluationSeasonOverviewHorizon.filter((h) => h !== selected);
     }
     dispatch(setEvaluationSeasonOverviewHorizon(newHorizons));
@@ -55,12 +57,30 @@ export const SeasonOverviewSettings = () => {
 
   // Aggregation period change handler
   const onAggregationPeriodChange = (periodId: string) => {
+    // If selecting "Last 2 Weeks" but incompatible horizons are selected
+    if (periodId === "last-2-weeks" && hasIncompatibleHorizonsSelected) {
+      // Either show a warning to the user or automatically remove the incompatible horizons
+      const compatibleHorizons = evaluationSeasonOverviewHorizon.filter((h) => h < 2);
+      dispatch(setEvaluationSeasonOverviewHorizon(compatibleHorizons));
+      console.debug("Automatically removed incompatible horizons when selecting Last 2 Weeks");
+    }
+
     dispatch(updateSelectedAggregationPeriod(periodId));
   };
 
   // Format date range for display
   const formatDateRange = (startDate: Date, endDate: Date) => {
     return `(${format(startDate, "MMM d, yyyy")} - ${format(endDate, "MMM d, yyyy")})`;
+  };
+
+  // Determine if a time period should be disabled
+  const isTimePeriodDisabled = (periodId: string) => {
+    return periodId === "last-2-weeks" && hasIncompatibleHorizonsSelected;
+  };
+
+  // Determine if a horizon should be disabled
+  const isHorizonDisabled = (horizon: number) => {
+    return horizon >= 2 && isLastTwoWeeksSelected;
   };
 
   return (
@@ -86,13 +106,16 @@ export const SeasonOverviewSettings = () => {
           </Typography>
           <div className='flex flex-row justify-start items-center'>
             {[0, 1, 2, 3].map((hrzn) => (
-              <label key={hrzn} className='mr-6 flex items-center text-white'>
+              <label
+                key={hrzn}
+                className={`mr-6 flex items-center text-white ${isHorizonDisabled(hrzn) ? "opacity-50 cursor-not-allowed" : ""}`}>
                 <input
                   type='checkbox'
                   className='form-checkbox text-blue-600 mr-1'
                   defaultChecked={false}
                   checked={evaluationSeasonOverviewHorizon.includes(hrzn)}
                   onChange={(e) => onHorizonChange(hrzn, e.target.checked)}
+                  disabled={isHorizonDisabled(hrzn)}
                 />
                 <span>{hrzn}</span>
               </label>
@@ -113,7 +136,6 @@ export const SeasonOverviewSettings = () => {
                   label={
                     <>
                       {period.label}
-                      {/* Only show date range if this option is both dynamic AND selected */}
                       {period.isDynamic && period.id === selectedAggregationPeriod && (
                         <span className='text-sm ml-1 opacity-80'>{formatDateRange(subDays(period.startDate, 6), period.endDate)}</span>
                       )}
@@ -122,9 +144,10 @@ export const SeasonOverviewSettings = () => {
                   onChange={() => onAggregationPeriodChange(period.id)}
                   className='text-white'
                   labelProps={{
-                    className: "text-white w-full",
+                    className: `text-white w-full ${isTimePeriodDisabled(period.id) ? "opacity-50" : ""}`,
                   }}
                   checked={selectedAggregationPeriod === period.id}
+                  disabled={isTimePeriodDisabled(period.id)}
                 />
               </div>
             ))}
