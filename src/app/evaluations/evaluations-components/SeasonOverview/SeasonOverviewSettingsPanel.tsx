@@ -144,31 +144,47 @@ export const SeasonOverviewSettings = () => {
           <Typography variant='h6' className='text-white mb-1'>
             Time Period
           </Typography>
-          <div>
-            {aggregationPeriods.map((period) => (
-              <div key={period.id} className='w-full mb-1'>
-                <Radio
-                  name='seasonAggregationRadioBtn'
-                  value={period.id}
-                  label={
-                    <>
+          <List className="p-0 gap-0">
+              {aggregationPeriods.map((period) => (
+                <ListItem 
+                  key={period.id} 
+                  className={`p-0 mb-1 ${isTimePeriodDisabled(period.id) ? "opacity-50" : ""}`}
+                  disabled={isTimePeriodDisabled(period.id)}
+                >
+                  <label
+                    htmlFor={`period-${period.id}`}
+                    className="flex w-full cursor-pointer items-center py-1 px-0"
+                  >
+                    <ListItemPrefix className="mr-2">
+                      <Radio
+                        name="seasonAggregationRadioBtn"
+                        id={`period-${period.id}`}
+                        value={period.id}
+                        onChange={() => onAggregationPeriodChange(period.id)}
+                        checked={selectedAggregationPeriod === period.id}
+                        disabled={isTimePeriodDisabled(period.id)}
+                        className="hover:before:opacity-0 border-white"
+                        color="white"
+                        ripple={false}
+                        containerProps={{
+                          className: "p-0",
+                        }}
+                      />
+                    </ListItemPrefix>
+                    <Typography
+                      className="font-medium text-white"
+                    >
                       {period.label}
                       {period.isDynamic && period.id === selectedAggregationPeriod && (
-                        <span className='text-xs ml-1 opacity-80'>{formatDateRange(subDays(period.startDate, 6), period.endDate)}</span>
+                        <span className='text-xs ml-1 opacity-80'>
+                          {formatDateRange(subDays(period.startDate, 6), period.endDate)}
+                        </span>
                       )}
-                    </>
-                  }
-                  onChange={() => onAggregationPeriodChange(period.id)}
-                  className='text-white text-sm p-1'
-                  labelProps={{
-                    className: `text-white w-full ${isTimePeriodDisabled(period.id) ? "opacity-50" : ""}`,
-                  }}
-                  checked={selectedAggregationPeriod === period.id}
-                  disabled={isTimePeriodDisabled(period.id)}
-                />
-              </div>
-            ))}
-          </div>
+                    </Typography>
+                  </label>
+                </ListItem>
+              ))}
+            </List>
         </div>
       </div>
 
