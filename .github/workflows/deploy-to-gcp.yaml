@@ -30,10 +30,9 @@ jobs:
           npm cache clean --force
           npm install
 
-      - name: Build with demo environment
-        env:
-          NEXT_PUBLIC_GAE_SERVICE: "production"
+      - name: Build with production environment
         run: |
+          cp .env.production .env.production.local
           npm run build
 
       - id: "auth"
