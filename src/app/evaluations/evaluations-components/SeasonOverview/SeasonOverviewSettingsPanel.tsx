@@ -3,19 +3,17 @@
 import React, { useEffect, useMemo, useState } from "react";
 
 import { modelColorMap, modelNames } from "@/interfaces/epistorm-constants";
-import { EvaluationsSeasonOverviewSeasonOption } from "@/interfaces/forecast-interfaces";
 
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import {
   setEvaluationSeasonOverviewHorizon,
   updateSelectedAggregationPeriod,
-  refreshDynamicDateRanges,
 } from "@/store/evaluations-season-overview-settings-slice";
 
 import { Radio, Typography } from "@/styles/material-tailwind-wrapper";
 import Image from "next/image";
 
-import { format, parseISO, subMonths } from "date-fns";
+import { format, parseISO, subDays, subMonths } from "date-fns";
 
 // Season Overview Settings Panel
 export const SeasonOverviewSettings = () => {
@@ -28,7 +26,7 @@ export const SeasonOverviewSettings = () => {
   );
 
   // Effect to refresh dynamic date ranges when horizons change
-  useEffect(() => {
+  /* useEffect(() => {
     if (predictionsData.length > 0) {
       // Find the maximum horizon for proper date range calculation
       const maxHorizon = evaluationSeasonOverviewHorizon.length > 0 ? Math.max(...evaluationSeasonOverviewHorizon) : 0;
@@ -41,7 +39,7 @@ export const SeasonOverviewSettings = () => {
         })
       );
     }
-  }, [dispatch, evaluationSeasonOverviewHorizon, predictionsData]);
+  }, [dispatch, evaluationSeasonOverviewHorizon, predictionsData]); */
 
   // Horizon handler
   const onHorizonChange = (selected: number, checked: boolean) => {
@@ -117,7 +115,7 @@ export const SeasonOverviewSettings = () => {
                       {period.label}
                       {/* Only show date range if this option is both dynamic AND selected */}
                       {period.isDynamic && period.id === selectedAggregationPeriod && (
-                        <span className='text-sm ml-1 opacity-80'>{formatDateRange(period.startDate, period.endDate)}</span>
+                        <span className='text-sm ml-1 opacity-80'>{formatDateRange(subDays(period.startDate, 6), period.endDate)}</span>
                       )}
                     </>
                   }

@@ -14,6 +14,7 @@ import {
   setDate,
   setMonth,
   startOfWeek,
+  subWeeks,
 } from "date-fns";
 import { useAppDispatch } from "@/store/hooks";
 import {
@@ -51,7 +52,7 @@ import {
   updateEvaluationsSingleModelViewDateRange,
   updateEvaluationSingleModelViewSeasonOptions,
 } from "@/store//evaluations-single-model-settings-slice";
-import { refreshDynamicDateRanges } from "@/store/evaluations-season-overview-settings-slice";
+import { updateDynamicPeriods } from "@/store/evaluations-season-overview-settings-slice";
 
 interface DataContextType {
   loadingStates: LoadingStates;
@@ -213,7 +214,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         // Fetch ground truth and predictions data-slices
         const groundTruthData = await d3.csv("/data/ground-truth/target-hospital-admissions.csv");
-        const parsedGroundTruthData = groundTruthData.map((d) => ({
+        const parsedGroundTruthData: DataPoint[] = groundTruthData.map((d) => ({
           date: parseISO(d.date),
           stateNum: d.location,
           stateName: d.location_name,
@@ -221,10 +222,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           weeklyRate: +d["weekly_rate"],
         }));
 
-        /* Get latest valid surveillance data-slices point's date info */
-        const latestValidSurveillanceDate = parsedGroundTruthData
-          .filter((d) => !isNaN(d.admissions))
-          .reduce((latest, current) => (isAfter(current.date, latest.date) ? current : latest)).date;
+        // console.debug("DataProvider: latestValidSurveillanceDate: ", latestValidSurveillanceDate);
 
         /*  Keep track of latest valid prediction data-slices point's date info
             NOTE: extract from all avaialble models because that is the initialized default 
@@ -259,23 +257,50 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           })
         );
 
+        // Find latest valid surveillance date
+        const latestValidSurveillanceDate = parsedGroundTruthData.reduce(
+          (latest, current) => (isAfter(current.date, latest.date) ? current : latest),
+          { date: new Date(0) } as DataPoint
+        ).date;
+
         // Find latest reference date across all models
         const latestValidPredictionDate = predictionsData.reduce((latestDate, model) => {
           if (!model.predictionData.length) return latestDate;
-
           const modelLatestRef = model.predictionData.reduce(
             (latest, pred) => (isAfter(pred.referenceDate, latest) ? pred.referenceDate : latest),
             new Date(0)
           );
-
           return isAfter(modelLatestRef, latestDate) ? modelLatestRef : latestDate;
         }, new Date(0));
 
+        // Use the later date between prediction and surveillance
+        const latestValidReferenceDate = isBefore(latestValidPredictionDate, latestValidSurveillanceDate)
+          ? latestValidPredictionDate
+          : latestValidSurveillanceDate;
+
+        // Calculate dynamic periods
+        // See the calculation documentation for why its 1,3,7
+        const dynamicPeriods = {
+          last2Weeks: {
+            startDate: subWeeks(latestValidReferenceDate, 1),
+            endDate: latestValidReferenceDate,
+          },
+          last4Weeks: {
+            startDate: subWeeks(latestValidReferenceDate, 3),
+            endDate: latestValidReferenceDate,
+          },
+          last8Weeks: {
+            startDate: subWeeks(latestValidReferenceDate, 7),
+            endDate: latestValidReferenceDate,
+          },
+        };
+        console.debug("Data Provider: generated dynamic season overview periods:", dynamicPeriods);
+
         // Initialize dynamic date ranges for Season Overview
         dispatch(
-          refreshDynamicDateRanges({
-            predictions: predictionsData,
-            maxHorizon: 0, // Default to 0 until user selects horizons
+          updateDynamicPeriods({
+            latestReferenceDate: latestValidReferenceDate,
+            dynamicPeriods,
           })
         );
 
