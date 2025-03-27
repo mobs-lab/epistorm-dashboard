@@ -464,6 +464,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       wisRatioData.forEach((entry) => {
         const modelName = entry.Model;
+        /* Filter out needed models here! */
         const scoreData = {
           referenceDate: parseISO(entry.reference_date),
           score: +entry.wis_ratio,

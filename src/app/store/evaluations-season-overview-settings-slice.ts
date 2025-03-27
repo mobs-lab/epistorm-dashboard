@@ -78,7 +78,7 @@ const initialState: EvaluationsSeasonOverviewSettingsState = {
   evaluationSeasonOverviewSelectedStateName: "United States",
 
   /* Model Defaults*/
-  evaluationSeasonOverviewHorizon: [],
+  evaluationSeasonOverviewHorizon: [0],
 
   /* Time Range Defaults*/
   evaluationSeasonOverviewSeasonOptions: [],
@@ -101,10 +101,10 @@ const evaluationsSeasonOverviewSettingsSlice = createSlice({
     updateSelectedAggregationPeriod: (state, action: PayloadAction<string>) => {
       state.selectedAggregationPeriod = action.payload;
     },
-    updateEvaluationSeasonOverviewSelectedState: (state, action: PayloadAction<{ stateCode: string; stateName: string }>) => {
+    /* updateEvaluationSeasonOverviewSelectedState: (state, action: PayloadAction<{ stateCode: string; stateName: string }>) => {
       state.evaluationSeasonOverviewSelectedStateCode = action.payload.stateCode;
       state.evaluationSeasonOverviewSelectedStateName = action.payload.stateName;
-    },
+    }, */
     updateDynamicPeriods: (state, action: PayloadAction<UpdateDynamicPeriodsPayload>) => {
       const { latestReferenceDate, dynamicPeriods } = action.payload;
 
@@ -142,7 +142,7 @@ const evaluationsSeasonOverviewSettingsSlice = createSlice({
 export const {
   setEvaluationSeasonOverviewHorizon,
   updateEvaluationSeasonOverviewSeasonOptions,
-  updateEvaluationSeasonOverviewSelectedState,
+  // updateEvaluationSeasonOverviewSelectedState,
   updateSelectedAggregationPeriod,
   updateDynamicPeriods,
 } = evaluationsSeasonOverviewSettingsSlice.actions;
