@@ -7,8 +7,9 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
-import { useDataContext } from "@/providers/DataProvider";
 import { Card } from "@/styles/material-tailwind-wrapper";
+import { useDataContext } from "@/providers/DataProvider";
+import { isFeatureEnabled } from "@/utils/featureFlag";
 
 import SeasonOverviewLocationAggregatedScoreChart, {
   TooltipDirection,
@@ -41,10 +42,7 @@ const SeasonOverviewContent: React.FC = () => {
             <h3 className='text-lg font-medium'>WIS/Baseline</h3>
           </div>
           <div className='w-full h-[92%]'>
-            <SeasonOverviewLocationAggregatedScoreChart
-              type='wis'
-              tooltipDirection={TooltipDirection.BOTTOM}
-            />
+            <SeasonOverviewLocationAggregatedScoreChart type='wis' tooltipDirection={TooltipDirection.BOTTOM} />
           </div>
         </Card>
 
@@ -105,29 +103,27 @@ const SingleModelContent = () => {
   );
 };
 
+// Downstream usage of Feature Flag check: whether the season overview tab should be enabled
+const isSeasonOverviewEnabled = isFeatureEnabled("seasonOverviewTab");
+
 const EvaluationsPage = () => {
-  const [activeTab, setActiveTab] = useState("single-model");
+  const defaultTab = isSeasonOverviewEnabled ? "season-overview" : "single-model";
+  const [activeTab, setActiveTab] = useState(defaultTab);
   const { loadingStates, isFullyLoaded } = useDataContext();
 
   // Determine which data-slices is needed for each tab
-  const seasonOverviewReady =
-    !loadingStates.groundTruth && !loadingStates.predictions;
-  const singleModelReady =
-    !loadingStates.groundTruth && !loadingStates.predictions;
+  const seasonOverviewReady = !loadingStates.groundTruth && !loadingStates.predictions;
+  const singleModelReady = !loadingStates.groundTruth && !loadingStates.predictions;
 
   const renderContent = () => {
     if (activeTab === "season-overview") {
       if (!seasonOverviewReady) {
-        return (
-          <div className='text-white p-4'>Loading season overview data...</div>
-        );
+        return <div className='text-white p-4'>Loading season overview data...</div>;
       }
       return <SeasonOverviewContent />;
     } else {
       if (!singleModelReady) {
-        return (
-          <div className='text-white p-4'>Loading single model data...</div>
-        );
+        return <div className='text-white p-4'>Loading single model data...</div>;
       }
       return <SingleModelContent />;
     }
@@ -136,44 +132,29 @@ const EvaluationsPage = () => {
   return (
     <div className='evaluations-page'>
       <div className='evaluations-settings'>
-        {!loadingStates.locations &&
-          (activeTab === "season-overview" ? (
-            <SeasonOverviewSettings />
-          ) : (
-            <SingleModelSettingsPanel />
-          ))}
+        {!loadingStates.locations && (activeTab === "season-overview" ? <SeasonOverviewSettings /> : <SingleModelSettingsPanel />)}
       </div>
 
       <div className='evaluations-content'>
         <div>
           <div className='flex bg-gray-800 border-b border-gray-700'>
             {/* NOTE: Temporarily disabled Season Overview Page until production-ready */}
-          <button
-              onClick={() => setActiveTab("")}
-              className={`px-6 py-2 text-sm relative ${
-                activeTab === "season-overview"
-                  ? "text-white hover:text-white bg-mobs-lab-color border-t border-l border-r border-gray-700"
-                  : "text-gray-300 hover:text-white"
-              }`}
-              style={{
-                marginBottom: activeTab === "season-overview" ? "-1px" : "0",
-                zIndex: activeTab === "season-overview" ? 1 : 0,
-              }}>
-              Season Overview
-            </button>
-            {/* <button
-              onClick={() => setActiveTab("season-overview")}
-              className={`px-6 py-2 text-sm relative ${
-                activeTab === "season-overview"
-                  ? "text-white hover:text-white bg-mobs-lab-color border-t border-l border-r border-gray-700"
-                  : "text-gray-300 hover:text-white"
-              }`}
-              style={{
-                marginBottom: activeTab === "season-overview" ? "-1px" : "0",
-                zIndex: activeTab === "season-overview" ? 1 : 0,
-              }}>
-              Season Overview
-            </button> */}
+            {/* Conditionally render the Season Overview tab based on feature flag */}
+            {isSeasonOverviewEnabled ? (
+              <button
+                onClick={() => setActiveTab("season-overview")}
+                className={`px-6 py-2 text-sm relative ${
+                  activeTab === "season-overview"
+                    ? "text-white hover:text-white bg-mobs-lab-color border-t border-l border-r border-gray-700"
+                    : "text-gray-300 hover:text-white"
+                }`}
+                style={{
+                  marginBottom: activeTab === "season-overview" ? "-1px" : "0",
+                  zIndex: activeTab === "season-overview" ? 1 : 0,
+                }}>
+                Season Overview
+              </button>
+            ) : null}
             <button
               onClick={() => setActiveTab("single-model")}
               className={`px-6 py-2 text-sm relative ${
@@ -191,16 +172,12 @@ const EvaluationsPage = () => {
         </div>
 
         <div className='tab-container'>
-          <Card className='p-4 flex-1 bg-mobs-lab-color text-white min-h-0'>
-            {renderContent()}
-          </Card>
+          <Card className='p-4 flex-1 bg-mobs-lab-color text-white min-h-0'>{renderContent()}</Card>
         </div>
       </div>
 
       {!isFullyLoaded && (
-        <div className='fixed bottom-4 right-4 bg-gray-800 text-white px-4 py-2 rounded-md'>
-          Loading additional data...
-        </div>
+        <div className='fixed bottom-4 right-4 bg-gray-800 text-white px-4 py-2 rounded-md'>Loading additional data...</div>
       )}
     </div>
   );
