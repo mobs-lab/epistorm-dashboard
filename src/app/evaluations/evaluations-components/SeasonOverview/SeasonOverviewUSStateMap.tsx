@@ -7,7 +7,7 @@ import * as topojson from "topojson-client";
 import { addWeeks } from "date-fns";
 import { useResponsiveSVG } from "@/interfaces/responsiveSVG";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { modelNames } from "@/interfaces/epistorm-constants";
+import { modelColorMap, modelNames } from "@/interfaces/epistorm-constants";
 import MapSelectorPanel from "./MapSelectorPanel";
 
 const SeasonOverviewUSStateMap: React.FC = () => {
@@ -58,13 +58,6 @@ const SeasonOverviewUSStateMap: React.FC = () => {
     // Create a map to store performance scores by state
     const statePerformance = new Map();
 
-    // Handle different scoring options
-    if (mapSelectedScoringOption === "Coverage") {
-      //TODO: Placeholder for Coverage data logic
-      console.log("Coverage option selected - data will be implemented later");
-      return statePerformance;
-    }
-
     // Only process data for the selected model
     const modelData = [
       evaluationsScoreData.find((data) => data.modelName === mapSelectedModel && data.scoreMetric === mapSelectedScoringOption),
@@ -73,11 +66,6 @@ const SeasonOverviewUSStateMap: React.FC = () => {
     // For each state, calculate average score for the selected model and horizons
     locationData.forEach((location) => {
       const stateCode = location.stateNum;
-
-      // Skip territories or non-state entries if needed
-      if (stateCode === "US" || stateCode === "PR" || stateCode === "VI") {
-        return;
-      }
 
       let totalScore = 0;
       let count = 0;
@@ -116,7 +104,15 @@ const SeasonOverviewUSStateMap: React.FC = () => {
     });
 
     return statePerformance;
-  }, [evaluationsScoreData, evaluationSeasonOverviewHorizon, selectedAggregationPeriod, aggregationPeriods, locationData, mapSelectedModel, mapSelectedScoringOption]);
+  }, [
+    evaluationsScoreData,
+    evaluationSeasonOverviewHorizon,
+    selectedAggregationPeriod,
+    aggregationPeriods,
+    locationData,
+    mapSelectedModel,
+    mapSelectedScoringOption,
+  ]);
 
   // Render map when dimensions or data change
   useEffect(() => {
@@ -143,8 +139,26 @@ const SeasonOverviewUSStateMap: React.FC = () => {
     const minValue = performanceValues.length > 0 ? d3.min(performanceValues) || 0 : 0;
     const maxValue = performanceValues.length > 0 ? d3.max(performanceValues) || 1 : 1;
 
-    // Create a color scale for the states - blue for better performance (lower values)
-    const colorScale = d3.scaleSequential(d3.interpolateBlues).domain([maxValue, minValue]); // Invert domain so darker blue means better performance
+    // Get the base color for the selected model
+    const modelBaseColor = modelColorMap[mapSelectedModel];
+    const lightEndColor = "#f0f0f0";
+
+    // Create color interpolators based on the selected scoring metric
+    // For MAPE: lower is better (darker color means lower value)
+    // For WIS/Baseline and Coverage: higher is better (darker color means higher value)
+    let colorDomain, colorRange;
+
+    if (mapSelectedScoringOption === "MAPE") {
+      // For MAPE, invert the scale (lower values are better)
+      colorDomain = [minValue, maxValue];
+      colorRange = [modelBaseColor, lightEndColor];
+    } else {
+      // For WIS/Baseline and Coverage, higher values are better
+      colorDomain = [minValue, maxValue];
+      colorRange = [lightEndColor, modelBaseColor];
+    }
+
+    const colorScale = d3.scaleLinear<string>().domain(colorDomain).range(colorRange).interpolate(d3.interpolateRgb);
 
     // Setup projection
     const projection = d3
@@ -187,7 +201,9 @@ const SeasonOverviewUSStateMap: React.FC = () => {
         const state = locationData.find((loc) => loc.stateNum === stateCode);
         const value = statePerformanceData.get(stateId);
 
-        return `${state?.stateName || "Unknown"}: ${value !== undefined ? value.toFixed(2) : "No data"}`;
+        const scoreLabel = mapSelectedScoringOption === "Coverage" ? "Coverage %" : mapSelectedScoringOption;
+
+        return `${state?.stateName || "Unknown"}: ${value !== undefined ? value.toFixed(2) : "No data"} ${scoreLabel}`;
       });
 
     //Color legend in the form of a gradient thermometer
@@ -207,7 +223,6 @@ const SeasonOverviewUSStateMap: React.FC = () => {
     const legend = svg.append("g").attr("transform", `translate(${width - margin.right - legendWidth - 10}, ${margin.top})`);
     // Create the gradient
     const defs = svg.append("defs");
-
     const gradient = defs
       .append("linearGradient")
       .attr("id", "color-gradient")
@@ -216,24 +231,15 @@ const SeasonOverviewUSStateMap: React.FC = () => {
       .attr("x2", "0%")
       .attr("y2", "0%");
 
-    const stops = [
-      { offset: "0%", color: colorScale(minValue) },
-      { offset: "50%", color: colorScale((maxValue + minValue) / 2) },
-      { offset: "100%", color: colorScale(maxValue) },
-    ];
+    // Use the same fixed colors as the map
+    gradient.append("stop").attr("offset", "0%").attr("stop-color", colorRange[0]);
 
-    gradient
-      .selectAll("stop")
-      .data(stops)
-      .enter()
-      .append("stop")
-      .attr("offset", (d) => d.offset)
-      .attr("stop-color", (d) => d.color);
+    gradient.append("stop").attr("offset", "100%").attr("stop-color", colorRange[1]);
 
     // Draw the legend rectangle
     legend.append("rect").attr("width", legendWidth).attr("height", legendHeight).style("fill", "url(#color-gradient)");
 
-    // Add legend axis
+    // Add legend axis on the left
     legend
       .append("g")
       .attr("transform", `translate(0, 0)`)
@@ -267,7 +273,7 @@ const SeasonOverviewUSStateMap: React.FC = () => {
         viewBox={`0 0 ${dimensions.width || 100} ${dimensions.height || 100}`}
         preserveAspectRatio='xMidYMid meet'
       />
-      <MapSelectorPanel className="absolute left-2 bottom-0" />
+      <MapSelectorPanel className='absolute left-2 bottom-0' />
     </div>
   );
 };
