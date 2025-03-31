@@ -6,8 +6,8 @@ import { modelNames } from "@/interfaces/epistorm-constants";
 
 interface EvaluationsSeasonOverviewSettingsState {
   /* Location Related */
-  evaluationSeasonOverviewSelectedStateCode: string;
-  evaluationSeasonOverviewSelectedStateName: string;
+  /* evaluationSeasonOverviewSelectedStateCode: string;
+  evaluationSeasonOverviewSelectedStateName: string; */
 
   /* Model Related*/
   evaluationSeasonOverviewHorizon: number[]; //how many weeks ahead from reference date (matching surveillance week's number) should we look for as target_end_date in predictions to draw the intervals
@@ -80,8 +80,8 @@ const predefinedAggregationPeriods: AggregationPeriod[] = [
 
 const initialState: EvaluationsSeasonOverviewSettingsState = {
   /* Location Defaults */
-  evaluationSeasonOverviewSelectedStateCode: "US",
-  evaluationSeasonOverviewSelectedStateName: "United States",
+  /* evaluationSeasonOverviewSelectedStateCode: "US",
+  evaluationSeasonOverviewSelectedStateName: "United States", */
 
   /* Model Defaults*/
   evaluationSeasonOverviewHorizon: [0],
