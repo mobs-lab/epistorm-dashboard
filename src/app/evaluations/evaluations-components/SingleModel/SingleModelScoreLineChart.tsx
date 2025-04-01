@@ -297,7 +297,7 @@ const SingleModelScoreLineChart: React.FC = () => {
       .attr("y", padding + 36)
       .attr("fill", "white")
       .style("font-family", "var(--font-dm-sans)")
-      .text(`Forecast Date: ${data.referenceDate.toUTCString().slice(5, 16)}`);
+      .text(`Forecast Submission Date: ${data.referenceDate.toUTCString().slice(5, 16)}`);
 
     const scoreText = tooltip
       .append("text")
