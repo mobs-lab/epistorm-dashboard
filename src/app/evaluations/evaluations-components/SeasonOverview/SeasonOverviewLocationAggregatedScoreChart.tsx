@@ -43,8 +43,9 @@ const SeasonOverviewLocationAggregatedScoreChart: React.FC<SeasonOverviewLocatio
   // Get required data from Redux store
   const evaluationsScoreData = useAppSelector((state) => state.evaluationsSingleModelScoreData.data);
 
-  const { evaluationSeasonOverviewHorizon, selectedAggregationPeriod, aggregationPeriods, evaluationSeasonOverviewSelectedStateCode } =
-    useAppSelector((state) => state.evaluationsSeasonOverviewSettings);
+  const { evaluationSeasonOverviewHorizon, selectedAggregationPeriod, aggregationPeriods } = useAppSelector(
+    (state) => state.evaluationsSeasonOverviewSettings
+  );
 
   // Process evaluation score data based on selected criteria, enhanced with memoization
   const processedData = useMemo(() => {
@@ -63,65 +64,63 @@ const SeasonOverviewLocationAggregatedScoreChart: React.FC<SeasonOverviewLocatio
     // The score metric we want to use
     const scoreMetric = type === "wis" ? "WIS/Baseline" : "MAPE";
 
+    // Pre-filter evaluations data by metric to avoid repeated filtering
+    const relevantEvaluations = evaluationsScoreData.filter((data) => data.scoreMetric === scoreMetric);
+
+    // Set for faster horizon lookups
+    const horizonSet = new Set(evaluationSeasonOverviewHorizon);
+
     // Process data for each model
-    return modelNames
-      .map((modelName) => {
-        // Find the model's data with the specified metric
-        const modelData = evaluationsScoreData.find((data) => data.modelName === modelName && data.scoreMetric === scoreMetric);
+    const results: IQRData[] = [];
 
-        if (!modelData || !modelData.scoreData) {
-          // Return null for models without data - will be filtered out later
-          return null;
-        }
+    const debugResults = new Map();
 
-        // Filter scores by state, horizons, and date range
-        const filteredScores = modelData.scoreData.filter((entry) => {
-          // Filter by state
-          if (entry.location !== evaluationSeasonOverviewSelectedStateCode) {
-            return false;
-          }
+    for (const modelName of modelNames) {
+      // Find this model's data
+      const modelData = relevantEvaluations.find((data) => data.modelName === modelName);
 
-          // Filter by horizon - must be one of the selected horizons
-          if (!evaluationSeasonOverviewHorizon.includes(entry.horizon)) {
-            return false;
-          }
+      if (!modelData?.scoreData?.length) continue;
 
-          const referenceDate = entry.referenceDate;
-          // Calculate target date and check if it's in the time range
-          const targetDate = addWeeks(entry.referenceDate, entry.horizon);
-          return referenceDate >= selectedPeriod.startDate && targetDate <= selectedPeriod.endDate;
-        });
+      // Filter scores using optimized conditions
+      const filteredScores: number[] = [];
 
-        // Get score values for statistical calculations
-        const scoreValues = filteredScores.map((entry) => entry.score);
+      const debugWinnerEntries = [];
 
-        // Skip models with no data
-        if (scoreValues.length === 0) {
-          return null;
-        }
+      for (const entry of modelData.scoreData) {
+        // Use early bailout for faster filtering
+        if (!horizonSet.has(entry.horizon)) continue;
 
-        // Calculate statistical metrics for boxplot
-        const stats = calculateBoxplotStats(scoreValues);
+        const referenceDate = entry.referenceDate;
+        const targetDate = addWeeks(referenceDate, entry.horizon);
 
-        return {
-          model: modelName,
-          q05: stats.q05,
-          q25: stats.q25,
-          median: stats.median,
-          q75: stats.q75,
-          q95: stats.q95,
-          count: stats.count,
-        };
-      })
-      .filter(Boolean) as IQRData[]; // Filter out null entries
-  }, [
-    evaluationsScoreData,
-    evaluationSeasonOverviewHorizon,
-    selectedAggregationPeriod,
-    aggregationPeriods,
-    evaluationSeasonOverviewSelectedStateCode,
-    type,
-  ]);
+        if (referenceDate < selectedPeriod.startDate || targetDate > selectedPeriod.endDate) continue;
+
+        // This entry passed all filters
+        filteredScores.push(entry.score);
+
+        debugWinnerEntries.push(entry);
+      }
+      if (filteredScores.length === 0) continue;
+      debugResults.set(modelName, debugWinnerEntries);
+
+      // Calculate stats for this model
+      const stats = calculateBoxplotStats(filteredScores);
+
+      // Add model with rounded values
+      results.push({
+        model: modelName,
+        q05: Number(stats.q05.toFixed(3)),
+        q25: Number(stats.q25.toFixed(3)),
+        median: Number(stats.median.toFixed(3)),
+        q75: Number(stats.q75.toFixed(3)),
+        q95: Number(stats.q95.toFixed(3)),
+        count: stats.count,
+      });
+    }
+    console.debug("Debug: Aggregated Chart: winning entries by model: ", debugResults);
+
+    return results;
+  }, [evaluationsScoreData, evaluationSeasonOverviewHorizon, selectedAggregationPeriod, aggregationPeriods, type]);
 
   useEffect(() => {
     if (!isResizing && dimensions.width > 0 && dimensions.height > 0 && chartRef.current) {
@@ -140,8 +139,8 @@ const SeasonOverviewLocationAggregatedScoreChart: React.FC<SeasonOverviewLocatio
     data: IQRData,
     position: [number, number],
     direction: TooltipDirection,
-    modelIndex: number,
-    totalModels: number
+    modelIndex?: number,
+    totalModels?: number
   ) => {
     tooltip.selectAll("*").remove();
 
@@ -181,7 +180,7 @@ const SeasonOverviewLocationAggregatedScoreChart: React.FC<SeasonOverviewLocatio
 
     // Define table structure
     const metrics = ["5%", "25%", "Median", "75%", "95%"];
-    const values = [data.q05, data.q25, data.median, data.q75, data.q95, data.count];
+    const values = [data.q05, data.q25, data.median, data.q75, data.q95];
 
     // Add header for metric column
     tooltip
@@ -234,7 +233,7 @@ const SeasonOverviewLocationAggregatedScoreChart: React.FC<SeasonOverviewLocatio
         .attr("fill", "white")
         .attr("font-size", "12px")
         .style("font-family", "var(--font-dm-sans)")
-        .text(i === metrics.length - 1 ? value.toString() : formatValue(value));
+        .text(formatValue(value));
     });
 
     // Size the tooltip background
@@ -243,30 +242,58 @@ const SeasonOverviewLocationAggregatedScoreChart: React.FC<SeasonOverviewLocatio
 
     background.attr("width", tooltipWidth).attr("height", tooltipHeight);
 
-    // Calculate position offset based on direction
-    let xOffset = 0;
-    let yOffset = 0;
+    // Get SVG dimensions by getting the parent of the tooltip
+    // This works because the tooltip is a child of the SVG element
+    const tooltipParent = tooltip.node()?.parentNode as SVGSVGElement;
+    const svgWidth = tooltipParent?.clientWidth || dimensions.width;
+    const svgHeight = tooltipParent?.clientHeight || dimensions.height;
 
-    switch (direction) {
-      case TooltipDirection.TOP:
-        xOffset = -tooltipWidth / 2;
-        yOffset = -tooltipHeight - 15;
-        break;
-      case TooltipDirection.RIGHT:
-        xOffset = 15;
-        yOffset = -tooltipHeight / 2;
-        break;
-      case TooltipDirection.BOTTOM:
-        xOffset = -tooltipWidth / 2;
-        yOffset = 15;
-        break;
-      case TooltipDirection.LEFT:
-        xOffset = -tooltipWidth - 15;
-        yOffset = -tooltipHeight / 2;
-        break;
+    // Detect proximity to edges
+    const leftProximity = position[0];
+    const rightProximity = svgWidth - position[0];
+    const topProximity = position[1];
+    const bottomProximity = svgHeight - position[1];
+
+    // Use a consistent buffer distance for all edges
+    const edgeBuffer = 20;
+
+    // Calculate the default centered offset (tooltip centered on mouse)
+    const defaultXOffset = -tooltipWidth / 2;
+
+    // Determine horizontal positioning with symmetric logic
+    let xOffset: number;
+
+    // Using truly symmetric conditions for left and right edges
+    if (rightProximity < tooltipWidth / 2 + edgeBuffer) {
+      // Too close to right edge, position fully to the left
+      xOffset = -tooltipWidth - edgeBuffer;
+    } else if (leftProximity < tooltipWidth / 2 + edgeBuffer) {
+      // Too close to left edge, position fully to the right
+      xOffset = edgeBuffer;
+    } else {
+      // Enough space on both sides, center the tooltip horizontally
+      xOffset = defaultXOffset;
     }
 
-    // Position the tooltip
+    // Similar symmetric logic for vertical positioning
+    let yOffset: number;
+    if (bottomProximity < tooltipHeight / 2 + edgeBuffer) {
+      // Too close to bottom edge, position above
+      yOffset = -tooltipHeight - edgeBuffer;
+    } else if (topProximity < tooltipHeight / 2 + edgeBuffer) {
+      // Too close to top edge, position below
+      yOffset = edgeBuffer;
+    } else {
+      // Default based on original direction with fallback to above
+      yOffset =
+        direction === TooltipDirection.TOP
+          ? -tooltipHeight - edgeBuffer
+          : direction === TooltipDirection.BOTTOM
+            ? edgeBuffer
+            : -tooltipHeight - edgeBuffer;
+    }
+
+    // Apply the calculated offsets
     tooltip.attr("transform", `translate(${position[0] + xOffset},${position[1] + yOffset})`).style("opacity", 1);
   };
 

@@ -26,26 +26,22 @@ import {
   LoadingStates,
   ProcessedDataWithDateRange,
   EvaluationsScoreDataCollection,
+  CoverageScoreData,
+  DetailedCoverageCollection,
 } from "@/interfaces/forecast-interfaces";
 import { modelNames } from "@/interfaces/epistorm-constants";
 
 // Forecast Actions and Reducers
 import { setGroundTruthData } from "@/store/data-slices/groundTruthSlice";
 import { setPredictionsData } from "@/store/data-slices/predictionsSlice";
-import { setLocationData } from "@/store//data-slices/locationSlice";
-import { setNowcastTrendsData } from "@/store//data-slices/nowcastTrendsSlice";
-import { setStateThresholdsData } from "@/store//data-slices/stateThresholdsSlice";
-import { setHistoricalGroundTruthData } from "@/store//data-slices/historicalGroundTruthSlice";
-import {
-  setSeasonOptions,
-  updateDateEnd,
-  updateDateRange,
-  updateDateStart,
-  updateUserSelectedWeek,
-} from "@/store//forecast-settings-slice";
+import { setLocationData } from "@/store/data-slices/locationSlice";
+import { setNowcastTrendsData } from "@/store/data-slices/nowcastTrendsSlice";
+import { setStateThresholdsData } from "@/store/data-slices/stateThresholdsSlice";
+import { setHistoricalGroundTruthData } from "@/store/data-slices/historicalGroundTruthSlice";
+import { setSeasonOptions, updateDateEnd, updateDateRange, updateDateStart, updateUserSelectedWeek } from "@/store/forecast-settings-slice";
 
 // Evaluations Actions and Reducers
-import { setEvaluationsSingleModelScoreData } from "@/store//data-slices/evaluationsSingleModelScoreDataSlice";
+import { setDetailedCoverageData, setEvaluationsSingleModelScoreData } from "@/store/data-slices/evaluationsScoreDataSlice";
 import {
   updateEvaluationSingleModelViewDateStart,
   updateEvaluationSingleModelViewDateEnd,
@@ -338,12 +334,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         updateLoadingState("seasonOptions", false);
 
         // Fetch other data-slices in parallel
-        await Promise.all([
-          fetchNowcastTrendsData(),
-          fetchThresholdsData(),
-          fetchHistoricalGroundTruthData(),
-          fetchEvaluationsSingleModelScoreData(),
-        ]);
+        await Promise.all([fetchNowcastTrendsData(), fetchThresholdsData(), fetchHistoricalGroundTruthData(), fetchEvaluationsScoreData()]);
       }
     } catch (error) {
       console.error("Error in fetchAndProcessData:", error);
@@ -444,11 +435,12 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
    *
    * Then in the end we push the data-slices into store using dispatch(setEvaluationsSingleModelScoreData(data-slices));
    *  */
-  const fetchEvaluationsSingleModelScoreData = async () => {
+  const fetchEvaluationsScoreData = async () => {
     try {
-      const [wisRatioData, mapeData] = await Promise.all([
+      const [wisRatioData, mapeData, coverageData] = await Promise.all([
         d3.csv("/data/evaluations-score/WIS_ratio.csv"),
         d3.csv("/data/evaluations-score/MAPE.csv"),
+        d3.csv("/data/evaluations-score/coverage.csv"),
       ]);
 
       // Process WIS Ratio data-slices
@@ -464,6 +456,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       wisRatioData.forEach((entry) => {
         const modelName = entry.Model;
+        // Only process models in our modelNames list
+        if (!modelNames.includes(modelName)) return;
+
         /* Filter out needed models here! */
         const scoreData = {
           referenceDate: parseISO(entry.reference_date),
@@ -491,9 +486,10 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       >();
       mapeData.forEach((entry) => {
         const modelName = entry.Model;
+        if (!modelNames.includes(modelName)) return;
         const scoreData = {
           referenceDate: parseISO(entry.reference_date),
-          score: +entry.MAPE * 100,
+          score: +entry.MAPE * 100, // This is to make it into a percentage
           location: entry.Location, // Changed from entry.location
           horizon: +entry.horizon,
         };
@@ -505,10 +501,90 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         mapeByModel.get(key)?.push(scoreData);
       });
 
+      // Process Coverage data
+      const coverageByModel = new Map<
+        string,
+        {
+          referenceDate: Date;
+          score: number; // This will be the average coverage score
+          location: string;
+          horizon: number;
+        }[]
+      >();
+
+      // Also store detailed coverage data
+      const detailedCoverageByModel = new Map<string, CoverageScoreData[]>();
+
+      coverageData.forEach((entry) => {
+        const modelName = entry.Model;
+
+        // Only process models in our modelNames list
+        if (!modelNames.includes(modelName)) return;
+
+        // Calculate average coverage across all percentiles
+        const coverageValues = [
+          +entry["10_cov"],
+          +entry["20_cov"],
+          +entry["30_cov"],
+          +entry["40_cov"],
+          +entry["50_cov"],
+          +entry["60_cov"],
+          +entry["70_cov"],
+          +entry["80_cov"],
+          +entry["90_cov"],
+          +entry["95_cov"],
+          +entry["98_cov"],
+        ];
+
+        const averageCoverage = coverageValues.reduce((sum, value) => sum + value, 0) / coverageValues.length;
+
+        // Create detailed coverage data entry
+        const detailedCoverageData: CoverageScoreData = {
+          referenceDate: parseISO(entry.reference_date),
+          location: entry.location,
+          horizon: +entry.horizon,
+          coverage10: +entry["10_cov"],
+          coverage20: +entry["20_cov"],
+          coverage30: +entry["30_cov"],
+          coverage40: +entry["40_cov"],
+          coverage50: +entry["50_cov"],
+          coverage60: +entry["60_cov"],
+          coverage70: +entry["70_cov"],
+          coverage80: +entry["80_cov"],
+          coverage90: +entry["90_cov"],
+          coverage95: +entry["95_cov"],
+          coverage98: +entry["98_cov"],
+          averageCoverage: averageCoverage,
+        };
+
+        // Create simplified score data entry, for compatibility with WIS and MAPE
+        const scoreData = {
+          referenceDate: parseISO(entry.reference_date),
+          score: averageCoverage,
+          location: entry.location,
+          horizon: +entry.horizon,
+        };
+
+        // Add to simplified map for use with existing components
+        const key = modelName;
+        if (!coverageByModel.has(key)) {
+          coverageByModel.set(key, []);
+        }
+        coverageByModel.get(key)?.push(scoreData);
+
+        // Add to detailed map for components that need granular data
+        if (!detailedCoverageByModel.has(key)) {
+          detailedCoverageByModel.set(key, []);
+        }
+        detailedCoverageByModel.get(key)?.push(detailedCoverageData);
+      });
+
+      
+
       // Combine into final format
       const evaluationsData: EvaluationsScoreDataCollection[] = [];
 
-      // Add WIS Ratio data-slices
+      // Add WIS Ratio data
       wisRatioByModel.forEach((scoreData, modelName) => {
         evaluationsData.push({
           modelName,
@@ -517,7 +593,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         });
       });
 
-      // Add MAPE data-slices
+      // Add MAPE data
       mapeByModel.forEach((scoreData, modelName) => {
         evaluationsData.push({
           modelName,
@@ -526,10 +602,35 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         });
       });
 
+      // Add Coverage data
+      coverageByModel.forEach((scoreData, modelName) => {
+        evaluationsData.push({
+          modelName,
+          scoreMetric: "Coverage", // Use "Coverage" as the metric name
+          scoreData: scoreData.sort((a, b) => a.referenceDate.getTime() - b.referenceDate.getTime()),
+        });
+      });
+
+      //TODO: Store detailed coverage data in a separate store action when implementing PI chart
+
       dispatch(setEvaluationsSingleModelScoreData(evaluationsData));
       updateLoadingState("evaluationScores", false);
+
+      // Convert the Map to an array of DetailedCoverageCollection
+      const detailedCoverageData: DetailedCoverageCollection[] = [];
+      detailedCoverageByModel.forEach((coverageData, modelName) => {
+        detailedCoverageData.push({
+          modelName,
+          coverageData: coverageData.sort((a, b) => a.referenceDate.getTime() - b.referenceDate.getTime()),
+        });
+      });
+
+      // Store detailed coverage data in Redux
+      dispatch(setDetailedCoverageData(detailedCoverageData));
+      updateLoadingState("evaluationDetailedCoverage", false);
+
     } catch (error) {
-      console.error("Error fetching evaluation score data-slices:", error);
+      console.error("Error fetching evaluation score data:", error);
       updateLoadingState("evaluationScores", false);
     }
   };

@@ -2,11 +2,12 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { EvaluationsSeasonOverviewSeasonOption, AggregationPeriod } from "@/interfaces/forecast-interfaces";
 import { parseISO } from "date-fns";
+import { modelNames } from "@/interfaces/epistorm-constants";
 
 interface EvaluationsSeasonOverviewSettingsState {
   /* Location Related */
-  evaluationSeasonOverviewSelectedStateCode: string;
-  evaluationSeasonOverviewSelectedStateName: string;
+  /* evaluationSeasonOverviewSelectedStateCode: string;
+  evaluationSeasonOverviewSelectedStateName: string; */
 
   /* Model Related*/
   evaluationSeasonOverviewHorizon: number[]; //how many weeks ahead from reference date (matching surveillance week's number) should we look for as target_end_date in predictions to draw the intervals
@@ -21,6 +22,11 @@ interface EvaluationsSeasonOverviewSettingsState {
   // latest ref date from surveillance vs latest ref date from prediction
   // See below for implementation
   latestReferenceDate: Date | null;
+
+
+  /* Map selection panel related */
+  mapSelectedModel: string;
+  mapSelectedScoringOption: "WIS/Baseline" | "MAPE" | "Coverage";
 }
 
 interface UpdateDynamicPeriodsPayload {
@@ -74,8 +80,8 @@ const predefinedAggregationPeriods: AggregationPeriod[] = [
 
 const initialState: EvaluationsSeasonOverviewSettingsState = {
   /* Location Defaults */
-  evaluationSeasonOverviewSelectedStateCode: "US",
-  evaluationSeasonOverviewSelectedStateName: "United States",
+  /* evaluationSeasonOverviewSelectedStateCode: "US",
+  evaluationSeasonOverviewSelectedStateName: "United States", */
 
   /* Model Defaults*/
   evaluationSeasonOverviewHorizon: [0],
@@ -86,6 +92,9 @@ const initialState: EvaluationsSeasonOverviewSettingsState = {
   selectedAggregationPeriod: "season-2023-2024",
   aggregationPeriods: predefinedAggregationPeriods,
   latestReferenceDate: null,
+
+  mapSelectedModel: modelNames[0], // Set default to first model
+  mapSelectedScoringOption: "WIS/Baseline", // Default scoring option
 };
 
 const evaluationsSeasonOverviewSettingsSlice = createSlice({
@@ -101,10 +110,6 @@ const evaluationsSeasonOverviewSettingsSlice = createSlice({
     updateSelectedAggregationPeriod: (state, action: PayloadAction<string>) => {
       state.selectedAggregationPeriod = action.payload;
     },
-    /* updateEvaluationSeasonOverviewSelectedState: (state, action: PayloadAction<{ stateCode: string; stateName: string }>) => {
-      state.evaluationSeasonOverviewSelectedStateCode = action.payload.stateCode;
-      state.evaluationSeasonOverviewSelectedStateName = action.payload.stateName;
-    }, */
     updateDynamicPeriods: (state, action: PayloadAction<UpdateDynamicPeriodsPayload>) => {
       const { latestReferenceDate, dynamicPeriods } = action.payload;
 
@@ -136,15 +141,23 @@ const evaluationsSeasonOverviewSettingsSlice = createSlice({
         return period;
       });
     },
+    setMapSelectedModel: (state, action: PayloadAction<string>) => {
+      state.mapSelectedModel = action.payload;
+    },
+    setMapSelectedScoringOption: (state, action: PayloadAction<"WIS/Baseline" | "MAPE" | "Coverage">) => {
+      state.mapSelectedScoringOption = action.payload;
+    },
+
   },
 });
 
 export const {
   setEvaluationSeasonOverviewHorizon,
   updateEvaluationSeasonOverviewSeasonOptions,
-  // updateEvaluationSeasonOverviewSelectedState,
   updateSelectedAggregationPeriod,
   updateDynamicPeriods,
+  setMapSelectedModel,
+  setMapSelectedScoringOption
 } = evaluationsSeasonOverviewSettingsSlice.actions;
 
 export default evaluationsSeasonOverviewSettingsSlice.reducer;

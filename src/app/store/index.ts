@@ -8,7 +8,7 @@ import nowcastTrendsReducer from "./data-slices/nowcastTrendsSlice";
 import stateThresholdsReducer from "./data-slices/stateThresholdsSlice";
 import historicalGroundTruthReducer from "./data-slices/historicalGroundTruthSlice";
 
-import evaluationsSingleModelScoreDataReducer from "./data-slices/evaluationsSingleModelScoreDataSlice";
+import evaluationsSingleModelScoreDataReducer from "./data-slices/evaluationsScoreDataSlice";
 
 // Import Settings Reducers
 import forecastSettingsReducer from "./forecast-settings-slice";

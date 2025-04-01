@@ -7,8 +7,8 @@ import * as topojson from "topojson-client";
 import { addWeeks } from "date-fns";
 import { useResponsiveSVG } from "@/interfaces/responsiveSVG";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { modelNames } from "@/interfaces/epistorm-constants";
-import { updateEvaluationSeasonOverviewSelectedState } from "@/store/evaluations-season-overview-settings-slice";
+import { modelColorMap, modelNames } from "@/interfaces/epistorm-constants";
+import MapSelectorPanel from "./MapSelectorPanel";
 
 const SeasonOverviewUSStateMap: React.FC = () => {
   const { containerRef, dimensions, isResizing } = useResponsiveSVG();
@@ -17,16 +17,16 @@ const SeasonOverviewUSStateMap: React.FC = () => {
   const dispatch = useAppDispatch();
 
   // Get data from Redux store
-  const locationData = useAppSelector(state => state.location.data);
-  const evaluationsScoreData = useAppSelector(
-    state => state.evaluationsSingleModelScoreData.data
-  );
+  const locationData = useAppSelector((state) => state.location.data);
+  const evaluationsScoreData = useAppSelector((state) => state.evaluationsSingleModelScoreData.data);
   const {
     evaluationSeasonOverviewSelectedStateCode,
     evaluationSeasonOverviewHorizon,
     selectedAggregationPeriod,
-    aggregationPeriods
-  } = useAppSelector(state => state.evaluationsSeasonOverviewSettings);
+    aggregationPeriods,
+    mapSelectedModel,
+    mapSelectedScoringOption,
+  } = useAppSelector((state) => state.evaluationsSeasonOverviewSettings);
 
   // Load US map data
   useEffect(() => {
@@ -44,126 +44,82 @@ const SeasonOverviewUSStateMap: React.FC = () => {
 
   // Calculate state performance data based on selected criteria
   const statePerformanceData = useMemo(() => {
-    if (
-      !evaluationsScoreData ||
-      evaluationSeasonOverviewHorizon.length === 0 ||
-      !selectedAggregationPeriod ||
-      !locationData
-    ) {
+    if (!evaluationsScoreData || evaluationSeasonOverviewHorizon.length === 0 || !selectedAggregationPeriod || !locationData) {
       return new Map();
     }
-    
+
     // Find the selected aggregation period
-    const selectedPeriod = aggregationPeriods.find(
-      p => p.id === selectedAggregationPeriod
-    );
-    
+    const selectedPeriod = aggregationPeriods.find((p) => p.id === selectedAggregationPeriod);
+
     if (!selectedPeriod) {
       return new Map();
     }
-    
+
     // Create a map to store performance scores by state
     const statePerformance = new Map();
-    
-    // For each state, calculate average score across all models and selected horizons
-    locationData.forEach(location => {
+
+    // Only process data for the selected model
+    const modelData = [
+      evaluationsScoreData.find((data) => data.modelName === mapSelectedModel && data.scoreMetric === mapSelectedScoringOption),
+    ].filter(Boolean); // Remove undefined values
+
+    // For each state, calculate average score for the selected model and horizons
+    locationData.forEach((location) => {
       const stateCode = location.stateNum;
-      
-      // Skip territories or non-state entries if needed
-      if (stateCode === "US" || stateCode === "PR" || stateCode === "VI") {
-        return;
-      }
-      
+
       let totalScore = 0;
       let count = 0;
-      
-      // For each model and horizon, get relevant scores
-      modelNames.forEach(modelName => {
-        evaluationSeasonOverviewHorizon.forEach(horizon => {
-          // Find scores data matching criteria (both MAPE and WIS)
-          [
-            evaluationsScoreData.find(data => data.modelName === modelName && data.scoreMetric === "MAPE"),
-            evaluationsScoreData.find(data => data.modelName === modelName && data.scoreMetric === "WIS/Baseline")
-          ].forEach(modelData => {
-            if (modelData && modelData.scoreData) {
-              // Filter scores by state, horizon, and date range
-              const scores = modelData.scoreData.filter(entry => {
-                // Match state and horizon
-                if (entry.location !== stateCode || entry.horizon !== horizon) {
-                  return false;
-                }
-                
-                // Check if target date is within range
-                const targetDate = addWeeks(entry.referenceDate, horizon);
-                return targetDate >= selectedPeriod.startDate && 
-                       targetDate <= selectedPeriod.endDate;
-              });
-              
-              // Calculate normalized performance metric
-              scores.forEach(score => {
-                // Normalize WIS to be comparable with MAPE
-                const normalizedScore = modelData.scoreMetric === "WIS/Baseline" 
-                  ? score.score * 100 // Scale factor to make WIS comparable in magnitude
-                  : score.score;
-                
-                totalScore += normalizedScore;
-                count++;
-              });
-            }
+
+      // For the selected model and horizons, get relevant scores
+      modelData.forEach((modelScoreData) => {
+        if (modelScoreData && modelScoreData.scoreData) {
+          evaluationSeasonOverviewHorizon.forEach((horizon) => {
+            // Filter scores by state, horizon, and date range
+            const scores = modelScoreData.scoreData.filter((entry) => {
+              // Match state and horizon
+              if (entry.location !== stateCode || entry.horizon !== horizon) {
+                return false;
+              }
+
+              // Check if target date is within range
+              const targetDate = addWeeks(entry.referenceDate, horizon);
+              return entry.referenceDate >= selectedPeriod.startDate && targetDate <= selectedPeriod.endDate;
+            });
+
+            // Calculate performance metric
+            scores.forEach((score) => {
+              totalScore += score.score;
+              count++;
+            });
           });
-        });
+        }
       });
-      
+
       // Calculate average if we have scores
       if (count > 0) {
         // Convert state code to the format expected by topojson (if needed)
-        const stateId = stateCode.padStart(2, '0');
+        const stateId = stateCode.padStart(2, "0");
         statePerformance.set(stateId, totalScore / count);
       }
     });
-    
+
     return statePerformance;
   }, [
     evaluationsScoreData,
     evaluationSeasonOverviewHorizon,
     selectedAggregationPeriod,
     aggregationPeriods,
-    locationData
+    locationData,
+    mapSelectedModel,
+    mapSelectedScoringOption,
   ]);
-
-  // Handle state selection
-  const handleStateClick = (stateId: string) => {
-    // Convert stateId back to the format used in our application (remove leading zero if present)
-    const stateCode = stateId.startsWith('0') ? stateId.substring(1) : stateId;
-    
-    // Find the corresponding state name
-    const state = locationData.find(loc => loc.stateNum === stateCode);
-    if (state) {
-      dispatch(updateEvaluationSeasonOverviewSelectedState({
-        stateCode: state.stateNum,
-        stateName: state.stateName
-      }));
-    }
-  };
 
   // Render map when dimensions or data change
   useEffect(() => {
-    if (
-      !isResizing &&
-      dimensions.width > 0 &&
-      dimensions.height > 0 &&
-      mapData &&
-      svgRef.current
-    ) {
+    if (!isResizing && dimensions.width > 0 && dimensions.height > 0 && mapData && svgRef.current) {
       renderMap();
     }
-  }, [
-    dimensions, 
-    isResizing, 
-    mapData, 
-    statePerformanceData, 
-    evaluationSeasonOverviewSelectedStateCode
-  ]);
+  }, [dimensions, isResizing, mapData, statePerformanceData, evaluationSeasonOverviewSelectedStateCode]);
 
   const renderMap = () => {
     if (!svgRef.current || !mapData) return;
@@ -183,34 +139,46 @@ const SeasonOverviewUSStateMap: React.FC = () => {
     const minValue = performanceValues.length > 0 ? d3.min(performanceValues) || 0 : 0;
     const maxValue = performanceValues.length > 0 ? d3.max(performanceValues) || 1 : 1;
 
-    // Create a color scale for the states - blue for better performance (lower values)
-    const colorScale = d3.scaleSequential(d3.interpolateBlues)
-      .domain([maxValue, minValue]); // Invert domain so darker blue means better performance
+    // Get the base color for the selected model
+    const modelBaseColor = modelColorMap[mapSelectedModel];
+    const lightEndColor = "#f0f0f0";
+
+    // Create color interpolators based on the selected scoring metric
+    // For MAPE: lower is better (darker color means lower value)
+    // For WIS/Baseline and Coverage: higher is better (darker color means higher value)
+    let colorDomain, colorRange;
+
+    if (mapSelectedScoringOption === "MAPE") {
+      // For MAPE, invert the scale (lower values are better)
+      colorDomain = [minValue, maxValue];
+      colorRange = [modelBaseColor, lightEndColor];
+    } else {
+      // For WIS/Baseline and Coverage, higher values are better
+      colorDomain = [minValue, maxValue];
+      colorRange = [lightEndColor, modelBaseColor];
+    }
+
+    const colorScale = d3.scaleLinear<string>().domain(colorDomain).range(colorRange).interpolate(d3.interpolateRgb);
 
     // Setup projection
     const projection = d3
       .geoAlbersUsa()
       .fitSize(
-        [
-          width - margin.left - margin.right,
-          height - margin.top - margin.bottom,
-        ],
+        [width - margin.left - margin.right, height - margin.top - margin.bottom],
         topojson.feature(mapData, mapData.objects.states)
       );
 
     const path = d3.geoPath().projection(projection);
 
     // Create main group
-    const g = svg
-      .append("g")
-      .attr("transform", `translate(${margin.left},${margin.top})`);
+    const g = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
 
     // Create state abbreviation to ID mapping
     const stateAbbrToId = new Map();
-    locationData.forEach(loc => {
+    locationData.forEach((loc) => {
       if (loc.stateNum !== "US") {
         // Format state ID to match topojson format
-        const formattedId = loc.stateNum.padStart(2, '0');
+        const formattedId = loc.stateNum.padStart(2, "0");
         stateAbbrToId.set(loc.state, formattedId);
       }
     });
@@ -222,59 +190,39 @@ const SeasonOverviewUSStateMap: React.FC = () => {
       .attr("d", path)
       .attr("fill", (d) => {
         const stateId = d.id?.toString();
-        return statePerformanceData.has(stateId) ? 
-          colorScale(statePerformanceData.get(stateId)) : "#cccccc";
+        return statePerformanceData.has(stateId) ? colorScale(statePerformanceData.get(stateId)) : "#cccccc";
       })
-      .attr("stroke", d => {
-        // Highlight selected state
-        const stateId = d.id?.toString();
-        const stateCode = stateId.startsWith('0') ? stateId.substring(1) : stateId;
-        return stateCode === evaluationSeasonOverviewSelectedStateCode ?
-          "#ffcc00" : "white";
-      })
-      .attr("stroke-width", d => {
-        const stateId = d.id?.toString();
-        const stateCode = stateId.startsWith('0') ? stateId.substring(1) : stateId;
-        return stateCode === evaluationSeasonOverviewSelectedStateCode ?
-          2 : 0.5;
-      })
-      .style("cursor", "pointer")
-      .on("click", (event, d) => {
-        handleStateClick(d.id?.toString() || "");
-      })
+      .attr("stroke", "white")
+      .attr("stroke-width", 0.5)
       .append("title") // Simple tooltip showing state name and value
-      .text(d => {
+      .text((d) => {
         const stateId = d.id?.toString();
-        const stateCode = stateId.startsWith('0') ? stateId.substring(1) : stateId;
-        const state = locationData.find(loc => loc.stateNum === stateCode);
+        const stateCode = stateId.startsWith("0") ? stateId.substring(1) : stateId;
+        const state = locationData.find((loc) => loc.stateNum === stateCode);
         const value = statePerformanceData.get(stateId);
-        
-        return `${state?.stateName || 'Unknown'}: ${value !== undefined ? value.toFixed(2) : 'No data'}`;
+
+        const scoreLabel = mapSelectedScoringOption === "Coverage" ? "Coverage %" : mapSelectedScoringOption;
+
+        return `${state?.stateName || "Unknown"}: ${value !== undefined ? value.toFixed(2) : "No data"} ${scoreLabel}`;
       });
 
-    // Add color legend
-    const legendWidth = 20;
-    const legendHeight = height - margin.top - margin.bottom - 40;
+    //Color legend in the form of a gradient thermometer
+    const legendWidth = 40;
+    const legendHeight = height - margin.top - margin.bottom - 20;
 
     const legendScale = d3
       .scaleLinear()
       .domain([maxValue, minValue]) // Match colorScale domain
       .range([0, legendHeight]);
 
-    const legendAxis = d3.axisRight(legendScale)
+    const legendAxis = d3
+      .axisLeft(legendScale)
       .ticks(5)
-      .tickFormat(d => d.toFixed(1));
+      .tickFormat((d) => d.toFixed(1));
 
-    const legend = svg
-      .append("g")
-      .attr(
-        "transform",
-        `translate(${width - margin.right - legendWidth - 10}, ${margin.top})`
-      );
-
+    const legend = svg.append("g").attr("transform", `translate(${width - margin.right - legendWidth - 10}, ${margin.top})`);
     // Create the gradient
     const defs = svg.append("defs");
-
     const gradient = defs
       .append("linearGradient")
       .attr("id", "color-gradient")
@@ -283,36 +231,23 @@ const SeasonOverviewUSStateMap: React.FC = () => {
       .attr("x2", "0%")
       .attr("y2", "0%");
 
-    const stops = [
-      { offset: "0%", color: colorScale(minValue) },
-      { offset: "50%", color: colorScale((maxValue + minValue) / 2) },
-      { offset: "100%", color: colorScale(maxValue) },
-    ];
+    // Use the same fixed colors as the map
+    gradient.append("stop").attr("offset", "0%").attr("stop-color", colorRange[0]);
 
-    gradient
-      .selectAll("stop")
-      .data(stops)
-      .enter()
-      .append("stop")
-      .attr("offset", (d) => d.offset)
-      .attr("stop-color", (d) => d.color);
+    gradient.append("stop").attr("offset", "100%").attr("stop-color", colorRange[1]);
 
     // Draw the legend rectangle
-    legend
-      .append("rect")
-      .attr("width", legendWidth)
-      .attr("height", legendHeight)
-      .style("fill", "url(#color-gradient)");
+    legend.append("rect").attr("width", legendWidth).attr("height", legendHeight).style("fill", "url(#color-gradient)");
 
-    // Add legend axis
+    // Add legend axis on the left
     legend
       .append("g")
-      .attr("transform", `translate(${legendWidth}, 0)`)
+      .attr("transform", `translate(0, 0)`)
       .call(legendAxis)
       .selectAll("text")
       .attr("fill", "white")
       .style("font-size", "10px");
-      
+
     // Add legend title
     legend
       .append("text")
@@ -321,7 +256,7 @@ const SeasonOverviewUSStateMap: React.FC = () => {
       .attr("fill", "white")
       .attr("text-anchor", "start")
       .style("font-size", "10px")
-      // .text("Performance Score");
+      .text(mapSelectedScoringOption || "Performance Score");
   };
 
   return (
@@ -338,6 +273,7 @@ const SeasonOverviewUSStateMap: React.FC = () => {
         viewBox={`0 0 ${dimensions.width || 100} ${dimensions.height || 100}`}
         preserveAspectRatio='xMidYMid meet'
       />
+      <MapSelectorPanel className='absolute left-2 bottom-0' />
     </div>
   );
 };
