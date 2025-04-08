@@ -19,14 +19,8 @@ const SeasonOverviewUSStateMap: React.FC = () => {
   // Get data from Redux store
   const locationData = useAppSelector((state) => state.location.data);
   const evaluationsScoreData = useAppSelector((state) => state.evaluationsSingleModelScoreData.data);
-  const {
-    evaluationSeasonOverviewSelectedStateCode,
-    evaluationSeasonOverviewHorizon,
-    selectedAggregationPeriod,
-    aggregationPeriods,
-    mapSelectedModel,
-    mapSelectedScoringOption,
-  } = useAppSelector((state) => state.evaluationsSeasonOverviewSettings);
+  const { evaluationSeasonOverviewHorizon, selectedAggregationPeriod, aggregationPeriods, mapSelectedModel, mapSelectedScoringOption } =
+    useAppSelector((state) => state.evaluationsSeasonOverviewSettings);
 
   // Load US map data
   useEffect(() => {
@@ -119,7 +113,16 @@ const SeasonOverviewUSStateMap: React.FC = () => {
     if (!isResizing && dimensions.width > 0 && dimensions.height > 0 && mapData && svgRef.current) {
       renderMap();
     }
-  }, [dimensions, isResizing, mapData, statePerformanceData, evaluationSeasonOverviewSelectedStateCode]);
+  }, [
+    dimensions,
+    isResizing,
+    mapData,
+    statePerformanceData,
+    selectedAggregationPeriod,
+    evaluationSeasonOverviewHorizon,
+    mapSelectedScoringOption,
+    mapSelectedModel,
+  ]);
 
   const renderMap = () => {
     if (!svgRef.current || !mapData) return;
@@ -139,23 +142,31 @@ const SeasonOverviewUSStateMap: React.FC = () => {
     const minValue = performanceValues.length > 0 ? d3.min(performanceValues) || 0 : 0;
     const maxValue = performanceValues.length > 0 ? d3.max(performanceValues) || 1 : 1;
 
-    // Get the base color for the selected model
-    const modelBaseColor = modelColorMap[mapSelectedModel];
-    const lightEndColor = "#f0f0f0";
+    // Uniform navy blue color for all models and metrics
+    const navyBlueColor = "#0a4786";
+    const lightEndColor = "#f0f0f0"; // Near white color
 
-    // Create color interpolators based on the selected scoring metric
-    // For MAPE: lower is better (darker color means lower value)
-    // For WIS/Baseline and Coverage: higher is better (darker color means higher value)
+    // Color Scale Logic
+    // For all metrics, we want:
+    // - Better performance = lighter color (closer to white)
+    // - Worse performance = darker color (closer to navy blue)
     let colorDomain, colorRange;
 
-    if (mapSelectedScoringOption === "MAPE") {
-      // For MAPE, invert the scale (lower values are better)
+    // Handle different scoring metrics
+    if (mapSelectedScoringOption === "MAPE" || mapSelectedScoringOption === "WIS/Baseline") {
+      // For MAPE and WIS/Baseline, higher values mean worse performance
+      // So we map higher values to darker colors
       colorDomain = [minValue, maxValue];
-      colorRange = [modelBaseColor, lightEndColor];
+      colorRange = [lightEndColor, navyBlueColor];
+    } else if (mapSelectedScoringOption === "Coverage") {
+      // For Coverage, higher values mean better performance
+      // So we map higher values to lighter colors
+      colorDomain = [minValue, maxValue];
+      colorRange = [navyBlueColor, lightEndColor];
     } else {
-      // For WIS/Baseline and Coverage, higher values are better
+      // Default case
       colorDomain = [minValue, maxValue];
-      colorRange = [lightEndColor, modelBaseColor];
+      colorRange = [lightEndColor, navyBlueColor];
     }
 
     const colorScale = d3.scaleLinear<string>().domain(colorDomain).range(colorRange).interpolate(d3.interpolateRgb);
@@ -194,11 +205,14 @@ const SeasonOverviewUSStateMap: React.FC = () => {
       })
       .attr("stroke", "white")
       .attr("stroke-width", 0.5)
-      .append("title") // Simple tooltip showing state name and value
+      .append("title")
       .text((d) => {
         const stateId = d.id?.toString();
-        const stateCode = stateId.startsWith("0") ? stateId.substring(1) : stateId;
-        const state = locationData.find((loc) => loc.stateNum === stateCode);
+        if (!stateId) return "Unknown";
+
+        // Now directly use the stateId to find the location
+        // No need to strip leading zeros - use it exactly as it appears in the topojson
+        const state = locationData.find((loc) => loc.stateNum === stateId);
         const value = statePerformanceData.get(stateId);
 
         const scoreLabel = mapSelectedScoringOption === "Coverage" ? "Coverage %" : mapSelectedScoringOption;
@@ -209,11 +223,18 @@ const SeasonOverviewUSStateMap: React.FC = () => {
     //Color legend in the form of a gradient thermometer
     const legendWidth = 40;
     const legendHeight = height - margin.top - margin.bottom - 20;
+    // Set up legend scale based on scoring option
+    let legendScaleDomain;
 
-    const legendScale = d3
-      .scaleLinear()
-      .domain([maxValue, minValue]) // Match colorScale domain
-      .range([0, legendHeight]);
+    if (mapSelectedScoringOption === "Coverage") {
+      // For Coverage, higher values = better performance (lighter color)
+      legendScaleDomain = [maxValue, minValue];
+    } else {
+      // For MAPE and WIS/Baseline, higher values = worse performance (darker color)
+      legendScaleDomain = [maxValue, minValue];
+    }
+
+    const legendScale = d3.scaleLinear().domain(legendScaleDomain).range([0, legendHeight]);
 
     const legendAxis = d3
       .axisLeft(legendScale)
@@ -221,6 +242,7 @@ const SeasonOverviewUSStateMap: React.FC = () => {
       .tickFormat((d) => d.toFixed(1));
 
     const legend = svg.append("g").attr("transform", `translate(${width - margin.right - legendWidth - 10}, ${margin.top})`);
+
     // Create the gradient
     const defs = svg.append("defs");
     const gradient = defs
@@ -231,10 +253,16 @@ const SeasonOverviewUSStateMap: React.FC = () => {
       .attr("x2", "0%")
       .attr("y2", "0%");
 
-    // Use the same fixed colors as the map
-    gradient.append("stop").attr("offset", "0%").attr("stop-color", colorRange[0]);
-
-    gradient.append("stop").attr("offset", "100%").attr("stop-color", colorRange[1]);
+    // Define gradient stops based on the scoring option
+    if (mapSelectedScoringOption === "Coverage") {
+      // For Coverage (higher = better), white at top, blue at top
+      gradient.append("stop").attr("offset", "0%").attr("stop-color", navyBlueColor);
+      gradient.append("stop").attr("offset", "100%").attr("stop-color", lightEndColor);
+    } else {
+      // For MAPE and WIS/Baseline (higher = worse), blue at bottom, white at top
+      gradient.append("stop").attr("offset", "0%").attr("stop-color", lightEndColor);
+      gradient.append("stop").attr("offset", "100%").attr("stop-color", navyBlueColor);
+    }
 
     // Draw the legend rectangle
     legend.append("rect").attr("width", legendWidth).attr("height", legendHeight).style("fill", "url(#color-gradient)");
@@ -257,6 +285,25 @@ const SeasonOverviewUSStateMap: React.FC = () => {
       .attr("text-anchor", "start")
       .style("font-size", "10px")
       .text(mapSelectedScoringOption || "Performance Score");
+
+    // Add legend descriptions for better/worse
+    legend
+      .append("text")
+      .attr("x", legendWidth + 5)
+      .attr("y", 10)
+      .attr("fill", "white")
+      .attr("text-anchor", "start")
+      .style("font-size", "9px")
+      .text(mapSelectedScoringOption == "Coverage" ? "Better" : "Worse");
+
+    legend
+      .append("text")
+      .attr("x", legendWidth + 5)
+      .attr("y", legendHeight)
+      .attr("fill", "white")
+      .attr("text-anchor", "start")
+      .style("font-size", "9px")
+      .text(mapSelectedScoringOption == "Coverage" ? "Worse" : "Better");
   };
 
   return (

@@ -43,6 +43,18 @@ interface UpdateDynamicPeriodsPayload {
 // Define the predefined aggregation periods
 const predefinedAggregationPeriods: AggregationPeriod[] = [
   {
+    id: "season-2021-2022",
+    label: "2021-2022",
+    startDate: parseISO("2021-08-01T00:00:00Z"),
+    endDate: parseISO("2022-07-31T23:59:59Z"),
+  },
+  {
+    id: "season-2022-2023",
+    label: "2022-2023",
+    startDate: parseISO("2022-08-01T00:00:00Z"),
+    endDate: parseISO("2023-07-31T23:59:59Z"),
+  },
+  {
     id: "season-2023-2024",
     label: "2023-2024",
     startDate: parseISO("2023-08-01T00:00:00Z"),

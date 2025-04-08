@@ -61,8 +61,8 @@ const MapSelectorPanel: React.FC<MapSelectorPanelProps> = ({ className }) => {
               <div 
                 className="w-4 h-4 rounded-sm mr-2 flex-shrink-0 border border-solid"
                 style={{ 
-                  backgroundColor: mapSelectedModel === model ? modelColorMap[model] : 'transparent',
-                  borderColor: modelColorMap[model]
+                  backgroundColor: mapSelectedModel === model ? 'silver' : 'transparent',
+                  borderColor: 'silver'
                 }}
               />
               <span className="text-xs cursor-pointer truncate">

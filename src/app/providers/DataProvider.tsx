@@ -68,6 +68,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     thresholds: true,
     historicalGroundTruth: true,
     seasonOptions: true,
+    evaluationDetailedCoverage: true
   });
   const [dataFetchStarted, setDataFetchStarted] = useState(false);
 
@@ -506,7 +507,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         string,
         {
           referenceDate: Date;
-          score: number; // This will be the average coverage score
+          score: number; //This will be the 95% coverage score
           location: string;
           horizon: number;
         }[]
@@ -520,23 +521,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         // Only process models in our modelNames list
         if (!modelNames.includes(modelName)) return;
-
-        // Calculate average coverage across all percentiles
-        const coverageValues = [
-          +entry["10_cov"],
-          +entry["20_cov"],
-          +entry["30_cov"],
-          +entry["40_cov"],
-          +entry["50_cov"],
-          +entry["60_cov"],
-          +entry["70_cov"],
-          +entry["80_cov"],
-          +entry["90_cov"],
-          +entry["95_cov"],
-          +entry["98_cov"],
-        ];
-
-        const averageCoverage = coverageValues.reduce((sum, value) => sum + value, 0) / coverageValues.length;
 
         // Create detailed coverage data entry
         const detailedCoverageData: CoverageScoreData = {
@@ -554,13 +538,12 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           coverage90: +entry["90_cov"],
           coverage95: +entry["95_cov"],
           coverage98: +entry["98_cov"],
-          averageCoverage: averageCoverage,
         };
 
         // Create simplified score data entry, for compatibility with WIS and MAPE
         const scoreData = {
           referenceDate: parseISO(entry.reference_date),
-          score: averageCoverage,
+          score: +entry["95_cov"],
           location: entry.location,
           horizon: +entry.horizon,
         };
@@ -578,8 +561,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
         detailedCoverageByModel.get(key)?.push(detailedCoverageData);
       });
-
-      
 
       // Combine into final format
       const evaluationsData: EvaluationsScoreDataCollection[] = [];
