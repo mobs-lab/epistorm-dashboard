@@ -82,7 +82,7 @@ const SeasonOverviewPIChart: React.FC = () => {
         // Skip if outside selected time period
         if (referenceDate < selectedPeriod.startDate || targetDate > selectedPeriod.endDate) continue;
 
-        // This entry passes all filters, add its values to the sums
+        // Now this entry passes all filters, add its values to the sums
         coverageMapping.forEach((mapping, index) => {
           // Add value to the sum for this confidence level
           coverageSums[index] += entry[mapping.field as keyof typeof entry] as number;
@@ -94,7 +94,7 @@ const SeasonOverviewPIChart: React.FC = () => {
       if (coverageCounts.some((count) => count > 0)) {
         const coveragePoints = coverageMapping.map((mapping, index) => ({
           covLevel: mapping.level,
-          coverageValue: coverageCounts[index] > 0 ? coverageSums[index] / coverageCounts[index] : 0,
+          coverageValue: coverageCounts[index] > 0 ? (coverageSums[index] / coverageCounts[index]) * 100 : 0,
         }));
 
         results.push({
@@ -107,6 +107,7 @@ const SeasonOverviewPIChart: React.FC = () => {
     return results;
   }, [detailedCoverageData, evaluationSeasonOverviewHorizon, selectedAggregationPeriod, aggregationPeriods]);
 
+  /* UseEffect Hook for rendering the chart */
   useEffect(() => {
     if (!isResizing && dimensions.width > 0 && dimensions.height > 0 && chartRef.current) {
       renderChart();
@@ -142,18 +143,18 @@ const SeasonOverviewPIChart: React.FC = () => {
     const g = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
 
     // Get confidence levels (x-axis values)
-    const confidenceLevels = processedData[0].coveragePoints.map((p) => p.covLevel);
+    const covLevels = processedData[0].coveragePoints.map((p) => p.covLevel);
 
     // X scale - confidence levels
     const xScale = d3
       .scaleLinear()
-      .domain([d3.min(confidenceLevels) || 10, d3.max(confidenceLevels) || 98])
+      .domain([d3.max(covLevels) || 98, d3.min(covLevels) || 10])
       .range([0, innerWidth]);
 
     // Calculate domain for y-scale
     const allCoverageValues = processedData.flatMap((model) => model.coveragePoints.map((p) => p.coverageValue));
-    const minValue = Math.max(0, (d3.min(allCoverageValues) || 0) - 5); // Allow some padding, but not below 0
-    const maxValue = Math.min(100, (d3.max(allCoverageValues) || 100) + 5); // Allow some padding, but not above 100
+    const minValue = Math.max(0, (d3.min(allCoverageValues) || 0) - 5);
+    const maxValue = Math.min(100, (d3.max(allCoverageValues) || 100) + 5);
 
     // Y scale - coverage values
     const yScale = d3.scaleLinear().domain([minValue, maxValue]).range([innerHeight, 0]);
@@ -161,7 +162,7 @@ const SeasonOverviewPIChart: React.FC = () => {
     // X axis
     g.append("g")
       .attr("transform", `translate(0,${innerHeight})`)
-      .call(d3.axisBottom(xScale).tickValues(confidenceLevels))
+      .call(d3.axisBottom(xScale).tickValues(covLevels))
       .selectAll("text")
       .attr("fill", "white")
       .style("font-size", "10px");
@@ -175,8 +176,7 @@ const SeasonOverviewPIChart: React.FC = () => {
       .attr("y", innerHeight + margin.bottom - 5)
       .attr("text-anchor", "middle")
       .attr("fill", "white")
-      .style("font-size", "12px")
-      .text("PI");
+      .style("font-size", "12px");
 
     g.append("text")
       .attr("transform", "rotate(-90)")
@@ -185,7 +185,7 @@ const SeasonOverviewPIChart: React.FC = () => {
       .attr("text-anchor", "middle")
       .attr("fill", "white")
       .style("font-size", "12px")
-      .text("Cov.");
+      .text("Cov%");
 
     // Create tooltip
     const tooltip = svg.append("g").attr("class", "tooltip").style("opacity", 0).style("pointer-events", "none");
@@ -208,25 +208,26 @@ const SeasonOverviewPIChart: React.FC = () => {
 
     // Area generator
     const area = d3
-      .area<{ confidenceLevel: number; coverageValue: number }>()
-      .x((d) => xScale(d.confidenceLevel))
+      .area<{ covLevel: number; coverageValue: number }>()
+      .x((d) => xScale(d.covLevel))
       .y0(innerHeight)
       .y1((d) => yScale(d.coverageValue))
       .curve(d3.curveCatmullRom);
 
     // Line generator
     const line = d3
-      .line<{ confidenceLevel: number; coverageValue: number }>()
-      .x((d) => xScale(d.confidenceLevel))
+      .line<{ covLevel: number; coverageValue: number }>()
+      .x((d) => xScale(d.covLevel))
       .y((d) => yScale(d.coverageValue))
       .curve(d3.curveCatmullRom);
 
     // Draw areas and lines for each model
-    // Sort data so that models with lower values are drawn first (for better visibility)
+    // Sort data so that models with higher values are drawn first (towards bottom, in terms of z-index)
+    // To avoid larger shaded region being on top of smaller ones, so all the data points can be reached
     const sortedData = [...processedData].sort((a, b) => {
       const aAvg = d3.mean(a.coveragePoints, (d) => d.coverageValue) || 0;
       const bAvg = d3.mean(b.coveragePoints, (d) => d.coverageValue) || 0;
-      return aAvg - bAvg;
+      return bAvg - aAvg;
     });
 
     sortedData.forEach((model) => {
@@ -246,36 +247,81 @@ const SeasonOverviewPIChart: React.FC = () => {
         .attr("class", `point-${model.modelName}`)
         .attr("cx", (d) => xScale(d.covLevel))
         .attr("cy", (d) => yScale(d.coverageValue))
-        .attr("r", 4)
+        .attr("r", 5)
         .attr("fill", color)
         .style("cursor", "pointer")
         .on("mouseover", function (event, d) {
-          const [x, y] = d3.pointer(event, svg.node());
+          const [mouseX, mouseY] = d3.pointer(event, svg.node());
 
-          // Show tooltip
-          tooltip.attr("transform", `translate(${x + 10},${y - 30})`).style("opacity", 1);
-
+          // Prepare tooltip content
           tooltipText.selectAll("*").remove();
-
           tooltipText.append("tspan").attr("x", 8).attr("y", 17).text(`${model.modelName}`);
-
           tooltipText
             .append("tspan")
             .attr("x", 8)
             .attr("y", 35)
             .text(`PI: ${d.covLevel}%, Coverage: ${d.coverageValue.toFixed(1)}%`);
 
-          // Size the background rect based on text
+          // Get tooltip dimensions
           const bbox = tooltipText.node()!.getBBox();
-          tooltipRect.attr("width", bbox.width + 16).attr("height", bbox.height + 16);
+          const tooltipWidth = bbox.width + 16;
+          const tooltipHeight = bbox.height + 16;
+          tooltipRect.attr("width", tooltipWidth).attr("height", tooltipHeight);
+
+          // Get SVG dimensions
+          const svgNode = svg.node();
+          const svgWidth = svgNode?.clientWidth || dimensions.width;
+          const svgHeight = svgNode?.clientHeight || dimensions.height;
+
+          // Detect proximity to edges
+          const leftProximity = mouseX;
+          const rightProximity = svgWidth - mouseX;
+          const topProximity = mouseY;
+          const bottomProximity = svgHeight - mouseY;
+
+          // Edge buffer
+          const edgeBuffer = 20;
+
+          // Calculate horizontal position to avoid clipping
+          let xOffset: number;
+          if (rightProximity < tooltipWidth + edgeBuffer) {
+            // Too close to right edge, position to the left
+            xOffset = -tooltipWidth - edgeBuffer;
+          } else if (leftProximity < edgeBuffer) {
+            // Too close to left edge, position to the right
+            xOffset = edgeBuffer;
+          } else {
+            // Default position with slight offset
+            xOffset = 10;
+          }
+
+          // Calculate vertical position to avoid clipping
+          let yOffset: number;
+          if (bottomProximity < tooltipHeight + edgeBuffer) {
+            // Too close to bottom edge, position above
+            yOffset = -tooltipHeight - edgeBuffer;
+          } else if (topProximity < edgeBuffer) {
+            // Too close to top edge, position below
+            yOffset = edgeBuffer;
+          } else {
+            // Default position above the point
+            yOffset = -tooltipHeight - 10;
+          }
+
+          // Apply calculated position
+          tooltip.attr("transform", `translate(${mouseX + xOffset},${mouseY + yOffset})`).style("opacity", 1);
+
+          // Highlight the point
+          d3.select(this).attr("r", 7).attr("stroke", "white").attr("stroke-width", 2);
         })
         .on("mouseout", function () {
           tooltip.style("opacity", 0);
+          d3.select(this).attr("r", 5).attr("stroke", "none");
         });
     });
 
-    // Add a diagonal dashed line representing ideal coverage
-    g.append("line")
+    //TODO: (Confirm if this is right or needed) diagonal dashed line representing ideal coverage
+    /* g.append("line")
       .attr("x1", xScale(10))
       .attr("y1", yScale(10))
       .attr("x2", xScale(98))
@@ -283,7 +329,7 @@ const SeasonOverviewPIChart: React.FC = () => {
       .attr("stroke", "white")
       .attr("stroke-width", 1)
       .attr("stroke-dasharray", "5,5")
-      .style("opacity", 0.7);
+      .style("opacity", 0.7); */
   };
 
   return (
