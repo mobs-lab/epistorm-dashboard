@@ -23,10 +23,10 @@ interface EvaluationsSeasonOverviewSettingsState {
   // See below for implementation
   latestReferenceDate: Date | null;
 
-
   /* Map selection panel related */
   mapSelectedModel: string;
   mapSelectedScoringOption: "WIS/Baseline" | "MAPE" | "Coverage";
+  useLogColorScale: boolean;
 }
 
 interface UpdateDynamicPeriodsPayload {
@@ -107,6 +107,7 @@ const initialState: EvaluationsSeasonOverviewSettingsState = {
 
   mapSelectedModel: modelNames[0], // Set default to first model
   mapSelectedScoringOption: "WIS/Baseline", // Default scoring option
+  useLogColorScale: false,
 };
 
 const evaluationsSeasonOverviewSettingsSlice = createSlice({
@@ -159,7 +160,9 @@ const evaluationsSeasonOverviewSettingsSlice = createSlice({
     setMapSelectedScoringOption: (state, action: PayloadAction<"WIS/Baseline" | "MAPE" | "Coverage">) => {
       state.mapSelectedScoringOption = action.payload;
     },
-
+    setUseLogColorScale: (state, action: PayloadAction<boolean>) => {
+      state.useLogColorScale = action.payload;
+    },
   },
 });
 
@@ -169,7 +172,8 @@ export const {
   updateSelectedAggregationPeriod,
   updateDynamicPeriods,
   setMapSelectedModel,
-  setMapSelectedScoringOption
+  setMapSelectedScoringOption,
+  setUseLogColorScale
 } = evaluationsSeasonOverviewSettingsSlice.actions;
 
 export default evaluationsSeasonOverviewSettingsSlice.reducer;

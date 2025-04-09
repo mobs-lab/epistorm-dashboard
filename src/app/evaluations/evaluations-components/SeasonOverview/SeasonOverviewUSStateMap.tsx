@@ -16,11 +16,17 @@ const SeasonOverviewUSStateMap: React.FC = () => {
   const [mapData, setMapData] = useState<any>(null);
   const dispatch = useAppDispatch();
 
-  // Get data from Redux store
+  // Get data and settings variables from Redux store
   const locationData = useAppSelector((state) => state.location.data);
   const evaluationsScoreData = useAppSelector((state) => state.evaluationsSingleModelScoreData.data);
-  const { evaluationSeasonOverviewHorizon, selectedAggregationPeriod, aggregationPeriods, mapSelectedModel, mapSelectedScoringOption } =
-    useAppSelector((state) => state.evaluationsSeasonOverviewSettings);
+  const {
+    evaluationSeasonOverviewHorizon,
+    selectedAggregationPeriod,
+    aggregationPeriods,
+    mapSelectedModel,
+    mapSelectedScoringOption,
+    useLogColorScale,
+  } = useAppSelector((state) => state.evaluationsSeasonOverviewSettings);
 
   // Load US map data
   useEffect(() => {
@@ -122,8 +128,10 @@ const SeasonOverviewUSStateMap: React.FC = () => {
     evaluationSeasonOverviewHorizon,
     mapSelectedScoringOption,
     mapSelectedModel,
+    useLogColorScale,
   ]);
 
+  
   const renderMap = () => {
     if (!svgRef.current || !mapData) return;
 
@@ -152,24 +160,45 @@ const SeasonOverviewUSStateMap: React.FC = () => {
     // - Worse performance = darker color (closer to navy blue)
     let colorDomain, colorRange;
 
+    /* Ensure all scoring options have zero in the value domain */
+    const adjustedMin =
+      mapSelectedScoringOption === "MAPE" || mapSelectedScoringOption === "WIS/Baseline" ? Math.min(minValue, 0) : minValue;
+
     // Handle different scoring metrics
     if (mapSelectedScoringOption === "MAPE" || mapSelectedScoringOption === "WIS/Baseline") {
       // For MAPE and WIS/Baseline, higher values mean worse performance
-      // So we map higher values to darker colors
-      colorDomain = [minValue, maxValue];
-      colorRange = [lightEndColor, navyBlueColor];
+      colorDomain = [adjustedMin, maxValue];
+      colorRange = [lightEndColor, navyBlueColor]; // Light to dark (better to worse)
     } else if (mapSelectedScoringOption === "Coverage") {
       // For Coverage, higher values mean better performance
-      // So we map higher values to lighter colors
-      colorDomain = [minValue, maxValue];
-      colorRange = [navyBlueColor, lightEndColor];
+      colorDomain = [adjustedMin, Math.max(maxValue, 100)];
+      colorRange = [navyBlueColor, lightEndColor]; // Dark to light (worse to better)
     } else {
-      // Default case
-      colorDomain = [minValue, maxValue];
+      // Default case, just in case
+      colorDomain = [adjustedMin, maxValue];
       colorRange = [lightEndColor, navyBlueColor];
     }
 
-    const colorScale = d3.scaleLinear<string>().domain(colorDomain).range(colorRange).interpolate(d3.interpolateRgb);
+    var colorScale:
+      | d3.ScaleLinear<string, string, never>
+      | ((arg0: any) => string | number | boolean | readonly (string | number)[] | null);
+
+    let symlogConstant = 1;
+
+    if (useLogColorScale) {
+      // Calculate dynamic constant based on data distribution
+      const positiveValues = performanceValues.filter((v) => v > 0);
+      if (positiveValues.length > 0) {
+        const sortedValues = [...positiveValues].sort((a, b) => a - b);
+        const percentileIndex = Math.floor(sortedValues.length * 0.1);
+        symlogConstant = Math.max(Math.min(sortedValues[percentileIndex], 1), 0.01);
+      }
+      // Use symlog for all metrics when in log mode (handles zeros properly)
+      colorScale = d3.scaleSymlog<string>().domain(colorDomain).range(colorRange).interpolate(d3.interpolateRgb).constant(symlogConstant);
+    } else {
+      // Use linear scale when toggle is off
+      colorScale = d3.scaleLinear<string>().domain(colorDomain).range(colorRange).interpolate(d3.interpolateRgb);
+    }
 
     // Setup projection
     const projection = d3
@@ -215,31 +244,35 @@ const SeasonOverviewUSStateMap: React.FC = () => {
         const state = locationData.find((loc) => loc.stateNum === stateId);
         const value = statePerformanceData.get(stateId);
 
-        const scoreLabel = mapSelectedScoringOption === "Coverage" ? "Coverage %" : mapSelectedScoringOption;
-
-        return `${state?.stateName || "Unknown"}: ${value !== undefined ? value.toFixed(2) : "No data"} ${scoreLabel}`;
+        if (mapSelectedScoringOption == "Coverage" && value !== undefined) {
+          // Already in percentage format
+          return `${state?.stateName || "Unknown"}: ${value.toFixed(1)}% ${mapSelectedScoringOption}`;
+        } else {
+          return `${state?.stateName || "Unknown"}: ${value !== undefined ? value.toFixed(2) : "No data"} ${mapSelectedScoringOption}`;
+        }
       });
 
     //Color legend in the form of a gradient thermometer
     const legendWidth = 40;
     const legendHeight = height - margin.top - margin.bottom - 20;
-    // Set up legend scale based on scoring option
-    let legendScaleDomain;
 
-    if (mapSelectedScoringOption === "Coverage") {
-      // For Coverage, higher values = better performance (lighter color)
-      legendScaleDomain = [maxValue, minValue];
+    // Legend Scale Setup - always put lower values at bottom, higher at top
+    let legendScale;
+
+    if (useLogColorScale) {
+      legendScale = d3.scaleSymlog().domain([adjustedMin, maxValue]).range([legendHeight, 0]).constant(symlogConstant);
     } else {
-      // For MAPE and WIS/Baseline, higher values = worse performance (darker color)
-      legendScaleDomain = [maxValue, minValue];
+      legendScale = d3.scaleLinear().domain([adjustedMin, maxValue]).range([legendHeight, 0]);
     }
-
-    const legendScale = d3.scaleLinear().domain(legendScaleDomain).range([0, legendHeight]);
 
     const legendAxis = d3
       .axisLeft(legendScale)
-      .ticks(5)
-      .tickFormat((d) => d.toFixed(1));
+      .ticks(8)
+      .tickFormat((d) => {
+        if (d === 0) return "0";
+        if (Math.abs(d) < 0.01) return d3.format(".2e")(d);
+        return d3.format(".1f")(d);
+      });
 
     const legend = svg.append("g").attr("transform", `translate(${width - margin.right - legendWidth - 10}, ${margin.top})`);
 

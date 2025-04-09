@@ -94,7 +94,7 @@ const SeasonOverviewPIChart: React.FC = () => {
       if (coverageCounts.some((count) => count > 0)) {
         const coveragePoints = coverageMapping.map((mapping, index) => ({
           covLevel: mapping.level,
-          coverageValue: coverageCounts[index] > 0 ? (coverageSums[index] / coverageCounts[index]) * 100 : 0,
+          coverageValue: coverageCounts[index] > 0 ? (coverageSums[index] / coverageCounts[index]): 0,
         }));
 
         results.push({

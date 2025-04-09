@@ -314,7 +314,7 @@ const SeasonOverviewLocationAggregatedScoreChart: React.FC<SeasonOverviewLocatio
         ticks = [0, 0.25, 0.5, 0.75, 1, 2, 3, 5];
       } else {
         // For larger values
-        ticks = [0, 0.5, 1, 2, 4, 8, 16, 32].filter(v => v <= maxValue);
+        ticks = [0, 0.3, 0.6, 1, 2, 4, 6, 8].filter(v => v <= maxValue);
         
         // Add the max value if it's significantly different from the last tick
         const lastTick = ticks[ticks.length - 1];
@@ -398,9 +398,9 @@ const SeasonOverviewLocationAggregatedScoreChart: React.FC<SeasonOverviewLocatio
 
       if (ratio > 10) {
         /* Usually this option is for WIS/Baseline */
-        return 0.1; // Very skewed data, use small constant
+        return 0.3; // Very skewed data, use small constant
       } else if (ratio > 5) {
-        return 2; // Moderately skewed
+        return 1.2; // Moderately skewed
       } else {
         return 2.8; // Less skewed
       }
@@ -435,7 +435,7 @@ const SeasonOverviewLocationAggregatedScoreChart: React.FC<SeasonOverviewLocatio
                 // For WIS values, use appropriate decimal places
                 if (d === 0) return "0";
                 if (Number(d) < 1) return d3.format(".1f")(d); // One decimal for values < 1
-                return d3.format(".0f")(d); // No decimals for values >= 1
+                return d3.format(".1f")(d); // No decimals for values >= 1
               } else {
                 // For MAPE, continue using integers
                 return d.toString();
