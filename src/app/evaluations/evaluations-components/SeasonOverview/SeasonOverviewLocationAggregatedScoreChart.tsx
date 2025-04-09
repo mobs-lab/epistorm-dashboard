@@ -138,9 +138,7 @@ const SeasonOverviewLocationAggregatedScoreChart: React.FC<SeasonOverviewLocatio
     tooltip: d3.Selection<SVGGElement, unknown, null, undefined>,
     data: IQRData,
     position: [number, number],
-    direction: TooltipDirection,
-    modelIndex?: number,
-    totalModels?: number
+    direction: TooltipDirection
   ) => {
     tooltip.selectAll("*").remove();
 
@@ -297,6 +295,52 @@ const SeasonOverviewLocationAggregatedScoreChart: React.FC<SeasonOverviewLocatio
     tooltip.attr("transform", `translate(${position[0] + xOffset},${position[1] + yOffset})`).style("opacity", 1);
   };
 
+  const generateEvenlySpacedTicks = (scale: d3.ScaleSymLog<number, number, never>, pixelWidth: number, numTicks = 8, isWis = false) => {
+    if (isWis) {
+      // For WIS/Baseline data, use a specialized approach
+      const maxValue = scale.domain()[1];
+      
+      // Create a predefined set of tick values appropriate for WIS/Baseline
+      let ticks;
+      
+      if (maxValue <= 1) {
+        // If max is small, focus on subdivisions of 0-1
+        ticks = [0, 0.2, 0.4, 0.6, 0.8, 1];
+      } else if (maxValue <= 2) {
+        // For max values up to 2
+        ticks = [0, 0.2, 0.4, 0.6, 0.8, 1, 1.5, 2];
+      } else if (maxValue <= 5) {
+        // For max values up to 5
+        ticks = [0, 0.25, 0.5, 0.75, 1, 2, 3, 5];
+      } else {
+        // For larger values
+        ticks = [0, 0.5, 1, 2, 4, 8, 16, 32].filter(v => v <= maxValue);
+        
+        // Add the max value if it's significantly different from the last tick
+        const lastTick = ticks[ticks.length - 1];
+        if (maxValue > lastTick * 1.5) {
+          ticks.push(Math.ceil(maxValue));
+        }
+      }
+      
+      return ticks.filter(v => v <= maxValue);
+    } else {
+      // Original logic for MAPE - evenly distribute in pixel space
+      const pixelPositions = [];
+      for (let i = 0; i < numTicks; i++) {
+        pixelPositions.push((i / (numTicks - 1)) * pixelWidth);
+      }
+  
+      const dataValues = pixelPositions.map(pos => {
+        const value = scale.invert(pos);
+        return Math.round(value);
+      });
+  
+      const uniqueValues = [...new Set([0, ...dataValues])].sort((a, b) => a - b);
+      return uniqueValues;
+    }
+  };
+
   const renderChart = () => {
     if (!chartRef.current) return;
 
@@ -326,7 +370,6 @@ const SeasonOverviewLocationAggregatedScoreChart: React.FC<SeasonOverviewLocatio
 
     // Sort data for consistent display
     const data = [...processedData].sort((a, b) => {
-      // Sort by model name or median value for better visualization
       return modelNames.indexOf(a.model) - modelNames.indexOf(b.model);
     });
 
@@ -340,7 +383,37 @@ const SeasonOverviewLocationAggregatedScoreChart: React.FC<SeasonOverviewLocatio
     // X scale - values
     // Calculate domain from data instead of fixed 0-100
     const maxValue = Math.max(...data.map((d) => d.q95)) * 1.1; // Add 10% padding
-    const xScale = d3.scaleLinear().domain([0, maxValue]).range([0, innerWidth]);
+    // const xScale = d3.scaleLinear().domain([0, maxValue]).range([0, innerWidth]);
+
+    const dataRange = {
+      min: Math.min(...data.map((d) => d.q05)),
+      max: Math.max(...data.map((d) => d.q95)),
+      median: d3.median(data, (d) => d.median) || Math.min(...data.map((d) => d.median)),
+    };
+
+    // Calculate a good constant based on data characteristics
+    const calculateConstant = () => {
+      // Ratio between max and median can help determine appropriate constant
+      const ratio = dataRange.max / dataRange.median;
+
+      if (ratio > 10) {
+        /* Usually this option is for WIS/Baseline */
+        return 0.1; // Very skewed data, use small constant
+      } else if (ratio > 5) {
+        return 2; // Moderately skewed
+      } else {
+        return 2.8; // Less skewed
+      }
+    };
+
+    const constant = calculateConstant();
+    console.log(`Using symlog constant: ${constant} for ${type} data`);
+
+    const xScale = d3
+      .scaleSymlog()
+      .domain([0, maxValue]) // 10% padding
+      .constant(constant)
+      .range([0, innerWidth]);
 
     // Y axis with truncated model names for readability
     g.append("g")
@@ -348,13 +421,30 @@ const SeasonOverviewLocationAggregatedScoreChart: React.FC<SeasonOverviewLocatio
       .call((g) => g.selectAll(".tick text").remove())
       .call((g) => g.select(".domain").attr("stroke", "white"));
 
-    // X axis
-    g.append("g")
-      .attr("transform", `translate(0,${innerHeight})`)
-      .call(d3.axisBottom(xScale).ticks(5))
-      .selectAll("text")
-      .attr("fill", "white")
-      .style("font-size", "9px");
+      const customTicks = generateEvenlySpacedTicks(xScale, innerWidth, 8, type === "wis");
+
+      // X axis with proper decimal formatting
+      g.append("g")
+        .attr("transform", `translate(0,${innerHeight})`)
+        .call(
+          d3
+            .axisBottom(xScale)
+            .tickValues(customTicks)
+            .tickFormat(d => {
+              if (type === "wis") {
+                // For WIS values, use appropriate decimal places
+                if (d === 0) return "0";
+                if (Number(d) < 1) return d3.format(".1f")(d); // One decimal for values < 1
+                return d3.format(".0f")(d); // No decimals for values >= 1
+              } else {
+                // For MAPE, continue using integers
+                return d.toString();
+              }
+            })
+        )
+        .selectAll("text")
+        .attr("fill", "white")
+        .style("font-size", "9px");
 
     // Invisible overlay for better hover detection
     const boxGroups = g.selectAll(".model-box-group").data(data).enter().append("g").attr("class", "model-box-group");
@@ -454,6 +544,21 @@ const SeasonOverviewLocationAggregatedScoreChart: React.FC<SeasonOverviewLocatio
         .attr("stroke", "white")
         .attr("stroke-width", 2);
     });
+
+    // Reference line at x=1 for WIS/Baseline
+    if (type === "wis") {
+      // Add vertical reference line at x=1
+      g.append("line")
+        .attr("class", "reference-line")
+        .attr("x1", xScale(1))
+        .attr("x2", xScale(1))
+        .attr("y1", 0)
+        .attr("y2", innerHeight)
+        .attr("stroke", "white")
+        .attr("stroke-width", 1)
+        .attr("stroke-dasharray", "4,4")
+        .attr("opacity", 1);
+    }
 
     // Create tooltip at the end to ensure it's on top of all elements
     const tooltip = createTooltip(svg);
