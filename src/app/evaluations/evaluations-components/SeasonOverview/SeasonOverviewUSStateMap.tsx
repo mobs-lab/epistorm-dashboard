@@ -14,7 +14,6 @@ const SeasonOverviewUSStateMap: React.FC = () => {
   const { containerRef, dimensions, isResizing } = useResponsiveSVG();
   const svgRef = useRef<SVGSVGElement>(null);
   const [mapData, setMapData] = useState<any>(null);
-  const dispatch = useAppDispatch();
 
   // Get data and settings variables from Redux store
   const locationData = useAppSelector((state) => state.location.data);
@@ -131,7 +130,6 @@ const SeasonOverviewUSStateMap: React.FC = () => {
     useLogColorScale,
   ]);
 
-  
   const renderMap = () => {
     if (!svgRef.current || !mapData) return;
 
@@ -212,6 +210,16 @@ const SeasonOverviewUSStateMap: React.FC = () => {
 
     // Create main group
     const g = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
+
+    // Map Title
+    g.append("text")
+      .attr("x", (0))
+      .attr("y", -5)
+      .attr("fill", "white")
+      .attr("text-anchor", "left")
+      .style("font-size", "18px")
+      .style("font-weight", "regular")
+      .text(`State-Specific ${mapSelectedScoringOption || "Performance Score"}`);
 
     // Create state abbreviation to ID mapping
     const stateAbbrToId = new Map();

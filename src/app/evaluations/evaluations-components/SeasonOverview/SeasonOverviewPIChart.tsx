@@ -148,7 +148,7 @@ const SeasonOverviewPIChart: React.FC = () => {
     // X scale - confidence levels
     const xScale = d3
       .scaleLinear()
-      .domain([d3.max(covLevels) || 98, d3.min(covLevels) || 10])
+      .domain([d3.min(covLevels) || 10, d3.max(covLevels) || 98])
       .range([0, innerWidth]);
 
     // Calculate domain for y-scale
@@ -169,6 +169,17 @@ const SeasonOverviewPIChart: React.FC = () => {
 
     // Y axis
     g.append("g").call(d3.axisLeft(yScale).ticks(5)).selectAll("text").attr("fill", "white").style("font-size", "10px");
+
+    /* Guidance Line (y=x) */
+    g.append("line")
+      .attr("x1", xScale(10))
+      .attr("y1", yScale(10))
+      .attr("x2", xScale(98))
+      .attr("y2", yScale(98))
+      .attr("stroke", "white")
+      .attr("stroke-width", 4)
+      .attr("stroke-dasharray", "10,6")
+      .style("opacity", 0.6);
 
     // Axis labels
     g.append("text")
@@ -207,12 +218,12 @@ const SeasonOverviewPIChart: React.FC = () => {
       .style("font-family", "var(--font-dm-sans)");
 
     // Area generator
-    const area = d3
+    /* const area = d3
       .area<{ covLevel: number; coverageValue: number }>()
       .x((d) => xScale(d.covLevel))
       .y0(innerHeight)
       .y1((d) => yScale(d.coverageValue))
-      .curve(d3.curveCatmullRom);
+      .curve(d3.curveCatmullRom); */
 
     // Line generator
     const line = d3
@@ -234,7 +245,7 @@ const SeasonOverviewPIChart: React.FC = () => {
       const color = modelColorMap[model.modelName];
 
       // Draw area with gradient opacity
-      g.append("path").datum(model.coveragePoints).attr("fill", color).attr("fill-opacity", 0.3).attr("d", area);
+      // g.append("path").datum(model.coveragePoints).attr("fill", color).attr("fill-opacity", 0.3).attr("d", area);
 
       // Draw line
       g.append("path").datum(model.coveragePoints).attr("fill", "none").attr("stroke", color).attr("stroke-width", 2).attr("d", line);
@@ -320,16 +331,6 @@ const SeasonOverviewPIChart: React.FC = () => {
         });
     });
 
-    //TODO: (Confirm if this is right or needed) diagonal dashed line representing ideal coverage
-    /* g.append("line")
-      .attr("x1", xScale(10))
-      .attr("y1", yScale(10))
-      .attr("x2", xScale(98))
-      .attr("y2", yScale(98))
-      .attr("stroke", "white")
-      .attr("stroke-width", 1)
-      .attr("stroke-dasharray", "5,5")
-      .style("opacity", 0.7); */
   };
 
   return (

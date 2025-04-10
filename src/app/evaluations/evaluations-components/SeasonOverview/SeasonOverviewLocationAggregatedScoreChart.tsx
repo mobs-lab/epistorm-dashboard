@@ -297,7 +297,7 @@ const SeasonOverviewLocationAggregatedScoreChart: React.FC<SeasonOverviewLocatio
 
   const generateEvenlySpacedTicks = (scale: d3.ScaleSymLog<number, number, never>, pixelWidth: number, numTicks = 8, isWis = false) => {
     if (isWis) {
-      // For WIS/Baseline data, use a specialized approach
+      // For WIS/Baseline data, trying a specialized approach
       const maxValue = scale.domain()[1];
       
       // Create a predefined set of tick values appropriate for WIS/Baseline
@@ -470,8 +470,8 @@ const SeasonOverviewLocationAggregatedScoreChart: React.FC<SeasonOverviewLocatio
         .append("line")
         .attr("x1", xScale(d.q05))
         .attr("x2", xScale(d.q05))
-        .attr("y1", y + boxHeight / 2 - 4)
-        .attr("y2", y + boxHeight / 2 + 4)
+        .attr("y1", y + boxHeight / 2 - 6)
+        .attr("y2", y + boxHeight / 2 + 6)
         .attr("stroke", "white")
         .attr("stroke-width", 1);
 
@@ -479,8 +479,8 @@ const SeasonOverviewLocationAggregatedScoreChart: React.FC<SeasonOverviewLocatio
         .append("line")
         .attr("x1", xScale(d.q95))
         .attr("x2", xScale(d.q95))
-        .attr("y1", y + boxHeight / 2 - 4)
-        .attr("y2", y + boxHeight / 2 + 4)
+        .attr("y1", y + boxHeight / 2 - 6)
+        .attr("y2", y + boxHeight / 2 + 6)
         .attr("stroke", "white")
         .attr("stroke-width", 1);
 
