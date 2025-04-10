@@ -23,10 +23,10 @@ interface EvaluationsSeasonOverviewSettingsState {
   // See below for implementation
   latestReferenceDate: Date | null;
 
-
   /* Map selection panel related */
   mapSelectedModel: string;
   mapSelectedScoringOption: "WIS/Baseline" | "MAPE" | "Coverage";
+  useLogColorScale: boolean;
 }
 
 interface UpdateDynamicPeriodsPayload {
@@ -42,6 +42,18 @@ interface UpdateDynamicPeriodsPayload {
 
 // Define the predefined aggregation periods
 const predefinedAggregationPeriods: AggregationPeriod[] = [
+  {
+    id: "season-2021-2022",
+    label: "2021-2022",
+    startDate: parseISO("2021-08-01T00:00:00Z"),
+    endDate: parseISO("2022-07-31T23:59:59Z"),
+  },
+  {
+    id: "season-2022-2023",
+    label: "2022-2023",
+    startDate: parseISO("2022-08-01T00:00:00Z"),
+    endDate: parseISO("2023-07-31T23:59:59Z"),
+  },
   {
     id: "season-2023-2024",
     label: "2023-2024",
@@ -95,6 +107,7 @@ const initialState: EvaluationsSeasonOverviewSettingsState = {
 
   mapSelectedModel: modelNames[0], // Set default to first model
   mapSelectedScoringOption: "WIS/Baseline", // Default scoring option
+  useLogColorScale: false,
 };
 
 const evaluationsSeasonOverviewSettingsSlice = createSlice({
@@ -147,7 +160,9 @@ const evaluationsSeasonOverviewSettingsSlice = createSlice({
     setMapSelectedScoringOption: (state, action: PayloadAction<"WIS/Baseline" | "MAPE" | "Coverage">) => {
       state.mapSelectedScoringOption = action.payload;
     },
-
+    setUseLogColorScale: (state, action: PayloadAction<boolean>) => {
+      state.useLogColorScale = action.payload;
+    },
   },
 });
 
@@ -157,7 +172,8 @@ export const {
   updateSelectedAggregationPeriod,
   updateDynamicPeriods,
   setMapSelectedModel,
-  setMapSelectedScoringOption
+  setMapSelectedScoringOption,
+  setUseLogColorScale
 } = evaluationsSeasonOverviewSettingsSlice.actions;
 
 export default evaluationsSeasonOverviewSettingsSlice.reducer;

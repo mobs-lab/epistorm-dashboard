@@ -128,8 +128,6 @@ export interface CoverageScoreData {
   coverage90: number;
   coverage95: number;
   coverage98: number;
-  // Derived field - calculated average across all coverage levels
-  averageCoverage: number;
 }
 
 // New interface to store detailed coverage data by model

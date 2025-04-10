@@ -69,9 +69,9 @@ const SeasonOverviewContent: React.FC = () => {
 
       {/* US Map section - full width */}
       <Card className='bg-mobs-lab-color text-white mt-4'>
-        <div className='px-4 py-2 border-t border-gray-700'>
+        {/* <div className='px-4 py-2 border-t border-gray-700'>
           <h3 className='text-lg font-medium'>Title</h3>
-        </div>
+        </div> */}
         <div className='w-full aspect-[16/9] min-h-[360px] max-h-[480px]'>
           <SeasonOverviewUSStateMap />
         </div>
