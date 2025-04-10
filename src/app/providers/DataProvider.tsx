@@ -68,6 +68,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     thresholds: true,
     historicalGroundTruth: true,
     seasonOptions: true,
+    evaluationDetailedCoverage: true
   });
   const [dataFetchStarted, setDataFetchStarted] = useState(false);
 
@@ -506,7 +507,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         string,
         {
           referenceDate: Date;
-          score: number; // This will be the average coverage score
+          score: number; //This will be the 95% coverage score
           location: string;
           horizon: number;
         }[]
@@ -521,46 +522,28 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Only process models in our modelNames list
         if (!modelNames.includes(modelName)) return;
 
-        // Calculate average coverage across all percentiles
-        const coverageValues = [
-          +entry["10_cov"],
-          +entry["20_cov"],
-          +entry["30_cov"],
-          +entry["40_cov"],
-          +entry["50_cov"],
-          +entry["60_cov"],
-          +entry["70_cov"],
-          +entry["80_cov"],
-          +entry["90_cov"],
-          +entry["95_cov"],
-          +entry["98_cov"],
-        ];
-
-        const averageCoverage = coverageValues.reduce((sum, value) => sum + value, 0) / coverageValues.length;
-
         // Create detailed coverage data entry
         const detailedCoverageData: CoverageScoreData = {
           referenceDate: parseISO(entry.reference_date),
           location: entry.location,
           horizon: +entry.horizon,
-          coverage10: +entry["10_cov"],
-          coverage20: +entry["20_cov"],
-          coverage30: +entry["30_cov"],
-          coverage40: +entry["40_cov"],
-          coverage50: +entry["50_cov"],
-          coverage60: +entry["60_cov"],
-          coverage70: +entry["70_cov"],
-          coverage80: +entry["80_cov"],
-          coverage90: +entry["90_cov"],
-          coverage95: +entry["95_cov"],
-          coverage98: +entry["98_cov"],
-          averageCoverage: averageCoverage,
+          coverage10: +entry["10_cov"] * 100,
+          coverage20: +entry["20_cov"] * 100,
+          coverage30: +entry["30_cov"] * 100,
+          coverage40: +entry["40_cov"] * 100,
+          coverage50: +entry["50_cov"] * 100,
+          coverage60: +entry["60_cov"] * 100,
+          coverage70: +entry["70_cov"] * 100,
+          coverage80: +entry["80_cov"] * 100,
+          coverage90: +entry["90_cov"] * 100,
+          coverage95: +entry["95_cov"] * 100,
+          coverage98: +entry["98_cov"] * 100,
         };
 
         // Create simplified score data entry, for compatibility with WIS and MAPE
         const scoreData = {
           referenceDate: parseISO(entry.reference_date),
-          score: averageCoverage,
+          score: +entry["95_cov"] * 100,
           location: entry.location,
           horizon: +entry.horizon,
         };
@@ -578,8 +561,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
         detailedCoverageByModel.get(key)?.push(detailedCoverageData);
       });
-
-      
 
       // Combine into final format
       const evaluationsData: EvaluationsScoreDataCollection[] = [];

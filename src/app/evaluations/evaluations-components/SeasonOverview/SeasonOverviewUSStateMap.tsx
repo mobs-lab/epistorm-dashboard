@@ -14,18 +14,17 @@ const SeasonOverviewUSStateMap: React.FC = () => {
   const { containerRef, dimensions, isResizing } = useResponsiveSVG();
   const svgRef = useRef<SVGSVGElement>(null);
   const [mapData, setMapData] = useState<any>(null);
-  const dispatch = useAppDispatch();
 
-  // Get data from Redux store
+  // Get data and settings variables from Redux store
   const locationData = useAppSelector((state) => state.location.data);
   const evaluationsScoreData = useAppSelector((state) => state.evaluationsSingleModelScoreData.data);
   const {
-    evaluationSeasonOverviewSelectedStateCode,
     evaluationSeasonOverviewHorizon,
     selectedAggregationPeriod,
     aggregationPeriods,
     mapSelectedModel,
     mapSelectedScoringOption,
+    useLogColorScale,
   } = useAppSelector((state) => state.evaluationsSeasonOverviewSettings);
 
   // Load US map data
@@ -119,7 +118,17 @@ const SeasonOverviewUSStateMap: React.FC = () => {
     if (!isResizing && dimensions.width > 0 && dimensions.height > 0 && mapData && svgRef.current) {
       renderMap();
     }
-  }, [dimensions, isResizing, mapData, statePerformanceData, evaluationSeasonOverviewSelectedStateCode]);
+  }, [
+    dimensions,
+    isResizing,
+    mapData,
+    statePerformanceData,
+    selectedAggregationPeriod,
+    evaluationSeasonOverviewHorizon,
+    mapSelectedScoringOption,
+    mapSelectedModel,
+    useLogColorScale,
+  ]);
 
   const renderMap = () => {
     if (!svgRef.current || !mapData) return;
@@ -139,26 +148,55 @@ const SeasonOverviewUSStateMap: React.FC = () => {
     const minValue = performanceValues.length > 0 ? d3.min(performanceValues) || 0 : 0;
     const maxValue = performanceValues.length > 0 ? d3.max(performanceValues) || 1 : 1;
 
-    // Get the base color for the selected model
-    const modelBaseColor = modelColorMap[mapSelectedModel];
-    const lightEndColor = "#f0f0f0";
+    // Uniform navy blue color for all models and metrics
+    const navyBlueColor = "#0a4786";
+    const lightEndColor = "#f0f0f0"; // Near white color
 
-    // Create color interpolators based on the selected scoring metric
-    // For MAPE: lower is better (darker color means lower value)
-    // For WIS/Baseline and Coverage: higher is better (darker color means higher value)
+    // Color Scale Logic
+    // For all metrics, we want:
+    // - Better performance = lighter color (closer to white)
+    // - Worse performance = darker color (closer to navy blue)
     let colorDomain, colorRange;
 
-    if (mapSelectedScoringOption === "MAPE") {
-      // For MAPE, invert the scale (lower values are better)
-      colorDomain = [minValue, maxValue];
-      colorRange = [modelBaseColor, lightEndColor];
+    /* Ensure all scoring options have zero in the value domain */
+    const adjustedMin =
+      mapSelectedScoringOption === "MAPE" || mapSelectedScoringOption === "WIS/Baseline" ? Math.min(minValue, 0) : minValue;
+
+    // Handle different scoring metrics
+    if (mapSelectedScoringOption === "MAPE" || mapSelectedScoringOption === "WIS/Baseline") {
+      // For MAPE and WIS/Baseline, higher values mean worse performance
+      colorDomain = [adjustedMin, maxValue];
+      colorRange = [lightEndColor, navyBlueColor]; // Light to dark (better to worse)
+    } else if (mapSelectedScoringOption === "Coverage") {
+      // For Coverage, higher values mean better performance
+      colorDomain = [adjustedMin, Math.max(maxValue, 100)];
+      colorRange = [navyBlueColor, lightEndColor]; // Dark to light (worse to better)
     } else {
-      // For WIS/Baseline and Coverage, higher values are better
-      colorDomain = [minValue, maxValue];
-      colorRange = [lightEndColor, modelBaseColor];
+      // Default case, just in case
+      colorDomain = [adjustedMin, maxValue];
+      colorRange = [lightEndColor, navyBlueColor];
     }
 
-    const colorScale = d3.scaleLinear<string>().domain(colorDomain).range(colorRange).interpolate(d3.interpolateRgb);
+    var colorScale:
+      | d3.ScaleLinear<string, string, never>
+      | ((arg0: any) => string | number | boolean | readonly (string | number)[] | null);
+
+    let symlogConstant = 1;
+
+    if (useLogColorScale) {
+      // Calculate dynamic constant based on data distribution
+      const positiveValues = performanceValues.filter((v) => v > 0);
+      if (positiveValues.length > 0) {
+        const sortedValues = [...positiveValues].sort((a, b) => a - b);
+        const percentileIndex = Math.floor(sortedValues.length * 0.1);
+        symlogConstant = Math.max(Math.min(sortedValues[percentileIndex], 1), 0.01);
+      }
+      // Use symlog for all metrics when in log mode (handles zeros properly)
+      colorScale = d3.scaleSymlog<string>().domain(colorDomain).range(colorRange).interpolate(d3.interpolateRgb).constant(symlogConstant);
+    } else {
+      // Use linear scale when toggle is off
+      colorScale = d3.scaleLinear<string>().domain(colorDomain).range(colorRange).interpolate(d3.interpolateRgb);
+    }
 
     // Setup projection
     const projection = d3
@@ -172,6 +210,16 @@ const SeasonOverviewUSStateMap: React.FC = () => {
 
     // Create main group
     const g = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
+
+    // Map Title
+    g.append("text")
+      .attr("x", (0))
+      .attr("y", -5)
+      .attr("fill", "white")
+      .attr("text-anchor", "left")
+      .style("font-size", "18px")
+      .style("font-weight", "regular")
+      .text(`State-Specific ${mapSelectedScoringOption || "Performance Score"}`);
 
     // Create state abbreviation to ID mapping
     const stateAbbrToId = new Map();
@@ -194,33 +242,48 @@ const SeasonOverviewUSStateMap: React.FC = () => {
       })
       .attr("stroke", "white")
       .attr("stroke-width", 0.5)
-      .append("title") // Simple tooltip showing state name and value
+      .append("title")
       .text((d) => {
         const stateId = d.id?.toString();
-        const stateCode = stateId.startsWith("0") ? stateId.substring(1) : stateId;
-        const state = locationData.find((loc) => loc.stateNum === stateCode);
+        if (!stateId) return "Unknown";
+
+        // Now directly use the stateId to find the location
+        // No need to strip leading zeros - use it exactly as it appears in the topojson
+        const state = locationData.find((loc) => loc.stateNum === stateId);
         const value = statePerformanceData.get(stateId);
 
-        const scoreLabel = mapSelectedScoringOption === "Coverage" ? "Coverage %" : mapSelectedScoringOption;
-
-        return `${state?.stateName || "Unknown"}: ${value !== undefined ? value.toFixed(2) : "No data"} ${scoreLabel}`;
+        if (mapSelectedScoringOption == "Coverage" && value !== undefined) {
+          // Already in percentage format
+          return `${state?.stateName || "Unknown"}: ${value.toFixed(1)}% ${mapSelectedScoringOption}`;
+        } else {
+          return `${state?.stateName || "Unknown"}: ${value !== undefined ? value.toFixed(2) : "No data"} ${mapSelectedScoringOption}`;
+        }
       });
 
     //Color legend in the form of a gradient thermometer
     const legendWidth = 40;
     const legendHeight = height - margin.top - margin.bottom - 20;
 
-    const legendScale = d3
-      .scaleLinear()
-      .domain([maxValue, minValue]) // Match colorScale domain
-      .range([0, legendHeight]);
+    // Legend Scale Setup - always put lower values at bottom, higher at top
+    let legendScale;
+
+    if (useLogColorScale) {
+      legendScale = d3.scaleSymlog().domain([adjustedMin, maxValue]).range([legendHeight, 0]).constant(symlogConstant);
+    } else {
+      legendScale = d3.scaleLinear().domain([adjustedMin, maxValue]).range([legendHeight, 0]);
+    }
 
     const legendAxis = d3
       .axisLeft(legendScale)
-      .ticks(5)
-      .tickFormat((d) => d.toFixed(1));
+      .ticks(8)
+      .tickFormat((d) => {
+        if (d === 0) return "0";
+        if (Math.abs(d) < 0.01) return d3.format(".2e")(d);
+        return d3.format(".1f")(d);
+      });
 
     const legend = svg.append("g").attr("transform", `translate(${width - margin.right - legendWidth - 10}, ${margin.top})`);
+
     // Create the gradient
     const defs = svg.append("defs");
     const gradient = defs
@@ -231,10 +294,16 @@ const SeasonOverviewUSStateMap: React.FC = () => {
       .attr("x2", "0%")
       .attr("y2", "0%");
 
-    // Use the same fixed colors as the map
-    gradient.append("stop").attr("offset", "0%").attr("stop-color", colorRange[0]);
-
-    gradient.append("stop").attr("offset", "100%").attr("stop-color", colorRange[1]);
+    // Define gradient stops based on the scoring option
+    if (mapSelectedScoringOption === "Coverage") {
+      // For Coverage (higher = better), white at top, blue at top
+      gradient.append("stop").attr("offset", "0%").attr("stop-color", navyBlueColor);
+      gradient.append("stop").attr("offset", "100%").attr("stop-color", lightEndColor);
+    } else {
+      // For MAPE and WIS/Baseline (higher = worse), blue at bottom, white at top
+      gradient.append("stop").attr("offset", "0%").attr("stop-color", lightEndColor);
+      gradient.append("stop").attr("offset", "100%").attr("stop-color", navyBlueColor);
+    }
 
     // Draw the legend rectangle
     legend.append("rect").attr("width", legendWidth).attr("height", legendHeight).style("fill", "url(#color-gradient)");
@@ -257,6 +326,25 @@ const SeasonOverviewUSStateMap: React.FC = () => {
       .attr("text-anchor", "start")
       .style("font-size", "10px")
       .text(mapSelectedScoringOption || "Performance Score");
+
+    // Add legend descriptions for better/worse
+    legend
+      .append("text")
+      .attr("x", legendWidth + 5)
+      .attr("y", 10)
+      .attr("fill", "white")
+      .attr("text-anchor", "start")
+      .style("font-size", "9px")
+      .text(mapSelectedScoringOption == "Coverage" ? "Better" : "Worse");
+
+    legend
+      .append("text")
+      .attr("x", legendWidth + 5)
+      .attr("y", legendHeight)
+      .attr("fill", "white")
+      .attr("text-anchor", "start")
+      .style("font-size", "9px")
+      .text(mapSelectedScoringOption == "Coverage" ? "Worse" : "Better");
   };
 
   return (

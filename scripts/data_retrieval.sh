@@ -126,7 +126,7 @@ if [ ! -d "$EVALUATION_DATA_TARGET_LOCATION" ]; then
 fi
 
 # Evaluation files to check
-evaluation_files=("WIS_ratio.csv" "MAPE.csv")
+evaluation_files=("WIS_ratio.csv" "MAPE.csv" "coverage.csv")
 
 for file in "${evaluation_files[@]}"; do
     echo "Checking evaluation file: $file..."
