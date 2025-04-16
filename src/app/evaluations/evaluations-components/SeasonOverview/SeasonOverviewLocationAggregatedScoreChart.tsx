@@ -381,12 +381,17 @@ const SeasonOverviewLocationAggregatedScoreChart: React.FC<SeasonOverviewLocatio
       return modelNames.indexOf(a.model) - modelNames.indexOf(b.model);
     });
 
+    // Calculate dynamic padding based on number of models
+    const modelCount = data.length;
+    // Formula: fewer models = more padding (inversely proportional)
+    const dynamicPadding = Math.min(0.8, Math.max(0.1, 0.8 - modelCount * 0.09));
+
     // Y scale - models
     const yScale = d3
       .scaleBand()
       .domain(data.map((d) => d.model))
       .range([0, innerHeight])
-      .padding(0.2);
+      .padding(dynamicPadding);
 
     // X scale - values
     // Calculate domain from data instead of fixed 0-100

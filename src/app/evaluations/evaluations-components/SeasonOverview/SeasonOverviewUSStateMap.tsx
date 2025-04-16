@@ -117,17 +117,7 @@ const SeasonOverviewUSStateMap: React.FC = () => {
     if (!isResizing && dimensions.width > 0 && dimensions.height > 0 && mapData && svgRef.current) {
       renderMap();
     }
-  }, [
-    dimensions,
-    isResizing,
-    mapData,
-    statePerformanceData,
-    selectedAggregationPeriod,
-    evaluationSeasonOverviewHorizon,
-    mapSelectedScoringOption,
-    mapSelectedModel,
-    useLogColorScale,
-  ]);
+  }, [dimensions, isResizing, mapData, statePerformanceData, useLogColorScale]);
 
   const renderMap = () => {
     if (!svgRef.current || !mapData) return;
@@ -343,93 +333,272 @@ const SeasonOverviewUSStateMap: React.FC = () => {
 
     //Color legend in the form of a gradient thermometer
     const legendWidth = 40;
-    const legendHeight = height - margin.top - margin.bottom - 20;
+    const legendHeight = height - margin.top - margin.bottom - 10;
+    const legend = svg.append("g").attr("transform", `translate(${width - margin.right - legendWidth - 10}, ${margin.top})`);
 
-    // Legend Scale Setup - always put lower values at bottom, higher at top
+    /* // Legend Scale Setup - always put lower values at bottom, higher at top
     let legendScale;
 
     if (useLogColorScale) {
       legendScale = d3.scaleSymlog().domain([adjustedMin, maxValue]).range([legendHeight, 0]).constant(symlogConstant);
     } else {
       legendScale = d3.scaleLinear().domain([adjustedMin, maxValue]).range([legendHeight, 0]);
-    }
+    } */
 
-    const legendAxis = d3
-      .axisLeft(legendScale)
-      .ticks(8)
-      .tickFormat((d) => {
-        if (d === 0) return "0";
-        if (Math.abs(d) < 0.01) return d3.format(".2e")(d);
-        // Check if it's a whole number
-        if (Math.floor(d) === d) {
-          return d3.format("d")(d); // No decimals for integers
-        }
-        return d3.format(".1f")(d); // One decimal for non-integers
+    // Step 1: Check if we're displaying WIS/Baseline
+    if (mapSelectedScoringOption === "WIS/Baseline") {
+      console.debug("Rendering specialized WIS/Baseline thermometer legend");
+
+      // Step 2: Define the colors for our three-color scale
+      const purpleColor = "#800080"; // Purple for below 1 (better)
+      const whiteColor = "#ffffff"; // White at center (1.0)
+
+      // Step 3: Calculate domain centered around 1.0
+      const deviationBelow = Math.max(1 - minValue, 0);
+      const deviationAbove = Math.max(maxValue - 1, 0);
+      const maxDeviation = Math.max(deviationBelow, deviationAbove, 0.5);
+
+      const domainMin = Math.max(0, 1 - maxDeviation);
+      const domainMax = 1 + maxDeviation;
+
+      console.debug("WIS/Baseline domain:", {
+        minValue,
+        maxValue,
+        domainMin,
+        domainMax,
+        deviationBelow,
+        deviationAbove,
       });
 
-    const legend = svg.append("g").attr("transform", `translate(${width - margin.right - legendWidth - 10}, ${margin.top})`);
+      // Step 4: Create a new custom color scale function
+      // We need to replace the existing colorScale with this
+      colorScale = (value) => {
+        if (typeof value !== "number") return "#cccccc"; // Gray for non-numeric
 
-    // Create the gradient
-    const defs = svg.append("defs");
-    const gradient = defs
-      .append("linearGradient")
-      .attr("id", "color-gradient")
-      .attr("x1", "0%")
-      .attr("y1", "100%")
-      .attr("x2", "0%")
-      .attr("y2", "0%");
+        if (value <= domainMin) return purpleColor;
+        if (value >= domainMax) return navyBlueColor;
 
-    // Define gradient stops based on the scoring option
-    if (mapSelectedScoringOption === "Coverage") {
-      // For Coverage (higher = better), white at top, blue at top
-      gradient.append("stop").attr("offset", "0%").attr("stop-color", navyBlueColor);
-      gradient.append("stop").attr("offset", "100%").attr("stop-color", lightEndColor);
-    } else {
-      // For MAPE and WIS/Baseline (higher = worse), blue at bottom, white at top
-      gradient.append("stop").attr("offset", "0%").attr("stop-color", lightEndColor);
+        if (value <= 1) {
+          // Scale from purple to white (better to baseline)
+          const t = (value - domainMin) / (1 - domainMin);
+          return d3.interpolate(purpleColor, whiteColor)(t);
+        } else {
+          // Scale from white to navy (baseline to worse)
+          const t = (value - 1) / (domainMax - 1);
+          return d3.interpolate(whiteColor, navyBlueColor)(t);
+        }
+      };
+
+      // Step 5: Create the legend scale
+      let legendScale;
+      if (useLogColorScale) {
+        legendScale = d3.scaleSymlog().domain([domainMin, domainMax]).range([legendHeight, 0]).constant(symlogConstant);
+      } else {
+        legendScale = d3.scaleLinear().domain([domainMin, domainMax]).range([legendHeight, 0]);
+      }
+
+      // Step 6: Calculate where 1.0 is in the legend
+      const oneYPosition = legendScale(1);
+
+      // Step 7: Create a three-color gradient
+      const defs = svg.append("defs");
+      const gradient = defs
+        .append("linearGradient")
+        .attr("id", "wis-gradient")
+        .attr("x1", "0%")
+        .attr("y1", "100%")
+        .attr("x2", "0%")
+        .attr("y2", "0%");
+
+      // Calculate percentage position of 1.0 in gradient
+      const onePercent = ((1 - domainMin) / (domainMax - domainMin)) * 100;
+      console.debug("Baseline position in gradient:", onePercent.toFixed(1) + "%");
+
+      // Create the three-color gradient
+      gradient.append("stop").attr("offset", "0%").attr("stop-color", purpleColor);
+      gradient.append("stop").attr("offset", `${onePercent}%`).attr("stop-color", whiteColor);
       gradient.append("stop").attr("offset", "100%").attr("stop-color", navyBlueColor);
+
+      // Step 8: Draw the legend rectangle with the special gradient
+      legend.append("rect").attr("width", legendWidth).attr("height", legendHeight).style("fill", "url(#wis-gradient)");
+
+      // Step 9: Add highlight line for baseline
+      legend
+        .append("line")
+        .attr("x1", 0)
+        .attr("x2", legendWidth)
+        .attr("y1", oneYPosition)
+        .attr("y2", oneYPosition)
+        .attr("stroke", "white")
+        .attr("stroke-width", 3)
+        .attr("stroke-dasharray", "2,2");
+
+      // Step 10: Create custom ticks for the legend
+      // Start with the min and max, and add important points in between
+      const tickValues = [];
+
+      // Add minimum value
+      tickValues.push(domainMin);
+
+      // Add a tick between min and 1.0 if there's space
+      if (1 - domainMin > 0.3) {
+        tickValues.push(Math.round(((1 + domainMin) / 2) * 10) / 10);
+      }
+
+      // Always include 1.0
+      tickValues.push(1);
+
+      // Add a tick between 1.0 and max if there's space
+      if (domainMax - 1 > 0.3) {
+        tickValues.push(Math.round(((1 + domainMax) / 2) * 10) / 10);
+      }
+
+      // Add maximum value
+      tickValues.push(domainMax);
+
+      console.debug("WIS/Baseline tick values:", tickValues);
+
+      // Step 11: Create the legend axis with custom ticks
+      const legendAxis = d3
+        .axisLeft(legendScale)
+        .tickValues(tickValues)
+        .tickFormat((d) => {
+          if (d === 0) return "0";
+          if (d === 1) return "1.0";
+          if (Math.floor(d) === d) return d3.format("d")(d); // Integers
+          return d3.format(".1f")(d); // Decimals
+        });
+
+      // Step 12: Add the axis to the legend and style it
+      const axisGroup = legend.append("g").call(legendAxis);
+
+      axisGroup.selectAll("text").attr("fill", "white").style("font-size", "10px");
+
+      // Style the baseline tick specially
+      axisGroup
+        .selectAll(".tick")
+        .filter((d) => d === 1)
+        .select("text")
+        .style("font-weight", "bold")
+        .attr("fill", "#ffd700");
+
+      // Step 13: Add "Baseline" label
+      legend
+        .append("text")
+        .attr("x", legendWidth + 5)
+        .attr("y", oneYPosition)
+        .attr("dominant-baseline", "middle")
+        .attr("fill", "#ffd700")
+        .style("font-size", "9px")
+        .style("font-weight", "bold")
+        .text("Baseline");
+
+      // Step 14: Add Better/Worse labels
+      legend
+        .append("text")
+        .attr("x", legendWidth + 5)
+        .attr("y", legendHeight)
+        .attr("fill", "white")
+        .attr("text-anchor", "start")
+        .style("font-size", "9px")
+        .text("Better");
+
+      legend
+        .append("text")
+        .attr("x", legendWidth + 5)
+        .attr("y", 10)
+        .attr("fill", "white")
+        .attr("text-anchor", "start")
+        .style("font-size", "9px")
+        .text("Worse");
+
+      // Step 15: Add title
+      legend
+        .append("text")
+        .attr("x", 0)
+        .attr("y", -10)
+        .attr("fill", "white")
+        .attr("text-anchor", "start")
+        .style("font-size", "10px")
+        .text("WIS/Baseline");
+    } else {
+      const legendAxis = d3
+        .axisLeft(legendScale)
+        .ticks(8)
+        .tickFormat((d) => {
+          if (d === 0) return "0";
+          if (Math.abs(d) < 0.01) return d3.format(".2e")(d);
+          // Check if it's a whole number
+          if (Math.floor(d) === d) {
+            return d3.format("d")(d); // No decimals for integers
+          }
+          return d3.format(".1f")(d); // One decimal for non-integers
+        });
+
+      const legend = svg.append("g").attr("transform", `translate(${width - margin.right - legendWidth - 10}, ${margin.top})`);
+
+      // Create the gradient
+      const defs = svg.append("defs");
+      const gradient = defs
+        .append("linearGradient")
+        .attr("id", "color-gradient")
+        .attr("x1", "0%")
+        .attr("y1", "100%")
+        .attr("x2", "0%")
+        .attr("y2", "0%");
+
+      // Define gradient stops based on the scoring option
+      if (mapSelectedScoringOption === "Coverage") {
+        // For Coverage (higher = better), white at top, blue at top
+        gradient.append("stop").attr("offset", "0%").attr("stop-color", navyBlueColor);
+        gradient.append("stop").attr("offset", "100%").attr("stop-color", lightEndColor);
+      } else {
+        // For MAPE and WIS/Baseline (higher = worse), blue at bottom, white at top
+        gradient.append("stop").attr("offset", "0%").attr("stop-color", lightEndColor);
+        gradient.append("stop").attr("offset", "100%").attr("stop-color", navyBlueColor);
+      }
+
+      // Draw the legend rectangle
+      legend.append("rect").attr("width", legendWidth).attr("height", legendHeight).style("fill", "url(#color-gradient)");
+
+      // Add legend axis on the left
+      legend
+        .append("g")
+        .attr("transform", `translate(0, 0)`)
+        .call(legendAxis)
+        .selectAll("text")
+        .attr("fill", "white")
+        .style("font-size", "10px");
+
+      // Add legend title
+      legend
+        .append("text")
+        .attr("x", 0)
+        .attr("y", -10)
+        .attr("fill", "white")
+        .attr("text-anchor", "start")
+        .style("font-size", "10px")
+        .text(mapSelectedScoringOption || "Performance Score");
+
+      // Add legend descriptions for better/worse
+      legend
+        .append("text")
+        .attr("x", legendWidth + 5)
+        .attr("y", 10)
+        .attr("fill", "white")
+        .attr("text-anchor", "start")
+        .style("font-size", "9px")
+        .text(mapSelectedScoringOption == "Coverage" ? "Better" : "Worse");
+
+      legend
+        .append("text")
+        .attr("x", legendWidth + 5)
+        .attr("y", legendHeight)
+        .attr("fill", "white")
+        .attr("text-anchor", "start")
+        .style("font-size", "9px")
+        .text(mapSelectedScoringOption == "Coverage" ? "Worse" : "Better");
     }
-
-    // Draw the legend rectangle
-    legend.append("rect").attr("width", legendWidth).attr("height", legendHeight).style("fill", "url(#color-gradient)");
-
-    // Add legend axis on the left
-    legend
-      .append("g")
-      .attr("transform", `translate(0, 0)`)
-      .call(legendAxis)
-      .selectAll("text")
-      .attr("fill", "white")
-      .style("font-size", "10px");
-
-    // Add legend title
-    legend
-      .append("text")
-      .attr("x", 0)
-      .attr("y", -10)
-      .attr("fill", "white")
-      .attr("text-anchor", "start")
-      .style("font-size", "10px")
-      .text(mapSelectedScoringOption || "Performance Score");
-
-    // Add legend descriptions for better/worse
-    legend
-      .append("text")
-      .attr("x", legendWidth + 5)
-      .attr("y", 10)
-      .attr("fill", "white")
-      .attr("text-anchor", "start")
-      .style("font-size", "9px")
-      .text(mapSelectedScoringOption == "Coverage" ? "Better" : "Worse");
-
-    legend
-      .append("text")
-      .attr("x", legendWidth + 5)
-      .attr("y", legendHeight)
-      .attr("fill", "white")
-      .attr("text-anchor", "start")
-      .style("font-size", "9px")
-      .text(mapSelectedScoringOption == "Coverage" ? "Worse" : "Better");
   };
 
   return (
