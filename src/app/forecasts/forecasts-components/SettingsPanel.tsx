@@ -174,7 +174,7 @@ const SettingsPanel: React.FC = () => {
               </label>
             ))}
           </div>
-          <button className='mt-2 bg-[#5d636a] text-white rounded text-sm w-full' onClick={handleShowAllModels}>
+          <button className='mt-2 bg-[#5d636a] hover:bg-blue-600 text-white rounded text-sm w-full' onClick={handleShowAllModels}>
             Show All Models
           </button>
         </div>

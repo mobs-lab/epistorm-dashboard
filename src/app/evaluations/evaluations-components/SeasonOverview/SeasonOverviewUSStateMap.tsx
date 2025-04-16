@@ -96,7 +96,6 @@ const SeasonOverviewUSStateMap: React.FC = () => {
 
       // Calculate average if we have scores
       if (count > 0) {
-        // Convert state code to the format expected by topojson (if needed)
         const stateId = stateCode.padStart(2, "0");
         statePerformance.set(stateId, totalScore / count);
       }
@@ -198,13 +197,11 @@ const SeasonOverviewUSStateMap: React.FC = () => {
       colorScale = d3.scaleLinear<string>().domain(colorDomain).range(colorRange).interpolate(d3.interpolateRgb);
     }
 
+    const mapWidth = width - margin.left - margin.right;
+    const mapHeight = height - margin.top - margin.bottom;
+
     // Setup projection
-    const projection = d3
-      .geoAlbersUsa()
-      .fitSize(
-        [width - margin.left - margin.right, height - margin.top - margin.bottom],
-        topojson.feature(mapData, mapData.objects.states)
-      );
+    const projection = d3.geoAlbersUsa().fitSize([mapWidth, mapHeight], topojson.feature(mapData, mapData.objects.states));
 
     const path = d3.geoPath().projection(projection);
 
@@ -213,23 +210,13 @@ const SeasonOverviewUSStateMap: React.FC = () => {
 
     // Map Title
     g.append("text")
-      .attr("x", (0))
+      .attr("x", 0)
       .attr("y", -5)
       .attr("fill", "white")
       .attr("text-anchor", "left")
       .style("font-size", "18px")
       .style("font-weight", "regular")
       .text(`State-Specific ${mapSelectedScoringOption || "Performance Score"}`);
-
-    // Create state abbreviation to ID mapping
-    const stateAbbrToId = new Map();
-    locationData.forEach((loc) => {
-      if (loc.stateNum !== "US") {
-        // Format state ID to match topojson format
-        const formattedId = loc.stateNum.padStart(2, "0");
-        stateAbbrToId.set(loc.state, formattedId);
-      }
-    });
 
     // Draw states
     g.selectAll("path")
@@ -247,7 +234,7 @@ const SeasonOverviewUSStateMap: React.FC = () => {
         const stateId = d.id?.toString();
         if (!stateId) return "Unknown";
 
-        // Now directly use the stateId to find the location
+        // Directly use the stateId to find the location
         // No need to strip leading zeros - use it exactly as it appears in the topojson
         const state = locationData.find((loc) => loc.stateNum === stateId);
         const value = statePerformanceData.get(stateId);
@@ -259,6 +246,100 @@ const SeasonOverviewUSStateMap: React.FC = () => {
           return `${state?.stateName || "Unknown"}: ${value !== undefined ? value.toFixed(2) : "No data"} ${mapSelectedScoringOption}`;
         }
       });
+
+    /* A separate circle aside for interacting with D.C.'s data */
+
+    const nyStateId = "36"; // New York state ID
+    const nyStateFeature = features.find((f: { id: string }) => f.id === nyStateId);
+    console.debug("NY State Feature:", nyStateFeature);
+
+    if (nyStateFeature) {
+      // Calculate centroid of NY
+      const nyCentroid = path.centroid(nyStateFeature);
+      console.debug("NY Centroid:", nyCentroid);
+
+      // DC circle position with adjusted offset
+      const dcX = nyCentroid[0] + 120; // Increased offset to the right
+      const dcY = nyCentroid[1] + 40; // Offset upward instead of down
+      console.debug("DC Position:", { dcX, dcY });
+
+      // Get DC data (DC state code is "11")
+      const dcStateId = "11";
+      const dcValue = statePerformanceData.get(dcStateId);
+      const dcLocationData = locationData.find((loc) => loc.stateNum === dcStateId);
+
+      // Create a group for DC (always render)
+      const dcGroup = g.append("g").attr("class", "dc-visualization").style("cursor", "pointer");
+
+      // Draw circle - fill with data color if available, gray if not
+      dcGroup
+        .append("circle")
+        .attr("cx", dcX)
+        .attr("cy", dcY)
+        .attr("r", 15)
+        .attr("fill", dcValue !== undefined ? colorScale(dcValue) : "#cccccc") // Gray if no data
+        .attr("stroke", "white")
+        .attr("stroke-width", 0.5);
+
+      // Add DC text
+      dcGroup
+        .append("text")
+        .attr("x", dcX)
+        .attr("y", dcY)
+        .attr("text-anchor", "middle")
+        .attr("dominant-baseline", "central")
+        .attr("fill", "white")
+        .attr("font-size", "10px")
+        .attr("pointer-events", "none")
+        .text("DC");
+
+      // Add tooltip regardless of data availability
+      dcGroup.append("title").text(() => {
+        if (dcValue === undefined) {
+          return "District of Columbia: No data available";
+        }
+
+        const label = mapSelectedScoringOption === "Coverage" ? `${dcValue.toFixed(1)}%` : dcValue.toFixed(2);
+        return `District of Columbia: ${label} ${mapSelectedScoringOption}`;
+      });
+    } else {
+      console.warn("New York state feature not found for DC positioning");
+
+      // Fallback to absolute positioning if NY can't be found
+      const dcStateId = "11";
+      const dcValue = statePerformanceData.get(dcStateId);
+
+      const dcX = mapWidth * 0.86;
+      const dcY = mapHeight * 0.4;
+
+      // Create DC circle with fallback positioning
+      const dcGroup = g.append("g").attr("class", "dc-visualization").style("cursor", "pointer");
+
+      dcGroup
+        .append("circle")
+        .attr("cx", dcX)
+        .attr("cy", dcY)
+        .attr("r", 15)
+        .attr("fill", dcValue !== undefined ? colorScale(dcValue) : "#cccccc")
+        .attr("stroke", "white")
+        .attr("stroke-width", 0.5);
+
+      dcGroup
+        .append("text")
+        .attr("x", dcX)
+        .attr("y", dcY)
+        .attr("text-anchor", "middle")
+        .attr("dominant-baseline", "central")
+        .attr("fill", "white")
+        .attr("font-size", "10px")
+        .text("DC");
+
+      dcGroup.append("title").text(() => {
+        if (dcValue === undefined) return "District of Columbia: No data available";
+        const label = mapSelectedScoringOption === "Coverage" ? `${dcValue.toFixed(1)}%` : dcValue.toFixed(2);
+        return `District of Columbia: ${label} ${mapSelectedScoringOption}`;
+      });
+    }
 
     //Color legend in the form of a gradient thermometer
     const legendWidth = 40;
@@ -279,7 +360,11 @@ const SeasonOverviewUSStateMap: React.FC = () => {
       .tickFormat((d) => {
         if (d === 0) return "0";
         if (Math.abs(d) < 0.01) return d3.format(".2e")(d);
-        return d3.format(".1f")(d);
+        // Check if it's a whole number
+        if (Math.floor(d) === d) {
+          return d3.format("d")(d); // No decimals for integers
+        }
+        return d3.format(".1f")(d); // One decimal for non-integers
       });
 
     const legend = svg.append("g").attr("transform", `translate(${width - margin.right - legendWidth - 10}, ${margin.top})`);
