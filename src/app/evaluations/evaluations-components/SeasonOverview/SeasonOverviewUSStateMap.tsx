@@ -10,6 +10,12 @@ import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { modelColorMap, modelNames } from "@/interfaces/epistorm-constants";
 import MapSelectorPanel from "./MapSelectorPanel";
 
+// Define color constants
+const NAVY_BLUE = "#0a4786";
+const WHITE = "#f0f0f0";
+const PURPLE = "#800080";
+const NO_DATA_COLOR = "#363b43"; // Color for states with no data
+
 const SeasonOverviewUSStateMap: React.FC = () => {
   const { containerRef, dimensions, isResizing } = useResponsiveSVG();
   const svgRef = useRef<SVGSVGElement>(null);
@@ -42,7 +48,7 @@ const SeasonOverviewUSStateMap: React.FC = () => {
   }, []);
 
   // Calculate state performance data based on selected criteria
-  const statePerformanceData = useMemo(() => {
+  const modelPerformanceData = useMemo(() => {
     if (!evaluationsScoreData || evaluationSeasonOverviewHorizon.length === 0 || !selectedAggregationPeriod || !locationData) {
       return new Map();
     }
@@ -55,7 +61,7 @@ const SeasonOverviewUSStateMap: React.FC = () => {
     }
 
     // Create a map to store performance scores by state
-    const statePerformance = new Map();
+    const statePerformanceData = new Map();
 
     // Only process data for the selected model
     const modelData = [
@@ -97,11 +103,11 @@ const SeasonOverviewUSStateMap: React.FC = () => {
       // Calculate average if we have scores
       if (count > 0) {
         const stateId = stateCode.padStart(2, "0");
-        statePerformance.set(stateId, totalScore / count);
+        statePerformanceData.set(stateId, totalScore / count);
       }
     });
 
-    return statePerformance;
+    return statePerformanceData;
   }, [
     evaluationsScoreData,
     evaluationSeasonOverviewHorizon,
@@ -114,453 +120,417 @@ const SeasonOverviewUSStateMap: React.FC = () => {
 
   // Render map when dimensions or data change
   useEffect(() => {
-    if (!isResizing && dimensions.width > 0 && dimensions.height > 0 && mapData && svgRef.current) {
+    /* if (!isResizing && dimensions.width > 0 && dimensions.height > 0 && mapData && svgRef.current) {
       renderMap();
+    } */
+    // Debounce or delay rendering slightly after resize finishes
+    let timeoutId: NodeJS.Timeout | null = null;
+    if (!isResizing && dimensions.width > 0 && dimensions.height > 0 && mapData && svgRef.current) {
+      // Clear previous timeout if exists
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+      // Set a small delay to ensure resizing calculations are stable
+      timeoutId = setTimeout(() => {
+        renderMap();
+      }, 50); // 50ms delay
     }
-  }, [dimensions, isResizing, mapData, statePerformanceData, useLogColorScale]);
+
+    // Cleanup timeout on unmount or before next effect run
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+  }, [dimensions, isResizing, mapData, modelPerformanceData, useLogColorScale]);
 
   const renderMap = () => {
-    if (!svgRef.current || !mapData) return;
-  
+    if (!svgRef.current || !mapData || !dimensions || dimensions.width <= 0 || dimensions.height <= 0) return;
+
     const svg = d3.select(svgRef.current);
-    svg.selectAll("*").remove();
-  
+    svg.selectAll("*").remove(); // Clear previous render
+
     const width = dimensions.width;
     const height = dimensions.height;
-    const margin = { top: 20, right: 20, bottom: 20, left: 20 };
+    const margin = { top: 30, right: 20, bottom: 20, left: 20 }; // Adjusted margins for legend/title
     const mapWidth = width - margin.left - margin.right;
     const mapHeight = height - margin.top - margin.bottom;
-    
+
     // Extract state features from topojson
-    const features = topojson.feature(mapData, mapData.objects.states).features;
-  
-    // Get performance data values
-    const performanceValues = Array.from(statePerformanceData.values());
-    const minValue = performanceValues.length > 0 ? d3.min(performanceValues) || 0 : 0;
-    const maxValue = performanceValues.length > 0 ? d3.max(performanceValues) || 1 : 1;
-    
-    // Define color constants (could be moved outside of renderMap)
-    const NAVY_BLUE = "#0a4786";
-    const WHITE = "#f0f0f0";
-    const PURPLE = "#800080";
-  
-    // Setup color scale based on selected metric and scale mode
-    let colorScale;
-    let legendMiddleY: string | number | boolean | readonly (string | number)[] | d3.ValueFn<SVGTextElement, unknown, string | number | boolean | readonly (string | number)[] | null> | d3.ValueFn<SVGLineElement, unknown, string | number | boolean | readonly (string | number)[] | null> | null;
-    let legendScale;
-    let domainMin, domainMax;
-    let symlogConstant = 1;
-    
-    // Create the main chart group
-    const g = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
-    
-    // Legend settings
-    const legendWidth = 40;
-    const legendHeight = height - margin.top - margin.bottom - 10;
-    const legend = svg.append("g")
-      .attr("transform", `translate(${width - margin.right - legendWidth - 25}, ${margin.top})`);
-    
-    // Calculate symlog constant if needed
-    if (useLogColorScale) {
-      const positiveValues = performanceValues.filter(v => v > 0);
+    const stateFeatures = topojson.feature(mapData, mapData.objects.states).features;
+
+    // Get performance data values for scale calculation
+    const performanceValues = Array.from(modelPerformanceData.values());
+    const hasData = performanceValues.length > 0;
+
+    // Determine min/max values, handling the case of no data
+    const minValue = hasData ? (d3.min(performanceValues) ?? 0) : 0;
+    const maxValue = hasData ? (d3.max(performanceValues) ?? 1) : 1;
+
+    // --- Scale Configuration ---
+    let colorScale: d3.ScaleLinear<string, string> | d3.ScaleSymLog<string, string>;
+    let legendScale: d3.ScaleLinear<number, number> | d3.ScaleSymLog<number, number>;
+    let symlogConstant = 1; // Default symlog constant
+
+    // Calculate symlog constant if needed (based on positive values near zero)
+    if (useLogColorScale && hasData) {
+      const positiveValues = performanceValues.filter((v) => v > 0); // Use > 0 for symlog constant logic
       if (positiveValues.length > 0) {
         const sortedValues = [...positiveValues].sort((a, b) => a - b);
-        const percentileIndex = Math.floor(sortedValues.length * 0.1);
-        symlogConstant = Math.max(Math.min(sortedValues[percentileIndex], 1), 0.01);
+        const percentileIndex = Math.max(0, Math.min(sortedValues.length - 1, Math.floor(sortedValues.length * 0.1)));
+        // Ensure constant is positive and reasonable, avoiding zero
+        symlogConstant = Math.max(sortedValues[percentileIndex] || 0.01, 0.01);
+      } else {
+        symlogConstant = 0.01; // Fallback if no positive values
       }
     }
-  
-    // Special handling for WIS/Baseline
-    if (mapSelectedScoringOption === "WIS/Baseline") {
-      // Calculate domain centered around 1.0 (baseline)
-      const deviationBelow = Math.max(1 - minValue, 0);
-      const deviationAbove = Math.max(maxValue - 1, 0);
-      const maxDeviation = Math.max(deviationBelow, deviationAbove, 0.5);
-      
-      domainMin = Math.max(0, 1 - maxDeviation);
-      domainMax = 1 + maxDeviation;
-      
-      console.debug("WIS/Baseline domain:", { 
-        minValue, maxValue, domainMin, domainMax, 
-        deviationBelow, deviationAbove 
-      });
-      
-      // Create color scale function for WIS/Baseline
-      colorScale = (value) => {
-        if (typeof value !== "number" || isNaN(value)) return "#cccccc"; // Gray for missing data
-        
-        if (value <= domainMin) return PURPLE;
-        if (value >= domainMax) return NAVY_BLUE;
-        
-        if (value <= 1) {
-          // Purple to white transition (better to baseline)
-          const t = (value - domainMin) / (1 - domainMin);
-          return d3.interpolate(PURPLE, WHITE)(t);
-        } else {
-          // White to navy transition (baseline to worse)
-          const t = (value - 1) / (domainMax - 1);
-          return d3.interpolate(WHITE, NAVY_BLUE)(t);
-        }
-      };
-      
-      // Create legend scale with baseline at physical center
-      legendMiddleY = legendHeight / 2; // Exact middle of legend
-      
-      // Create custom scale function that forces 1.0 to be at middle
-      const customScaleFn = (val) => {
-        if (val === 1) return legendMiddleY;
-        if (val < 1) {
-          // Map values below 1.0 to bottom half of legend
-          return legendHeight - ((1 - val) / (1 - domainMin)) * (legendHeight - legendMiddleY);
-        } else {
-          // Map values above 1.0 to top half of legend
-          return legendMiddleY - ((val - 1) / (domainMax - 1)) * legendMiddleY;
-        }
-      };
-      
-      // Create scale with required d3 methods
-      legendScale = function(val) { return customScaleFn(val); };
-      legendScale.invert = function(pos) {
-        if (pos === legendMiddleY) return 1;
-        if (pos > legendMiddleY) {
-          return 1 - ((pos - legendMiddleY) / (legendHeight - legendMiddleY)) * (1 - domainMin);
-        } else {
-          return 1 + ((legendMiddleY - pos) / legendMiddleY) * (domainMax - 1);
-        }
-      };
-      legendScale.domain = () => [domainMin, domainMax];
-      legendScale.range = () => [legendHeight, 0];
-      legendScale.copy = () => legendScale;
-      
-      // Create WIS gradient with 1.0 centered
-      const defs = svg.append("defs");
-      const gradient = defs.append("linearGradient")
-        .attr("id", "wis-gradient")
-        .attr("x1", "0%").attr("y1", "100%")
-        .attr("x2", "0%").attr("y2", "0%");
-      
-      gradient.append("stop").attr("offset", "0%").attr("stop-color", PURPLE);
-      gradient.append("stop").attr("offset", "50%").attr("stop-color", WHITE); // Always at 50%
-      gradient.append("stop").attr("offset", "100%").attr("stop-color", NAVY_BLUE);
-      
-      // Draw legend rectangle
-      legend.append("rect")
-        .attr("width", legendWidth)
-        .attr("height", legendHeight)
-        .style("fill", "url(#wis-gradient)");
-      
-      // Add baseline highlight
-      legend.append("line")
-        .attr("x1", 0).attr("x2", legendWidth)
-        .attr("y1", legendMiddleY).attr("y2", legendMiddleY)
-        .attr("stroke", "gold")
-        .attr("stroke-width", 2)
-        .attr("stroke-dasharray", "5,2");
-      
-      // Generate balanced ticks
-      const generateBalancedTicks = () => {
-        const ticks = [domainMin, 1, domainMax]; // Always include endpoints and baseline
-        
-        // Add ticks between 0 and 1
-        if (1 - domainMin > 0.2) {
-          ticks.push(domainMin + (1 - domainMin) / 2);
-        }
-        
-        // Add more ticks above 1
-        if (domainMax - 1 > 0.5) {
-          // Add 2-3 ticks above baseline
-          const step = (domainMax - 1) / 3;
-          for (let i = 1; i <= 2; i++) {
-            ticks.push(1 + step * i);
-          }
-        }
-        
-        return [...new Set(ticks)].sort((a, b) => a - b);
-      };
-      
-      const tickValues = generateBalancedTicks();
-      console.debug("WIS/Baseline ticks:", tickValues);
-      
-      // Create and add axis
-      const legendAxis = d3.axisLeft(legendScale)
-        .tickValues(tickValues)
-        .tickFormat(d => {
-          if (d === 0) return "0";
-          if (d === 1) return "1.0";
-          if (Math.floor(d) === d) return d3.format("d")(d);
-          return d3.format(".1f")(d);
-        });
-      
-      const axisGroup = legend.append("g").call(legendAxis);
-      axisGroup.selectAll("text")
-        .attr("fill", "white")
-        .style("font-size", "10px");
-      
-      // Highlight baseline
-      axisGroup.selectAll(".tick")
-        .filter(d => d === 1)
-        .select("text")
-        .style("font-weight", "bold")
-        .attr("fill", "gold");
-      
-      // Add labels
-      legend.append("text")
-        .attr("x", legendWidth + 5)
-        .attr("y", legendMiddleY)
-        .attr("dominant-baseline", "middle")
-        .attr("fill", "gold")
-        .style("font-size", "9px")
-        .text("Baseline");
-      
-      legend.append("text")
-        .attr("x", legendWidth + 5)
-        .attr("y", legendHeight)
-        .attr("fill", "white")
-        .attr("text-anchor", "start")
-        .style("font-size", "9px")
-        .text("Better");
-      
-      legend.append("text")
-        .attr("x", legendWidth + 5)
-        .attr("y", 10)
-        .attr("fill", "white")
-        .attr("text-anchor", "start")
-        .style("font-size", "9px")
-        .text("Worse");
-      
-      legend.append("text")
-        .attr("x", 0)
-        .attr("y", -10)
-        .attr("fill", "white")
-        .attr("text-anchor", "start")
-        .style("font-size", "11px")
-        .text("WIS/Baseline");
-    } 
-    else {
-      // Handle other metrics (MAPE, Coverage)
-      const adjustedMin = mapSelectedScoringOption === "MAPE" ? Math.min(minValue, 0) : minValue;
-      
-      // Set color domains and ranges based on metric
-      let colorDomain, colorRange;
-      
-      if (mapSelectedScoringOption === "Coverage") {
-        // For Coverage, higher values are better
-        colorDomain = [adjustedMin, Math.max(maxValue, 100)];
-        colorRange = [NAVY_BLUE, WHITE]; // Dark to light (worse to better)
-      } else {
-        // For MAPE, lower values are better
-        colorDomain = [adjustedMin, maxValue];
-        colorRange = [WHITE, NAVY_BLUE]; // Light to dark (better to worse)
-      }
-      
-      // Create appropriate scale based on log toggle
+
+    // Create Scales based on Scoring Option and Log Toggle
+    const isWISBaseline = mapSelectedScoringOption === "WIS/Baseline";
+    let colorDomain: number[];
+    let colorRange: string[];
+    let legendDomain: number[];
+    let legendRangePixels: number[];
+
+    // Legend settings
+    const legendWidth = 40;
+    const legendHeight = mapHeight * 0.98;
+    const legendX = width - margin.right - legendWidth - 10; // Position legend to the right
+    const legendY = margin.top + (mapHeight - legendHeight) / 2; // Center legend vertically
+
+    /* Two-way (For WIS/Baseline) and normal one-way color gradient scale logic here*/
+    if (isWISBaseline) {
+      // WIS/Baseline: Diverging Scale
+      const pivotValue = 1;
+      // Ensure pivot is within the actual data range for domain setting, clamp if necessary
+      const effectiveMin = 0;
+      const effectiveMax = maxValue;
+
+      // Define the 3-point domain around the pivot
+      colorDomain = [effectiveMin, pivotValue, effectiveMax];
+      colorRange = [PURPLE, WHITE, NAVY_BLUE]; // Purple -> White (at 1) -> Navy Blue
+
+      // Legend scale maps data domain to pixel range
+      legendDomain = colorDomain;
+      legendRangePixels = [legendHeight, legendHeight / 2, 0]; // Default position for pivot position in pixels
+
+      // Calculate the actual pixel position for the pivot value (1) on the legend scale
+      let tempScaleForPivotPosition: d3.ScaleLinear<number, number> | d3.ScaleSymLog<number, number>;
       if (useLogColorScale) {
-        colorScale = d3.scaleSymlog<string>()
-          .domain(colorDomain)
-          .range(colorRange)
-          .interpolate(d3.interpolateRgb)
-          .constant(symlogConstant);
-        
-        legendScale = d3.scaleSymlog()
-          .domain(colorDomain)
-          .range([legendHeight, 0])
+        // Symlog scale for calculating pivot position
+        tempScaleForPivotPosition = d3
+          .scaleSymlog()
+          .domain([effectiveMin, effectiveMax]) // Use min/max for range calculation
+          .range([legendHeight, 0]) // Map data range to full pixel height (bottom to top)
           .constant(symlogConstant);
       } else {
-        colorScale = d3.scaleLinear<string>()
-          .domain(colorDomain)
-          .range(colorRange)
-          .interpolate(d3.interpolateRgb);
-        
-        legendScale = d3.scaleLinear()
-          .domain(colorDomain)
-          .range([legendHeight, 0]);
+        // Linear scale for calculating pivot position
+        tempScaleForPivotPosition = d3
+          .scaleLinear()
+          .domain([effectiveMin, effectiveMax]) // Use min/max for range calculation
+          .range([legendHeight, 0]); // Map data range to full pixel height
       }
-      
-      // Create standard gradient
-      const defs = svg.append("defs");
-      const gradient = defs.append("linearGradient")
-        .attr("id", "color-gradient")
-        .attr("x1", "0%").attr("y1", "100%")
-        .attr("x2", "0%").attr("y2", "0%");
-      
-      // Add gradient stops
-      gradient.append("stop").attr("offset", "0%").attr("stop-color", colorRange[0]);
-      gradient.append("stop").attr("offset", "100%").attr("stop-color", colorRange[1]);
-      
-      // Draw legend rectangle
-      legend.append("rect")
-        .attr("width", legendWidth)
-        .attr("height", legendHeight)
-        .style("fill", "url(#color-gradient)");
-      
-      // Create and add axis
-      const legendAxis = d3.axisLeft(legendScale)
-        .ticks(8)
-        .tickFormat(d => {
-          if (d === 0) return "0";
-          if (Math.abs(d) < 0.01) return d3.format(".2e")(d);
-          if (Math.floor(d) === d) return d3.format("d")(d);
-          return d3.format(".1f")(d);
-        });
-      
-      legend.append("g")
-        .call(legendAxis)
-        .selectAll("text")
-        .attr("fill", "white")
-        .style("font-size", "10px");
-      
-      // Add labels
-      legend.append("text")
-        .attr("x", 0)
-        .attr("y", -10)
-        .attr("fill", "white")
-        .attr("text-anchor", "start")
-        .style("font-size", "10px")
-        .text(mapSelectedScoringOption || "Performance Score");
-      
-      legend.append("text")
-        .attr("x", legendWidth + 5)
-        .attr("y", 10)
-        .attr("fill", "white")
-        .attr("text-anchor", "start")
-        .style("font-size", "9px")
-        .text(mapSelectedScoringOption == "Coverage" ? "Better" : "Worse");
-      
-      legend.append("text")
-        .attr("x", legendWidth + 5)
-        .attr("y", legendHeight)
-        .attr("fill", "white")
-        .attr("text-anchor", "start")
-        .style("font-size", "9px")
-        .text(mapSelectedScoringOption == "Coverage" ? "Worse" : "Better");
+
+      // Calculate pixel position for '1', clamp within bounds
+      let pivotPixelPosition = tempScaleForPivotPosition(pivotValue);
+      pivotPixelPosition = Math.max(0, Math.min(legendHeight, pivotPixelPosition));
+
+      // Update the legend's pixel range using the calculated pivot position
+      legendRangePixels = [legendHeight, pivotPixelPosition, 0]; // [Bottom, Pivot, Top]
+
+      // Create the actual scales
+      if (useLogColorScale) {
+        // Use symlog scale with 3-point domain/range
+        colorScale = d3.scaleSymlog<string>().domain(colorDomain).range(colorRange).interpolate(d3.interpolateRgb).constant(symlogConstant);
+
+        legendScale = d3
+          .scaleSymlog()
+          .domain(legendDomain)
+          .range(legendRangePixels) // Use calculated pixel positions
+          .constant(symlogConstant);
+      } else {
+        // Use linear scale with 3-point domain/range
+        colorScale = d3.scaleLinear<string>().domain(colorDomain).range(colorRange).interpolate(d3.interpolateRgb);
+
+        legendScale = d3.scaleLinear().domain(legendDomain).range(legendRangePixels); // Use calculated pixel positions
+      }
+    } else {
+      // --- Other Metrics: One-way Color Gradient Scale (Coverage & MAPE)
+      colorDomain = [0, maxValue];
+      legendDomain = colorDomain;
+      legendRangePixels = [legendHeight, 0]; // Bottom to Top
+
+      if (mapSelectedScoringOption === "Coverage") {
+        // Coverage: Higher is better (closer to target). Often target is 95%.
+
+        colorRange = [NAVY_BLUE, WHITE];
+      } else {
+        // For MAPE, white=better=lower value
+        colorRange = [WHITE, NAVY_BLUE];
+      }
+
+      // Create the appropriate scale
+      if (useLogColorScale) {
+        colorScale = d3.scaleSymlog<string>().domain(colorDomain).range(colorRange).interpolate(d3.interpolateRgb).constant(symlogConstant);
+        legendScale = d3.scaleSymlog().domain(legendDomain).range(legendRangePixels).constant(symlogConstant);
+      } else {
+        colorScale = d3.scaleLinear<string>().domain(colorDomain).range(colorRange).interpolate(d3.interpolateRgb);
+        legendScale = d3.scaleLinear().domain(legendDomain).range(legendRangePixels);
+      }
     }
-  
-    // Map title
-    g.append("text")
+
+    /* Create SVG groups */
+    const visGroup = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`); // Group for map + title
+    const legendGroup = svg.append("g").attr("transform", `translate(${legendX - 10}, ${legendY})`); // Group for legend elements
+
+    // --- Draw Legend ---
+    const defs = svg.append("defs");
+    const gradient = defs
+      .append("linearGradient")
+      .attr("id", "color-gradient")
+      .attr("x1", "0%")
+      .attr("y1", "100%") // Bottom
+      .attr("x2", "0%")
+      .attr("y2", "0%"); // Top
+
+    // Add gradient stops based on the scale type
+    if (isWISBaseline) {
+      // Calculate normalized position of '1' for the gradient offset
+      let pivotPercent = 0.5; // Default middle
+      if (maxValue > minValue) {
+        // Use a temporary scale matching the main scale type to find the relative position of '1'
+        const tempScaleNormalize = (useLogColorScale ? d3.scaleSymlog().constant(symlogConstant) : d3.scaleLinear())
+          .domain([minValue, maxValue])
+          .range([0, 1]); // Map data range to 0-1
+        const valueToScale = Math.max(minValue, Math.min(maxValue, 1)); // Clamp '1' within the actual data range
+        pivotPercent = tempScaleNormalize(valueToScale);
+      }
+      // Ensure pivot is strictly within 0-1 for distinct gradient stops if possible
+      pivotPercent = Math.max(0.001, Math.min(0.999, pivotPercent));
+
+      // Handle cases where the entire range is above or below 1
+      if (minValue >= 1) {
+        // Range is 1 or higher: White to Navy
+        gradient.append("stop").attr("offset", "0%").attr("stop-color", WHITE);
+        gradient.append("stop").attr("offset", "100%").attr("stop-color", NAVY_BLUE);
+      } else if (maxValue <= 1) {
+        // Range is 1 or lower: Purple to White
+        gradient.append("stop").attr("offset", "0%").attr("stop-color", PURPLE);
+        gradient.append("stop").attr("offset", "100%").attr("stop-color", WHITE);
+      } else {
+        // Normal Diverging case: Purple -> White -> Navy
+        gradient.append("stop").attr("offset", "0%").attr("stop-color", PURPLE); // Bottom color (for minValue)
+        gradient
+          .append("stop")
+          .attr("offset", `${pivotPercent * 100}%`)
+          .attr("stop-color", WHITE); // Mid color (at pivot '1')
+        gradient.append("stop").attr("offset", "100%").attr("stop-color", NAVY_BLUE); // Top color (for maxValue)
+      }
+    } else {
+      // One-Way gradient (handles Coverage, MAPE etc.)
+      gradient.append("stop").attr("offset", "0%").attr("stop-color", colorRange[0]); // Bottom color
+      gradient.append("stop").attr("offset", "100%").attr("stop-color", colorRange[1]); // Top color
+    }
+
+    // Draw legend rectangle
+    legendGroup.append("rect").attr("width", legendWidth).attr("height", legendHeight).style("fill", "url(#color-gradient)");
+
+    // Create and add legend axis
+    const legendAxis = d3
+      .axisLeft(legendScale) // Use axisRight since legend is on the right
+      .ticks(8) // Fewer ticks for clarity
+      .tickPadding(5)
+      .tickSizeOuter(0)
+      .tickFormat((d) => {
+        const value = Number(d);
+        if (value === 0) return "0";
+        if (Math.abs(value) < 0.01 && Math.abs(value) > 0) return d3.format(".1e")(value); // Use scientific for very small numbers
+        if (value === 1 && isWISBaseline) return "1 (Baseline)"; // Highlight baseline
+        if (Math.abs(value) < 100 && Math.abs(value) >= 0.1 && isWISBaseline) return d3.format(".1f")(value); // One decimal place for WIS/Baseline's values
+        return d3.format(".0f")(value); // Integers for larger numbers
+      });
+
+    legendGroup.append("g").call(legendAxis).selectAll("text").attr("fill", "white").style("font-size", "11px");
+
+    // Remove the domain path line (axis line)
+    legendGroup.select(".domain").remove();
+
+    // Add legend title
+    legendGroup
+      .append("text")
+      .attr("x", legendWidth / 2) // Center title above legend bar
+      .attr("y", -10) // Position above the bar
+      .attr("fill", "white")
+      .attr("text-anchor", "middle")
+      .style("font-size", "11px")
+      .style("font-weight", "bold")
+      .text(mapSelectedScoringOption || "Model Performance Score");
+
+    // Add 'Better'/'Worse' labels (adapt for WIS/Baseline)
+    const betterWorseLabelYOffset = 8;
+    const betterWorseLabelFontSize = "9px";
+    if (isWISBaseline) {
+      // NOTE: disabled text for WIS Baseline since it is two-way
+      /* legendGroup
+        .append("text") // Top label (Worse)
+        .attr("x", legendWidth + 5)
+        .attr("y", betterWorseLabelYOffset)
+        .attr("fill", "white")
+        .attr("text-anchor", "start")
+        .style("font-size", betterWorseLabelFontSize)
+        .text("Worse");
+
+      legendGroup
+        .append("text") // Bottom label (Better)
+        .attr("x", legendWidth + 5)
+        .attr("y", legendHeight - betterWorseLabelYOffset + 3) // Adjust vertical position slightly
+        .attr("fill", "white")
+        .attr("text-anchor", "start")
+        .style("font-size", betterWorseLabelFontSize)
+        .text("Lower (Better)"); */
+    } else if (mapSelectedScoringOption === "Coverage") {
+      // Coverage: Lighter is better (closer to target) assumed WHITE
+      legendGroup
+        .append("text") // Top label (Worse - NAVY)
+        .attr("x", legendWidth + 5)
+        .attr("y", betterWorseLabelYOffset)
+        .attr("fill", "white")
+        .attr("text-anchor", "start")
+        .style("font-size", betterWorseLabelFontSize)
+        .text("Overconfident");
+      legendGroup
+        .append("text") // Bottom label (Better - WHITE)
+        .attr("x", legendWidth + 5)
+        .attr("y", legendHeight - betterWorseLabelYOffset + 3)
+        .attr("fill", "white")
+        .attr("text-anchor", "start")
+        .style("font-size", betterWorseLabelFontSize)
+        .text("Over-Cautious");
+    } else {
+      legendGroup
+        .append("text") // Top label (Worse - NAVY)
+        .attr("x", legendWidth + 5)
+        .attr("y", betterWorseLabelYOffset)
+        .attr("fill", "white")
+        .attr("text-anchor", "start")
+        .style("font-size", betterWorseLabelFontSize)
+        .text("Worse");
+      legendGroup
+        .append("text") // Bottom label (Better - WHITE)
+        .attr("x", legendWidth + 5)
+        .attr("y", legendHeight - betterWorseLabelYOffset + 3)
+        .attr("fill", "white")
+        .attr("text-anchor", "start")
+        .style("font-size", betterWorseLabelFontSize)
+        .text("Better");
+    }
+
+    // --- Map Title ---
+    visGroup
+      .append("text")
       .attr("x", 0)
-      .attr("y", -5)
+      .attr("y", -10) // Position above map area
       .attr("fill", "white")
       .attr("text-anchor", "left")
-      .style("font-size", "18px")
-      .style("font-weight", "regular")
-      .text(`State-Specific ${mapSelectedScoringOption || "Performance Score"}`);
-    
-    // Setup map projection
-    const projection = d3.geoAlbersUsa()
-      .fitSize([mapWidth, mapHeight], topojson.feature(mapData, mapData.objects.states));
+      .style("font-size", "16px")
+      .style("font-weight", "bold")
+      .text(`State-Specific ${mapSelectedScoringOption || "Performance"}`);
+
+    // --- State Map Drawing ---
+    const projection = d3.geoAlbersUsa().fitSize([mapWidth, mapHeight], topojson.feature(mapData, mapData.objects.states));
     const path = d3.geoPath().projection(projection);
-    
+
     // Draw states
-    g.selectAll("path")
-      .data(features)
+    visGroup
+      .selectAll("path.state") // Add class for easier selection
+      .data(stateFeatures)
       .join("path")
+      .attr("class", "state") // Add class
       .attr("d", path)
-      .attr("fill", d => {
-        const stateId = d.id?.toString();
-        return statePerformanceData.has(stateId) ? colorScale(statePerformanceData.get(stateId)) : "#cccccc";
+      .attr("fill", (d: any) => {
+        // Explicitly type d if possible, or use any
+        const stateId = d.id?.toString().padStart(2, "0"); // Ensure consistent ID format
+        const value = modelPerformanceData.get(stateId);
+        return value !== undefined ? colorScale(value) : NO_DATA_COLOR; // Use color scale or no-data color
       })
       .attr("stroke", "white")
-      .attr("stroke-width", 0.5)
-      .append("title")
-      .text(d => {
-        const stateId = d.id?.toString();
-        if (!stateId) return "Unknown";
-        
-        const state = locationData.find(loc => loc.stateNum === stateId);
-        const value = statePerformanceData.get(stateId);
-        
-        if (mapSelectedScoringOption === "Coverage" && value !== undefined) {
-          return `${state?.stateName || "Unknown"}: ${value.toFixed(1)}% ${mapSelectedScoringOption}`;
-        } else {
-          return `${state?.stateName || "Unknown"}: ${value !== undefined ? value.toFixed(2) : "No data"} ${mapSelectedScoringOption}`;
+      .attr("stroke-width", 1.2) 
+      .style("cursor", "default") // Indicate non-interactive for now
+      .append("title") // Hover tooltip
+      .text((d: any) => {
+        const stateId = d.id?.toString().padStart(2, "0");
+        if (!stateId) return "Unknown State";
+
+        const stateInfo = locationData.find((loc) => loc.stateNum.toString().padStart(2, "0") === stateId);
+        const stateName = stateInfo?.stateName || `State ${stateId}`;
+        const value = modelPerformanceData.get(stateId);
+        const metricName = mapSelectedScoringOption || "Score";
+
+        if (value === undefined) {
+          return `${stateName}: No data`;
         }
+
+        // Format value based on metric
+        let formattedValue: string;
+        if (mapSelectedScoringOption === "Coverage") {
+          formattedValue = `${value.toFixed(1)}%`; // Percentage for Coverage
+        } else {
+          formattedValue = value.toFixed(1); // Two decimal places otherwise
+        }
+        return `${stateName}: ${formattedValue} ${metricName}`;
       });
-    
-    // Add DC circle
-    const nyStateId = "36"; // New York as reference
-    const nyStateFeature = features.find((f: { id: string }) => f.id === nyStateId);
-    
-    if (nyStateFeature) {
-      // Position relative to NY
-      const nyCentroid = path.centroid(nyStateFeature);
-      const dcX = nyCentroid[0] + 120;
-      const dcY = nyCentroid[1] + 40;
-      
-      // Get DC data
-      const dcStateId = "11";
-      const dcValue = statePerformanceData.get(dcStateId);
-      
-      // Create DC visualization
-      const dcGroup = g.append("g")
-        .attr("class", "dc-visualization")
-        .style("cursor", "pointer");
-      
-      // Draw circle
-      dcGroup.append("circle")
-        .attr("cx", dcX)
-        .attr("cy", dcY)
-        .attr("r", 24)
-        .attr("fill", dcValue !== undefined ? colorScale(dcValue) : "#cccccc")
-        .attr("stroke", "white")
-        .attr("stroke-width", 0.5);
-      
-      // Add DC text
-      dcGroup.append("text")
-        .attr("x", dcX)
-        .attr("y", dcY)
-        .attr("text-anchor", "middle")
-        .attr("dominant-baseline", "central")
-        .attr("fill", "white")
-        .attr("font-size", "10px")
-        .attr("pointer-events", "none")
-        .text("DC");
-      
-      // Add tooltip
-      dcGroup.append("title")
-        .text(() => {
-          if (dcValue === undefined) {
-            return "District of Columbia: No data available";
-          }
-          const label = mapSelectedScoringOption === "Coverage" ? 
-            `${dcValue.toFixed(1)}%` : dcValue.toFixed(2);
-          return `District of Columbia: ${label} ${mapSelectedScoringOption}`;
-        });
-    } else {
-      // Fallback if NY not found
-      const dcX = mapWidth * 0.85;
-      const dcY = mapHeight * 0.3;
-      const dcStateId = "11";
-      const dcValue = statePerformanceData.get(dcStateId);
-      
-      const dcGroup = g.append("g")
-        .attr("class", "dc-visualization")
-        .style("cursor", "pointer");
-      
-      dcGroup.append("circle")
-        .attr("cx", dcX)
-        .attr("cy", dcY)
-        .attr("r", 24)
-        .attr("fill", dcValue !== undefined ? colorScale(dcValue) : "#cccccc")
-        .attr("stroke", "white")
-        .attr("stroke-width", 0.5);
-      
-      dcGroup.append("text")
-        .attr("x", dcX)
-        .attr("y", dcY)
-        .attr("text-anchor", "middle")
-        .attr("dominant-baseline", "central")
-        .attr("fill", "white")
-        .attr("font-size", "10px")
-        .text("DC");
-      
-      dcGroup.append("title")
-        .text(() => {
-          if (dcValue === undefined) return "District of Columbia: No data available";
-          const label = mapSelectedScoringOption === "Coverage" ? 
-            `${dcValue.toFixed(1)}%` : dcValue.toFixed(2);
-          return `District of Columbia: ${label} ${mapSelectedScoringOption}`;
-        });
+
+    // --- Draw DC Circle ---
+    // Find a reference point (e.g., Maryland centroid) for positioning DC
+    const mdStateFeature = stateFeatures.find((f: any) => f.id === "24"); // Maryland ID is 24
+    let dcX = mapWidth * 0.9; // Fallback X
+    let dcY = mapHeight * 0.5; // Fallback Y
+    const dcRadius = Math.min(mapWidth, mapHeight) * 0.04; // Relative radius
+
+    if (mdStateFeature && path.centroid(mdStateFeature)?.length === 2) {
+      const [mdX, mdY] = path.centroid(mdStateFeature);
+      // Position DC slightly southeast of Maryland centroid
+      dcX = mdX + dcRadius * 3;
+      dcY = mdY + dcRadius * 1.2;
     }
+
+    const dcStateId = "11"; // DC ID
+    const dcValue = modelPerformanceData.get(dcStateId);
+
+    const dcGroup = visGroup.append("g").attr("class", "dc-visualization").attr("transform", `translate(${dcX}, ${dcY})`); // Use transform for positioning
+
+    // Draw circle for DC
+    dcGroup
+      .append("circle")
+      .attr("r", dcRadius)
+      .attr("fill", dcValue !== undefined ? colorScale(dcValue) : NO_DATA_COLOR)
+      .attr("stroke", "white")
+      .attr("stroke-width", 1);
+
+    // Add DC text label inside circle
+    dcGroup
+      .append("text")
+      .attr("text-anchor", "middle")
+      .attr("dominant-baseline", "central")
+      .attr("fill", "white") // Make text white for better contrast
+      .attr("font-size", `${Math.max(8, dcRadius * 0.6)}px`) // Scale font size
+      .attr("dy", "0.05em") // Slight vertical adjustment
+      .style("pointer-events", "none") // Prevent text from blocking circle hover
+      .text("DC");
+
+    // Add tooltip for DC circle
+    dcGroup.append("title").text(() => {
+      const stateName = "District of Columbia";
+      const metricName = mapSelectedScoringOption || "Score";
+      if (dcValue === undefined) {
+        return `${stateName}: No data`;
+      }
+      let formattedValue: string;
+      if (mapSelectedScoringOption === "Coverage") {
+        formattedValue = `${dcValue.toFixed(1)}%`;
+      } else {
+        formattedValue = dcValue.toFixed(1);
+      }
+      return `${stateName}: ${formattedValue} ${metricName}`;
+    });
   };
 
   return (
@@ -577,7 +547,7 @@ const SeasonOverviewUSStateMap: React.FC = () => {
         viewBox={`0 0 ${dimensions.width || 100} ${dimensions.height || 100}`}
         preserveAspectRatio='xMidYMid meet'
       />
-      <MapSelectorPanel className='absolute left-2 bottom-0' />
+      <MapSelectorPanel className='absolute left-2 bottom-2' />
     </div>
   );
 };
