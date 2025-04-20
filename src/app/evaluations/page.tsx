@@ -56,8 +56,8 @@ const SeasonOverviewContent: React.FC = () => {
         </Card>
 
         <Card className='bg-mobs-lab-color text-white overflow-hidden'>
-        <div className='p-1 border-b border-gray-700 flex justify-between items-center'>
-        <h3 className='text-lg font-medium'>MAPE</h3>
+          <div className='p-1 border-b border-gray-700 flex justify-between items-center'>
+            <h3 className='text-lg font-medium'>MAPE</h3>
             <button
               onClick={() => dispatch(setMapeChartScaleType(mapeChartScaleType === "log" ? "linear" : "log"))}
               className='bg-blue-500 hover:bg-blue-600 text-white text-xs py-1 px-2 rounded'>
@@ -94,14 +94,21 @@ const SeasonOverviewContent: React.FC = () => {
 
 const SingleModelContent = () => {
   const { loadingStates } = useDataContext();
+  const { evaluationsSingleModelViewSelectedStateName, evaluationSingleModelViewScoresOption } = useAppSelector((state) => state.evaluationsSingleModelSettings);
 
   if (!loadingStates.groundTruth || !loadingStates.predictions) {
     return (
       <div className='eval-single-model-chart-grid-container'>
+        {/* Dynamic Title that shows the name of the state selected */}
+        <h1 className='sm:text-sm md:text-base lg:text-2xl xl:text-3xl 2xl:text-4xl font-light util-text-limit max-h-8'>
+          {evaluationsSingleModelViewSelectedStateName}
+        </h1>
         <div className='chart-container'>
+          <div className='p-[0.05rem] border-b border-gray-700 flex justify-between items-center'>Hospitalization Forecasts by Horizon</div>
           <SingleModelHorizonPlot />
         </div>
         <div className='chart-container'>
+        <div className='p-[0.05rem] border-b border-gray-700 flex justify-between items-center'>{evaluationSingleModelViewScoresOption}</div>
           <SingleModelScoreLineChart />
         </div>
       </div>

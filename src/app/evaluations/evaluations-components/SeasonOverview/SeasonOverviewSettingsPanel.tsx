@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect } from "react";
 
 import { modelColorMap, modelNames } from "@/interfaces/epistorm-constants";
 
@@ -10,13 +10,12 @@ import {
   updateSelectedAggregationPeriod,
   toggleModelSelection,
   selectAllModels,
-  deselectAllModels,
 } from "@/store/evaluations-season-overview-settings-slice";
 
-import { Radio, Typography, Card, List, ListItem, ListItemPrefix } from "@/styles/material-tailwind-wrapper";
+import { Radio, Typography, List, ListItem, ListItemPrefix } from "@/styles/material-tailwind-wrapper";
 import Image from "next/image";
 
-import { format, parseISO, subDays, subMonths } from "date-fns";
+import { format, subDays } from "date-fns";
 
 // Season Overview Settings Panel
 export const SeasonOverviewSettings = () => {

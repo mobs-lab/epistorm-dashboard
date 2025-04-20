@@ -172,7 +172,7 @@ const SeasonOverviewUSStateMap: React.FC = () => {
 
     // Calculate symlog constant if needed (based on positive values near zero)
     if (useLogColorScale && hasData) {
-      const positiveValues = performanceValues.filter((v) => v > 0); // Use > 0 for symlog constant logic
+      const positiveValues = performanceValues.filter((v) => v > 0); // Use > 0 for symlog constant logic···
       if (positiveValues.length > 0) {
         const sortedValues = [...positiveValues].sort((a, b) => a - b);
         const percentileIndex = Math.max(0, Math.min(sortedValues.length - 1, Math.floor(sortedValues.length * 0.1)));

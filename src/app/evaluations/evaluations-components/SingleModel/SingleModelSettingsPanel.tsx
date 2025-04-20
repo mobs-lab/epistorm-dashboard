@@ -35,23 +35,17 @@ const SingleModelSettingsPanel: React.FC = () => {
 
   // Evaluation-specific state
   const {
-    evaluationsSingleModelViewSelectedStateName:
-      evaluationSingleModelViewSelectedStateName,
     evaluationsSingleModelViewSelectedStateCode,
     evaluationsSingleModelViewModel,
     evaluationSingleModelViewHorizon,
     evaluationSingleModelViewScoresOption,
     evaluationsSingleModelViewDateRange,
-    evaluationsSingleModelViewDateStart,
-    evaluationSingleModelViewDateEnd,
     evaluationSingleModelViewSeasonOptions,
   } = useAppSelector((state) => state.evaluationsSingleModelSettings);
 
   // State selection handlers (reused from forecast)
   const onStateSelectionChange = (stateNum: string) => {
-    const selectedState = locationData.find(
-      (state) => state.stateNum === stateNum
-    );
+    const selectedState = locationData.find((state) => state.stateNum === stateNum);
     if (selectedState) {
       dispatch(
         updateEvaluationSingleModelViewSelectedState({
@@ -69,21 +63,15 @@ const SingleModelSettingsPanel: React.FC = () => {
 
   // Horizon handler
   const onHorizonChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    dispatch(
-      updateEvaluationSingleModelViewHorizon(Number(event.target.value))
-    );
+    dispatch(updateEvaluationSingleModelViewHorizon(Number(event.target.value)));
   };
 
   // Season selection handler (shared with forecast)
   const onSeasonSelectionChange = (timeValue: string) => {
-    const selectedOption = evaluationSingleModelViewSeasonOptions.find(
-      (option) => option.timeValue === timeValue
-    );
+    const selectedOption = evaluationSingleModelViewSeasonOptions.find((option) => option.timeValue === timeValue);
     if (selectedOption) {
       dispatch(updateEvaluationsSingleModelViewDateRange(timeValue));
-      dispatch(
-        updateEvaluationSingleModelViewDateStart(selectedOption.startDate)
-      );
+      dispatch(updateEvaluationSingleModelViewDateStart(selectedOption.startDate));
       dispatch(updateEvaluationSingleModelViewDateEnd(selectedOption.endDate));
     }
   };
@@ -95,7 +83,7 @@ const SingleModelSettingsPanel: React.FC = () => {
 
   return (
     <div className='bg-mobs-lab-color-filterspane text-white fill-white flex flex-col h-full rounded-md overflow-hidden util-responsive-text-settings'>
-      <div className='flex-grow overflow-y-auto p-4'>
+      <div className='flex-grow nowrap overflow-y-auto p-4 util-no-sb-length'>
         <div className='flex flex-col flex-wrap justify-stretch items-start w-full'>
           <h2>Select Location</h2>
 
@@ -115,14 +103,19 @@ const SingleModelSettingsPanel: React.FC = () => {
           </select>
 
           <div className='my-2 w-full h-full overflow-ellipsis'>
-            <Typography variant='h6' className='text-white'>
-              Model
+            <Typography variant='h6' className='text-white mb-2'>
+              Models
             </Typography>
-            <div className='flex flex-col text-wrap'>
+            <div className='space-y-2 h-full overflow-y-auto pr-1'>
               {modelNames.map((model) => (
-                <label
-                  key={model}
-                  className='inline-flex items-center text-white'>
+                <label key={model} className='nline-flex items-center text-white hover:bg-gray-700 rounded p-1 cursor-pointer'>
+                  <span
+                  className='w-[1em] h-[1em] border-2 rounded-sm mr-2'
+                  style={{
+                    backgroundColor: evaluationsSingleModelViewModel === model ? modelColorMap[model] : "transparent",
+                    borderColor: modelColorMap[model],
+                  }}
+                />
                   <input
                     type='radio'
                     className='sr-only'
@@ -132,10 +125,7 @@ const SingleModelSettingsPanel: React.FC = () => {
                   <span
                     className='w-[1em] h-[1em] border-2 rounded-sm mr-2'
                     style={{
-                      backgroundColor:
-                        evaluationsSingleModelViewModel === model
-                          ? modelColorMap[model]
-                          : "transparent",
+                      backgroundColor: evaluationsSingleModelViewModel === model ? modelColorMap[model] : "transparent",
                       borderColor: modelColorMap[model],
                     }}
                   />
@@ -171,13 +161,11 @@ const SingleModelSettingsPanel: React.FC = () => {
               value={evaluationsSingleModelViewDateRange}
               onChange={(e) => onSeasonSelectionChange(e.target.value)}
               className='text-white border-[#5d636a] border-2 flex-wrap bg-mobs-lab-color-filterspane rounded-md w-full py-2 px-2 overflow-ellipsis'>
-              {evaluationSingleModelViewSeasonOptions.map(
-                (option: SeasonOption) => (
-                  <option key={option.index} value={option.timeValue}>
-                    {option.displayString}
-                  </option>
-                )
-              )}
+              {evaluationSingleModelViewSeasonOptions.map((option: SeasonOption) => (
+                <option key={option.index} value={option.timeValue}>
+                  {option.displayString}
+                </option>
+              ))}
             </select>
           </div>
 
@@ -200,12 +188,7 @@ const SingleModelSettingsPanel: React.FC = () => {
       </div>
 
       <div className='mt-auto p-2 border-t border-gray-700'>
-        <Image
-          src='/epistorm-logo.png'
-          width={300}
-          height={120}
-          alt='Epistorm Logo'
-        />
+        <Image src='/epistorm-logo.png' width={300} height={120} alt='Epistorm Logo' />
       </div>
     </div>
   );

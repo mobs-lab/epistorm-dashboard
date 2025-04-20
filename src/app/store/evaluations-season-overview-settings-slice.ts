@@ -186,9 +186,6 @@ const evaluationsSeasonOverviewSettingsSlice = createSlice({
     selectAllModels: (state) => {
       state.evaluationSeasonOverviewSelectedModels = [...modelNames];
     },
-    deselectAllModels: (state) => {
-      state.evaluationSeasonOverviewSelectedModels = [];
-    },
     setWisChartScaleType: (state, action: PayloadAction<"linear" | "log">) => {
       state.wisChartScaleType = action.payload;
     },
@@ -208,7 +205,7 @@ export const {
   setUseLogColorScale,
   toggleModelSelection,
   selectAllModels,
-  deselectAllModels,
+
   setWisChartScaleType,
   setMapeChartScaleType,
 } = evaluationsSeasonOverviewSettingsSlice.actions;

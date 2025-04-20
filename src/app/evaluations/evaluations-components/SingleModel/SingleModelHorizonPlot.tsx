@@ -29,12 +29,6 @@ const SingleModelHorizonPlot: React.FC = () => {
   const { containerRef, dimensions, isResizing } = useResponsiveSVG();
   const svgRef = useRef<SVGSVGElement>(null);
 
-  // Track active event listeners for cleanup
-  const eventListenersRef = useRef<{
-    overlay?: d3.Selection<any, unknown, null, undefined>;
-    tooltip?: d3.Selection<SVGGElement, unknown, null, undefined>;
-  }>({});
-
   // Get the ground and prediction data-slices from store
   const groundTruthData = useAppSelector((state) => state.groundTruth.data);
   // console.debug("DEBUG: SingleModelHorizonPlot.tsx: groundTruthData", groundTruthData);
@@ -47,7 +41,6 @@ const SingleModelHorizonPlot: React.FC = () => {
     evaluationSingleModelViewDateEnd,
     evaluationsSingleModelViewModel,
     evaluationSingleModelViewHorizon,
-    evaluationSingleModelViewSeasonOptions,
   } = useAppSelector((state) => state.evaluationsSingleModelSettings);
 
   // Function to filter ground truth data-slices by selected state and dates
@@ -240,12 +233,6 @@ const SingleModelHorizonPlot: React.FC = () => {
   ): [Date, Date] {
     /* First calcualte using horizon number, a buffer for how many weeks ahead we should seek for end date within the final range */
 
-    const numsOfWeekAhead = horizon;
-    console.log(
-      "end date calculated considering horizon: ",
-      dateRange[1]
-    );
-
     // Filter ground truth data-slices for valid entries (with valid admissions, including placeholders)
     const validGroundTruth = groundTruthData.filter(
       (d) =>
@@ -311,10 +298,10 @@ const SingleModelHorizonPlot: React.FC = () => {
 
     // Calculate margins
     const margin = {
-      top: Math.max(height * 0.02, 10),
-      right: Math.max(width * 0.02, 25),
-      bottom: height * 0.14,
-      left: Math.max(width * 0.05, 60),
+      top: Math.max(height * 0.02, 20),
+      right: Math.max(width * 0.005, 5),
+      bottom: Math.max(height * 0.18, 30),
+      left: Math.max(width * 0.005, 50),
     };
 
     const chartWidth = width - margin.left - margin.right;
@@ -615,7 +602,7 @@ const SingleModelHorizonPlot: React.FC = () => {
               .attr("y", currentY + 16)
               .attr("fill", "white")
               .style("font-family", "var(--font-dm-sans)")
-              .style("font-size", isHeader ? "14px" : "12px")
+              .style("font-size", isHeader ? "15px" : "13px")
               .style("font-weight", isHeader ? "bold" : "normal")
               .text(text as string);
 
