@@ -3,10 +3,11 @@
 
 import React, { useEffect, useRef, useMemo } from "react";
 import * as d3 from "d3";
+import { addWeeks } from "date-fns";
+
+import { useAppSelector } from "@/store/hooks";
 import { useResponsiveSVG } from "@/interfaces/responsiveSVG";
 import { modelColorMap, modelNames } from "@/interfaces/epistorm-constants";
-import { useAppSelector } from "@/store/hooks";
-import { addWeeks } from "date-fns";
 
 // Interface for processed data structure
 interface ProcessedCoverageData {
@@ -23,9 +24,8 @@ const SeasonOverviewPIChart: React.FC = () => {
 
   // Get data from Redux store
   const detailedCoverageData = useAppSelector((state) => state.evaluationsSingleModelScoreData.detailedCoverage);
-  const { evaluationSeasonOverviewHorizon, selectedAggregationPeriod, aggregationPeriods } = useAppSelector(
-    (state) => state.evaluationsSeasonOverviewSettings
-  );
+  const { evaluationSeasonOverviewHorizon, selectedAggregationPeriod, aggregationPeriods, evaluationSeasonOverviewSelectedModels } =
+    useAppSelector((state) => state.evaluationsSeasonOverviewSettings);
 
   // Process the detailed coverage data based on selected criteria
   const processedData = useMemo(() => {
@@ -64,7 +64,8 @@ const SeasonOverviewPIChart: React.FC = () => {
     // Process each model's data
     for (const model of detailedCoverageData) {
       // Skip if no coverageData
-      if (!model.coverageData || model.coverageData.length === 0) continue;
+      if (!evaluationSeasonOverviewSelectedModels.includes(model.modelName) || !model.coverageData || model.coverageData.length === 0)
+        continue;
 
       // Initialize arrays to store sums and counts for each confidence level
       const coverageSums = coverageMapping.map(() => 0);
@@ -75,7 +76,7 @@ const SeasonOverviewPIChart: React.FC = () => {
         // Skip if horizon doesn't match
         if (!horizonSet.has(entry.horizon)) continue;
 
-        // Calculate target date for filtering by time period
+        // Calculate target date for filtering by time periodw
         const referenceDate = entry.referenceDate;
         const targetDate = addWeeks(referenceDate, entry.horizon);
 
@@ -94,7 +95,7 @@ const SeasonOverviewPIChart: React.FC = () => {
       if (coverageCounts.some((count) => count > 0)) {
         const coveragePoints = coverageMapping.map((mapping, index) => ({
           covLevel: mapping.level,
-          coverageValue: coverageCounts[index] > 0 ? (coverageSums[index] / coverageCounts[index]): 0,
+          coverageValue: coverageCounts[index] > 0 ? coverageSums[index] / coverageCounts[index] : 0,
         }));
 
         results.push({
@@ -105,7 +106,7 @@ const SeasonOverviewPIChart: React.FC = () => {
     }
 
     return results;
-  }, [detailedCoverageData, evaluationSeasonOverviewHorizon, selectedAggregationPeriod, aggregationPeriods]);
+  }, [detailedCoverageData, evaluationSeasonOverviewHorizon, selectedAggregationPeriod, aggregationPeriods, evaluationSeasonOverviewSelectedModels]);
 
   /* UseEffect Hook for rendering the chart */
   useEffect(() => {
@@ -162,10 +163,18 @@ const SeasonOverviewPIChart: React.FC = () => {
     // X axis
     g.append("g")
       .attr("transform", `translate(0,${innerHeight})`)
-      .call(d3.axisBottom(xScale).tickValues(covLevels))
+      .call(
+        d3
+          .axisBottom(xScale)
+          .tickValues(covLevels)
+          .tickFormat((d) => d.toString())
+      )
       .selectAll("text")
       .attr("fill", "white")
-      .style("font-size", "10px");
+      .style("font-size", "11px")
+      .attr("dx", function (d) {
+        return d === 98 ? "6px" : "0";
+      });
 
     // Y axis
     g.append("g").call(d3.axisLeft(yScale).ticks(5)).selectAll("text").attr("fill", "white").style("font-size", "10px");
@@ -330,7 +339,6 @@ const SeasonOverviewPIChart: React.FC = () => {
           d3.select(this).attr("r", 5).attr("stroke", "none");
         });
     });
-
   };
 
   return (

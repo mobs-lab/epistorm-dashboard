@@ -11,6 +11,7 @@ interface EvaluationsSeasonOverviewSettingsState {
 
   /* Model Related*/
   evaluationSeasonOverviewHorizon: number[]; //how many weeks ahead from reference date (matching surveillance week's number) should we look for as target_end_date in predictions to draw the intervals
+  evaluationSeasonOverviewSelectedModels: String[];
 
   /* Time Range Related */
   evaluationSeasonOverviewSeasonOptions: EvaluationsSeasonOverviewSeasonOption[];
@@ -27,6 +28,10 @@ interface EvaluationsSeasonOverviewSettingsState {
   mapSelectedModel: string;
   mapSelectedScoringOption: "WIS/Baseline" | "MAPE" | "Coverage";
   useLogColorScale: boolean;
+
+  /* For Aggregated Box Plots, toggling linear/log mode display */
+  wisChartScaleType: "linear" | "log";
+  mapeChartScaleType: "linear" | "log";
 }
 
 interface UpdateDynamicPeriodsPayload {
@@ -96,18 +101,22 @@ const initialState: EvaluationsSeasonOverviewSettingsState = {
   evaluationSeasonOverviewSelectedStateName: "United States", */
 
   /* Model Defaults*/
-  evaluationSeasonOverviewHorizon: [0],
+  evaluationSeasonOverviewHorizon: [0, 1],
+  evaluationSeasonOverviewSelectedModels: [...modelNames],
 
   /* Time Range Defaults*/
   evaluationSeasonOverviewSeasonOptions: [],
 
-  selectedAggregationPeriod: "season-2023-2024",
+  selectedAggregationPeriod: "last-2-weeks",
   aggregationPeriods: predefinedAggregationPeriods,
   latestReferenceDate: null,
 
   mapSelectedModel: modelNames[0], // Set default to first model
   mapSelectedScoringOption: "WIS/Baseline", // Default scoring option
   useLogColorScale: false,
+
+  wisChartScaleType: "linear",
+  mapeChartScaleType: "linear",
 };
 
 const evaluationsSeasonOverviewSettingsSlice = createSlice({
@@ -163,6 +172,26 @@ const evaluationsSeasonOverviewSettingsSlice = createSlice({
     setUseLogColorScale: (state, action: PayloadAction<boolean>) => {
       state.useLogColorScale = action.payload;
     },
+    toggleModelSelection: (state, action: PayloadAction<string>) => {
+      const modelName = action.payload;
+      const index = state.evaluationSeasonOverviewSelectedModels.indexOf(modelName);
+      if (index === -1) {
+        // Model not currently selected, add it
+        state.evaluationSeasonOverviewSelectedModels.push(modelName);
+      } else {
+        // Model currently selected, remove it
+        state.evaluationSeasonOverviewSelectedModels.splice(index, 1);
+      }
+    },
+    selectAllModels: (state) => {
+      state.evaluationSeasonOverviewSelectedModels = [...modelNames];
+    },
+    setWisChartScaleType: (state, action: PayloadAction<"linear" | "log">) => {
+      state.wisChartScaleType = action.payload;
+    },
+    setMapeChartScaleType: (state, action: PayloadAction<"linear" | "log">) => {
+      state.mapeChartScaleType = action.payload;
+    },
   },
 });
 
@@ -173,7 +202,12 @@ export const {
   updateDynamicPeriods,
   setMapSelectedModel,
   setMapSelectedScoringOption,
-  setUseLogColorScale
+  setUseLogColorScale,
+  toggleModelSelection,
+  selectAllModels,
+
+  setWisChartScaleType,
+  setMapeChartScaleType,
 } = evaluationsSeasonOverviewSettingsSlice.actions;
 
 export default evaluationsSeasonOverviewSettingsSlice.reducer;
