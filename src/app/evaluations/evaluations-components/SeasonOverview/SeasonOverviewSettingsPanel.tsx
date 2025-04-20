@@ -108,13 +108,14 @@ export const SeasonOverviewSettings = () => {
   return (
     <div className='bg-mobs-lab-color-filterspane text-white fill-white flex flex-col h-full rounded-md overflow-hidden util-responsive-text-settings'>
       <div className='flex-grow nowrap overflow-y-auto p-4 util-no-sb-length'>
-        <div className='mb-4'>
+
+        <div className='mb-4 w-full overflow-ellipsis'>
           <Typography variant='h6' className='text-white mb-2'>
             Models
           </Typography>
           <div className='space-y-2 h-full overflow-y-auto pr-1'>
             {modelNames.map((model) => (
-              <label key={model} className='inline-flex items-center text-white hover:bg-gray-700 rounded p-1 cursor-pointer'>
+              <label key={model} className='inline-flex items-center text-white hover:bg-gray-700 rounded cursor-pointer w-full'>
                 <span
                   className='w-[1em] h-[1em] border-2 rounded-sm mr-2'
                   style={{
@@ -128,7 +129,7 @@ export const SeasonOverviewSettings = () => {
                   checked={evaluationSeasonOverviewSelectedModels.includes(model)}
                   onChange={() => handleModelToggle(model)}
                 />
-                <span className='ml-2 text-wrap xs:text-sm'>{model}</span>
+                <span className='ml-2 xs:text-sm'>{model}</span>
               </label>
             ))}
           </div>
@@ -165,11 +166,11 @@ export const SeasonOverviewSettings = () => {
           </div>
         </div>
 
-        <div className='mb-6'>
+        <div className='mb-2'>
           <Typography variant='h6' className='text-white mb-1'>
             Time Period
           </Typography>
-          <List className='p-0 gap-0'>
+          <List>
             {aggregationPeriods.map((period) => (
               <ListItem
                 key={period.id}
@@ -195,7 +196,7 @@ export const SeasonOverviewSettings = () => {
                   <Typography className='font-medium text-white'>
                     {period.label}
                     {period.isDynamic && period.id === selectedAggregationPeriod && (
-                      <span className='text-xs ml-1 opacity-80'>{formatDateRange(subDays(period.startDate, 6), period.endDate)}</span>
+                      <span className='text-sm ml-1 opacity-80'>{formatDateRange(subDays(period.startDate, 6), period.endDate)}</span>
                     )}
                   </Typography>
                 </label>
