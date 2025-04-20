@@ -43,9 +43,14 @@ const SeasonOverviewLocationAggregatedScoreChart: React.FC<SeasonOverviewLocatio
   // Get required data from Redux store
   const evaluationsScoreData = useAppSelector((state) => state.evaluationsSingleModelScoreData.data);
 
-  const { evaluationSeasonOverviewHorizon, selectedAggregationPeriod, aggregationPeriods } = useAppSelector(
-    (state) => state.evaluationsSeasonOverviewSettings
-  );
+  const {
+    evaluationSeasonOverviewHorizon,
+    selectedAggregationPeriod,
+    aggregationPeriods,
+    evaluationSeasonOverviewSelectedModels,
+    wisChartScaleType,
+    mapeChartScaleType,
+  } = useAppSelector((state) => state.evaluationsSeasonOverviewSettings);
 
   // Process evaluation score data based on selected criteria, enhanced with memoization
   const processedData = useMemo(() => {
@@ -75,7 +80,7 @@ const SeasonOverviewLocationAggregatedScoreChart: React.FC<SeasonOverviewLocatio
 
     const debugResults = new Map();
 
-    for (const modelName of modelNames) {
+    for (const modelName of modelNames.filter((model) => evaluationSeasonOverviewSelectedModels.includes(model))) {
       // Find this model's data
       const modelData = relevantEvaluations.find((data) => data.modelName === modelName);
 
@@ -120,7 +125,16 @@ const SeasonOverviewLocationAggregatedScoreChart: React.FC<SeasonOverviewLocatio
     console.debug("Debug: Aggregated Chart: winning entries by model: ", debugResults);
 
     return results;
-  }, [evaluationsScoreData, evaluationSeasonOverviewHorizon, selectedAggregationPeriod, aggregationPeriods, type]);
+  }, [
+    evaluationsScoreData,
+    evaluationSeasonOverviewHorizon,
+    selectedAggregationPeriod,
+    aggregationPeriods,
+    evaluationSeasonOverviewSelectedModels,
+    wisChartScaleType,
+    mapeChartScaleType,
+    type,
+  ]);
 
   useEffect(() => {
     if (!isResizing && dimensions.width > 0 && dimensions.height > 0 && chartRef.current) {
@@ -299,12 +313,12 @@ const SeasonOverviewLocationAggregatedScoreChart: React.FC<SeasonOverviewLocatio
     if (isWis) {
       // For WIS/Baseline data, trying a specialized approach
       const maxValue = scale.domain()[1];
-      
+
       // Create a predefined set of tick values appropriate for WIS/Baseline
       let ticks;
-      
+
       if (maxValue <= 1) {
-        // If max is small, focus on subdivisions of 0-1
+        // If max is small, focus on decimals
         ticks = [0, 0.2, 0.4, 0.6, 0.8, 1];
       } else if (maxValue <= 2) {
         // For max values up to 2
@@ -313,29 +327,23 @@ const SeasonOverviewLocationAggregatedScoreChart: React.FC<SeasonOverviewLocatio
         // For max values up to 5
         ticks = [0, 0.25, 0.5, 0.75, 1, 2, 3, 5];
       } else {
-        // For larger values
-        ticks = [0, 0.3, 0.6, 1, 2, 4, 6, 8].filter(v => v <= maxValue);
-        
-        // Add the max value if it's significantly different from the last tick
-        const lastTick = ticks[ticks.length - 1];
-        if (maxValue > lastTick * 1.5) {
-          ticks.push(Math.ceil(maxValue));
-        }
+        // For larger range
+        ticks = [0, 0.5, 1, 2, 3, 4, 5, 6, 7, 8].filter((v) => v <= maxValue);
       }
-      
-      return ticks.filter(v => v <= maxValue);
+
+      return ticks.filter((v) => v <= maxValue);
     } else {
       // Original logic for MAPE - evenly distribute in pixel space
       const pixelPositions = [];
       for (let i = 0; i < numTicks; i++) {
         pixelPositions.push((i / (numTicks - 1)) * pixelWidth);
       }
-  
-      const dataValues = pixelPositions.map(pos => {
+
+      const dataValues = pixelPositions.map((pos) => {
         const value = scale.invert(pos);
         return Math.round(value);
       });
-  
+
       const uniqueValues = [...new Set([0, ...dataValues])].sort((a, b) => a - b);
       return uniqueValues;
     }
@@ -373,12 +381,17 @@ const SeasonOverviewLocationAggregatedScoreChart: React.FC<SeasonOverviewLocatio
       return modelNames.indexOf(a.model) - modelNames.indexOf(b.model);
     });
 
+    // Calculate dynamic padding based on number of models
+    const modelCount = data.length;
+    // Formula: fewer models = more padding (inversely proportional)
+    const dynamicPadding = Math.min(0.8, Math.max(0.1, 0.8 - modelCount * 0.09));
+
     // Y scale - models
     const yScale = d3
       .scaleBand()
       .domain(data.map((d) => d.model))
       .range([0, innerHeight])
-      .padding(0.2);
+      .padding(dynamicPadding);
 
     // X scale - values
     // Calculate domain from data instead of fixed 0-100
@@ -409,11 +422,17 @@ const SeasonOverviewLocationAggregatedScoreChart: React.FC<SeasonOverviewLocatio
     const constant = calculateConstant();
     console.log(`Using symlog constant: ${constant} for ${type} data`);
 
-    const xScale = d3
-      .scaleSymlog()
-      .domain([0, maxValue]) // 10% padding
-      .constant(constant)
-      .range([0, innerWidth]);
+    // Get the active scale type based on chart type
+    const scaleType = type === "wis" ? wisChartScaleType : mapeChartScaleType;
+
+    // Create appropriate scale based on the scaleType
+    let xScale;
+    if (scaleType === "log") {
+      const constant = calculateConstant();
+      xScale = d3.scaleSymlog().domain([0, maxValue]).constant(constant).range([0, innerWidth]);
+    } else {
+      xScale = d3.scaleLinear().domain([0, maxValue]).range([0, innerWidth]);
+    }
 
     // Y axis with truncated model names for readability
     g.append("g")
@@ -421,30 +440,30 @@ const SeasonOverviewLocationAggregatedScoreChart: React.FC<SeasonOverviewLocatio
       .call((g) => g.selectAll(".tick text").remove())
       .call((g) => g.select(".domain").attr("stroke", "white"));
 
-      const customTicks = generateEvenlySpacedTicks(xScale, innerWidth, 8, type === "wis");
+    const customTicks = generateEvenlySpacedTicks(xScale, innerWidth, 8, type === "wis");
 
-      // X axis with proper decimal formatting
-      g.append("g")
-        .attr("transform", `translate(0,${innerHeight})`)
-        .call(
-          d3
-            .axisBottom(xScale)
-            .tickValues(customTicks)
-            .tickFormat(d => {
-              if (type === "wis") {
-                // For WIS values, use appropriate decimal places
-                if (d === 0) return "0";
-                if (Number(d) < 1) return d3.format(".1f")(d); // One decimal for values < 1
-                return d3.format(".1f")(d); // No decimals for values >= 1
-              } else {
-                // For MAPE, continue using integers
-                return d.toString();
-              }
-            })
-        )
-        .selectAll("text")
-        .attr("fill", "white")
-        .style("font-size", "9px");
+    // X axis with proper decimal formatting
+    g.append("g")
+      .attr("transform", `translate(0,${innerHeight})`)
+      .call(
+        d3
+          .axisBottom(xScale)
+          .tickValues(customTicks)
+          .tickFormat((d) => {
+            if (type === "wis") {
+              // For WIS values, use appropriate decimal places
+              if (d === 0) return "0";
+              if (Number(d) < 1) return d3.format(".1f")(d); // One decimal for values < 1
+              return d3.format("d")(d); // No decimals for whole numbers
+            } else {
+              // For MAPE, use integers
+              return d3.format("d")(d);
+            }
+          })
+      )
+      .selectAll("text")
+      .attr("fill", "white")
+      .style("font-size", "11px");
 
     // Invisible overlay for better hover detection
     const boxGroups = g.selectAll(".model-box-group").data(data).enter().append("g").attr("class", "model-box-group");
@@ -452,7 +471,7 @@ const SeasonOverviewLocationAggregatedScoreChart: React.FC<SeasonOverviewLocatio
     // Render boxplots with interactive elements
     data.forEach((d, i) => {
       const y = yScale(d.model) || 0;
-      const boxHeight = yScale.bandwidth();
+      const boxHeight = Math.max(yScale.bandwidth(), 20);
       const boxGroup = g.append("g").attr("class", `box-${d.model}`);
 
       // Draw whiskers

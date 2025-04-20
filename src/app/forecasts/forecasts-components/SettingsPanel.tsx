@@ -125,9 +125,10 @@ const SettingsPanel: React.FC = () => {
   };
 
   return (
-    <div className='bg-mobs-lab-color-filterspane text-white fill-white flex flex-col h-full w-full rounded-md overflow-hidden util-responsive-text-settings'>
-      <div className='flex flex-col overflow-y-auto p-4 justify-stretch items-start w-full util-no-sb-length'>
-        <div className='mb-6 w-full h-full justify-stretch items-stretch'>
+    <div className='bg-mobs-lab-color-filterspane text-white fill-white flex flex-col h-full rounded-md overflow-hidden util-responsive-text-settings'>
+      <div className='flex-grow nowrap overflow-y-auto p-4 util-no-sb-length'>
+
+        <div className='mb-6 w-full justify-stretch items-stretch'>
           <Typography variant='h6' className='text-white'>
             Select Location
           </Typography>
@@ -149,16 +150,15 @@ const SettingsPanel: React.FC = () => {
           </select>
         </div>
 
-        {/*NOTE: Revisit for potential improvement*/}
-        <div className='mb-2 w-full h-full overflow-ellipsis'>
-          <Typography variant='h6' className='text-white'>
-            Model
+        <div className='mb-2 w-full overflow-ellipsis'>
+          <Typography variant='h6' className='text-white mb-1'>
+            Models
           </Typography>
-          <div className='flex flex-col text-wrap'>
+          <div className='space-y-2 h-full overflow-y-auto pr-1'>
             {modelNames.map((model) => (
-              <label key={model} className='inline-flex items-center text-white'>
+              <label key={model} className='inline-flex items-center text-white hover:bg-gray-700 rounded cursor-pointer w-full'>
                 <span
-                  className='w-[1em] h-[1em] border-2 rounded-sm mr-2 '
+                  className='w-[1em] h-[1em] border-2 rounded-sm mr-2'
                   style={{
                     backgroundColor: forecastModel.includes(model) ? modelColorMap[model] : "transparent",
                     borderColor: modelColorMap[model],
@@ -170,17 +170,17 @@ const SettingsPanel: React.FC = () => {
                   checked={forecastModel.includes(model)}
                   onChange={(e) => onModelSelectionChange(model, e.target.checked)}
                 />
-                <span className='ml-2 text-wrap xs:text-sm '>{model}</span>
+                <span className='ml-2 xs:text-sm '>{model}</span>
               </label>
             ))}
           </div>
-          <button className='mt-2 bg-[#5d636a] text-white rounded text-sm w-full' onClick={handleShowAllModels}>
+          <button className='w-full mt-2 bg-[#5d636a] hover:bg-blue-600 text-white py-1 px-2 rounded text-sm' onClick={handleShowAllModels}>
             Show All Models
           </button>
         </div>
 
         {/* Season Selector */}
-        <div className='mb-4 w-full h-full justify-stretch items-stretch py-4'>
+        <div className='mb-4 w-full justify-stretch items-stretch py-4'>
           <div className='mb-2 w-full'>
             <Typography variant='h6' className='text-white'>
               Season
@@ -230,7 +230,7 @@ const SettingsPanel: React.FC = () => {
           </button>
         </div>
 
-        <div className='mb-4 w-full h-full'>
+        <div className='mb-4 w-full'>
           <Typography variant='h6' className='text-white'>
             Horizon
           </Typography>
@@ -248,7 +248,7 @@ const SettingsPanel: React.FC = () => {
           ))}
         </div>
 
-        <div className='mb-4 w-full h-full'>
+        <div className='mb-4 w-full'>
           <Typography variant='h6' className='text-white'>
             Y-Axis Scale
           </Typography>
@@ -266,7 +266,7 @@ const SettingsPanel: React.FC = () => {
           ))}
         </div>
 
-        <div className='mb-2 flex-col justify-stretch items-stretch flex-wrap w-full h-full'>
+        <div className='mb-2 flex-col justify-stretch items-stretch flex-wrap w-full'>
           <Typography variant='h6' className='text-white'>
             Confidence Interval
           </Typography>
