@@ -1,7 +1,7 @@
 import React from "react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { updateUserSelectedRiskLevelModel } from "@/store/forecast-settings-slice";
-import InfoButton from "./InfoButton";
+import InfoButton from "../../components/InfoButton";
 
 const NowcastHeader: React.FC = () => {
   const dispatch = useAppDispatch();

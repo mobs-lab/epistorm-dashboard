@@ -1,4 +1,4 @@
-import InfoButton from "./InfoButton";
+import InfoButton from "../../components/InfoButton";
 import React from "react";
 import { Switch } from "@/styles/material-tailwind-wrapper";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
