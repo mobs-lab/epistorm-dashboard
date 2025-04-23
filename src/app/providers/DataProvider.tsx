@@ -72,9 +72,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   });
   const [dataFetchStarted, setDataFetchStarted] = useState(false);
 
-  // Move all your existing data-slices fetching functions here
-  // (addBackEmptyDatesWithPrediction, generateSeasonOptions, etc.)
-
   const safeCSVFetch = async (url: string) => {
     try {
       return await d3.csv(url);
@@ -89,6 +86,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     predictionsData: ModelPrediction[],
     locationData: LocationData[]
   ): ProcessedDataWithDateRange => {
+
     let earliestDate = new Date(8640000000000000);
     let latestDate = new Date(0);
 
@@ -198,7 +196,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     try {
       {
-        // Fetch location data-slices first as it's needed for processing ground truth data-slices
+        // Fetch location data first as it's needed for processing ground truth data-slices
         const locationData = await d3.csv("/data/locations.csv");
         const parsedLocationData = locationData.map((d) => ({
           stateNum: d.location,
@@ -218,8 +216,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           admissions: +d.value,
           weeklyRate: +d["weekly_rate"],
         }));
-
-        // console.debug("DataProvider: latestValidSurveillanceDate: ", latestValidSurveillanceDate);
 
         /*  Keep track of latest valid prediction data-slices point's date info
             NOTE: extract from all avaialble models because that is the initialized default 
@@ -301,12 +297,12 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           })
         );
 
-        const mostRecentDate = isAfter(latestValidPredictionDate, latestValidSurveillanceDate)
+        const mostRecentDateWithValidPrediction = isAfter(latestValidPredictionDate, latestValidSurveillanceDate)
           ? latestValidPredictionDate
           : latestValidSurveillanceDate;
 
         // Update user selected week to the most recent valid date
-        dispatch(updateUserSelectedWeek(mostRecentDate));
+        dispatch(updateUserSelectedWeek(mostRecentDateWithValidPrediction));
 
         const processedData = addBackEmptyDatesWithPrediction(parsedGroundTruthData, predictionsData, parsedLocationData);
 
@@ -335,7 +331,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         updateLoadingState("seasonOptions", false);
 
         // Fetch other data-slices in parallel
-        await Promise.all([fetchNowcastTrendsData(), fetchThresholdsData(), fetchHistoricalGroundTruthData(), fetchEvaluationsScoreData()]);
+        await Promise.all([fetchEvaluationsScoreData(), fetchNowcastTrendsData(), fetchThresholdsData(), fetchHistoricalGroundTruthData()]);
       }
     } catch (error) {
       console.error("Error in fetchAndProcessData:", error);
@@ -475,7 +471,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         wisRatioByModel.get(key)?.push(scoreData);
       });
 
-      // Process MAPE data-slices - Note the capital L in Location
+      // Process MAPE data-slices
       const mapeByModel = new Map<
         string,
         {
@@ -540,9 +536,10 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           coverage98: +entry["98_cov"] * 100,
         };
 
-        // Create simplified score data entry, for compatibility with WIS and MAPE
+        // Create simplified score data entry, for State-specific Model performance map
         const scoreData = {
           referenceDate: parseISO(entry.reference_date),
+          /* TODO: 95 column? Confirmation needed */
           score: +entry["95_cov"] * 100,
           location: entry.location,
           horizon: +entry.horizon,
@@ -591,8 +588,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           scoreData: scoreData.sort((a, b) => a.referenceDate.getTime() - b.referenceDate.getTime()),
         });
       });
-
-      //TODO: Store detailed coverage data in a separate store action when implementing PI chart
 
       dispatch(setEvaluationsSingleModelScoreData(evaluationsData));
       updateLoadingState("evaluationScores", false);

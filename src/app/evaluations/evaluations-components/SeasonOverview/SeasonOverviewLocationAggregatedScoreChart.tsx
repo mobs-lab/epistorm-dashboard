@@ -131,8 +131,6 @@ const SeasonOverviewLocationAggregatedScoreChart: React.FC<SeasonOverviewLocatio
     selectedAggregationPeriod,
     aggregationPeriods,
     evaluationSeasonOverviewSelectedModels,
-    wisChartScaleType,
-    mapeChartScaleType,
     type,
   ]);
 

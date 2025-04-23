@@ -1,7 +1,7 @@
 // src/app/components/forecasts-components/ForecastChart.tsx
 "use client";
 
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef } from "react";
 import * as d3 from "d3";
 import {
   Axis,
@@ -23,7 +23,6 @@ import {
 import { useResponsiveSVG } from "@/interfaces/responsiveSVG";
 import {
   useChartMargins,
-  calculateLabelSpace,
 } from "@/interfaces/chart-margin-utils";
 import { modelColorMap } from "@/interfaces/epistorm-constants";
 
@@ -1307,7 +1306,7 @@ const ForecastChart: React.FC = () => {
       .style("text-anchor", "middle")
       .attr("dy", "1em")
       .style("font-size", "13px")
-      .call(wrap, 32); // 32 is the minimum width to accommodate year number at 1080p 100% zoom view environment, adjust as needed
+      .call(wrap, 32); // 32 is the minimum width to accommodate year number at 1080p 100% zoom view environment
 
     // Add year labels if the date range is more than a year
     const timeDiff = dateEnd.getTime() - dateStart.getTime();

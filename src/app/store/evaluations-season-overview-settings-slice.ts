@@ -205,7 +205,6 @@ export const {
   setUseLogColorScale,
   toggleModelSelection,
   selectAllModels,
-
   setWisChartScaleType,
   setMapeChartScaleType,
 } = evaluationsSeasonOverviewSettingsSlice.actions;
