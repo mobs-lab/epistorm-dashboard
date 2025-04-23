@@ -120,9 +120,6 @@ const SeasonOverviewUSStateMap: React.FC = () => {
 
   // Render map when dimensions or data change
   useEffect(() => {
-    /* if (!isResizing && dimensions.width > 0 && dimensions.height > 0 && mapData && svgRef.current) {
-      renderMap();
-    } */
     // Debounce or delay rendering slightly after resize finishes
     let timeoutId: NodeJS.Timeout | null = null;
     if (!isResizing && dimensions.width > 0 && dimensions.height > 0 && mapData && svgRef.current) {

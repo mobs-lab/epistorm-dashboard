@@ -2,13 +2,9 @@
 
 # Link to Deployed Site:
 
-### Deployment on Netlify:
-
-[Epistorm Dashboard On Netlify](https://fluforecast.netlify.app/)
-
 ### Deployment on Google Cloud Platform (GCP): 
 
-[Epistorm Dashboard on GCP](https://epistorm-dashboard.uk.r.appspot.com/)
+[Epistorm Dashboard](https://epistorm-dashboard.uk.r.appspot.com/)
 
 ## Requirements:
 

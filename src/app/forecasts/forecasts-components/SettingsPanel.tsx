@@ -268,7 +268,7 @@ const SettingsPanel: React.FC = () => {
 
         <div className='mb-2 flex-col justify-stretch items-stretch flex-wrap w-full'>
           <Typography variant='h6' className='text-white'>
-            Confidence Interval
+            Prediction Interval
           </Typography>
           <div className='flex flex-row flex-wrap justify-between items-center'>
             {["50%", "90%", "95%"].map((interval) => (

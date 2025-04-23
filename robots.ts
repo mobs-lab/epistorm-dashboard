@@ -24,7 +24,6 @@ export default function robots(): MetadataRoute.Robots {
                 '/private/',
                 '/admin/',
             ]
-        },
-        // sitemap: 'https://epistorm-dashboard.uc.r.appspot.com/sitemap.xml' // Adjust based on your production URL
+        }
     }
 }

@@ -131,8 +131,6 @@ const SeasonOverviewLocationAggregatedScoreChart: React.FC<SeasonOverviewLocatio
     selectedAggregationPeriod,
     aggregationPeriods,
     evaluationSeasonOverviewSelectedModels,
-    wisChartScaleType,
-    mapeChartScaleType,
     type,
   ]);
 
@@ -140,7 +138,7 @@ const SeasonOverviewLocationAggregatedScoreChart: React.FC<SeasonOverviewLocatio
     if (!isResizing && dimensions.width > 0 && dimensions.height > 0 && chartRef.current) {
       renderChart();
     }
-  }, [dimensions, isResizing, processedData]);
+  }, [dimensions, isResizing, processedData, wisChartScaleType, mapeChartScaleType]);
 
   // Create tooltip element with initial hidden state
   const createTooltip = (svg: d3.Selection<SVGSVGElement, unknown, null, undefined>) => {
