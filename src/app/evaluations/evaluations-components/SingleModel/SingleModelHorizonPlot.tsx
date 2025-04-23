@@ -579,11 +579,11 @@ const SingleModelHorizonPlot: React.FC = () => {
           if (d.median !== undefined) {
             items.push([`Median: ${d.median.toFixed(1)}`, false]);
             items.push([
-              `90% CI: [${d.quantile05.toFixed(1)}, ${d.quantile95.toFixed(1)}]`,
+              `90% PI: [${d.quantile05.toFixed(1)}, ${d.quantile95.toFixed(1)}]`,
               false,
             ]);
             items.push([
-              `50% CI: [${d.quantile25.toFixed(1)}, ${d.quantile75.toFixed(1)}]`,
+              `50% PI: [${d.quantile25.toFixed(1)}, ${d.quantile75.toFixed(1)}]`,
               false,
             ]);
           } else {
