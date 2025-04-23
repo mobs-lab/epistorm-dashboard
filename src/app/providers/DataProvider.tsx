@@ -81,7 +81,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const addBackEmptyDatesWithPrediction = (
+  /* const addBackEmptyDatesWithPrediction = (
     groundTruthData: DataPoint[],
     predictionsData: ModelPrediction[],
     locationData: LocationData[]
@@ -135,7 +135,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       earliestDate,
       latestDate,
     };
-  };
+  }; */
 
   const generateSeasonOptions = (processedData: ProcessedDataWithDateRange): SeasonOption[] => {
     const options: SeasonOption[] = [];
@@ -193,146 +193,216 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const fetchAndProcessData = async () => {
     if (dataFetchStarted) return;
     setDataFetchStarted(true);
-
+  
     try {
-      {
-        // Fetch location data first as it's needed for processing ground truth data-slices
-        const locationData = await d3.csv("/data/locations.csv");
-        const parsedLocationData = locationData.map((d) => ({
-          stateNum: d.location,
-          state: d.abbreviation,
-          stateName: d.location_name,
-          population: +d.population,
-        }));
-        dispatch(setLocationData(parsedLocationData));
-        updateLoadingState("locations", false);
-
-        // Fetch ground truth and predictions data-slices
-        const groundTruthData = await d3.csv("/data/ground-truth/target-hospital-admissions.csv");
-        const parsedGroundTruthData: DataPoint[] = groundTruthData.map((d) => ({
-          date: parseISO(d.date),
+      // Fetch location data first
+      const locationData = await d3.csv("/data/locations.csv");
+      const parsedLocationData = locationData.map((d) => ({
+        stateNum: d.location,
+        state: d.abbreviation,
+        stateName: d.location_name,
+        population: +d.population,
+      }));
+      dispatch(setLocationData(parsedLocationData));
+      updateLoadingState("locations", false);
+  
+      // Fetch ground truth data
+      const groundTruthData = await d3.csv("/data/ground-truth/target-hospital-admissions.csv");
+      
+      // Process ground truth data in a single pass, creating a Map for faster lookups
+      const parsedGroundTruthData: DataPoint[] = [];
+      const groundTruthDateMap = new Map<string, DataPoint>();
+      let gtEarliestDate = new Date(8640000000000000);
+      let gtLatestDate = new Date(0);
+      
+      groundTruthData.forEach((d) => {
+        const date = parseISO(d.date);
+        
+        // Update min/max dates in a single pass
+        if (date < gtEarliestDate) gtEarliestDate = date;
+        if (date > gtLatestDate) gtLatestDate = date;
+        
+        // Create data point
+        const dataPoint: DataPoint = {
+          date,
           stateNum: d.location,
           stateName: d.location_name,
           admissions: +d.value,
           weeklyRate: +d["weekly_rate"],
-        }));
-
-        /*  Keep track of latest valid prediction data-slices point's date info
-            NOTE: extract from all avaialble models because that is the initialized default 
-            (See `src/app/store/forecast-settings-slice.ts`)
-        */
-        const predictionsData = await Promise.all(
-          modelNames.map(async (team_model) => {
-            const newPredictions = await safeCSVFetch(`/data/processed/${team_model}/predictions.csv`);
-            const oldPredictions = await safeCSVFetch(`/data/processed/${team_model}/predictions_older.csv`);
-
-            if (!newPredictions && !oldPredictions) {
-              console.warn(`No prediction data found for model: ${team_model}`);
-              return { modelName: team_model, predictionData: [] };
-            }
-
-            const predictionData: PredictionDataPoint[] = [...(newPredictions || []), ...(oldPredictions || [])].map((d) => ({
-              referenceDate: parseISO(d.reference_date),
-              targetEndDate: parseISO(d.target_end_date),
-              stateNum: d.location,
-              confidence025: +d["0.025"],
-              confidence050: +d["0.05"],
-              confidence250: +d["0.25"],
-              confidence500: +d["0.5"],
-              confidence750: +d["0.75"],
-              confidence950: +d["0.95"],
-              confidence975: +d["0.975"],
-              confidence_low: +d["0.5"],
-              confidence_high: +d["0.5"],
-            }));
-
-            return { modelName: team_model, predictionData: predictionData };
-          })
-        );
-
-        // Find latest valid surveillance date
-        const latestValidSurveillanceDate = parsedGroundTruthData.reduce(
-          (latest, current) => (isAfter(current.date, latest.date) ? current : latest),
-          { date: new Date(0) } as DataPoint
-        ).date;
-
-        // Find latest reference date across all models
-        const latestValidPredictionDate = predictionsData.reduce((latestDate, model) => {
-          if (!model.predictionData.length) return latestDate;
-          const modelLatestRef = model.predictionData.reduce(
-            (latest, pred) => (isAfter(pred.referenceDate, latest) ? pred.referenceDate : latest),
-            new Date(0)
-          );
-          return isAfter(modelLatestRef, latestDate) ? modelLatestRef : latestDate;
-        }, new Date(0));
-
-        // Use the later date between prediction and surveillance
-        const latestValidReferenceDate = isBefore(latestValidPredictionDate, latestValidSurveillanceDate)
-          ? latestValidPredictionDate
-          : latestValidSurveillanceDate;
-
-        // Calculate dynamic periods
-        // See the calculation documentation for why its 1,3,7
-        const dynamicPeriods = {
-          last2Weeks: {
-            startDate: subWeeks(latestValidReferenceDate, 1),
-            endDate: latestValidReferenceDate,
-          },
-          last4Weeks: {
-            startDate: subWeeks(latestValidReferenceDate, 3),
-            endDate: latestValidReferenceDate,
-          },
-          last8Weeks: {
-            startDate: subWeeks(latestValidReferenceDate, 7),
-            endDate: latestValidReferenceDate,
-          },
         };
-        console.debug("Data Provider: generated dynamic season overview periods:", dynamicPeriods);
-
-        // Initialize dynamic date ranges for Season Overview
-        dispatch(
-          updateDynamicPeriods({
-            latestReferenceDate: latestValidReferenceDate,
-            dynamicPeriods,
-          })
-        );
-
-        const mostRecentDateWithValidPrediction = isAfter(latestValidPredictionDate, latestValidSurveillanceDate)
-          ? latestValidPredictionDate
-          : latestValidSurveillanceDate;
-
-        // Update user selected week to the most recent valid date
-        dispatch(updateUserSelectedWeek(mostRecentDateWithValidPrediction));
-
-        const processedData = addBackEmptyDatesWithPrediction(parsedGroundTruthData, predictionsData, parsedLocationData);
-
-        dispatch(setGroundTruthData(processedData.data));
-        updateLoadingState("groundTruth", false);
-
-        dispatch(setPredictionsData(predictionsData));
-        updateLoadingState("predictions", false);
-
-        const seasonOptions = generateSeasonOptions(processedData);
-        dispatch(setSeasonOptions(seasonOptions));
-        dispatch(updateEvaluationSingleModelViewSeasonOptions(seasonOptions));
-        if (seasonOptions.length > 0) {
-          const lastSeason = seasonOptions[seasonOptions.length - 1];
-
-          /* For Forecast Page components */
-          dispatch(updateDateRange(lastSeason.timeValue));
-          dispatch(updateDateStart(lastSeason.startDate));
-          dispatch(updateDateEnd(lastSeason.endDate));
-
-          /* For Evaluations Single Model View components */
-          dispatch(updateEvaluationsSingleModelViewDateRange(lastSeason.timeValue));
-          dispatch(updateEvaluationSingleModelViewDateStart(lastSeason.startDate));
-          dispatch(updateEvaluationSingleModelViewDateEnd(lastSeason.endDate));
+        
+        parsedGroundTruthData.push(dataPoint);
+        groundTruthDateMap.set(format(date, "yyyy-MM-dd"), dataPoint);
+      });
+      
+      // Find latest valid surveillance date - in single operation
+      const latestValidSurveillanceDate = parsedGroundTruthData.reduce(
+        (latest, current) => (isAfter(current.date, latest.date) ? current : latest),
+        { date: new Date(0) } as DataPoint
+      ).date;
+  
+      // Fetch prediction data for all models
+      const predictionsData = await Promise.all(
+        modelNames.map(async (team_model) => {
+          const newPredictions = await safeCSVFetch(`/data/processed/${team_model}/predictions.csv`);
+          const oldPredictions = await safeCSVFetch(`/data/processed/${team_model}/predictions_older.csv`);
+  
+          if (!newPredictions && !oldPredictions) {
+            console.warn(`No prediction data found for model: ${team_model}`);
+            return { modelName: team_model, predictionData: [] };
+          }
+  
+          const predictionData: PredictionDataPoint[] = [...(newPredictions || []), ...(oldPredictions || [])].map((d) => ({
+            referenceDate: parseISO(d.reference_date),
+            targetEndDate: parseISO(d.target_end_date),
+            stateNum: d.location,
+            confidence025: +d["0.025"],
+            confidence050: +d["0.05"],
+            confidence250: +d["0.25"],
+            confidence500: +d["0.5"],
+            confidence750: +d["0.75"],
+            confidence950: +d["0.95"],
+            confidence975: +d["0.975"],
+            confidence_low: +d["0.5"],
+            confidence_high: +d["0.5"],
+          }));
+  
+          return { modelName: team_model, predictionData: predictionData };
+        })
+      );
+      
+      // Process prediction data in a single pass
+      let predEarliestDate = new Date(8640000000000000);
+      let predLatestDate = new Date(0);
+      let latestValidPredictionDate = new Date(0);
+      
+      for (const model of predictionsData) {
+        if (!model.predictionData.length) continue;
+        
+        for (const pred of model.predictionData) {
+          // Update min/max dates in a single pass
+          if (pred.referenceDate < predEarliestDate) predEarliestDate = pred.referenceDate;
+          if (pred.targetEndDate > predLatestDate) predLatestDate = pred.targetEndDate;
+          
+          // Track latest prediction reference date
+          if (isAfter(pred.referenceDate, latestValidPredictionDate)) {
+            latestValidPredictionDate = pred.referenceDate;
+          }
         }
-        updateLoadingState("seasonOptions", false);
-
-        // Fetch other data-slices in parallel
-        await Promise.all([fetchEvaluationsScoreData(), fetchNowcastTrendsData(), fetchThresholdsData(), fetchHistoricalGroundTruthData()]);
       }
+      
+      // Determine overall date range - only once
+      const earliestDate = 
+        predEarliestDate.getTime() < gtEarliestDate.getTime() ? predEarliestDate : gtEarliestDate;
+      const latestDate = 
+        predLatestDate.getTime() > gtLatestDate.getTime() ? predLatestDate : gtLatestDate;
+      
+      // Generate all Saturdays in the date range
+      const allSaturdays = eachWeekOfInterval(
+        {
+          start: startOfWeek(earliestDate, { weekStartsOn: 6 }),
+          end: endOfWeek(latestDate, { weekStartsOn: 6 }),
+        },
+        { weekStartsOn: 6 }
+      );
+      
+      // Generate placeholder data efficiently using Map lookups
+      const placeholderData: DataPoint[] = [];
+      
+      allSaturdays.forEach((date) => {
+        const dateString = format(date, "yyyy-MM-dd");
+        if (!groundTruthDateMap.has(dateString)) {
+          parsedLocationData.forEach((location) => {
+            placeholderData.push({
+              date,
+              stateNum: location.stateNum,
+              stateName: location.stateName,
+              admissions: -1,
+              weeklyRate: 0,
+            });
+          });
+        }
+      });
+      
+      // Combine ground truth and placeholder data
+      const combinedGroundTruthData = [...parsedGroundTruthData, ...placeholderData].sort(
+        (a, b) => a.date.getTime() - b.date.getTime()
+      );
+      
+      // Use the later date between prediction and surveillance
+      const latestValidReferenceDate = isBefore(latestValidPredictionDate, latestValidSurveillanceDate)
+        ? latestValidPredictionDate
+        : latestValidSurveillanceDate;
+      
+      // Calculate dynamic periods once
+      const dynamicPeriods = {
+        last2Weeks: {
+          startDate: subWeeks(latestValidReferenceDate, 1),
+          endDate: latestValidReferenceDate,
+        },
+        last4Weeks: {
+          startDate: subWeeks(latestValidReferenceDate, 3),
+          endDate: latestValidReferenceDate,
+        },
+        last8Weeks: {
+          startDate: subWeeks(latestValidReferenceDate, 7),
+          endDate: latestValidReferenceDate,
+        },
+      };
+      
+      console.debug("Data Provider: generated dynamic season overview periods:", dynamicPeriods);
+      
+      // Initialize dynamic date ranges for Season Overview
+      dispatch(
+        updateDynamicPeriods({
+          dynamicPeriods,
+        })
+      );
+      
+      const mostRecentDate = isAfter(latestValidPredictionDate, latestValidSurveillanceDate)
+        ? latestValidPredictionDate
+        : latestValidSurveillanceDate;
+      
+      // Update user selected week to the most recent valid date
+      dispatch(updateUserSelectedWeek(mostRecentDate));
+      
+      // Create processed data object for season options generation
+      const processedData: ProcessedDataWithDateRange = {
+        data: combinedGroundTruthData,
+        earliestDate,
+        latestDate,
+      };
+      
+      dispatch(setGroundTruthData(processedData.data));
+      updateLoadingState("groundTruth", false);
+      
+      dispatch(setPredictionsData(predictionsData));
+      updateLoadingState("predictions", false);
+      
+      // Generate season options using the pre-processed data
+      const seasonOptions = generateSeasonOptions(processedData);
+      dispatch(setSeasonOptions(seasonOptions));
+      dispatch(updateEvaluationSingleModelViewSeasonOptions(seasonOptions));
+      
+      if (seasonOptions.length > 0) {
+        const lastSeason = seasonOptions[seasonOptions.length - 1];
+        
+        // For Forecast Page components
+        dispatch(updateDateRange(lastSeason.timeValue));
+        dispatch(updateDateStart(lastSeason.startDate));
+        dispatch(updateDateEnd(lastSeason.endDate));
+        
+        // For Evaluations Single Model View components
+        dispatch(updateEvaluationsSingleModelViewDateRange(lastSeason.timeValue));
+        dispatch(updateEvaluationSingleModelViewDateStart(lastSeason.startDate));
+        dispatch(updateEvaluationSingleModelViewDateEnd(lastSeason.endDate));
+      }
+      
+      updateLoadingState("seasonOptions", false);
+      
+      // Fetch other data in parallel
+      await Promise.all([fetchNowcastTrendsData(), fetchThresholdsData(), fetchHistoricalGroundTruthData(), fetchEvaluationsScoreData()]);
+      
     } catch (error) {
       console.error("Error in fetchAndProcessData:", error);
       // Update loading states to false for error cases
