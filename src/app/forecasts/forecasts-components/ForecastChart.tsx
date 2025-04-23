@@ -998,19 +998,19 @@ const ForecastChart: React.FC = () => {
       const ciOptions = [];
       if (confidenceInterval.includes("50"))
         ciOptions.push({
-          label: "50% CI",
+          label: "50% PI",
           low: "confidence250",
           high: "confidence750",
         });
       if (confidenceInterval.includes("90"))
         ciOptions.push({
-          label: "90% CI",
+          label: "90% PI",
           low: "confidence050",
           high: "confidence950",
         });
       if (confidenceInterval.includes("95"))
         ciOptions.push({
-          label: "95% CI",
+          label: "95% PI",
           low: "confidence025",
           high: "confidence975",
         });
@@ -1138,6 +1138,7 @@ const ForecastChart: React.FC = () => {
         }
       );
     }
+    contentWidth = Math.max(contentWidth )
 
     // Calculate final tooltip dimensions
     const maxWidth = contentWidth + layout.padding * 2;
