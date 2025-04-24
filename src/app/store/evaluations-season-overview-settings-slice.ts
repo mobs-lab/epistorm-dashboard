@@ -18,11 +18,6 @@ interface EvaluationsSeasonOverviewSettingsState {
   aggregationPeriods: AggregationPeriod[];
   selectedAggregationPeriod: string;
 
-  // store the reference date for SO Settings Panel
-  // Note: Everytime the score option refreshes, this is obtained through comparing two things:
-  // latest ref date from surveillance vs latest ref date from prediction
-  // See below for implementation
-  latestReferenceDate: Date | null;
 
   /* Map selection panel related */
   mapSelectedModel: string;
@@ -35,7 +30,6 @@ interface EvaluationsSeasonOverviewSettingsState {
 }
 
 interface UpdateDynamicPeriodsPayload {
-  latestReferenceDate: Date;
   dynamicPeriods: {
     last2Weeks: { startDate: Date; endDate: Date };
     last4Weeks: { startDate: Date; endDate: Date };
@@ -109,8 +103,7 @@ const initialState: EvaluationsSeasonOverviewSettingsState = {
 
   selectedAggregationPeriod: "last-2-weeks",
   aggregationPeriods: predefinedAggregationPeriods,
-  latestReferenceDate: null,
-
+  
   mapSelectedModel: modelNames[0], // Set default to first model
   mapSelectedScoringOption: "WIS/Baseline", // Default scoring option
   useLogColorScale: false,
@@ -133,9 +126,7 @@ const evaluationsSeasonOverviewSettingsSlice = createSlice({
       state.selectedAggregationPeriod = action.payload;
     },
     updateDynamicPeriods: (state, action: PayloadAction<UpdateDynamicPeriodsPayload>) => {
-      const { latestReferenceDate, dynamicPeriods } = action.payload;
-
-      state.latestReferenceDate = latestReferenceDate;
+      const { dynamicPeriods } = action.payload;
 
       // Simply update the aggregation periods with precalculated values
       state.aggregationPeriods = state.aggregationPeriods.map((period) => {
@@ -205,7 +196,6 @@ export const {
   setUseLogColorScale,
   toggleModelSelection,
   selectAllModels,
-
   setWisChartScaleType,
   setMapeChartScaleType,
 } = evaluationsSeasonOverviewSettingsSlice.actions;
