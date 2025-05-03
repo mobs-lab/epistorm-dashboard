@@ -2,6 +2,7 @@ import React from "react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { updateUserSelectedRiskLevelModel } from "@/store/forecast-settings-slice";
 import InfoButton from "../../components/InfoButton";
+import { activityLevelsInfo } from "@/interfaces/infobutton-content";
 
 const NowcastHeader: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -17,14 +18,6 @@ const NowcastHeader: React.FC = () => {
         .join(" ")
     : "United States";
 
-  const mapInfo = (
-    <div>
-      <p>The map shows the selected state or the entire US. Their color is mapped to their respective risk level.</p>
-      <p>The map updates based on your state selection in the filters pane.</p>
-      <p>The thermometer on the right shows the current risk level trend, as well as surveillance risk level trend.</p>
-      <p>Hover your mouse over the thermometer to see more detail.</p>
-    </div>
-  );
 
   const handleModelChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     dispatch(updateUserSelectedRiskLevelModel(event.target.value));
@@ -42,7 +35,7 @@ const NowcastHeader: React.FC = () => {
       <div className='flex flex-row justify-between items-center'>
         <div className='flex'>
           <h2 className='util-responsive-text font-bold mr-2'>Hospitalization Activity Forecast</h2>
-          <InfoButton title='State Map Information' content={mapInfo} />
+          <InfoButton title='State Map Information' content={activityLevelsInfo} />
         </div>
         <div className='flex items-center justify-between'>
           <div>

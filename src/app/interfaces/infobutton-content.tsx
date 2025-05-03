@@ -31,8 +31,8 @@ export const trendForecastInfo = (
     <p>
       Rate-trend forecasts are submitted by each modeling team to FluSight as probabilities for each rate-trend category. These forecasts
       represent whether hospitalization rates (per 100k population) in a location are expected to increase, decrease, or remain stable based
-      upon a model&apos;s nowcast for the selected reference date, relative to the observed hospitalization rate from the preceding week. The
-      categories displayed[1] are defined such that:
+      upon a model&apos;s nowcast for the selected reference date, relative to the observed hospitalization rate from the preceding week.
+      The categories displayed[1] are defined such that:
     </p>
     <ul>
       <li>
@@ -65,29 +65,31 @@ export const trendForecastInfo = (
 export const weeklyHospitalAdmissionsInfo = (
   <div>
     <p>
-      Teams participating in the{" "}
-      <a href='https://github.com/cdcepi/FluSight-forecast-hub' target='_blank' rel='noopener noreferrer'>
-        FluSight Forecast Hub
-      </a>{" "}
+      Teams participating in the 
+      
+        <a href='https://github.com/cdcepi/FluSight-forecast-hub' target='_blank' rel='noopener noreferrer'>
+          FluSight Forecast Hub
+        </a>
       submit quantile nowcasts and forecasts of the weekly number of confirmed influenza hospital admissions for the current epidemiological
       week and the three following epiweeks.
     </p>
     <p>
-      The white dotted line represents weekly flu hospitalization surveillance numbers as reported through{" "}
-      <a
-        href='https://data.cdc.gov/Public-Health-Surveillance/Weekly-Hospital-Respiratory-Data-HRD-Metrics-by-Ju/mpgq-jmmr/about_data'
-        target='_blank'
-        rel='noopener noreferrer'>
-        CDC's NHSN
-      </a>{" "}
+      The white dotted line represents weekly flu hospitalization surveillance numbers as reported through 
+      
+        <a
+          href='https://data.cdc.gov/Public-Health-Surveillance/Weekly-Hospital-Respiratory-Data-HRD-Metrics-by-Ju/mpgq-jmmr/about_data'
+          target='_blank'
+          rel='noopener noreferrer'>
+          CDC&apos;s NHSN
+        </a>
       (formerly known as HHS-Protect). Quantile forecasts represent a distribution of modeling outcomes over many simulations. Dotted lines
       for predictions show the median (0.5 quantile) of the distribution, while shaded areas represent prediction intervals (e.g. the 90%
       prediction interval corresponds to the area between the 0.05 quantile and the 0.95 quantile).
     </p>
     <p>
       Click on the chart to select a week and view forecasts submitted for that date. The dashboard will always show the most up-to-date
-      surveillance and predictions as revisions and new data are uploaded to the Forecast Hub. Toggle on "Show Data Available at Time of
-      Forecast" to view the version of surveillance data which was available when forecasts for the selected week were generated.
+      surveillance and predictions as revisions and new data are uploaded to the Forecast Hub. Toggle on &#34;Show Data Available at Time of
+      Forecast&quot; to view the version of surveillance data which was available when forecasts for the selected week were generated.
     </p>
   </div>
 );

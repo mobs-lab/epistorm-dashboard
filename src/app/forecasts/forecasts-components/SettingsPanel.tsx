@@ -19,6 +19,8 @@ import {
 import SettingsStateMap from "@/shared-components/SettingsStateMap";
 import SettingsStyledDatePicker from "./SettingsStyledDatePicker";
 import Image from "next/image";
+import InfoButton from "@/shared-components/InfoButton";
+import { horizonSelectorsInfo } from "@/interfaces/infobutton-content";
 
 const SettingsPanel: React.FC = () => {
   /* Redux-Managed State Variables */
@@ -127,7 +129,6 @@ const SettingsPanel: React.FC = () => {
   return (
     <div className='bg-mobs-lab-color-filterspane text-white fill-white flex flex-col h-full rounded-md overflow-hidden util-responsive-text-settings'>
       <div className='flex-grow nowrap overflow-y-auto p-4 util-no-sb-length'>
-
         <div className='mb-6 w-full justify-stretch items-stretch'>
           <Typography variant='h6' className='text-white'>
             Select Location
@@ -230,10 +231,15 @@ const SettingsPanel: React.FC = () => {
           </button>
         </div>
 
-        <div className='mb-4 w-full'>
-          <Typography variant='h6' className='text-white'>
-            Horizon
-          </Typography>
+        <div className='mb-4'>
+          <div className='flex flex-row flex-nowrap justify-start items-start align-middle'>
+            <Typography variant='h6' className='text-white flex-shrink'>
+              Horizon
+            </Typography>
+            <div className="flex-auto ml-1">
+            <InfoButton content={horizonSelectorsInfo} title={"Forecast Horizons"}></InfoButton></div>
+          </div>
+
           {[0, 1, 2, 3].map((value) => (
             <Radio
               key={value}
