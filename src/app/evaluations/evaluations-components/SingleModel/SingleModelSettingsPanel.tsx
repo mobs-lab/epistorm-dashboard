@@ -130,12 +130,12 @@ const SingleModelSettingsPanel: React.FC = () => {
         </div>
 
         <div className='mb-2 w-full'>
-        <div className='flex flex-row flex-nowrap justify-start items-start align-middle'>
+          <div className='flex flex-row flex-nowrap justify-start items-center gap-1'>
             <Typography variant='h6' className='text-white flex-shrink'>
               Horizon
             </Typography>
-            <div className="flex-auto ml-1">
-            <InfoButton content={horizonSelectorsInfo} title={"Forecast Horizons"}></InfoButton></div>
+
+            <InfoButton content={horizonSelectorsInfo} title={"Forecast Horizons"}></InfoButton>
           </div>
           {[0, 1, 2, 3].map((value) => (
             <Radio

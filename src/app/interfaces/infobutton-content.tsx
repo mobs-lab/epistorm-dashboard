@@ -36,23 +36,23 @@ export const trendForecastInfo = (
     </p>
     <ul>
       <li>
-        A <strong style={{ color: "#6b7280" }}>stable</strong> rate-trend indicates that either the magnitude of the predicted change in
+        A <strong style={{ color: "#b9d6d6" }}>stable</strong> rate-trend indicates that either the magnitude of the predicted change in
         hospitalization rate is less than 0.3/100k, or the magnitude of the predicted change in hospitalization cases is less than 10.
       </li>
       <li>
-        An <strong style={{ color: "#22c55e" }}>increasing</strong> rate-trend indicates a positive predicted change in hospitalization rate
+        An <strong style={{ color: "#eae78b" }}>increasing</strong> rate-trend indicates a positive predicted change in hospitalization rate
         which does not qualify as stable.
       </li>
       <li>
-        A <strong style={{ color: "#ef4444" }}>decreasing</strong> rate-trend indicates a negative predicted change in hospitalization rate
+        A <strong style={{ color: "#478791" }}>decreasing</strong> rate-trend indicates a negative predicted change in hospitalization rate
         which does not qualify as stable.
       </li>
     </ul>
     <p>
-      For example, a model may predict a probability of 0.5 that the forecasted week's hospitalization rate will remain{" "}
-      <strong style={{ color: "#6b7280" }}>stable</strong> relative to the previous week's observed hospitalization rate, a probability of
-      0.3 that it will <strong style={{ color: "#22c55e" }}>increase</strong>, and a probability of 0.2 that it will{" "}
-      <strong style={{ color: "#ef4444" }}>decrease</strong>.
+      For example, a model may predict a probability of 0.5 that the forecasted week's hospitalization rate will remain
+      <strong style={{ color: "#b9d6d6" }}>stable</strong> relative to the previous week's observed hospitalization rate, a probability of
+      0.3 that it will <strong style={{ color: "#eae78b" }}>increase</strong>, and a probability of 0.2 that it will
+      <strong style={{ color: "#478791" }}>decrease</strong>.
     </p>
     <p style={{ fontSize: "0.875rem", color: "#6b7280" }}>
       [1] Submissions to FluSight contain the categories 'large increase' and 'large decrease' in addition to 'increase', 'decrease', and
@@ -65,23 +65,21 @@ export const trendForecastInfo = (
 export const weeklyHospitalAdmissionsInfo = (
   <div>
     <p>
-      Teams participating in the 
-      
-        <a href='https://github.com/cdcepi/FluSight-forecast-hub' target='_blank' rel='noopener noreferrer'>
-          FluSight Forecast Hub
-        </a>
+      Teams participating in the
+      <a href='https://github.com/cdcepi/FluSight-forecast-hub' target='_blank' rel='noopener noreferrer'>
+        FluSight Forecast Hub
+      </a>
       submit quantile nowcasts and forecasts of the weekly number of confirmed influenza hospital admissions for the current epidemiological
       week and the three following epiweeks.
     </p>
     <p>
-      The white dotted line represents weekly flu hospitalization surveillance numbers as reported through 
-      
-        <a
-          href='https://data.cdc.gov/Public-Health-Surveillance/Weekly-Hospital-Respiratory-Data-HRD-Metrics-by-Ju/mpgq-jmmr/about_data'
-          target='_blank'
-          rel='noopener noreferrer'>
-          CDC&apos;s NHSN
-        </a>
+      The white dotted line represents weekly flu hospitalization surveillance numbers as reported through
+      <a
+        href='https://data.cdc.gov/Public-Health-Surveillance/Weekly-Hospital-Respiratory-Data-HRD-Metrics-by-Ju/mpgq-jmmr/about_data'
+        target='_blank'
+        rel='noopener noreferrer'>
+        CDC&apos;s NHSN
+      </a>
       (formerly known as HHS-Protect). Quantile forecasts represent a distribution of modeling outcomes over many simulations. Dotted lines
       for predictions show the median (0.5 quantile) of the distribution, while shaded areas represent prediction intervals (e.g. the 90%
       prediction interval corresponds to the area between the 0.05 quantile and the 0.95 quantile).
