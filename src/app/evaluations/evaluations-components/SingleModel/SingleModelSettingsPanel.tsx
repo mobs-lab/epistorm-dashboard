@@ -23,6 +23,8 @@ import {
 import { Radio, Typography } from "@/styles/material-tailwind-wrapper";
 
 import Image from "next/image";
+import { horizonSelectorsInfo } from "@/interfaces/infobutton-content";
+import InfoButton from "@/shared-components/InfoButton";
 
 const SingleModelSettingsPanel: React.FC = () => {
   /* Redux-Managed State Variables */
@@ -128,9 +130,13 @@ const SingleModelSettingsPanel: React.FC = () => {
         </div>
 
         <div className='mb-2 w-full'>
-          <Typography variant='h6' className='text-white'>
-            Horizon
-          </Typography>
+          <div className='flex flex-row flex-nowrap justify-start items-center gap-1'>
+            <Typography variant='h6' className='text-white flex-shrink'>
+              Horizon
+            </Typography>
+
+            <InfoButton content={horizonSelectorsInfo} title={"Forecast Horizons"}></InfoButton>
+          </div>
           {[0, 1, 2, 3].map((value) => (
             <Radio
               key={value}

@@ -2,6 +2,8 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import * as d3 from "d3";
 import { useAppSelector } from "@/store/hooks";
 import { isUTCDateEqual } from "@/interfaces/forecast-interfaces";
+import InfoButton from "@/shared-components/InfoButton";
+import { trendForecastInfo } from "@/interfaces/infobutton-content";
 
 interface RiskLevelGaugeProps {
   riskLevel: string;
@@ -25,11 +27,25 @@ const LegendBoxes: React.FC = () => {
     </div>
   );
 };
+
+// Prop interface for positioning info button
+interface InfoButtonPosition {
+  left: number;
+  top: number;
+  visible: boolean;
+}
+
 const NowcastGauge: React.FC<RiskLevelGaugeProps> = ({ riskLevel }) => {
   const svgRef = useRef<SVGSVGElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
   const [containerDimensions, setContainerDimensions] = useState({ width: 0, height: 0 });
+
+  const [infoButtonPosition, setInfoButtonPosition] = useState<InfoButtonPosition>({
+    left: 0,
+    top: 0,
+    visible: false,
+  });
 
   const nowcastTrendsCollection = useAppSelector((state) => state.nowcastTrends.allData);
   const { USStateNum, userSelectedRiskLevelModel, userSelectedWeek } = useAppSelector((state) => state.forecastSettings);
@@ -57,7 +73,7 @@ const NowcastGauge: React.FC<RiskLevelGaugeProps> = ({ riskLevel }) => {
     svg.selectAll("*").remove();
 
     const { width, height } = containerDimensions;
-    const margin = { top: 20, right: 20, bottom: 0, left: 20 };
+    const margin = { top: 20, right: 10, bottom: 5, left: 10 };
     const gaugeWidth = width - margin.left - margin.right;
     const gaugeHeight = height - margin.top - margin.bottom;
 
@@ -135,7 +151,29 @@ const NowcastGauge: React.FC<RiskLevelGaugeProps> = ({ riskLevel }) => {
       .attr("font-size", `${fontSize}px`)
       .attr("font-weight", "bold")
       .attr("fill", "white")
+      .attr("class", "trend-forecast-title")
       .text("Trend Forecast");
+
+    // Store position information for the info button
+    setTimeout(() => {
+      const titleElement = document.querySelector(".trend-forecast-title");
+
+      if (titleElement) {
+        const titleRect = titleElement.getBoundingClientRect();
+        const svgRect = svgRef.current?.getBoundingClientRect();
+
+        if (svgRect) {
+          const textMiddleY = titleRect.top + titleRect.height / 2;
+
+          // Calculate position relative to the SVG container
+          setInfoButtonPosition({
+            left: titleRect.right - svgRect.left + 5, // 5px to the right of text
+            top: textMiddleY - svgRect.top - 12, // Align with text vertically
+            visible: true,
+          });
+        }
+      }
+    }, 0);
 
     chartGroup
       .append("text")
@@ -198,16 +236,38 @@ const NowcastGauge: React.FC<RiskLevelGaugeProps> = ({ riskLevel }) => {
         }
       }
     }
-  }, [containerDimensions, riskLevel, nowcastTrendsCollection, userSelectedRiskLevelModel, USStateNum, userSelectedWeek]);
+  }, [containerDimensions, nowcastTrendsCollection, userSelectedRiskLevelModel, USStateNum, userSelectedWeek]);
 
   useEffect(() => {
     drawGauge();
+
+    // When dimensions change or component rerenders, recalculate the info button position
+    const handleResize = () => {
+      setInfoButtonPosition((prev) => ({ ...prev, visible: false }));
+      setTimeout(drawGauge, 0);
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
   }, [drawGauge]);
 
   return (
     <div ref={containerRef} className='flex flex-col h-full items-stretch justify-stretch py-2 relative'>
       <div className='flex-grow relative'>
         <svg ref={svgRef} className='w-full h-full' />
+
+        {infoButtonPosition.visible && (
+          <div
+            className='absolute'
+            style={{
+              left: `${infoButtonPosition.left}px`,
+              top: `${infoButtonPosition.top}px`,
+              zIndex: 5,
+            }}>
+            <InfoButton title='Trend Forecast Information' content={trendForecastInfo} displayStyle='icon' size='sm' />
+          </div>
+        )}
+
         <div
           ref={tooltipRef}
           className='absolute hidden bg-white text-black rounded shadow-md p-2 text-sm'

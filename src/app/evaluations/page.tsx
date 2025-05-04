@@ -23,6 +23,8 @@ import SingleModelSettingsPanel from "./evaluations-components/SingleModel/Singl
 import SingleModelHorizonPlot from "./evaluations-components/SingleModel/SingleModelHorizonPlot";
 import SingleModelScoreLineChart from "./evaluations-components/SingleModel/SingleModelScoreLineChart";
 import { setMapeChartScaleType, setWisChartScaleType } from "@/store/evaluations-season-overview-settings-slice";
+import InfoButton from "@/shared-components/InfoButton";
+import { seasonOverviewInfo, singleModelInfo } from "@/interfaces/infobutton-content";
 
 const SeasonOverviewContent: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -38,7 +40,10 @@ const SeasonOverviewContent: React.FC = () => {
   }
 
   return (
-    <div className='flex flex-col h-full px-4 py-2 gap-4 overflow-y-auto overflow-x-hidden util-no-sb-length'>
+    <div className='flex flex-col h-full gap-4 overflow-y-auto overflow-x-hidden util-no-sb-length'>
+      <div className='items-center self-end'>
+        <InfoButton content={seasonOverviewInfo} title='Season Overview' displayStyle='button'></InfoButton>
+      </div>
       {/* Top charts section - 3 charts in a row */}
       <div className='grid grid-cols-3 gap-4 min-h-[480px]'>
         <Card className='bg-mobs-lab-color text-white overflow-hidden'>
@@ -69,9 +74,10 @@ const SeasonOverviewContent: React.FC = () => {
           </div>
         </Card>
 
+        {/* TODO: Use updated InfoButton implementation in the form of a rectangle button here */}
         <Card className='bg-mobs-lab-color text-white overflow-hidden'>
-          <div className='p-1 border-b border-gray-700'>
-            <h3 className='text-lg font-medium'>PI</h3>
+          <div className='p-1 border-b border-gray-700 flex-row flex-nowrap align-end justify-center items-center'>
+            <h3 className='text-lg font-medium flex-shrink'>PI</h3>
           </div>
           <div className='w-full h-[92%]'>
             <SeasonOverviewPIChart />
@@ -94,21 +100,30 @@ const SeasonOverviewContent: React.FC = () => {
 
 const SingleModelContent = () => {
   const { loadingStates } = useDataContext();
-  const { evaluationsSingleModelViewSelectedStateName, evaluationSingleModelViewScoresOption } = useAppSelector((state) => state.evaluationsSingleModelSettings);
+  const { evaluationsSingleModelViewSelectedStateName, evaluationSingleModelViewScoresOption } = useAppSelector(
+    (state) => state.evaluationsSingleModelSettings
+  );
 
   if (!loadingStates.groundTruth || !loadingStates.predictions) {
     return (
       <div className='eval-single-model-chart-grid-container'>
-        {/* Dynamic Title that shows the name of the state selected */}
-        <h1 className='sm:text-sm md:text-base lg:text-2xl xl:text-3xl 2xl:text-4xl font-light util-text-limit max-h-8'>
-          {evaluationsSingleModelViewSelectedStateName}
-        </h1>
+        <div className='flex flex-row flex-nowrap align-middle justify-between'>
+          {/* Dynamic Title that shows the name of the state selected */}
+          <h1 className='sm:text-sm md:text-base lg:text-2xl xl:text-3xl 2xl:text-4xl font-light util-text-limit max-h-8'>
+            {evaluationsSingleModelViewSelectedStateName}
+          </h1>
+          <div className='items-center'>
+            <InfoButton content={singleModelInfo} title='Single Model Evaluations' displayStyle='button'></InfoButton>
+          </div>
+        </div>
         <div className='chart-container'>
           <div className='p-[0.05rem] border-b border-gray-700 flex justify-between items-center'>Hospitalization Forecasts by Horizon</div>
           <SingleModelHorizonPlot />
         </div>
         <div className='chart-container'>
-        <div className='p-[0.05rem] border-b border-gray-700 flex justify-between items-center'>{evaluationSingleModelViewScoresOption}</div>
+          <div className='p-[0.05rem] border-b border-gray-700 flex justify-between items-center'>
+            {evaluationSingleModelViewScoresOption}
+          </div>
           <SingleModelScoreLineChart />
         </div>
       </div>
@@ -157,8 +172,6 @@ const EvaluationsPage = () => {
       <div className='evaluations-content'>
         <div>
           <div className='flex bg-gray-800 border-b border-gray-700'>
-            {/* NOTE: Temporarily disabled Season Overview Page until production-ready */}
-            {/* Conditionally render the Season Overview tab based on feature flag */}
             {isSeasonOverviewEnabled ? (
               <button
                 onClick={() => setActiveTab("season-overview")}

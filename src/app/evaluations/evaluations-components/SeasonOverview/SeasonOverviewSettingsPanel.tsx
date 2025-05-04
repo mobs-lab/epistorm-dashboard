@@ -16,6 +16,8 @@ import { Radio, Typography, List, ListItem, ListItemPrefix } from "@/styles/mate
 import Image from "next/image";
 
 import { format, subDays } from "date-fns";
+import { horizonSelectorsInfo } from "@/interfaces/infobutton-content";
+import InfoButton from "@/shared-components/InfoButton";
 
 // Season Overview Settings Panel
 export const SeasonOverviewSettings = () => {
@@ -108,7 +110,6 @@ export const SeasonOverviewSettings = () => {
   return (
     <div className='bg-mobs-lab-color-filterspane text-white fill-white flex flex-col h-full rounded-md overflow-hidden util-responsive-text-settings'>
       <div className='flex-grow nowrap overflow-y-auto p-4 util-no-sb-length'>
-
         <div className='mb-4 w-full overflow-ellipsis'>
           <Typography variant='h6' className='text-white mb-2'>
             Models
@@ -141,9 +142,13 @@ export const SeasonOverviewSettings = () => {
         </div>
 
         <div className='mb-4 flex-col flex-nowrap'>
-          <Typography variant='h6' className='text-white mb-1'>
-            Horizon
-          </Typography>
+          <div className='flex flex-row flex-nowrap justify-start items-center gap-1'>
+            <Typography variant='h6' className='text-white flex-shrink'>
+              Horizon
+            </Typography>
+
+            <InfoButton content={horizonSelectorsInfo} title={"Forecast Horizons"}></InfoButton>
+          </div>
           <div className='flex flex-row justify-start items-center'>
             {[0, 1, 2, 3].map((hrzn) => (
               <label
