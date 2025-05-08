@@ -34,15 +34,6 @@ const MapSelectorPanel: React.FC<MapSelectorPanelProps> = ({ className }) => {
   return (
     <div className={`bg-gray-800 bg-opacity-80 text-white p-3 rounded-t-md ${className}`}>
       <div className='mb-4'>
-        <div className='mb-4'>
-          <div className='flex items-center'>
-            <input type='checkbox' id='log-scale-toggle' checked={useLogColorScale} onChange={handleLogScaleToggle} className='mr-2' />
-            <label htmlFor='log-scale-toggle' className='text-xs cursor-pointer'>
-              Log Color Scale
-            </label>
-          </div>
-        </div>
-
         <h3 className='text-sm font-semibold mb-2'>Scoring Metric</h3>
         <div className='space-y-1'>
           {scoringOptions.map((option) => (
@@ -54,13 +45,22 @@ const MapSelectorPanel: React.FC<MapSelectorPanelProps> = ({ className }) => {
                 value={option.id}
                 checked={mapSelectedScoringOption === option.id}
                 onChange={() => handleScoringOptionChange(option.id as "WIS/Baseline" | "MAPE" | "Coverage")}
-                className='mr-2'
+                className='ml-1 mr-2'
               />
               <label htmlFor={`scoring-${option.id}`} className='text-xs cursor-pointer'>
                 {option.label}
               </label>
             </div>
           ))}
+        </div>
+      </div>
+
+      <div className='mb-4'>
+        <div className='flex items-center'>
+          <input type='checkbox' id='log-scale-toggle' checked={useLogColorScale} onChange={handleLogScaleToggle} className='mr-2 ml-1' />
+          <label htmlFor='log-scale-toggle' className='text-xs cursor-pointer'>
+            Log Color Scale
+          </label>
         </div>
       </div>
 
