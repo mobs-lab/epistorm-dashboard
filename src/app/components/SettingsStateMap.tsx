@@ -5,6 +5,7 @@ import { zoom, zoomIdentity, ZoomBehavior } from "d3-zoom";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { updateSelectedState } from "@/store/forecast-settings-slice";
 import { updateEvaluationSingleModelViewSelectedState } from "@/store/evaluations-single-model-settings-slice";
+import { initial } from "lodash";
 
 interface SettingsStateMapProps {
   pageSelected: string;
@@ -19,7 +20,7 @@ const SettingsStateMap: React.FC<SettingsStateMapProps> = ({ pageSelected }) => 
 
   const zoomBehaviorRef = useRef<ZoomBehavior<SVGSVGElement, unknown> | null>(null);
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
-  const [initialTransform, setInitialTransform] = useState<d3.ZoomTransform | null>(null);
+  const initialTransformRef = useRef<d3.ZoomTransform | null>(null);
 
   const [isMapReady, setIsMapReady] = useState(false);
 
@@ -76,9 +77,47 @@ const SettingsStateMap: React.FC<SettingsStateMapProps> = ({ pageSelected }) => 
   }, []);
 
   // Wrapper to update respective page's state selection via the map
-  function updateRespectivePageState(arg0: { stateName: any; stateNum: any }): any {
+  const updateRespectivePageState = useCallback((arg0: { stateName: any; stateNum: any }) => {
     pageSelected === "forecast" ? dispatch(updateSelectedState(arg0)) : dispatch(updateEvaluationSingleModelViewSelectedState(arg0));
-  }
+  }, [pageSelected, dispatch]);
+
+  const handleClick = useCallback(
+    (event: any, d: any, path: any) => {
+      if (!zoomBehaviorRef.current || !svgRef.current) return;
+
+      //Separate Forecast and Evaluations handling of clicking a state
+      updateRespectivePageState({
+        stateName: d.properties.name,
+        stateNum: d.id,
+      });
+
+      const [[x0, y0], [x1, y1]] = path.bounds(d);
+      const scale = Math.max(1, Math.min(8, 0.9 / Math.max((x1 - x0) / dimensions.width, (y1 - y0) / dimensions.height)));
+      const translate = [dimensions.width / 2 - (scale * (x0 + x1)) / 2, dimensions.height / 2 - (scale * (y0 + y1)) / 2];
+
+      const svg = d3.select(svgRef.current);
+      svg
+        .transition()
+        .duration(750)
+        .call(zoomBehaviorRef.current.transform, zoomIdentity.translate(translate[0], translate[1]).scale(scale));
+
+      // Zoom out to the initial view after a certain duration
+      try {
+        /* DEBUG */
+        console.debug("Components/SettingsStateMap.tsx/handleClick(): delayed zooming-back-out starting...");
+        setTimeout(() => {
+          if (zoomBehaviorRef.current && initialTransformRef.current) {
+            svg.transition().duration(750).call(zoomBehaviorRef.current.transform, initialTransformRef.current);
+          }
+        }, 1600);
+      } catch (error) {
+        console.error(
+          "Error: Components/SettingsStateMap.tsx/handleClick(): Error: Zoom out failed: initialTransformRef.current or zoomBehaviorRef.current is null/undefined in setTimeout."
+        );
+      }
+    },
+    [dimensions, updateRespectivePageState]
+  );
 
   const renderMap = useCallback(() => {
     if (!svgRef.current || !gRef.current || !usTopoJsonData) return;
@@ -121,42 +160,13 @@ const SettingsStateMap: React.FC<SettingsStateMapProps> = ({ pageSelected }) => 
     ];
 
     const newInitialTransform = zoomIdentity.translate(initialTranslate[0], initialTranslate[1]).scale(initialScale);
-    setInitialTransform(newInitialTransform);
+    initialTransformRef.current = newInitialTransform;
+
     if (zoomBehaviorRef.current) {
       svg.call(zoomBehaviorRef.current.transform, newInitialTransform);
     }
     setIsMapReady(true);
-  }, [dimensions, initializeZoom, usTopoJsonData]);
-
-  const handleClick = (event: any, d: any, path: any) => {
-    if (!zoomBehaviorRef.current || !svgRef.current) return;
-
-    //Separate Forecast and Evaluations handling of clicking a state
-    updateRespectivePageState({
-      stateName: d.properties.name,
-      stateNum: d.id,
-    });
-
-    const [[x0, y0], [x1, y1]] = path.bounds(d);
-    const scale = Math.max(1, Math.min(8, 0.9 / Math.max((x1 - x0) / dimensions.width, (y1 - y0) / dimensions.height)));
-    const translate = [dimensions.width / 2 - (scale * (x0 + x1)) / 2, dimensions.height / 2 - (scale * (y0 + y1)) / 2];
-
-    const svg = d3.select(svgRef.current);
-    svg.transition().duration(750).call(zoomBehaviorRef.current.transform, zoomIdentity.translate(translate[0], translate[1]).scale(scale));
-
-    // Zoom out to the initial view after a certain duration
-    try {
-      /* DEBUG */
-      console.debug("Components/SettingsStateMap.tsx/handleClick(): delayed zooming-back-out starting...");
-      setTimeout(() => {
-        if (zoomBehaviorRef.current && initialTransform) {
-          svg.transition().duration(750).call(zoomBehaviorRef.current.transform, initialTransform);
-        }
-      }, 1600);
-    } catch (error) {
-      console.error("Error: Components/SettingsStateMap.tsx/handleClick(): Error: ", error);
-    }
-  };
+  }, [dimensions, initializeZoom, usTopoJsonData, handleClick]);
 
   useEffect(() => {
     if (locationData.length > 0 && dimensions.width > 0 && dimensions.height > 0 && usTopoJsonData) {
@@ -189,10 +199,10 @@ const SettingsStateMap: React.FC<SettingsStateMapProps> = ({ pageSelected }) => 
   }, [highlightSelectedState]);
 
   const handleReset = () => {
-    if (svgRef.current && initialTransform && zoomBehaviorRef.current) {
+    if (svgRef.current && initialTransformRef.current && zoomBehaviorRef.current) {
       const svg = d3.select(svgRef.current);
       /*Note: Change reset delay here*/
-      svg.transition().duration(750).call(zoomBehaviorRef.current.transform, initialTransform);
+      svg.transition().duration(750).call(zoomBehaviorRef.current.transform, initialTransformRef.current);
     }
   };
 
