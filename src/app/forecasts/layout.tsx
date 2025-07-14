@@ -2,9 +2,8 @@
 import { Metadata } from "next";
 import React from "react";
 
-
 export const metadata: Metadata = {
-  title: 'Flu Forecasts',
+  title: "Flu Forecasts",
   description:
     "Weekly flu predictions and evaluations. US influenza forecasts and surveillance dashboard provided by Epistorm. Flu hospitalization activity levels and rate-trend forecasts.",
   keywords: ["Flu Forecast", "Forecast", "Hospitalization", "Epidemiology", "Evaluations", "Forecast Map", "Visualizations"],
@@ -17,17 +16,6 @@ export const metadata: Metadata = {
   publisher: "MOBs Lab",
 };
 
-export default function ForecastsLayout({
-                                            children,
-                                        }: {
-    children: React.ReactNode
-}) {
-
-    return (
-        <section>
-            {children}
-        </section>
-
-
-    )
+export default function ForecastsLayout({ children }: { children: React.ReactNode }) {
+  return <section>{children}</section>;
 }

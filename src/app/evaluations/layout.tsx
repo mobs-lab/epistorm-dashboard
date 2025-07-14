@@ -17,6 +17,6 @@ export const metadata: Metadata = {
   publisher: "MOBs Lab",
 };
 
-export default function ContactLayout({ children }: { children: React.ReactNode }) {
+export default function EvaluationsLayout({ children }: { children: React.ReactNode }) {
   return <section>{children}</section>;
 }

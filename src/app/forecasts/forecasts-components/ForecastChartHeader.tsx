@@ -17,7 +17,7 @@ const ForecastChartHeader: React.FC = () => {
     <div className='flex flex-row justify-between align-middle items-center px-4 overflow-ellipsis whitespace-nowrap'>
       <div className='flex flex-shrink justify-start items-center'>
         <h2 className='util-responsive-text util-text-limit mr-2'> Weekly Hospital Admissions Forecast</h2>
-        <InfoButton title='Forecast Chart Information' content={weeklyHospitalAdmissionsInfo} />
+        <InfoButton title='Weekly Hospital Admissions' content={weeklyHospitalAdmissionsInfo} />
       </div>
       <div className='flex flex-shrink justify-end items-center'>
         <p className='mr-3 md:text-sm sm:text-xs'>Show Data Available at Time of Forecast</p>
