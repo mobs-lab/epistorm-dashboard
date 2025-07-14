@@ -17,7 +17,7 @@ export const activityLevelsInfo = (
     </p>
     <p>
       [1] Vega et al. (2012) Influenza surveillance in Europe: establishing epidemic thresholds by the moving epidemic method. Influenza and
-      Other Respiratory Viruses 7(4), 546–558.
+      Other Respiratory Viruses 7(4), 546-558.
       <br />
       [2] Lozano JE. lozalojo/mem: Second release of the MEM R library. Zenodo [Internet]. [cited 2017 Feb 1]; Available from:
       https://zenodo.org/record/165983.
@@ -51,7 +51,7 @@ export const trendForecastInfo = (
     <p>
       For example, a model may predict a probability of 0.5 that the forecasted week's hospitalization rate will remain
       <strong style={{ color: "#b9d6d6" }}>stable</strong> relative to the previous week's observed hospitalization rate, a probability of
-      0.3 that it will <strong style={{ color: "#eae78b" }}>increase</strong>, and a probability of 0.2 that it will
+      0.3 that it will <strong style={{ color: "#eae78b" }}>increase</strong>, and a probability of 0.2 that it will{" "}
       <strong style={{ color: "#478791" }}>decrease</strong>.
     </p>
     <p style={{ fontSize: "0.875rem", color: "#6b7280" }}>
@@ -66,20 +66,25 @@ export const weeklyHospitalAdmissionsInfo = (
   <div>
     <p>
       Teams participating in the
-      <a href='https://github.com/cdcepi/FluSight-forecast-hub' target='_blank' rel='noopener noreferrer'>
-        FluSight Forecast Hub
-      </a>
+      <span>{" "}
+        <a href='https://github.com/cdcepi/FluSight-forecast-hub' target='_blank' rel='noopener noreferrer'>
+          FluSight Forecast Hub
+        </a>{" "}
+      </span>
       submit quantile nowcasts and forecasts of the weekly number of confirmed influenza hospital admissions for the current epidemiological
       week and the three following epiweeks.
     </p>
     <p>
       The white dotted line represents weekly flu hospitalization surveillance numbers as reported through
-      <a
-        href='https://data.cdc.gov/Public-Health-Surveillance/Weekly-Hospital-Respiratory-Data-HRD-Metrics-by-Ju/mpgq-jmmr/about_data'
-        target='_blank'
-        rel='noopener noreferrer'>
-        CDC&apos;s NHSN
-      </a>
+      <span>
+        {" "}
+        <a
+          href='https://data.cdc.gov/Public-Health-Surveillance/Weekly-Hospital-Respiratory-Data-HRD-Metrics-by-Ju/mpgq-jmmr/about_data'
+          target='_blank'
+          rel='noopener noreferrer'>
+          CDC&apos;s NHSN
+        </a>{" "}
+      </span>
       (formerly known as HHS-Protect). Quantile forecasts represent a distribution of modeling outcomes over many simulations. Dotted lines
       for predictions show the median (0.5 quantile) of the distribution, while shaded areas represent prediction intervals (e.g. the 90%
       prediction interval corresponds to the area between the 0.05 quantile and the 0.95 quantile).
@@ -192,16 +197,3 @@ export const horizonSelectorsInfo = (
     </p>
   </div>
 );
-
-// Example usage:
-/*
-  <InfoButton title="Activity Levels" content={activityLevelsInfo} />
-  <InfoButton title="Trend Forecast" content={trendForecastInfo} />
-  <InfoButton title="Weekly Hospital Admissions" content={weeklyHospitalAdmissionsInfo} />
-  <InfoButton title="Season Overview" content={seasonOverviewInfo} />
-  <InfoButton title="WIS Ratio" content={wisRatioInfo} />
-  <InfoButton title="MAPE" content={mapeInfo} />
-  <InfoButton title="Coverage" content={coverageInfo} />
-  <InfoButton title="Single Model Evaluation" content={singleModelInfo} />
-  <InfoButton title="Horizon Selectors" content={horizonSelectorsInfo} />
-  */

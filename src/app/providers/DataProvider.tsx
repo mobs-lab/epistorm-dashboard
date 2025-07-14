@@ -1,3 +1,5 @@
+'use client'
+
 // File: src/app/providers/DataProvider.tsx
 import React, { createContext, useContext, useEffect, useState } from "react";
 import * as d3 from "d3";

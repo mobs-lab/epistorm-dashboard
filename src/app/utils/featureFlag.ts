@@ -12,7 +12,7 @@ export const isFeatureEnabled = (feature: FeatureFlag): boolean => {
 
   // Define which features are only available in the demo environment
   const demoOnlyFeatures: FeatureFlag[] = [
-    "seasonOverviewTab",
+    // "seasonOverviewTab",
     /* TODO: Flag the layout change (CSS) for the nowcast widgets */
 
     // Add more here in the future
