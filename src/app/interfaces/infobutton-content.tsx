@@ -1,5 +1,7 @@
 // InfoButton content sections converted from markdown
 
+import Image from "next/image";
+
 // Activity Levels Info
 export const activityLevelsInfo = (
   <div>
@@ -15,6 +17,21 @@ export const activityLevelsInfo = (
       seasons, an expected 40% of weeks would fall below the Medium threshold, 50% of weeks would cross the Medium threshold but fall below
       the High threshold, and 10% of weeks would cross the High threshold.
     </p>
+    <div style={{ textAlign: "center", margin: "16px 0" }}>
+      {/* Image of the activity thermometer here */}
+      <Image
+        src='/images/nowcast-help-image-activity.png'
+        alt='Example showing trend forecast categories: increasing, stable, and decreasing rates'
+        width={960}
+        height={300}
+        style={{
+          maxWidth: "100%",
+          height: "auto",
+          border: "1px solid #ccc",
+          borderRadius: "8px",
+        }}
+      />
+    </div>
     <p>
       [1] Vega et al. (2012) Influenza surveillance in Europe: establishing epidemic thresholds by the moving epidemic method. Influenza and
       Other Respiratory Viruses 7(4), 546-558.
@@ -28,36 +45,51 @@ export const activityLevelsInfo = (
 // Trend Forecast Info
 export const trendForecastInfo = (
   <div>
-    <p>
-      Rate-trend forecasts are submitted by each modeling team to FluSight as probabilities for each rate-trend category. These forecasts
-      represent whether hospitalization rates (per 100k population) in a location are expected to increase, decrease, or remain stable based
-      upon a model&apos;s nowcast for the selected reference date, relative to the observed hospitalization rate from the preceding week.
-      The categories displayed[1] are defined such that:
-    </p>
-    <ul>
-      <li>
-        A <strong style={{ color: "#b9d6d6" }}>stable</strong> rate-trend indicates that either the magnitude of the predicted change in
-        hospitalization rate is less than 0.3/100k, or the magnitude of the predicted change in hospitalization cases is less than 10.
-      </li>
-      <li>
-        An <strong style={{ color: "#eae78b" }}>increasing</strong> rate-trend indicates a positive predicted change in hospitalization rate
-        which does not qualify as stable.
-      </li>
-      <li>
-        A <strong style={{ color: "#478791" }}>decreasing</strong> rate-trend indicates a negative predicted change in hospitalization rate
-        which does not qualify as stable.
-      </li>
-    </ul>
-    <p>
-      For example, a model may predict a probability of 0.5 that the forecasted week's hospitalization rate will remain
-      <strong style={{ color: "#b9d6d6" }}>stable</strong> relative to the previous week's observed hospitalization rate, a probability of
-      0.3 that it will <strong style={{ color: "#eae78b" }}>increase</strong>, and a probability of 0.2 that it will{" "}
-      <strong style={{ color: "#478791" }}>decrease</strong>.
-    </p>
-    <p style={{ fontSize: "0.875rem", color: "#6b7280" }}>
-      [1] Submissions to FluSight contain the categories 'large increase' and 'large decrease' in addition to 'increase', 'decrease', and
-      'stable'. For simplicity we combine 'large increase' with 'increase', and 'large decrease' with 'decrease'.
-    </p>
+    <div className='flex flex-col lg:flex-row gap-6 items-start'>
+      <div className='flex-1 min-w-0'>
+        <p>
+          Rate-trend forecasts are submitted by each modeling team to FluSight as probabilities for each rate-trend category. These
+          forecasts represent whether hospitalization rates (per 100k population) in a location are expected to increase, decrease, or
+          remain stable based upon a model&apos;s nowcast for the selected reference date, relative to the observed hospitalization rate
+          from the preceding week. The categories displayed[1] are defined such that:
+        </p>
+        <ul className="my-4">
+          <li>
+            A <strong style={{ color: "#b9d6d6" }}>stable</strong> rate-trend indicates that either the magnitude of the predicted change in
+            hospitalization rate is less than 0.3/100k, or the magnitude of the predicted change in hospitalization cases is less than 10.
+          </li>
+          <li>
+            An <strong style={{ color: "#eae78b" }}>increasing</strong> rate-trend indicates a positive predicted change in hospitalization
+            rate which does not qualify as stable.
+          </li>
+          <li>
+            A <strong style={{ color: "#478791" }}>decreasing</strong> rate-trend indicates a negative predicted change in hospitalization
+            rate which does not qualify as stable.
+          </li>
+        </ul>
+        <p>
+          For example, a model may predict a probability of 0.5 that the forecasted week's hospitalization rate will remain
+          <strong style={{ color: "#b9d6d6" }}>stable</strong> relative to the previous week's observed hospitalization rate, a probability
+          of 0.3 that it will <strong style={{ color: "#eae78b" }}>increase</strong>, and a probability of 0.2 that it will{" "}
+          <strong style={{ color: "#478791" }}>decrease</strong>.
+        </p>
+        <p style={{ fontSize: "0.875rem", color: "#6b7280" }}>
+          [1] Submissions to FluSight contain the categories 'large increase' and 'large decrease' in addition to 'increase', 'decrease',
+          and 'stable'. For simplicity we combine 'large increase' with 'increase', and 'large decrease' with 'decrease'.
+        </p>
+      </div>
+
+      <div className='flex-shrink-0 w-full lg:w-80'>
+        {/* Image of the trend forecast *not-a-pie-chart here */}
+        <Image
+          src='/images/nowcast-help-image-trend.png'
+          alt='Example showing hospitalization activity forecast levels and predicted levels'
+          width={960}
+          height={600}
+          className='w-full h-auto border border-gray-300 rounded-lg'
+        />
+      </div>
+    </div>
   </div>
 );
 
@@ -66,7 +98,8 @@ export const weeklyHospitalAdmissionsInfo = (
   <div>
     <p>
       Teams participating in the
-      <span>{" "}
+      <span>
+        {" "}
         <a href='https://github.com/cdcepi/FluSight-forecast-hub' target='_blank' rel='noopener noreferrer'>
           FluSight Forecast Hub
         </a>{" "}
