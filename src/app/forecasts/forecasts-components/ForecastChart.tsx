@@ -191,6 +191,7 @@ const ForecastChart: React.FC = () => {
     return confidenceIntervalData;
   }
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   function createScalesAndAxes(
     ground: DataPoint[],
     predictions: {},
@@ -206,7 +207,7 @@ const ForecastChart: React.FC = () => {
       .flatMap((modelData: any) => modelData[0]?.data || [])
       .reduce((maxDate: Date, dataPoint: PredictionDataPoint) => {
         const targetEndDate = new Date(dataPoint.targetEndDate);
-        return targetEndDate > maxDate ? targetEndDate : maxDate;
+        return targetEndDate > maxDate ? targetEndDate : maxDate;3
       }, new Date(0));
 
     const maxDate = d3.max([maxGroundTruthDate, maxPredictionDate]) as Date;
