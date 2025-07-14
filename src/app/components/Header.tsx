@@ -1,3 +1,4 @@
+'use client';
 import Link from 'next/link';
 import React, {useEffect, useRef} from "react";
 
@@ -26,7 +27,7 @@ const Header: React.FC = () => {
                         className={"font-light text-5xl"}>Forecast</span></Link>
                 </div>
                 <nav className="flex space-x-6 pr-4">
-                    <Link href="/forecasts/"
+                    <Link href="/"
                           className="text-2xl text-mobs-lab-color hover:text-teal-900">Forecasts</Link>
                     <Link href="/evaluations/"
                           className="text-2xl text-mobs-lab-color hover:text-teal-900">Evaluations</Link>
