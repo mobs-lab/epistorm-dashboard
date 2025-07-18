@@ -9,6 +9,9 @@ interface InfoButtonProps {
   // 2025-05-03: added new props for more varied display of button
   displayStyle?: "icon" | "button" | "inline";
   size?: "sm" | "md" | "lg";
+
+  // Dialog window size control
+  dialogSize?: "xs" | "sm" | "md" | "lg" | "xl" | "xxl";
 }
 
 // Size mappings for different components
@@ -32,6 +35,7 @@ const InfoButton: React.FC<InfoButtonProps> = ({
   content,
   displayStyle = "icon", // Default to icon style
   size = "md", // Default to medium size
+  dialogSize = "md"
 }) => {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -76,15 +80,12 @@ const InfoButton: React.FC<InfoButtonProps> = ({
     }
   };
 
-
   return (
     <>
       {renderButton()}
-      <Dialog open={isOpen} handler={handleOpen}>
+      <Dialog open={isOpen} handler={handleOpen} size={dialogSize}>
         <DialogHeader>{title}</DialogHeader>
-        <DialogBody divider>
-          {content}
-        </DialogBody>
+        <DialogBody divider>{content}</DialogBody>
         <DialogFooter>
           <Button variant='gradient' color='green' onClick={handleOpen}>
             <span>Close</span>
