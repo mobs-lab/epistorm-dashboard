@@ -136,7 +136,7 @@ const SeasonOverviewPIChart: React.FC = () => {
     // Chart dimensions
     const width = dimensions.width;
     const height = dimensions.height;
-    const margin = { top: 20, right: 20, bottom: 30, left: 40 };
+    const margin = { top: 20, right: 10, bottom: 45, left: 40 };
     const innerWidth = width - margin.left - margin.right;
     const innerHeight = height - margin.top - margin.bottom;
 
@@ -193,10 +193,11 @@ const SeasonOverviewPIChart: React.FC = () => {
     // Axis labels
     g.append("text")
       .attr("x", innerWidth / 2)
-      .attr("y", innerHeight + margin.bottom - 5)
+      .attr("y", innerHeight + margin.bottom - 10)
       .attr("text-anchor", "middle")
       .attr("fill", "white")
-      .style("font-size", "12px");
+      .style("font-size", "14px")
+      .text("Prediction Interval");
 
     g.append("text")
       .attr("transform", "rotate(-90)")
@@ -204,8 +205,8 @@ const SeasonOverviewPIChart: React.FC = () => {
       .attr("y", -margin.left + 12)
       .attr("text-anchor", "middle")
       .attr("fill", "white")
-      .style("font-size", "12px")
-      .text("Cov%");
+      .style("font-size", "14px")
+      .text("Coverage %");
 
     // Create tooltip
     const tooltip = svg.append("g").attr("class", "tooltip").style("opacity", 0).style("pointer-events", "none");

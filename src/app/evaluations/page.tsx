@@ -42,13 +42,13 @@ const SeasonOverviewContent: React.FC = () => {
   return (
     <div className='flex flex-col h-full gap-4 overflow-y-auto overflow-x-hidden util-no-sb-length'>
       <div className='items-center self-end'>
-        <InfoButton content={seasonOverviewInfo} title='Season Overview' displayStyle='button'></InfoButton>
+        <InfoButton content={seasonOverviewInfo} title='Season Overview' displayStyle='inline'></InfoButton>
       </div>
       {/* Top charts section - 3 charts in a row */}
       <div className='grid grid-cols-3 gap-4 min-h-[480px]'>
         <Card className='bg-mobs-lab-color text-white overflow-hidden'>
           <div className='p-1 border-b border-gray-700 flex justify-between items-center'>
-            <h3 className='text-lg font-medium'>WIS/Baseline</h3>
+            <h3 className='text-lg font-medium'> Weighted Interval Score / Baseline </h3>
             <button
               onClick={() => dispatch(setWisChartScaleType(wisChartScaleType === "log" ? "linear" : "log"))}
               className='bg-blue-500 hover:bg-blue-600 text-white text-xs py-1 px-2 rounded'>
@@ -62,7 +62,7 @@ const SeasonOverviewContent: React.FC = () => {
 
         <Card className='bg-mobs-lab-color text-white overflow-hidden'>
           <div className='p-1 border-b border-gray-700 flex justify-between items-center'>
-            <h3 className='text-lg font-medium'>MAPE</h3>
+            <h3 className='text-lg font-medium'>Mean Absolute Percentage Error</h3>
             <button
               onClick={() => dispatch(setMapeChartScaleType(mapeChartScaleType === "log" ? "linear" : "log"))}
               className='bg-blue-500 hover:bg-blue-600 text-white text-xs py-1 px-2 rounded'>
@@ -77,7 +77,7 @@ const SeasonOverviewContent: React.FC = () => {
         {/* TODO: Use updated InfoButton implementation in the form of a rectangle button here */}
         <Card className='bg-mobs-lab-color text-white overflow-hidden'>
           <div className='p-1 border-b border-gray-700 flex-row flex-nowrap align-end justify-center items-center'>
-            <h3 className='text-lg font-medium flex-shrink'>PI</h3>
+            <h3 className='text-lg font-medium flex-shrink'>Coverage</h3>
           </div>
           <div className='w-full h-[92%]'>
             <SeasonOverviewPIChart />
@@ -113,7 +113,7 @@ const SingleModelContent = () => {
             {evaluationsSingleModelViewSelectedStateName}
           </h1>
           <div className='items-center'>
-            <InfoButton content={singleModelInfo} title='Single Model Evaluations' displayStyle='button'></InfoButton>
+            <InfoButton content={singleModelInfo} title='Single Model Evaluations' displayStyle='inline'></InfoButton>
           </div>
         </div>
         <div className='chart-container'>

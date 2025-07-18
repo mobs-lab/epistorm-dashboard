@@ -146,6 +146,15 @@ export const seasonOverviewInfo = (
       3 are selected, evaluations will be displayed only for nowcasts and predictions on a 3-week horizon. Make further selections on the
       map to view a single model's state-wise performance on a certain metric, averaged over the selected horizons and time period.
     </p>
+    <p>
+The weighted interval score (WIS) is a proper scoring rule applied to a forecast's quantile projections that accounts for the amount of uncertainty in the predictions, and the placement of the predictions in relation to the observed data, where smaller scores are considered better. The WIS ratio is defined as the WIS of each forecasting model divided by the WIS of the FluSight-baseline model (a reference model providing flat projections with the median equal to the most recently observed data point with increasing uncertainty for longer horizons). The boxplots show the distribution of this WIS ratio across forecasting dates and locations for different forecasting horizons. A ratio less than one indicates that the forecasting model performs better, while a ratio greater than one indicates that the baseline model has better performance.
+</p>
+<p>
+The mean absolute percentage error (MAPE) is a relative measure assessing the accuracy of a point prediction against the observed surveillance data, and does not account for the uncertainty in these predictions. The boxplots show the distribution of the MAPE for each model across forecast dates, horizons, and locations, where a smaller value indicates improved performance.
+</p>
+<p>
+The prediction interval coverage (or coverage) is an evaluation metric that describes the percentage of times the observed data falls within a given prediction interval of a forecast across multiple predictions. The coverage assesses the calibration of forecasts. For example, for a well-calibrated model with a 50% prediction interval, the observed data is expected to fall within this interval 50% of the time. In the figure, we show the prediction intervals reported by the modeling teams on the x-axis, and the coverage of the observed data within those intervals on the y-axis. A well-calibrated model should fall along the y=x diagonal. Coverages falling below the y=x line are said to be overconfident, with the data points often falling outside of the prediction intervals due to prediction intervals that are mis-aligned or too narrow. High coverages, above the y=x line, are underconfident since they tend to generate excessively broad prediction intervals. In this plot, the coverage for each forecasting model is averaged over forecast dates, horizons, and locations. 
+    </p>
   </div>
 );
 
@@ -211,6 +220,12 @@ export const singleModelInfo = (
       surveillance data with two methods to evaluate their performance throughout the course of a flu season. We use the weighted interval
       score of a model's quantile forecasts relative to the score of a baseline model and the mean absolute percentage error of a model's
       median prediction.
+    </p>
+    <p>
+The weighted interval score (WIS) is a proper scoring rule applied to a forecast's quantile projections that accounts for the amount of uncertainty in the predictions, and the placement of the predictions in relation to the observed data, where smaller scores are considered better. The WIS ratio is defined as the WIS of each forecasting model divided by the WIS of the FluSight-baseline model (a reference model providing flat projections with the median equal to the most recently observed data point with increasing uncertainty for longer horizons). A ratio less than one indicates that the forecasting model performs better, while a ratio greater than one indicates that the baseline model has better performance.
+</p>
+<p>
+The mean absolute percentage error (MAPE) is a relative measure assessing the accuracy of a point prediction against the observed surveillance data, and does not account for the uncertainty in these predictions.
     </p>
   </div>
 );
