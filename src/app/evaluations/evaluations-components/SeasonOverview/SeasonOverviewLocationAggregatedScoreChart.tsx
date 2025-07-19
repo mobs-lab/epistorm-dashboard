@@ -356,7 +356,7 @@ const SeasonOverviewLocationAggregatedScoreChart: React.FC<SeasonOverviewLocatio
     // Chart dimensions
     const width = dimensions.width;
     const height = dimensions.height;
-    const margin = { top: 10, right: 10, bottom: 30, left: 10 };
+    const margin = { top: 10, right: 10, bottom: 45, left: 10 };
     const innerWidth = width - margin.left - margin.right;
     const innerHeight = height - margin.top - margin.bottom;
 
@@ -462,6 +462,29 @@ const SeasonOverviewLocationAggregatedScoreChart: React.FC<SeasonOverviewLocatio
       .selectAll("text")
       .attr("fill", "white")
       .style("font-size", "11px");
+
+    // X axis label beneath the ticks
+    g.append("g")
+    .attr("transform", `translate(${innerWidth / 2}, ${innerHeight + 10})`);
+    
+    if (type == "wis") {
+      g.append("text")
+        .attr("x", innerWidth / 2)
+        .attr("y", innerHeight + margin.bottom - 10)
+        .attr("text-anchor", "middle")
+        .attr("fill", "white")
+        .style("font-size", "14px")
+        .text("WIS/Baseline");
+    }
+    else{
+      g.append("text")
+        .attr("x", innerWidth / 2)
+        .attr("y", innerHeight + margin.bottom - 10)
+        .attr("text-anchor", "middle")
+        .attr("fill", "white")
+        .style("font-size", "14px")
+        .text("MAPE");
+    }
 
     // Invisible overlay for better hover detection
     const boxGroups = g.selectAll(".model-box-group").data(data).enter().append("g").attr("class", "model-box-group");
