@@ -45,8 +45,8 @@ export const activityLevelsInfo = (
 // Trend Forecast Info
 export const trendForecastInfo = (
   <div>
-    <div className='flex flex-col lg:flex-row gap-6 items-start'>
-      <div className='flex-1 min-w-0'>
+    <div className='flex flex-col lg:flex-row gap-6 items-center'>
+      <div className='lg:w-2/5 min-w-0'>
         <p>
           Rate-trend forecasts are submitted by each modeling team to FluSight as probabilities for each rate-trend category. These
           forecasts represent whether hospitalization rates (per 100k population) in a location are expected to increase, decrease, or
@@ -79,13 +79,13 @@ export const trendForecastInfo = (
         </p>
       </div>
 
-      <div className='flex-shrink-0 w-full lg:w-80'>
+      <div className='lg:w-3/5 flex items-center justify-center'>
         {/* Image of the trend forecast *not-a-pie-chart here */}
         <Image
           src='/images/nowcast-help-image-trend.png'
           alt='Example showing hospitalization activity forecast levels and predicted levels'
-          width={960}
-          height={600}
+          width={1200}
+          height={750}
           className='w-full h-auto border border-gray-300 rounded-lg'
         />
       </div>
