@@ -76,7 +76,7 @@ const SeasonOverviewPIChart: React.FC = () => {
         // Skip if horizon doesn't match
         if (!horizonSet.has(entry.horizon)) continue;
 
-        // Calculate target date for filtering by time periodw
+        // Calculate target date for filtering by time period
         const referenceDate = entry.referenceDate;
         const targetDate = addWeeks(referenceDate, entry.horizon);
 
@@ -136,7 +136,7 @@ const SeasonOverviewPIChart: React.FC = () => {
     // Chart dimensions
     const width = dimensions.width;
     const height = dimensions.height;
-    const margin = { top: 20, right: 20, bottom: 30, left: 40 };
+    const margin = { top: 20, right: 10, bottom: 45, left: 40 };
     const innerWidth = width - margin.left - margin.right;
     const innerHeight = height - margin.top - margin.bottom;
 
@@ -193,10 +193,11 @@ const SeasonOverviewPIChart: React.FC = () => {
     // Axis labels
     g.append("text")
       .attr("x", innerWidth / 2)
-      .attr("y", innerHeight + margin.bottom - 5)
+      .attr("y", innerHeight + margin.bottom - 10)
       .attr("text-anchor", "middle")
       .attr("fill", "white")
-      .style("font-size", "12px");
+      .style("font-size", "14px")
+      .text("Prediction Interval");
 
     g.append("text")
       .attr("transform", "rotate(-90)")
@@ -204,8 +205,8 @@ const SeasonOverviewPIChart: React.FC = () => {
       .attr("y", -margin.left + 12)
       .attr("text-anchor", "middle")
       .attr("fill", "white")
-      .style("font-size", "12px")
-      .text("Cov%");
+      .style("font-size", "14px")
+      .text("Coverage %");
 
     // Create tooltip
     const tooltip = svg.append("g").attr("class", "tooltip").style("opacity", 0).style("pointer-events", "none");
@@ -300,29 +301,30 @@ const SeasonOverviewPIChart: React.FC = () => {
           const bottomProximity = svgHeight - mouseY;
 
           // Edge buffer
-          const edgeBuffer = 20;
+          const horizontalEdgeBuffer = 20;
 
           // Calculate horizontal position to avoid clipping
           let xOffset: number;
-          if (rightProximity < tooltipWidth + edgeBuffer) {
+          if (rightProximity < tooltipWidth + horizontalEdgeBuffer) {
             // Too close to right edge, position to the left
-            xOffset = -tooltipWidth - edgeBuffer;
-          } else if (leftProximity < edgeBuffer) {
+            xOffset = -tooltipWidth - horizontalEdgeBuffer;
+          } else if (leftProximity < horizontalEdgeBuffer) {
             // Too close to left edge, position to the right
-            xOffset = edgeBuffer;
+            xOffset = horizontalEdgeBuffer;
           } else {
             // Default position with slight offset
             xOffset = 10;
           }
 
+          const verticalEdgeBuffer = 60;
           // Calculate vertical position to avoid clipping
           let yOffset: number;
-          if (bottomProximity < tooltipHeight + edgeBuffer) {
+          if (bottomProximity < tooltipHeight + verticalEdgeBuffer) {
             // Too close to bottom edge, position above
-            yOffset = -tooltipHeight - edgeBuffer;
-          } else if (topProximity < edgeBuffer) {
+            yOffset = -tooltipHeight - verticalEdgeBuffer;
+          } else if (topProximity < verticalEdgeBuffer) {
             // Too close to top edge, position below
-            yOffset = edgeBuffer;
+            yOffset = 10;
           } else {
             // Default position above the point
             yOffset = -tooltipHeight - 10;

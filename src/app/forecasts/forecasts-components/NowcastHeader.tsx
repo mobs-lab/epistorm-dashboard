@@ -35,7 +35,7 @@ const NowcastHeader: React.FC = () => {
       <div className='flex flex-row justify-between items-center'>
         <div className='flex'>
           <h2 className='util-responsive-text font-bold mr-2'>Hospitalization Activity Forecast</h2>
-          <InfoButton title='State Map Information' content={activityLevelsInfo} />
+          <InfoButton title='State Map Information' content={activityLevelsInfo} dialogSize="lg"/>
         </div>
         <div className='flex items-center justify-between'>
           <div>

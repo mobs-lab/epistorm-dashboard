@@ -301,7 +301,7 @@ const SeasonOverviewUSStateMap: React.FC = () => {
     if (isWISBaseline) {
       // WIS/Baseline: Diverging Scale
       const pivotValue = 1;
-      const effectiveMin = Math.min(0, pivotValue);
+      const effectiveMin = 0;
       const effectiveMax = Math.max(maxValue, pivotValue);
 
       // Define the 3-point domain around the pivot
@@ -607,7 +607,7 @@ const SeasonOverviewUSStateMap: React.FC = () => {
       });
 
     // --- Draw DC Circle ---
-    // Find a reference point (e.g., Maryland centroid) for positioning DC
+    // Find a reference point (e.g., Maryland) for positioning DC
     const mdStateFeature = stateFeatures.find((f: any) => f.id === "24"); // Maryland ID is 24
     let dcX = mapWidth * 0.9; // Fallback X
     let dcY = mapHeight * 0.5; // Fallback Y
@@ -615,7 +615,7 @@ const SeasonOverviewUSStateMap: React.FC = () => {
 
     if (mdStateFeature && path.centroid(mdStateFeature)?.length === 2) {
       const [mdX, mdY] = path.centroid(mdStateFeature);
-      // Position DC slightly southeast of Maryland centroid
+      // Position DC slightly southeast of Maryland
       dcX = mdX + dcRadius * 3;
       dcY = mdY + dcRadius * 1.2;
     }
@@ -636,7 +636,7 @@ const SeasonOverviewUSStateMap: React.FC = () => {
       .on("mouseover", function (event) {
         // Highlight DC on hover
         d3.select(this).attr("stroke-width", 2);
-
+        
         const stateName = "District of Columbia";
         const metricName = mapSelectedScoringOption || "Score";
 
@@ -683,7 +683,7 @@ const SeasonOverviewUSStateMap: React.FC = () => {
       .attr("text-anchor", "middle")
       .attr("dominant-baseline", "central")
       .attr("fill", "white") // Make text white for better contrast
-      .attr("font-size", `${Math.max(8, dcRadius * 0.6)}px`) // Scale font size
+      .attr("font-size", `${Math.max(12, dcRadius * 0.6)}px`) // Scale font size
       .attr("dy", "0.05em") // Slight vertical adjustment
       .style("pointer-events", "none") // Prevent text from blocking circle hover
       .text("DC");

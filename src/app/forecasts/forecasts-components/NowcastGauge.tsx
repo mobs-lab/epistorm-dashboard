@@ -264,7 +264,7 @@ const NowcastGauge: React.FC<RiskLevelGaugeProps> = ({ riskLevel }) => {
               top: `${infoButtonPosition.top}px`,
               zIndex: 5,
             }}>
-            <InfoButton title='Trend Forecast Information' content={trendForecastInfo} displayStyle='icon' size='sm' />
+            <InfoButton title='Trend Forecast Information' content={trendForecastInfo} displayStyle='icon' size='sm' dialogSize="lg" />
           </div>
         )}
 
