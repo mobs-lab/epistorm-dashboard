@@ -301,7 +301,7 @@ const SeasonOverviewUSStateMap: React.FC = () => {
     if (isWISBaseline) {
       // WIS/Baseline: Diverging Scale
       const pivotValue = 1;
-      const effectiveMin = Math.min(0, pivotValue);
+      const effectiveMin = 0;
       const effectiveMax = Math.max(maxValue, pivotValue);
 
       // Define the 3-point domain around the pivot
