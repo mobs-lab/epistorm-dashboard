@@ -739,11 +739,11 @@ const ForecastChart: React.FC = () => {
 
     // Layout constants
     const layout = {
-        padding: 12,
+        padding: 10,
         lineHeight: 20,
         sectionGap: 10,
         modelColorBoxSize: 12,
-        colGap: 15,
+        colGap: 30,
         fontFamily: "var(--font-dm-sans), sans-serif",
         fontSize: "13px",
         fontColor: "white",
@@ -792,7 +792,7 @@ const ForecastChart: React.FC = () => {
         const historicalValue = historicalGroundTruthData
             .find(file => isUTCDateEqual(file.associatedDate, subWeeks(userSelectedWeek, 1)))
             ?.historicalData.find(entry => isUTCDateEqual(entry.date, data.date) && entry.stateNum === data.stateNum)
-            ?.admissions;
+            ?.admissions || NaN;
         currentY = addTextLine("Historical: ", formatNumber(historicalValue, true), currentY);
     }
 
@@ -859,7 +859,8 @@ const ForecastChart: React.FC = () => {
     }
 
     // --- 4. DRAW BACKGROUND AND POSITION THE TOOLTIP ---
-    const finalWidth = maxWidth + (layout.padding * 2);
+    const EXTRAPADDING = 20;
+    const finalWidth = maxWidth + (layout.padding * 2) + EXTRAPADDING;
     const finalHeight = currentY + layout.padding - layout.lineHeight / 2;
 
     // Add the background rectangle now that we have the final dimensions
@@ -871,13 +872,13 @@ const ForecastChart: React.FC = () => {
 
     // Decide whether to show the tooltip on the left or right
     const cursorX = xScale(data.date);
-    const showOnLeftSide = cursorX > chartWidth * 0.55;
+    const showOnLeftSide = cursorX > chartWidth * 0.5;
 
     // Calculate the final X position for the entire tooltip group.
     // This is the key to correct alignment. The internal layout is always LTR.
     const tooltipX = showOnLeftSide
         ? marginLeft + 20 // Show on the left side
-        : chartWidth + marginLeft - finalWidth - 20; // Show on the right side
+        : chartWidth + marginLeft - finalWidth; // Show on the right side
     
     // Apply the final position and make it visible
     cornerTooltip
@@ -888,7 +889,6 @@ const ForecastChart: React.FC = () => {
   function findPredictionsForDate(predictionData: any, date: Date) {
     const foundPredictions = {};
     Object.entries(predictionData).forEach(([modelName, modelPredictions]: [string, any]) => {
-      // const prediction = modelPredictions[0].data-slices.find((p: any) => new Date(p.targetEndDate).getTime() === date.getTime());
       const prediction = modelPredictions[0].data.find((p: any) => isUTCDateEqual(new Date(p.targetEndDate), date));
       if (prediction) {
         foundPredictions[modelName] = prediction;
@@ -1038,7 +1038,7 @@ const ForecastChart: React.FC = () => {
       .attr("fill", "white")
       .text(message);
   }
-
+  
   function createCombinedDataset(groundTruthData: DataPoint[], predictionData: any): DataPoint[] {
     // First deconstruct the whole of ground truth data-slices into a new array
     let combinedData = [...groundTruthData];

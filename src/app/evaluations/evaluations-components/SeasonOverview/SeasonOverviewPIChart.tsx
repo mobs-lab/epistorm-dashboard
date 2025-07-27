@@ -76,7 +76,7 @@ const SeasonOverviewPIChart: React.FC = () => {
         // Skip if horizon doesn't match
         if (!horizonSet.has(entry.horizon)) continue;
 
-        // Calculate target date for filtering by time periodw
+        // Calculate target date for filtering by time period
         const referenceDate = entry.referenceDate;
         const targetDate = addWeeks(referenceDate, entry.horizon);
 
