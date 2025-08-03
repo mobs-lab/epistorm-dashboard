@@ -118,13 +118,9 @@ def main():
             pd.concat(nowcast_dfs, ignore_index=True) if nowcast_dfs else pd.DataFrame()
         )
 
-        print(
-            f"DEBUG: Initial raw predictions loaded. Shape: {all_preds_df.shape}"
-        )
+        print(f"DEBUG: Initial raw predictions loaded. Shape: {all_preds_df.shape}")
         if not all_nowcasts_df.empty:
-            print(
-                f"DEBUG: Initial raw nowcasts loaded. Shape: {all_nowcasts_df.shape}"
-            )
+            print(f"DEBUG: Initial raw nowcasts loaded. Shape: {all_nowcasts_df.shape}")
 
     except FileNotFoundError as e:
         print(f"FATAL ERROR: A required data file was not found: {e}")
@@ -138,6 +134,49 @@ def main():
         "quantile": "output_type_id",
     }
     all_preds_df.rename(columns=rename_dict, inplace=True)
+
+    # ===== 2.5. Process Nowcast Trends =====
+    print("Extracting and processing nowcast trends...")
+    nowcast_models = [
+        "MOBS-GLEAM_FLUH",
+        "MIGHTE-Nsemble",
+        "CEPH-Rtrend_fluH",
+        "FluSight-ensemble",
+        "NU_UCSD-GLEAM_AI_FLUH",
+    ]
+    # Filter for the rate change target and relevant models
+    trends_df = all_preds_df[
+        (all_preds_df["target"] == "wk_flu_hosp_rate_change")
+        & (all_preds_df["model"].isin(nowcast_models))
+    ].copy()
+
+    all_nowcasts_df = pd.DataFrame()  # Initialize an empty dataframe
+    if not trends_df.empty:
+        # Retain only nowcasts (where target date equals reference date)
+        trends_df = trends_df[
+            trends_df["target_end_date"] == trends_df["reference_date"]
+        ].copy()
+        # Clean up the category names
+        trends_df["output_type_id"] = trends_df["output_type_id"].str.removeprefix(
+            "large_"
+        )
+
+        # This is the logic from transform_data.py to create the stable/increase/decrease columns
+        all_nowcasts_df = trends_df.pivot_table(
+            index=["reference_date", "location", "model"],
+            columns="output_type_id",
+            values="value",
+        ).reset_index()
+        # Ensure required columns exist, fill with 0 if not
+        for col in ["stable", "increase", "decrease"]:
+            if col not in all_nowcasts_df.columns:
+                all_nowcasts_df[col] = 0.0
+        all_nowcasts_df = all_nowcasts_df.fillna(
+            0
+        )  # Replace any NaNs that might result from the pivot
+        print(f"DEBUG: Processed nowcast trends. Shape: {all_nowcasts_df.shape}")
+
+    # === Back to Processing Predictions Data ===
     all_preds_df = all_preds_df[all_preds_df["target"] == "wk_inc_flu_hosp"].copy()
 
     # Ensure output_type_id is string for pivot, handle potential float values
@@ -403,9 +442,13 @@ def main():
         columns={"Model": "model", "MAPE": "score", "Location": "stateNum"},
         inplace=True,
     )
+    # Convert MAPE score to a percentage
     mape_df["score"] *= 100
 
+    # Coverage Scores: since PI Chart vs. SeasonOverviewMap uses different calculation on Coverage, we need to handle this both ways.
     coverage_df.rename(columns={"Model": "model", "location": "stateNum"}, inplace=True)
+
+    # PI Chart needs the long format containing different levels
     coverage_long_df = coverage_df.melt(
         id_vars=["reference_date", "model", "stateNum", "horizon"],
         value_vars=[
@@ -419,16 +462,19 @@ def main():
     )
     coverage_long_df["score"] *= 100
 
+    # For the Season Overview Map, we need just 95% coverage scores
     coverage_scores_df = coverage_df[
         ["reference_date", "model", "stateNum", "horizon"]
     ].copy()
     coverage_scores_df["metric"] = "Coverage"
     coverage_scores_df["score"] = coverage_df["95_cov"] * 100
 
+    # Combine all metrics data into a DataFrame except coverage_long_df
     eval_scores_df = pd.concat([wis_df, mape_df, coverage_scores_df], ignore_index=True)
     for df in [eval_scores_df, coverage_long_df]:
         df["reference_date"] = pd.to_datetime(df["reference_date"])
         df["stateNum"] = df["stateNum"].astype(str).str.zfill(2)
+    print("DEBUG: All evaluation score files cleaned and standardized.")
 
     # Assign season ID to each score entry
     def get_season_id(date):
@@ -450,7 +496,8 @@ def main():
     # Perform aggregations
     iqr_data, state_map_data, coverage_data = {}, {}, {}
 
-    # Box Plot Aggregations
+    # For the IQR data in Season Overview Box Plot, group by every filter option possibly chosen by user
+    # NOTE: This includes 
     grouped_iqr = eval_scores_df.groupby(["seasonId", "metric", "model", "horizon"])[
         "score"
     ]
