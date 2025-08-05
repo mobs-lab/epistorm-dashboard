@@ -1,8 +1,14 @@
+import sys
 import pandas as pd
 import numpy as np
 import json
 from pathlib import Path
 from datetime import timedelta
+
+
+# ========================
+# === HELPER FUNCTIONS ===
+# ========================
 
 
 def get_project_root():
@@ -34,28 +40,36 @@ def calculate_boxplot_stats(series):
     """
     if series.empty:
         return None
-    q = np.percentile(series, [5, 25, 50, 75, 95])
+    
+    # Remove NaN values to avoid numpy warnings
+    clean_series = series.dropna()
+    if clean_series.empty:
+        return None
+        
+    q = np.percentile(clean_series, [5, 25, 50, 75, 95])
     return {
         "q05": q[0],
         "q25": q[1],
         "median": q[2],
         "q75": q[3],
         "q95": q[4],
-        "min": series.min(),
-        "max": series.max(),
-        "mean": series.mean(),
-        "count": len(series),
-        "scores": series.tolist(),
+        "min": clean_series.min(),
+        "max": clean_series.max(),
+        "mean": clean_series.mean(),
+        "count": len(clean_series),
+        "scores": clean_series.tolist(),
     }
 
 
+# ==================================
+# ======== MAIN PROCESSING =========
+# ==================================
 def main():
     project_root = get_project_root()
     public_data_dir = project_root / "public" / "data"
-
     print("----- Starting Full Data Pre-Processing -----")
 
-    # ===== 1. Ingest All Data From Sources =====
+    # ===== 1. Get All Data From Sources =====
     print("Step 1: Ingesting all data from sources...")
     try:
         locations_df = pd.read_csv(
@@ -92,106 +106,164 @@ def main():
             "FluSight-ensemble",
         ]
 
-        pred_dfs, nowcast_dfs = [], []
+        # ====== NOTE on Prediction, Archive Prediction, and Nowcast Generation =====
+        # New Prediction vs Archive Prediction contain different header formats & nowcast is extracted from new ones ONLY
+        # So we load, generate nowcast from new, parse them, change headers and combine back together, THEN move onto next step
+
+        # 1a. Retrieve "unprocessed" (new format) files
+        unprocessed_dfs = []
         for model in model_names:
-            current_path = public_data_dir / f"unprocessed/{model}"
-            archive_path = public_data_dir / f"archive/{model}"
-            files = list(current_path.glob("*.csv")) + list(archive_path.glob("*.csv"))
+            path = public_data_dir / f"unprocessed/{model}"
+            files = list(path.glob("*.csv"))
             if not files:
                 continue
-
-            model_df = pd.concat(
-                (pd.read_csv(f, low_memory=False) for f in files), ignore_index=True
+            df = pd.concat(
+                (pd.read_csv(f, low_memory=False, dtype={"location": str}) for f in files), ignore_index=True
             )
-            model_df["model"] = model
-            pred_dfs.append(model_df)
-
-            # Ingest nowcast trends if they exist for the model
-            nowcast_file = public_data_dir / f"processed/{model}/nowcast_trends.csv"
-            if nowcast_file.exists():
-                nowcast_df = pd.read_csv(nowcast_file, parse_dates=["reference_date"])
-                nowcast_df["model"] = model
-                nowcast_dfs.append(nowcast_df)
-
-        all_preds_df = pd.concat(pred_dfs, ignore_index=True)
-        all_nowcasts_df = (
-            pd.concat(nowcast_dfs, ignore_index=True) if nowcast_dfs else pd.DataFrame()
+            df["model"] = model
+            unprocessed_dfs.append(df)
+        unprocessed_df = (
+            pd.concat(unprocessed_dfs, ignore_index=True)
+            if unprocessed_dfs
+            else pd.DataFrame()
         )
 
-        print(f"DEBUG: Initial raw predictions loaded. Shape: {all_preds_df.shape}")
-        if not all_nowcasts_df.empty:
-            print(f"DEBUG: Initial raw nowcasts loaded. Shape: {all_nowcasts_df.shape}")
+        # 1b. Retrieve "archive" (old format) files
+        archive_dfs = []
+        for model in model_names:
+            path = public_data_dir / f"archive/{model}"
+            files = list(path.glob("*.csv"))
+            if not files:
+                continue
+            df = pd.concat(
+                (pd.read_csv(f, low_memory=False, dtype={"location": str}) for f in files), ignore_index=True
+            )
+            df["model"] = model
+            archive_dfs.append(df)
+        archive_df = (
+            pd.concat(archive_dfs, ignore_index=True) if archive_dfs else pd.DataFrame()
+        )
+
+        print(
+            f"   - DEBUG: Loaded {len(unprocessed_df)} rows from 'unprocessed' files."
+        )
+        print(f"   - DEBUG: Loaded {len(archive_df)} rows from 'archive' files.")
 
     except FileNotFoundError as e:
         print(f"FATAL ERROR: A required data file was not found: {e}")
         return
 
-    # ===== 2. Clean & Standardize Predictions =====
-    print("Step 2: Cleaning, standardizing, and pivoting prediction data...")
-    rename_dict = {
-        "forecast_date": "reference_date",
-        "type": "output_type",
-        "quantile": "output_type_id",
-    }
-    all_preds_df.rename(columns=rename_dict, inplace=True)
+    # ===== 2. EXTRACT NOWCASTS & CLEAN PREDICTIONS =====
+    print("Step 2: Processing data by source type...")
 
-    # ===== 2.5. Process Nowcast Trends =====
-    print("Extracting and processing nowcast trends...")
-    nowcast_models = [
-        "MOBS-GLEAM_FLUH",
-        "MIGHTE-Nsemble",
-        "CEPH-Rtrend_fluH",
-        "FluSight-ensemble",
-        "NU_UCSD-GLEAM_AI_FLUH",
-    ]
-    # Filter for the rate change target and relevant models
-    trends_df = all_preds_df[
-        (all_preds_df["target"] == "wk_flu_hosp_rate_change")
-        & (all_preds_df["model"].isin(nowcast_models))
-    ].copy()
-
-    all_nowcasts_df = pd.DataFrame()  # Initialize an empty dataframe
-    if not trends_df.empty:
-        # Retain only nowcasts (where target date equals reference date)
-        trends_df = trends_df[
-            trends_df["target_end_date"] == trends_df["reference_date"]
+    # --- A) Process Nowcast Trends from UNPROCESSED data ONLY ---
+    print("   - Extracting and processing nowcast trends...")
+    all_nowcasts_df = pd.DataFrame()
+    if not unprocessed_df.empty:
+        """ Nowcast Models: Only those model predictions that contain `wk flu hosp rate change` as target """
+        # TODO: Write a helper function to automatically find which model predictions in `unprocessed/` satisfies this criteria, then use that namelist?
+        nowcast_models = [
+            "MOBS-GLEAM_FLUH",
+            "MIGHTE-Nsemble",
+            "CEPH-Rtrend_fluH",
+            "FluSight-ensemble",
+            "NU_UCSD-GLEAM_AI_FLUH",
+            "MIGHTE-Joint"
+        ]
+        # Nowcast: Use correct target string with spaces instead of underscores
+        trends_df = unprocessed_df[
+            (unprocessed_df["target"] == "wk flu hosp rate change")
+            & (unprocessed_df["model"].isin(nowcast_models))
         ].copy()
-        # Clean up the category names
-        trends_df["output_type_id"] = trends_df["output_type_id"].str.removeprefix(
-            "large_"
+
+        if not trends_df.empty:
+            trends_df["reference_date"] = pd.to_datetime(trends_df["reference_date"])
+            trends_df["target_end_date"] = pd.to_datetime(trends_df["target_end_date"])
+            trends_df = trends_df[
+                trends_df["target_end_date"] == trends_df["reference_date"]
+            ].copy()
+            trends_df["output_type_id"] = trends_df["output_type_id"].str.removeprefix(
+                "large_"
+            )
+
+            all_nowcasts_df = trends_df.pivot_table(
+                index=["reference_date", "location", "model"],
+                columns="output_type_id",
+                values="value",
+            ).reset_index()
+            for col in ["stable", "increase", "decrease"]:
+                if col not in all_nowcasts_df.columns:
+                    all_nowcasts_df[col] = 0.0
+            all_nowcasts_df = all_nowcasts_df.fillna(0)
+            print(
+                f"   - DEBUG: Processed nowcast trends. Shape: {all_nowcasts_df.shape}"
+            )
+        else:
+            print(
+                "   - INFO: No nowcast data ('wk flu hosp rate change') found in source files."
+            )
+
+    # --- B) Process UNPROCESSED Hospitalization Predictions ---
+    processed_unprocessed_preds_df = pd.DataFrame()
+    if not unprocessed_df.empty:
+        df = unprocessed_df[unprocessed_df["target"] == "wk inc flu hosp"].copy()
+        df["output_type_id"] = df["output_type_id"].astype(str)
+        desired_quantiles = ["0.025", "0.05", "0.25", "0.5", "0.75", "0.95", "0.975"]
+        df = df[df["output_type_id"].isin(desired_quantiles)]
+        
+        if not df.empty:
+            processed_unprocessed_preds_df = df.pivot_table(
+                index=["reference_date", "target_end_date", "location", "model"],
+                columns="output_type_id",
+                values="value",
+            ).reset_index()
+            # Fix: Ensure column names are strings
+            processed_unprocessed_preds_df.columns = [str(c) for c in processed_unprocessed_preds_df.columns]
+
+    # --- C) Process ARCHIVE Hospitalization Predictions ---
+    processed_archive_preds_df = pd.DataFrame()
+    if not archive_df.empty:
+        df = archive_df.copy()
+        df.columns = df.columns.str.strip().str.strip('"')
+        df.rename(
+            columns={
+                "forecast_date": "reference_date",
+                "type": "output_type",
+                "quantile": "output_type_id",
+            },
+            inplace=True,
         )
+        # Archive data might have different target strings
+        df = df[df["target"].str.contains("inc flu hosp", na=False)].copy()
+        df["output_type_id"] = df["output_type_id"].astype(str)
+        desired_quantiles = ["0.025", "0.05", "0.25", "0.5", "0.75", "0.95", "0.975"]
+        df = df[df["output_type_id"].isin(desired_quantiles)]
+        
+        if not df.empty:
+            processed_archive_preds_df = df.pivot_table(
+                index=["reference_date", "target_end_date", "location", "model"],
+                columns="output_type_id",
+                values="value",
+            ).reset_index()
+            # Fix: Ensure column names are strings
+            processed_archive_preds_df.columns = [str(c) for c in processed_archive_preds_df.columns]
 
-        # This is the logic from transform_data.py to create the stable/increase/decrease columns
-        all_nowcasts_df = trends_df.pivot_table(
-            index=["reference_date", "location", "model"],
-            columns="output_type_id",
-            values="value",
-        ).reset_index()
-        # Ensure required columns exist, fill with 0 if not
-        for col in ["stable", "increase", "decrease"]:
-            if col not in all_nowcasts_df.columns:
-                all_nowcasts_df[col] = 0.0
-        all_nowcasts_df = all_nowcasts_df.fillna(
-            0
-        )  # Replace any NaNs that might result from the pivot
-        print(f"DEBUG: Processed nowcast trends. Shape: {all_nowcasts_df.shape}")
+    # --- D) Combine the prediction dataframes back together ---
+    all_preds_df = pd.concat(
+        [processed_unprocessed_preds_df, processed_archive_preds_df], ignore_index=True
+    )
+    
+    print(
+        f"   - DEBUG: Final combined and pivoted predictions. Shape: {all_preds_df.shape}"
+    )
 
-    # === Back to Processing Predictions Data ===
-    all_preds_df = all_preds_df[all_preds_df["target"] == "wk_inc_flu_hosp"].copy()
+    if all_preds_df.empty:
+        print(
+            "FATAL ERROR: No valid hospitalization prediction data found after processing."
+        )
+        return
 
-    # Ensure output_type_id is string for pivot, handle potential float values
-    all_preds_df["output_type_id"] = all_preds_df["output_type_id"].astype(str)
-
-    all_preds_df = all_preds_df.pivot_table(
-        index=["reference_date", "target_end_date", "location", "model"],
-        columns="output_type_id",
-        values="value",
-    ).reset_index()
-    # After pivot, column names that were numbers (like '0.5') might become floats. Convert to string for consistency.
-    all_preds_df.columns = [str(c) for c in all_preds_df.columns]
-
-    print(f"DEBUG: Predictions pivoted. Shape: {all_preds_df.shape}")
-
+    # --- E) Final Processing for Predictions and Ground Truth ---
     all_preds_df["reference_date"] = pd.to_datetime(all_preds_df["reference_date"])
     all_preds_df["target_end_date"] = pd.to_datetime(all_preds_df["target_end_date"])
     all_preds_df["horizon"] = (
@@ -207,8 +279,8 @@ def main():
         },
         inplace=True,
     )
-    gt_df = gt_df[["date", "stateNum", "admissions", "weeklyRate"]]
-    gt_df = gt_df.replace("NA", pd.NA).dropna()
+    gt_df = gt_df[["date", "stateNum", "admissions", "weeklyRate"]].copy()
+    gt_df.dropna(subset=["admissions"], inplace=True)
 
     # ===== 3. Fix Ground Truth =====
     print("Step 3: Fixing ground truth data...")
@@ -231,7 +303,8 @@ def main():
     gt_df_fixed = pd.merge(complete_gt_df, gt_df, on=["date", "stateNum"], how="left")
     gt_df_fixed["admissions"].fillna(-1, inplace=True)
     gt_df_fixed["weeklyRate"].fillna(0, inplace=True)
-    print(f"DEBUG: Ground truth fixed. Shape: {gt_df_fixed.shape}")
+    print(f"    -  DEBUG: Ground truth fixed. Shape: {gt_df_fixed.shape}")
+    
     # --- 4. Generate Seasons ---
     print("Step 4: Generating season definitions...")
     seasons = {}
@@ -299,8 +372,9 @@ def main():
     time_series_data = {}
 
     print("Creating fast lookup indexes for dataframes...")
-    gt_df_indexed = gt_df_fixed.set_index(["date", "stateNum"])
-    preds_df_indexed = all_preds_df.set_index(["reference_date", "location"])
+    # Fix: Sort indexes to avoid performance warnings
+    gt_df_indexed = gt_df_fixed.set_index(["date", "stateNum"]).sort_index()
+    preds_df_indexed = all_preds_df.set_index(["reference_date", "location", "model"]).sort_index()
 
     for season_id, dates in seasons.items():
         print(f"Processing season: {season_id}")
@@ -308,129 +382,143 @@ def main():
             (all_preds_df["reference_date"] >= dates["start"])
             & (all_preds_df["reference_date"] <= dates["end"])
         ]
-        time_series_data[season_id] = {
-            "partitions": {
-                "pre-forecast": {},
-                "full-forecast": {},
-                "forecast-tail": {},
-                "post-forecast": {},
-            }
-        }
+        
+        # Fix: Initialize correct structure according to data contract
+        time_series_data[season_id] = {}
+        
+        # Process each model separately
+        for model_name in model_names:
+            model_preds = season_preds[season_preds["model"] == model_name]
+            
+            if model_preds.empty:
+                first_pred_ref_date, last_pred_ref_date, last_pred_target_date = (
+                    dates["end"],
+                    dates["start"],
+                    dates["start"],
+                )
+            else:
+                first_pred_ref_date, last_pred_ref_date, last_pred_target_date = (
+                    model_preds["reference_date"].min(),
+                    model_preds["reference_date"].max(),
+                    model_preds["target_end_date"].max(),
+                )
 
-        if season_preds.empty:
-            first_pred_ref_date, last_pred_ref_date, last_pred_target_date = (
-                dates["end"],
-                dates["start"],
-                dates["start"],
-            )
-        else:
-            first_pred_ref_date, last_pred_ref_date, last_pred_target_date = (
-                season_preds["reference_date"].min(),
-                season_preds["reference_date"].max(),
-                season_preds["target_end_date"].max(),
-            )
-            time_series_data[season_id].update(
-                {
-                    "firstPredRefDate": first_pred_ref_date,
-                    "lastPredRefDate": last_pred_ref_date,
-                    "lastPredTargetDate": last_pred_target_date,
+            time_series_data[season_id][model_name] = {
+                "firstPredRefDate": first_pred_ref_date.strftime("%Y-%m-%d") if pd.notna(first_pred_ref_date) else None,
+                "lastPredRefDate": last_pred_ref_date.strftime("%Y-%m-%d") if pd.notna(last_pred_ref_date) else None,
+                "lastPredTargetDate": last_pred_target_date.strftime("%Y-%m-%d") if pd.notna(last_pred_target_date) else None,
+                "partitions": {
+                    "pre-forecast": {},
+                    "full-forecast": {},
+                    "forecast-tail": {},
+                    "post-forecast": {},
                 }
-            )
+            }
 
-        ranges = {
-            "pre-forecast": (dates["start"], first_pred_ref_date - timedelta(days=1)),
-            "full-forecast": (first_pred_ref_date, last_pred_ref_date),
-            "forecast-tail": (
-                last_pred_ref_date + timedelta(days=1),
-                last_pred_target_date,
-            ),
-            "post-forecast": (last_pred_target_date + timedelta(days=1), dates["end"]),
-        }
+            ranges = {
+                "pre-forecast": (dates["start"], first_pred_ref_date - timedelta(days=1)),
+                "full-forecast": (first_pred_ref_date, last_pred_ref_date),
+                "forecast-tail": (
+                    last_pred_ref_date + timedelta(days=1),
+                    last_pred_target_date,
+                ),
+                "post-forecast": (last_pred_target_date + timedelta(days=1), dates["end"]),
+            }
 
-        for part_name, (start_d, end_d) in ranges.items():
-            if start_d > end_d:
-                continue
+            for part_name, (start_d, end_d) in ranges.items():
+                if pd.isna(start_d) or pd.isna(end_d) or start_d > end_d:
+                    continue
 
-            part_data = {}
-            gt_dates_in_part = gt_df_fixed.loc[
-                (gt_df_fixed["date"] >= start_d) & (gt_df_fixed["date"] <= end_d),
-                "date",
-            ]
-            pred_dates_in_part = all_preds_df.loc[
-                (all_preds_df["reference_date"] >= start_d)
-                & (all_preds_df["reference_date"] <= end_d),
-                "reference_date",
-            ]
-            all_unique_dates_in_part = pd.concat(
-                [gt_dates_in_part, pred_dates_in_part]
-            ).unique()
+                part_data = {}
+                gt_dates_in_part = gt_df_fixed.loc[
+                    (gt_df_fixed["date"] >= start_d) & (gt_df_fixed["date"] <= end_d),
+                    "date",
+                ]
+                pred_dates_in_part = model_preds.loc[
+                    (model_preds["reference_date"] >= start_d)
+                    & (model_preds["reference_date"] <= end_d),
+                    "reference_date",
+                ]
+                all_unique_dates_in_part = pd.concat(
+                    [gt_dates_in_part, pred_dates_in_part]
+                ).unique()
 
-            for state_num in all_locations:
-                part_data[state_num] = {}
                 for ref_date in all_unique_dates_in_part:
                     if not (start_d <= pd.to_datetime(ref_date) <= end_d):
                         continue
 
-                    ref_date_iso, entry = (
-                        pd.to_datetime(ref_date).strftime("%Y-%m-%d"),
-                        {},
-                    )
+                    ref_date_iso = pd.to_datetime(ref_date).strftime("%Y-%m-%d")
+                    
+                    if ref_date_iso not in part_data:
+                        part_data[ref_date_iso] = {}
 
-                    try:
-                        gt_row = gt_df_indexed.loc[(ref_date, state_num)]
-                        if pd.notna(gt_row["admissions"]) and gt_row["admissions"] >= 0:
-                            entry["groundTruth"] = {
-                                "admissions": gt_row["admissions"],
-                                "weeklyRate": gt_row["weeklyRate"],
-                            }
-                    except KeyError:
-                        pass
+                    for state_num in all_locations:
+                        if state_num not in part_data[ref_date_iso]:
+                            part_data[ref_date_iso][state_num] = {}
 
-                    try:
-                        preds_on_date = preds_df_indexed.loc[(ref_date, state_num)]
-                        if not preds_on_date.empty:
-                            predictions_dict = {}
-                            # Handle both single (Series) and multiple (DataFrame) predictions, for safety
-                            if isinstance(preds_on_date, pd.Series):
-                                preds_on_date = preds_on_date.to_frame().T
-                            for _, pred_row in preds_on_date.iterrows():
-                                target_date_iso = pred_row["target_end_date"].strftime(
-                                    "%Y-%m-%d"
-                                )
-                                model = pred_row["model"]
-                                if target_date_iso not in predictions_dict:
-                                    predictions_dict[target_date_iso] = {}
-                                predictions_dict[target_date_iso][model] = {
-                                    "horizon": pred_row["horizon"],
-                                    "median": pred_row[0.5],
-                                    "q25": pred_row[0.25],
-                                    "q75": pred_row[0.75],
-                                    "q05": pred_row[0.025],
-                                    "q95": pred_row[0.95],
+                        entry = part_data[ref_date_iso][state_num]
+
+                        # Add ground truth data
+                        try:
+                            gt_row = gt_df_indexed.loc[(ref_date, state_num)]
+                            if pd.notna(gt_row["admissions"]) and gt_row["admissions"] >= 0:
+                                entry["groundTruth"] = {
+                                    "admissions": float(gt_row["admissions"]),
+                                    "weeklyRate": float(gt_row["weeklyRate"]),
                                 }
-                            entry["predictions"] = predictions_dict
-                    except KeyError:
-                        pass
+                        except KeyError:
+                            pass
 
-                    if entry:
-                        part_data[state_num][ref_date_iso] = entry
-            time_series_data[season_id]["partitions"][part_name] = part_data
+                        # Add prediction data for this specific model
+                        try:
+                            preds_on_date = preds_df_indexed.loc[(ref_date, state_num, model_name)]
+                            if not preds_on_date.empty:
+                                predictions_dict = {}
+                                # Handle both single (Series) and multiple (DataFrame) predictions
+                                if isinstance(preds_on_date, pd.Series):
+                                    preds_on_date = preds_on_date.to_frame().T
+                                
+                                for _, pred_row in preds_on_date.iterrows():
+                                    target_date_iso = pred_row["target_end_date"].strftime("%Y-%m-%d")
+                                    predictions_dict[target_date_iso] = {
+                                        "horizon": int(pred_row["horizon"]),
+                                        "median": float(pred_row["0.5"]) if pd.notna(pred_row["0.5"]) else 0.0,
+                                        "q25": float(pred_row["0.25"]) if pd.notna(pred_row["0.25"]) else 0.0,
+                                        "q75": float(pred_row["0.75"]) if pd.notna(pred_row["0.75"]) else 0.0,
+                                        "q05": float(pred_row["0.025"]) if pd.notna(pred_row["0.025"]) else 0.0,
+                                        "q95": float(pred_row["0.95"]) if pd.notna(pred_row["0.95"]) else 0.0,
+                                    }
+                                if predictions_dict:
+                                    entry["predictions"] = predictions_dict
+                        except KeyError:
+                            pass
+
+                time_series_data[season_id][model_name]["partitions"][part_name] = part_data
 
     # DEBUG: Print a sample of the final nested structure
-    print("DEBUG: Sample of final nested time_series_data for one state:")
+    print("    -  DEBUG: Sample of final nested time_series_data for one state:")
     try:
-        sample_data = time_series_data["season-2023-2024"]["partitions"][
-            "full-forecast"
-        ]["06"]["2024-03-09"]
-        print(json.dumps(sample_data, indent=2, cls=NpEncoder))
-    except KeyError:
-        print(
-            "DEBUG: Error in acquiring sample time-series data using nested structure. Check the implementation."
-        )
+        sample_season = list(time_series_data.keys())[0] if time_series_data else None
+        if sample_season:
+            sample_model = list(time_series_data[sample_season].keys())[0]
+            sample_partition = time_series_data[sample_season][sample_model]["partitions"]["full-forecast"]
+            sample_date = list(sample_partition.keys())[0] if sample_partition else None
+            if sample_date:
+                sample_state = list(sample_partition[sample_date].keys())[0]
+                print(f"Season: {sample_season}, Model: {sample_model}, Date: {sample_date}, State: {sample_state}")
+                print(json.dumps(sample_partition[sample_date][sample_state], indent=2, cls=NpEncoder))
+    except (KeyError, IndexError) as e:
+        print(f"    -  DEBUG: Could not create sample output: {e}")
 
     # ===== 6. Aggregate Evaluation Data =====
     print("Step 6: Pre-aggregating evaluation data...")
     # Clean and standardize all three evaluation dataframes
+    
+    # Filter evaluation data to only include models we care about
+    wis_df = wis_df[wis_df["Model"].isin(model_names)].copy()
+    mape_df = mape_df[mape_df["Model"].isin(model_names)].copy()
+    coverage_df = coverage_df[coverage_df["Model"].isin(model_names)].copy()
+    
     wis_df["metric"] = "WIS/Baseline"
     wis_df.rename(
         columns={"Model": "model", "wis_ratio": "score", "location": "stateNum"},
@@ -474,7 +562,7 @@ def main():
     for df in [eval_scores_df, coverage_long_df]:
         df["reference_date"] = pd.to_datetime(df["reference_date"])
         df["stateNum"] = df["stateNum"].astype(str).str.zfill(2)
-    print("DEBUG: All evaluation score files cleaned and standardized.")
+    print("    -  DEBUG: All evaluation score files cleaned and standardized.")
 
     # Assign season ID to each score entry
     def get_season_id(date):
@@ -490,14 +578,13 @@ def main():
     eval_scores_df.dropna(subset=["seasonId"], inplace=True)
     coverage_long_df.dropna(subset=["seasonId"], inplace=True)
     print(
-        f"DEBUG: Evaluation scores assigned to seasons. Shape: {eval_scores_df.shape}"
+        f"    -  DEBUG: Evaluation scores assigned to seasons. Shape: {eval_scores_df.shape}"
     )
 
     # Perform aggregations
     iqr_data, state_map_data, coverage_data = {}, {}, {}
 
     # For the IQR data in Season Overview Box Plot, group by every filter option possibly chosen by user
-    # NOTE: This includes 
     grouped_iqr = eval_scores_df.groupby(["seasonId", "metric", "model", "horizon"])[
         "score"
     ]
@@ -521,7 +608,7 @@ def main():
             row["metric"], {}
         ).setdefault(row["model"], {}).setdefault(row["stateNum"], {})[
             row["horizon"]
-        ] = {"sum": row["sum"], "count": int(row["count"])}
+        ] = {"sum": float(row["sum"]), "count": int(row["count"])}
 
     # PI Chart Aggregations
     coverage_agg = (
@@ -535,7 +622,7 @@ def main():
         coverage_data.setdefault(row["seasonId"], {}).setdefault(
             row["model"], {}
         ).setdefault(row["horizon"], {})[int(row["coverage_level"])] = {
-            "sum": row["sum"],
+            "sum": float(row["sum"]),
             "count": int(row["count"]),
         }
 
@@ -546,7 +633,13 @@ def main():
 
     # Process thresholds data for core JSON
     thresholds_df.rename(columns={"Location": "stateNum"}, inplace=True)
-    thresholds_dict = thresholds_df.set_index("stateNum").to_dict(orient="index")
+    thresholds_dict = {}
+    for _, row in thresholds_df.iterrows():
+        thresholds_dict[row["stateNum"]] = {
+            "medium": float(row["Medium"]),
+            "high": float(row["High"]),
+            "veryHigh": float(row["Very High"])
+        }
 
     # Process nowcast trends data for core JSON
     nowcast_dict = {}
@@ -558,9 +651,9 @@ def main():
                 row["location"],
             )
             nowcast_dict.setdefault(model, {}).setdefault(date_iso, {})[loc] = {
-                "decrease": row["decrease"],
-                "increase": row["increase"],
-                "stable": row["stable"],
+                "decrease": float(row["decrease"]),
+                "increase": float(row["increase"]),
+                "stable": float(row["stable"]),
             }
 
     # Assemble app_data_core.json
