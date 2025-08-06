@@ -1,4 +1,4 @@
-'use client'
+"use client";
 
 // File: src/app/providers/DataProvider.tsx
 import React, { createContext, useContext, useEffect, useState } from "react";
@@ -82,62 +82,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return null;
     }
   };
-
-  /* const addBackEmptyDatesWithPrediction = (
-    groundTruthData: DataPoint[],
-    predictionsData: ModelPrediction[],
-    locationData: LocationData[]
-  ): ProcessedDataWithDateRange => {
-
-    let earliestDate = new Date(8640000000000000);
-    let latestDate = new Date(0);
-
-    groundTruthData.forEach((d) => {
-      if (d.date < earliestDate) earliestDate = d.date;
-      if (d.date > latestDate) latestDate = d.date;
-    });
-
-    predictionsData.forEach((model) => {
-      model.predictionData.forEach((d) => {
-        if (d.referenceDate < earliestDate) earliestDate = d.referenceDate;
-        if (d.targetEndDate > latestDate) latestDate = d.targetEndDate;
-      });
-    });
-
-    const allSaturdays = eachWeekOfInterval(
-      {
-        start: startOfWeek(earliestDate, { weekStartsOn: 6 }),
-        end: endOfWeek(latestDate, { weekStartsOn: 6 }),
-      },
-      { weekStartsOn: 6 }
-    );
-
-    const existingDataMap = new Map(groundTruthData.map((d) => [format(d.date, "yyyy-MM-dd"), d]));
-    const placeholderData: DataPoint[] = [];
-
-    allSaturdays.forEach((date) => {
-      const dateString = format(date, "yyyy-MM-dd");
-      if (!existingDataMap.has(dateString)) {
-        locationData.forEach((location) => {
-          placeholderData.push({
-            date,
-            stateNum: location.stateNum,
-            stateName: location.stateName,
-            admissions: -1,
-            weeklyRate: 0,
-          });
-        });
-      }
-    });
-
-    const combinedData = [...groundTruthData, ...placeholderData].sort((a, b) => a.date.getTime() - b.date.getTime());
-
-    return {
-      data: combinedData,
-      earliestDate,
-      latestDate,
-    };
-  }; */
 
   // Optimized version of generateSeasonOptions that doesn't re-iterate through the data
   function generateSeasonOptionsOptimized(earliestDate: Date, latestDate: Date, groundTruthData: DataPoint[]): SeasonOption[] {

@@ -61,6 +61,16 @@ export interface SeasonOption {
   endDate: Date;
 }
 
+export interface DynamicSeasonOption {
+  index: number,
+  label: string,
+  displayString: string,
+  isDynamic: boolean,
+  subDisplayValue: string,
+  startDate: Date;
+  endDate: Date;
+}
+
 export interface StateThresholds {
   location: string;
   medium: number;
