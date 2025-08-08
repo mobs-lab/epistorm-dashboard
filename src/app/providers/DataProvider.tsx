@@ -18,7 +18,6 @@ import {
   startOfWeek,
   subWeeks,
 } from "date-fns";
-import { useAppDispatch } from "@/store/hooks";
 import {
   DataPoint,
   LocationData,
@@ -33,6 +32,7 @@ import {
 } from "@/interfaces/forecast-interfaces";
 import { modelNames } from "@/interfaces/epistorm-constants";
 
+import { useAppDispatch } from "@/store/hooks";
 // Forecast Actions and Reducers
 import { setGroundTruthData } from "@/store/data-slices/groundTruthSlice";
 import { setPredictionsData } from "@/store/data-slices/predictionsSlice";
@@ -44,6 +44,7 @@ import { setSeasonOptions, updateDateEnd, updateDateRange, updateDateStart, upda
 
 // Evaluations Actions and Reducers
 import { setDetailedCoverageData, setEvaluationsSingleModelScoreData } from "@/store/data-slices/evaluationsScoreDataSlice";
+import { setEvaluationJsonData, clearEvaluationJsonData } from "@/store/data-slices/evaluationDataSlice"; //NOTE: New
 import {
   updateEvaluationSingleModelViewDateStart,
   updateEvaluationSingleModelViewDateEnd,
@@ -493,192 +494,18 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  /* Fetch the `/public/evaluations-score/` path's `WIS_ratio.csv` and `MAPE.csv` asyncly, then organize them into model and metrics respectively;
-   *  WIS_ratio.csv produces EvaluationsScoreDataCollection with scoreMetric as "WIS_Ratio", while MAPE.csv produces "MAPE" respectively;
-   *  modelName can be found in each CSV files' entries' 'Model' column;
-   * in each score data-slices point, (again, consult the custom interfaces), referenceDate is the date of the score, and score is the actual score value:
-   *   - MAPE: the column is literally named 'MAPE'
-   *   - WIS_Ratio: the column is literally named 'wis_ratio'
-   * Note: I am keeping the number float point precision to as much as possible, until the limit of d3.js' precision, which is 16 digits (?)
-   *
-   * Then in the end we push the data-slices into store using dispatch(setEvaluationsSingleModelScoreData(data-slices));
-   *  */
   const fetchEvaluationsScoreData = async () => {
     try {
-      const [wisRatioData, mapeData, coverageData] = await Promise.all([
-        d3.csv("/data/evaluations-score/WIS_ratio.csv"),
-        d3.csv("/data/evaluations-score/MAPE.csv"),
-        d3.csv("/data/evaluations-score/coverage.csv"),
-      ]);
-
-      // Process WIS Ratio data-slices
-      const wisRatioByModel = new Map<
-        string,
-        {
-          referenceDate: Date;
-          score: number;
-          location: string;
-          horizon: number;
-        }[]
-      >();
-
-      wisRatioData.forEach((entry) => {
-        const modelName = entry.Model;
-        // Only process models in our modelNames list
-        if (!modelNames.includes(modelName)) return;
-
-        /* Filter out needed models here! */
-        const scoreData = {
-          referenceDate: parseISO(entry.reference_date),
-          score: +entry.wis_ratio,
-          location: entry.location,
-          horizon: +entry.horizon,
-        };
-
-        const key = modelName;
-        if (!wisRatioByModel.has(key)) {
-          wisRatioByModel.set(key, []);
-        }
-        wisRatioByModel.get(key)?.push(scoreData);
-      });
-
-      // Process MAPE data-slices
-      const mapeByModel = new Map<
-        string,
-        {
-          referenceDate: Date;
-          score: number;
-          location: string;
-          horizon: number;
-        }[]
-      >();
-      mapeData.forEach((entry) => {
-        const modelName = entry.Model;
-        if (!modelNames.includes(modelName)) return;
-        const scoreData = {
-          referenceDate: parseISO(entry.reference_date),
-          score: +entry.MAPE * 100, // This is to make it into a percentage
-          location: entry.Location, // Changed from entry.location
-          horizon: +entry.horizon,
-        };
-
-        const key = modelName;
-        if (!mapeByModel.has(key)) {
-          mapeByModel.set(key, []);
-        }
-        mapeByModel.get(key)?.push(scoreData);
-      });
-
-      // Process Coverage data
-      const coverageByModel = new Map<
-        string,
-        {
-          referenceDate: Date;
-          score: number; //This will be the 95% coverage score
-          location: string;
-          horizon: number;
-        }[]
-      >();
-
-      // Also store detailed coverage data
-      const detailedCoverageByModel = new Map<string, CoverageScoreData[]>();
-
-      coverageData.forEach((entry) => {
-        const modelName = entry.Model;
-
-        // Only process models in our modelNames list
-        if (!modelNames.includes(modelName)) return;
-
-        // Create detailed coverage data entry
-        const detailedCoverageData: CoverageScoreData = {
-          referenceDate: parseISO(entry.reference_date),
-          location: entry.location,
-          horizon: +entry.horizon,
-          coverage10: +entry["10_cov"] * 100,
-          coverage20: +entry["20_cov"] * 100,
-          coverage30: +entry["30_cov"] * 100,
-          coverage40: +entry["40_cov"] * 100,
-          coverage50: +entry["50_cov"] * 100,
-          coverage60: +entry["60_cov"] * 100,
-          coverage70: +entry["70_cov"] * 100,
-          coverage80: +entry["80_cov"] * 100,
-          coverage90: +entry["90_cov"] * 100,
-          coverage95: +entry["95_cov"] * 100,
-          coverage98: +entry["98_cov"] * 100,
-        };
-
-        // Create simplified score data entry, for State-specific Model performance map
-        const scoreData = {
-          referenceDate: parseISO(entry.reference_date),
-          /* TODO: 95 column? Confirmation needed */
-          score: +entry["95_cov"] * 100,
-          location: entry.location,
-          horizon: +entry.horizon,
-        };
-
-        // Add to simplified map for use with existing components
-        const key = modelName;
-        if (!coverageByModel.has(key)) {
-          coverageByModel.set(key, []);
-        }
-        coverageByModel.get(key)?.push(scoreData);
-
-        // Add to detailed map for components that need granular data
-        if (!detailedCoverageByModel.has(key)) {
-          detailedCoverageByModel.set(key, []);
-        }
-        detailedCoverageByModel.get(key)?.push(detailedCoverageData);
-      });
+      /* Fetch the new JSON format Evaluations Score Data */
+      const evaluationsData = await Promise.all([fetch("/public/data/app_data_evaluations.json")]);
 
       // Combine into final format
-      const evaluationsData: EvaluationsScoreDataCollection[] = [];
+      const originalEvaluationsData: EvaluationsScoreDataCollection[] = [];
 
-      // Add WIS Ratio data
-      wisRatioByModel.forEach((scoreData, modelName) => {
-        evaluationsData.push({
-          modelName,
-          scoreMetric: "WIS/Baseline",
-          scoreData: scoreData.sort((a, b) => a.referenceDate.getTime() - b.referenceDate.getTime()),
-        });
-      });
-
-      // Add MAPE data
-      mapeByModel.forEach((scoreData, modelName) => {
-        evaluationsData.push({
-          modelName,
-          scoreMetric: "MAPE",
-          scoreData: scoreData.sort((a, b) => a.referenceDate.getTime() - b.referenceDate.getTime()),
-        });
-      });
-
-      // Add Coverage data
-      coverageByModel.forEach((scoreData, modelName) => {
-        evaluationsData.push({
-          modelName,
-          scoreMetric: "Coverage", // Use "Coverage" as the metric name
-          scoreData: scoreData.sort((a, b) => a.referenceDate.getTime() - b.referenceDate.getTime()),
-        });
-      });
-
+    
       dispatch(setEvaluationsSingleModelScoreData(evaluationsData));
       updateLoadingState("evaluationScores", false);
 
-      // Convert the Map to an array of DetailedCoverageCollection
-      const detailedCoverageData: DetailedCoverageCollection[] = [];
-      detailedCoverageByModel.forEach((coverageData, modelName) => {
-        detailedCoverageData.push({
-          modelName,
-          coverageData: coverageData.sort((a, b) => a.referenceDate.getTime() - b.referenceDate.getTime()),
-        });
-      });
-
-      // Store detailed coverage data in Redux
-      dispatch(setDetailedCoverageData(detailedCoverageData));
-      updateLoadingState("evaluationDetailedCoverage", false);
-    } catch (error) {
-      console.error("Error fetching evaluation score data:", error);
-      updateLoadingState("evaluationScores", false);
-    }
   };
 
   const updateLoadingState = (key: keyof LoadingStates, value: boolean) => {
