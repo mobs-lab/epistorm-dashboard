@@ -1,9 +1,9 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import * as d3 from "d3";
 import { useAppSelector } from "@/store/hooks";
-import { isUTCDateEqual } from "@/interfaces/forecast-interfaces";
+import { isUTCDateEqual } from "@/utils/date";
 import InfoButton from "@/shared-components/InfoButton";
-import { trendForecastInfo } from "@/interfaces/infobutton-content";
+import { trendForecastInfo } from "types/infobutton-content";
 
 interface RiskLevelGaugeProps {
   riskLevel: string;
