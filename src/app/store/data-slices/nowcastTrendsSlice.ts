@@ -1,5 +1,5 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import {NowcastTrendByModel, NowcastTrendsCollection} from '@/interfaces/forecast-interfaces';
+import { NowcastTrendByModel, NowcastTrendsCollection } from '@/types/domains/nowcast';
 
 
 const initialState: NowcastTrendsCollection = {

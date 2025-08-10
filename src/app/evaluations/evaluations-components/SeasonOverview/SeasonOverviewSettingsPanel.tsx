@@ -2,7 +2,7 @@
 
 import React, { useEffect } from "react";
 
-import { modelColorMap, modelNames } from "@/interfaces/epistorm-constants";
+import { modelColorMap, modelNames } from "@/types/common";
 
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import {
@@ -16,7 +16,7 @@ import { Radio, Typography, List, ListItem, ListItemPrefix } from "@/styles/mate
 import Image from "next/image";
 
 import { format, subDays } from "date-fns";
-import { horizonSelectorsInfo } from "@/interfaces/infobutton-content";
+import { horizonSelectorsInfo } from "types/infobutton-content";
 import InfoButton from "@/shared-components/InfoButton";
 
 // Season Overview Settings Panel
