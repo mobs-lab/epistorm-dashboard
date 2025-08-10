@@ -4,10 +4,9 @@ import { addWeeks, subWeeks, format } from "date-fns";
 
 import { useAppSelector } from "@/store/hooks";
 
-import { DataPoint, ModelPrediction } from "@/types/domains/forecasting";
-import { isUTCDateEqual } from "@/utils/date";
-import { useResponsiveSVG } from "@/utils/responsiveSVG";
-import { modelColorMap } from "@/types/common";
+import { DataPoint, isUTCDateEqual, ModelPrediction } from "@/interfaces/forecast-interfaces";
+import { useResponsiveSVG } from "@/interfaces/responsiveSVG";
+import { modelColorMap } from "@/interfaces/epistorm-constants";
 
 interface ScoreDataPoint {
   referenceDate: Date;
@@ -126,8 +125,8 @@ const SingleModelScoreLineChart: React.FC = () => {
     // Find relevant score data for selected model and metric
     const scoreData =
       scoreDataCollection
-        .find((d: any) => d.modelName === modelName && d.scoreMetric === scoreOption)
-        ?.scoreData.filter((d: any) => d.location === state && d.horizon === horizon) || [];
+        .find((d) => d.modelName === modelName && d.scoreMetric === scoreOption)
+        ?.scoreData.filter((d) => d.location === state && d.horizon === horizon) || [];
 
     if (scoreData.length === 0) {
       return [];
@@ -135,7 +134,7 @@ const SingleModelScoreLineChart: React.FC = () => {
 
     // Create a map for quick lookup of score data by reference date (ISO string)
     const scoreDataMap = new Map<string, ScoreDataPoint>();
-    scoreData.forEach((d: any) => {
+    scoreData.forEach((d) => {
       scoreDataMap.set(d.referenceDate.toISOString(), {
         referenceDate: d.referenceDate,
         score: d.score,
@@ -367,12 +366,11 @@ const SingleModelScoreLineChart: React.FC = () => {
         }
       });
 
-    const yAxis = d3.axisLeft(yScale).tickFormat((d: d3.NumberValue, i: number) => {
-      const value = Number(d.valueOf());
+    const yAxis = d3.axisLeft(yScale).tickFormat((d: number) => {
       if (scoreOption === "MAPE") {
-        return value >= 10 ? `${value.toFixed(0)}%` : `${value.toFixed(1)}%`;
+        return d >= 10 ? `${d.toFixed(0)}%` : `${d.toFixed(1)}%`;
       }
-      return value.toFixed(1);
+      return d.toFixed(1);
     });
 
     return { xScale, yScale, xAxis, yAxis };
@@ -493,7 +491,7 @@ const SingleModelScoreLineChart: React.FC = () => {
       const lines = text.text().split(/\n+/);
       const x = text.attr("x") || 0;
       const y = text.attr("y") || 0;
-      const dy = parseFloat(text.attr("dy") || "0");
+      const dy = parseFloat(text.attr("dy") || 0);
 
       // Clear existing content
       text.text(null);
@@ -591,21 +589,16 @@ const SingleModelScoreLineChart: React.FC = () => {
       .append("g")
       .attr("transform", `translate(0,${chartHeight})`)
       .style("font-family", "var(--font-dm-sans)")
-      .call(xAxis as any)
+      .call(xAxis)
       .selectAll(".tick text")
       .style("text-anchor", "middle")
       .style("font-size", "13px")
-      .each(function () {
-        // Ensure dy is a string for wrapAxisLabels
-        const t = d3.select(this);
-        if (t.attr("dy") === null) t.attr("dy", "0");
-      })
       .call(wrapAxisLabels, 20);
 
     chart
       .append("g")
       .style("font-family", "var(--font-dm-sans)")
-      .call(yAxis as any)
+      .call(yAxis)
       .call((g) => g.select(".domain").remove())
       .call((g) => g.selectAll(".tick line").attr("stroke-opacity", 0.5).attr("stroke-dasharray", "2,2").attr("x2", chartWidth))
       .style("font-size", "18px");
