@@ -2,8 +2,8 @@
 "use client";
 
 import React, { useEffect, useMemo } from "react";
-import { modelColorMap, modelNames } from "@/interfaces/epistorm-constants";
-import { SeasonOption } from "@/interfaces/forecast-interfaces";
+import { modelColorMap, modelNames } from "@/types/common";
+import { SeasonOption } from "@/types/domains/forecasting";
 import { Radio, Typography } from "@/styles/material-tailwind-wrapper";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import {
@@ -20,7 +20,7 @@ import SettingsStateMap from "@/shared-components/SettingsStateMap";
 import SettingsStyledDatePicker from "./SettingsStyledDatePicker";
 import Image from "next/image";
 import InfoButton from "@/shared-components/InfoButton";
-import { horizonSelectorsInfo } from "@/interfaces/infobutton-content";
+import { horizonSelectorsInfo } from "types/infobutton-content";
 
 const SettingsPanel: React.FC = () => {
   /* Redux-Managed State Variables */
