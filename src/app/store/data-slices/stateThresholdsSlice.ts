@@ -1,7 +1,7 @@
 // src/app/store/stateThresholdsSlice.ts
 
-import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { StateThresholds } from '@/types/domains/forecasting';
+import {createSlice, PayloadAction} from '@reduxjs/toolkit';
+import {StateThresholds} from '@/interfaces/forecast-interfaces';
 
 interface StateThresholdsState {
     data: StateThresholds[];

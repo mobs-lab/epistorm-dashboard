@@ -2,8 +2,8 @@
 
 import React, { useMemo, useState } from "react";
 
-import { modelColorMap, modelNames } from "@/types/common";
-import { SeasonOption } from "@/types/domains/forecasting";
+import { modelColorMap, modelNames } from "@/interfaces/epistorm-constants";
+import { SeasonOption } from "@/interfaces/forecast-interfaces";
 
 import SettingsStateMap from "@/shared-components/SettingsStateMap";
 
@@ -23,7 +23,7 @@ import {
 import { Radio, Typography } from "@/styles/material-tailwind-wrapper";
 
 import Image from "next/image";
-import { horizonSelectorsInfo } from "types/infobutton-content";
+import { horizonSelectorsInfo } from "@/interfaces/infobutton-content";
 import InfoButton from "@/shared-components/InfoButton";
 
 const SingleModelSettingsPanel: React.FC = () => {
