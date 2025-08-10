@@ -1,4 +1,3 @@
-import sys
 import pandas as pd
 import numpy as np
 import json
@@ -86,9 +85,9 @@ def main():
         thresholds_df = pd.read_csv(public_data_dir / "thresholds.csv", dtype={"Location": str})
 
         # Load evaluation score data
-        wis_df = pd.read_csv(public_data_dir / "evaluations-score/WIS_ratio.csv", dtype={"location": str})
-        mape_df = pd.read_csv(public_data_dir / "evaluations-score/MAPE.csv", dtype={"Location": str})
-        coverage_df = pd.read_csv(public_data_dir / "evaluations-score/coverage.csv", dtype={"location": str})
+        wis_df = pd.read_csv(public_data_dir / "evaluations-score/WIS_ratio.csv", dtype={"location": str, "horizon": int})
+        mape_df = pd.read_csv(public_data_dir / "evaluations-score/MAPE.csv", dtype={"Location": str, "horizon": int})
+        coverage_df = pd.read_csv(public_data_dir / "evaluations-score/coverage.csv", dtype={"location": str, "horizon": int})
 
         # Define model names (should match epistorm-constants.ts)
         model_names = [
@@ -416,11 +415,16 @@ def main():
 
     dynamic_season_options = []
     for i, (period_id, display_string, weeks_back) in enumerate(dynamic_period_definitions):
+        # Real period: start is exactly N weeks before the latest reference date
         start_date = last_valid_ref_date - timedelta(weeks=weeks_back)
         end_date = last_valid_ref_date
 
+        # Display should start on the immediate next Sunday after the real start date
+        next_sunday_offset = (6 - start_date.weekday()) % 7
+        display_start_date = start_date + timedelta(days=next_sunday_offset)
+
         # Format for Season Overview display: (MM dd, YYYY - MM dd, YYYY)
-        sub_display_value = f"({start_date.strftime('%b %d, %Y')} - {end_date.strftime('%b %d, %Y')})"
+        sub_display_value = f"({display_start_date.strftime('%b %d, %Y')} - {end_date.strftime('%b %d, %Y')})"
 
         # Store for evaluation aggregation only
         dynamic_periods[period_id] = {"start": start_date, "end": end_date}
@@ -627,8 +631,11 @@ def main():
 
     # Filter to only include our models and positive horizons
     wis_df = wis_df[wis_df["Model"].isin(model_names) & (wis_df["horizon"] >= 0)].copy()
+    wis_df["horizon"] = wis_df["horizon"].astype(int)
     mape_df = mape_df[mape_df["Model"].isin(model_names) & (mape_df["horizon"] >= 0)].copy()
+    mape_df["horizon"] = mape_df["horizon"].astype(int)
     coverage_df = coverage_df[coverage_df["Model"].isin(model_names) & (coverage_df["horizon"] >= 0)].copy()
+    coverage_df["horizon"] = coverage_df["horizon"].astype(int)
 
     # Standardize WIS data
     wis_df["metric"] = "WIS/Baseline"
@@ -666,58 +673,117 @@ def main():
         df["reference_date"] = pd.to_datetime(df["reference_date"])
         df["stateNum"] = df["stateNum"].astype(str).str.zfill(2)
 
+    # Calculate target_end_date for proper filtering against time ranges generated using referenceDate's perspective
+    print("   - Calculating target end dates for evaluation filtering...")
+    eval_scores_df["target_end_date"] = eval_scores_df["reference_date"] + pd.to_timedelta(eval_scores_df["horizon"] * 7, unit="D")
+    coverage_long_df["target_end_date"] = coverage_long_df["reference_date"] + pd.to_timedelta(coverage_long_df["horizon"] * 7, unit="D")
+
     print("   - Evaluation score files cleaned and standardized")
 
-    # Assign season IDs - IMPORTANT: Use all_seasons_for_evaluation (includes both full range AND dynamic)
-    def assign_season_id(date):
-        """Assign season ID to a date, checking both full range seasons and dynamic periods"""
-        for season_id, season_dates in all_seasons_for_evaluation.items():
+    # DEBUG: Display all season time ranges
+    print("\n DEBUGGING: Season Time Ranges Analysis")
+    print("=" * 60)
+
+    print("Full Range Seasons:")
+    for season_id, dates in full_range_seasons.items():
+        print(f"   {season_id}: {dates['start'].strftime('%Y-%m-%d')} to {dates['end'].strftime('%Y-%m-%d')}")
+
+    print("\n Dynamic Time Periods:")
+    for period_id, dates in dynamic_periods.items():
+        print(f"   {period_id}: {dates['start'].strftime('%Y-%m-%d')} to {dates['end'].strftime('%Y-%m-%d')}")
+
+    # Show evaluation data date ranges
+    eval_ref_date_range = (eval_scores_df["reference_date"].min(), eval_scores_df["reference_date"].max())
+    eval_target_date_range = (eval_scores_df["target_end_date"].min(), eval_scores_df["target_end_date"].max())
+    coverage_ref_date_range = (coverage_long_df["reference_date"].min(), coverage_long_df["reference_date"].max())
+    coverage_target_date_range = (coverage_long_df["target_end_date"].min(), coverage_long_df["target_end_date"].max())
+
+    print("\n Evaluation Data Date Ranges:")
+    print(f"   Standard metrics (reference): {eval_ref_date_range[0].strftime('%Y-%m-%d')} to {eval_ref_date_range[1].strftime('%Y-%m-%d')}")
+    print(f"   Standard metrics (target): {eval_target_date_range[0].strftime('%Y-%m-%d')} to {eval_target_date_range[1].strftime('%Y-%m-%d')}")
+    print(f"   Coverage data (reference): {coverage_ref_date_range[0].strftime('%Y-%m-%d')} to {coverage_ref_date_range[1].strftime('%Y-%m-%d')}")
+    print(f"   Coverage data (target): {coverage_target_date_range[0].strftime('%Y-%m-%d')} to {coverage_target_date_range[1].strftime('%Y-%m-%d')}")
+
+    # Function to assign each evaluation data entries a corresponding season, AND/OR a dynamic time period
+    def assign_all_applicable_seasons(date, all_seasons_dict):
+        """
+        Assign all applicable season IDs to a date.
+        Returns a list of season IDs that contain this date.
+        """
+        applicable_seasons = []
+
+        for season_id, season_dates in all_seasons_dict.items():
             if season_dates["start"] <= date <= season_dates["end"]:
-                return season_id
-        return None
+                applicable_seasons.append(season_id)
 
-    print("   - Assigning season IDs to evaluation data...")
-    eval_scores_df["seasonId"] = eval_scores_df["reference_date"].apply(assign_season_id)
-    coverage_long_df["seasonId"] = coverage_long_df["reference_date"].apply(assign_season_id)
+        return applicable_seasons
 
-    # Remove entries that don't fall into any season
-    eval_scores_df.dropna(subset=["seasonId"], inplace=True)
-    coverage_long_df.dropna(subset=["seasonId"], inplace=True)
+    # Combine all seasons for comprehensive assignment
+    all_seasons_combined = {**full_range_seasons, **dynamic_periods}
 
-    print(f"   - Evaluation scores assigned to seasons. Scores shape: {eval_scores_df.shape}, Coverage shape: {coverage_long_df.shape}")
-
-    # Perform aggregations for Season Overview components
-    print("   - Performing evaluation data aggregations...")
+    # Create season-specific evaluation datasets
+    print("\n   - Creating season-specific evaluation datasets...")
     iqr_data = {}
     state_map_data = {}
     coverage_data = {}
 
-    # IQR data for box plots (includes both full range seasons and dynamic periods)
-    print("   - Calculating IQR statistics for box plots...")
-    grouped_iqr = eval_scores_df.groupby(["seasonId", "metric", "model", "horizon"])["score"]
-    for (season_id, metric, model, horizon), score_group in grouped_iqr:
-        stats = calculate_boxplot_stats(score_group)
-        if stats:
-            iqr_data.setdefault(season_id, {}).setdefault(metric, {}).setdefault(model, {})[horizon] = stats
+    # Process each season independently
+    for season_id, season_dates in all_seasons_combined.items():
+        print(f"\n   - Processing evaluation data for season: {season_id}")
+        print(f"     Date range: {season_dates['start'].strftime('%Y-%m-%d')} to {season_dates['end'].strftime('%Y-%m-%d')}")
 
-    # State map aggregations (includes both full range seasons and dynamic periods)
-    print("   - Calculating state map aggregations...")
-    state_map_agg = eval_scores_df.groupby(["seasonId", "metric", "model", "stateNum", "horizon"])["score"].agg(["sum", "count"]).reset_index()
-    for _, row in state_map_agg.iterrows():
-        state_map_data.setdefault(row["seasonId"], {}).setdefault(row["metric"], {}).setdefault(row["model"], {}).setdefault(row["stateNum"], {})[
-            row["horizon"]
-        ] = {"sum": float(row["sum"]), "count": int(row["count"])}
+        # Filter evaluation data for this specific season
+        season_eval_df = eval_scores_df[
+            (eval_scores_df["reference_date"] >= season_dates["start"]) & (eval_scores_df["target_end_date"] <= season_dates["end"])
+        ].copy()
 
-    # PI chart aggregations (includes both full range seasons and dynamic periods)
-    print("   - Calculating PI chart aggregations...")
-    coverage_agg = coverage_long_df.groupby(["seasonId", "model", "horizon", "coverage_level"])["score"].agg(["sum", "count"]).reset_index()
-    for _, row in coverage_agg.iterrows():
-        coverage_data.setdefault(row["seasonId"], {}).setdefault(row["model"], {}).setdefault(row["horizon"], {})[int(row["coverage_level"])] = {
-            "sum": float(row["sum"]),
-            "count": int(row["count"]),
-        }
+        season_coverage_df = coverage_long_df[
+            (coverage_long_df["reference_date"] >= season_dates["start"]) & (coverage_long_df["target_end_date"] <= season_dates["end"])
+        ].copy()
 
-    print("   - All evaluation aggregations complete")
+        print(f"     Evaluation entries: {len(season_eval_df)}")
+        print(f"     Coverage entries: {len(season_coverage_df)}")
+
+        if len(season_eval_df) > 0:
+            print(f"     Models in eval data: {sorted(season_eval_df['model'].unique())}")
+            print(f"     Metrics in eval data: {sorted(season_eval_df['metric'].unique())}")
+            print(f"     Horizons in eval data: {sorted(season_eval_df['horizon'].unique())}")
+            print(
+                f"     Reference date range: {season_eval_df['reference_date'].min().strftime('%Y-%m-%d')} to {season_eval_df['reference_date'].max().strftime('%Y-%m-%d')}"
+            )
+            print(
+                f"     Target date range: {season_eval_df['target_end_date'].min().strftime('%Y-%m-%d')} to {season_eval_df['target_end_date'].max().strftime('%Y-%m-%d')}"
+            )
+
+        # IQR data for box plots
+        if len(season_eval_df) > 0:
+            grouped_iqr = season_eval_df.groupby(["metric", "model", "horizon"])["score"]
+            for (metric, model, horizon), score_group in grouped_iqr:
+                stats = calculate_boxplot_stats(score_group)
+                if stats:
+                    horizon_int = int(horizon)
+                    iqr_data.setdefault(season_id, {}).setdefault(metric, {}).setdefault(model, {})[horizon_int] = stats
+
+        # State map aggregations
+        if len(season_eval_df) > 0:
+            state_map_agg = season_eval_df.groupby(["metric", "model", "stateNum", "horizon"])["score"].agg(["sum", "count"]).reset_index()
+            for _, row in state_map_agg.iterrows():
+                horizon_int = int(row["horizon"])
+                state_map_data.setdefault(season_id, {}).setdefault(row["metric"], {}).setdefault(row["model"], {}).setdefault(row["stateNum"], {})[
+                    horizon_int
+                ] = {"sum": float(row["sum"]), "count": int(row["count"])}
+
+        # PI chart aggregations
+        if len(season_coverage_df) > 0:
+            coverage_agg = season_coverage_df.groupby(["model", "horizon", "coverage_level"])["score"].agg(["sum", "count"]).reset_index()
+            for _, row in coverage_agg.iterrows():
+                horizon_int = int(row["horizon"])
+                coverage_data.setdefault(season_id, {}).setdefault(row["model"], {}).setdefault(horizon_int, {})[int(row["coverage_level"])] = {
+                    "sum": float(row["sum"]),
+                    "count": int(row["count"]),
+                }
+
+    print("\n   - All evaluation aggregations complete")
 
     # ===== 7. Compile and Output Final JSON Files =====
     print("Step 7: Compiling and writing final JSON files...")
@@ -814,7 +880,7 @@ def main():
     print(f"- Generated {len(full_range_season_options)} full range seasons")
     print(f"- Generated {len(dynamic_season_options)} dynamic time periods")
     print(f"- Partitioned time series data for {len(time_series_data)} seasons")
-    print(f"- Pre-aggregated evaluation data for all seasons and periods")
+    print("- Pre-aggregated evaluation data for all seasons and periods")
 
 
 if __name__ == "__main__":

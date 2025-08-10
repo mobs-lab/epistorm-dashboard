@@ -24,13 +24,11 @@ import {
   ModelPrediction,
   PredictionDataPoint,
   SeasonOption,
-  LoadingStates,
   ProcessedDataWithDateRange,
-  EvaluationsScoreDataCollection,
-  CoverageScoreData,
-  DetailedCoverageCollection,
-} from "@/interfaces/forecast-interfaces";
-import { modelNames } from "@/interfaces/epistorm-constants";
+} from "@/types/domains/forecasting";
+import { LoadingStates } from "@/types/app";
+import { EvaluationsScoreDataCollection, CoverageScoreData, DetailedCoverageCollection } from "@/types/domains/evaluations";
+import { modelNames } from "@/types/common";
 
 import { useAppDispatch } from "@/store/hooks";
 // Forecast Actions and Reducers
@@ -44,13 +42,17 @@ import { setSeasonOptions, updateDateEnd, updateDateRange, updateDateStart, upda
 
 // Evaluations Actions and Reducers
 import { setDetailedCoverageData, setEvaluationsSingleModelScoreData } from "@/store/data-slices/evaluationsScoreDataSlice";
-import { setEvaluationJsonData, clearEvaluationJsonData } from "@/store/data-slices/evaluationDataSlice"; //NOTE: New
+import { setEvaluationJsonData, clearEvaluationJsonData } from "@/store/data-slices/evaluationDataSlice"; // Stores pre-aggregated JSON per DataContract
+
+// Evaluation Single Model Settings Slice
 import {
   updateEvaluationSingleModelViewDateStart,
   updateEvaluationSingleModelViewDateEnd,
   updateEvaluationsSingleModelViewDateRange,
   updateEvaluationSingleModelViewSeasonOptions,
-} from "@/store//evaluations-single-model-settings-slice";
+} from "@/store/evaluations-single-model-settings-slice";
+
+// Evaluations Season Overview Settings Slice
 import { updateDynamicPeriods } from "@/store/evaluations-season-overview-settings-slice";
 
 interface DataContextType {
@@ -62,6 +64,9 @@ const DataContext = createContext<DataContextType | undefined>(undefined);
 
 export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const dispatch = useAppDispatch();
+  const updateLoadingState = (key: keyof LoadingStates, value: boolean) => {
+    setLoadingStates((prev) => ({ ...prev, [key]: value }));
+  };
   const [loadingStates, setLoadingStates] = useState<LoadingStates>({
     evaluationScores: true,
     groundTruth: true,
@@ -75,12 +80,49 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   });
   const [dataFetchStarted, setDataFetchStarted] = useState(false);
 
+  // When true, prefer pre-aggregated JSON (app_data_evaluations.json) for Season Overview
+  // CSV fallback remains in place for older data sources or local testing
+  const USE_JSON_EVALUATIONS_DATA = true;
+
   const safeCSVFetch = async (url: string) => {
     try {
       return await d3.csv(url);
     } catch (error) {
       console.warn(`File not found or error parsing: ${url}`);
       return null;
+    }
+  };
+
+  // Fetch app_data_evaluations.json and populate the new evaluationData slice.
+  // If not available, fall back to CSV flow and keep existing slices populated.
+  const loadJsonEvaluationData = async () => {
+    if (!USE_JSON_EVALUATIONS_DATA) {
+      console.log("JSON evaluations disabled, using CSV fallback");
+      return false;
+    }
+
+    try {
+      console.log("Loading JSON evaluation data...");
+      const response = await fetch("/data/app_data_evaluations.json");
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch evaluation JSON: ${response.status}`);
+      }
+
+      const evalData = await response.json();
+      console.log("JSON evaluation data loaded:", {
+        size: JSON.stringify(evalData).length,
+        seasons: Object.keys(evalData.precalculated?.iqr || {}).length,
+        metrics: Object.keys(evalData.precalculated?.iqr?.["season-2023-2024"] || {}).length,
+      });
+
+      // Dispatch to new Redux store
+      dispatch(setEvaluationJsonData(evalData.precalculated));
+      return true;
+    } catch (error) {
+      console.warn("Failed to load JSON evaluation data, falling back to CSV:", error);
+      dispatch(clearEvaluationJsonData());
+      return false;
     }
   };
 
@@ -142,7 +184,10 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setDataFetchStarted(true);
 
     try {
-      // Start with location data first
+      const jsonEvaluationLoaded = await loadJsonEvaluationData();
+      console.log(`Evaluation data strategy: ${jsonEvaluationLoaded ? "JSON (fast)" : "CSV (fallback)"}`);
+
+      // Location data first
       const locationData = await d3.csv("/data/locations.csv");
       const parsedLocationData = locationData.map((d) => ({
         stateNum: d.location,
@@ -376,8 +421,18 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       updateLoadingState("seasonOptions", false);
 
-      // Fetch other data in parallel
-      await Promise.all([fetchNowcastTrendsData(), fetchThresholdsData(), fetchHistoricalGroundTruthData(), fetchEvaluationsScoreData()]);
+      // Modified: Only load CSV evaluations if JSON failed
+      if (!jsonEvaluationLoaded) {
+        console.log("Loading evaluation data from CSV (fallback mode)...");
+        await fetchEvaluationsScoreData(); // Keep existing CSV logic
+      } else {
+        console.log("Using pre-aggregated JSON evaluation data...");
+        updateLoadingState("evaluationScores", false);
+        updateLoadingState("evaluationDetailedCoverage", false);
+      }
+
+      // Fetch other data in parallel (existing logic)
+      await Promise.all([fetchNowcastTrendsData(), fetchThresholdsData(), fetchHistoricalGroundTruthData()]);
     } catch (error) {
       console.error("Error in fetchAndProcessData:", error);
       // Update loading states to false for error cases
@@ -496,20 +551,179 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const fetchEvaluationsScoreData = async () => {
     try {
-      /* Fetch the new JSON format Evaluations Score Data */
-      const evaluationsData = await Promise.all([fetch("/public/data/app_data_evaluations.json")]);
+      const [wisRatioData, mapeData, coverageData] = await Promise.all([
+        d3.csv("/data/evaluations-score/WIS_ratio.csv"),
+        d3.csv("/data/evaluations-score/MAPE.csv"),
+        d3.csv("/data/evaluations-score/coverage.csv"),
+      ]);
+
+      // Process WIS Ratio data
+      const wisRatioByModel = new Map<
+        string,
+        {
+          referenceDate: Date;
+          score: number;
+          location: string;
+          horizon: number;
+        }[]
+      >();
+
+      wisRatioData.forEach((entry) => {
+        const modelName = entry.Model;
+        // Only process models in our modelNames list
+        if (!modelNames.includes(modelName)) return;
+
+        const scoreData = {
+          referenceDate: parseISO(entry.reference_date),
+          score: +entry.wis_ratio,
+          location: entry.location,
+          horizon: +entry.horizon,
+        };
+
+        const key = modelName;
+        if (!wisRatioByModel.has(key)) {
+          wisRatioByModel.set(key, []);
+        }
+        wisRatioByModel.get(key)?.push(scoreData);
+      });
+
+      // Process MAPE data
+      const mapeByModel = new Map<
+        string,
+        {
+          referenceDate: Date;
+          score: number;
+          location: string;
+          horizon: number;
+        }[]
+      >();
+      mapeData.forEach((entry) => {
+        const modelName = entry.Model;
+        if (!modelNames.includes(modelName)) return;
+        const scoreData = {
+          referenceDate: parseISO(entry.reference_date),
+          score: +entry.MAPE * 100, // Convert to percentage
+          location: entry.Location, // Note: Different capitalization in MAPE CSV
+          horizon: +entry.horizon,
+        };
+
+        const key = modelName;
+        if (!mapeByModel.has(key)) {
+          mapeByModel.set(key, []);
+        }
+        mapeByModel.get(key)?.push(scoreData);
+      });
+
+      // Process Coverage data
+      const coverageByModel = new Map<
+        string,
+        {
+          referenceDate: Date;
+          score: number; // This will be the 95% coverage score
+          location: string;
+          horizon: number;
+        }[]
+      >();
+
+      // Also store detailed coverage data
+      const detailedCoverageByModel = new Map<string, CoverageScoreData[]>();
+
+      coverageData.forEach((entry) => {
+        const modelName = entry.Model;
+
+        // Only process models in our modelNames list
+        if (!modelNames.includes(modelName)) return;
+
+        // Create detailed coverage data entry
+        const detailedCoverageData: CoverageScoreData = {
+          referenceDate: parseISO(entry.reference_date),
+          location: entry.location,
+          horizon: +entry.horizon,
+          coverage10: +entry["10_cov"] * 100,
+          coverage20: +entry["20_cov"] * 100,
+          coverage30: +entry["30_cov"] * 100,
+          coverage40: +entry["40_cov"] * 100,
+          coverage50: +entry["50_cov"] * 100,
+          coverage60: +entry["60_cov"] * 100,
+          coverage70: +entry["70_cov"] * 100,
+          coverage80: +entry["80_cov"] * 100,
+          coverage90: +entry["90_cov"] * 100,
+          coverage95: +entry["95_cov"] * 100,
+          coverage98: +entry["98_cov"] * 100,
+        };
+
+        // Create simplified score data entry for State-specific Model performance map
+        const scoreData = {
+          referenceDate: parseISO(entry.reference_date),
+          score: +entry["95_cov"] * 100, // Use 95% coverage as the main score
+          location: entry.location,
+          horizon: +entry.horizon,
+        };
+
+        // Add to simplified map for use with existing components
+        const key = modelName;
+        if (!coverageByModel.has(key)) {
+          coverageByModel.set(key, []);
+        }
+        coverageByModel.get(key)?.push(scoreData);
+
+        // Add to detailed map for components that need granular data
+        if (!detailedCoverageByModel.has(key)) {
+          detailedCoverageByModel.set(key, []);
+        }
+        detailedCoverageByModel.get(key)?.push(detailedCoverageData);
+      });
 
       // Combine into final format
-      const originalEvaluationsData: EvaluationsScoreDataCollection[] = [];
+      const evaluationsData: EvaluationsScoreDataCollection[] = [];
 
-    
+      // Add WIS Ratio data
+      wisRatioByModel.forEach((scoreData, modelName) => {
+        evaluationsData.push({
+          modelName,
+          scoreMetric: "WIS/Baseline",
+          scoreData: scoreData.sort((a, b) => a.referenceDate.getTime() - b.referenceDate.getTime()),
+        });
+      });
+
+      // Add MAPE data
+      mapeByModel.forEach((scoreData, modelName) => {
+        evaluationsData.push({
+          modelName,
+          scoreMetric: "MAPE",
+          scoreData: scoreData.sort((a, b) => a.referenceDate.getTime() - b.referenceDate.getTime()),
+        });
+      });
+
+      // Add Coverage data
+      coverageByModel.forEach((scoreData, modelName) => {
+        evaluationsData.push({
+          modelName,
+          scoreMetric: "Coverage",
+          scoreData: scoreData.sort((a, b) => a.referenceDate.getTime() - b.referenceDate.getTime()),
+        });
+      });
+
       dispatch(setEvaluationsSingleModelScoreData(evaluationsData));
       updateLoadingState("evaluationScores", false);
 
-  };
+      // Convert the Map to an array of DetailedCoverageCollection
+      const detailedCoverageData: DetailedCoverageCollection[] = [];
+      detailedCoverageByModel.forEach((coverageData, modelName) => {
+        detailedCoverageData.push({
+          modelName,
+          coverageData: coverageData.sort((a, b) => a.referenceDate.getTime() - b.referenceDate.getTime()),
+        });
+      });
 
-  const updateLoadingState = (key: keyof LoadingStates, value: boolean) => {
-    setLoadingStates((prev) => ({ ...prev, [key]: value }));
+      // Store detailed coverage data in Redux
+      dispatch(setDetailedCoverageData(detailedCoverageData));
+      updateLoadingState("evaluationDetailedCoverage", false);
+    } catch (error) {
+      console.error("Error fetching evaluation score data:", error);
+      updateLoadingState("evaluationScores", false);
+      updateLoadingState("evaluationDetailedCoverage", false);
+    }
   };
 
   useEffect(() => {

@@ -24,7 +24,7 @@ import SingleModelHorizonPlot from "./evaluations-components/SingleModel/SingleM
 import SingleModelScoreLineChart from "./evaluations-components/SingleModel/SingleModelScoreLineChart";
 import { setMapeChartScaleType, setWisChartScaleType } from "@/store/evaluations-season-overview-settings-slice";
 import InfoButton from "@/shared-components/InfoButton";
-import { seasonOverviewInfo, singleModelInfo } from "@/interfaces/infobutton-content";
+import { seasonOverviewInfo, singleModelInfo } from "types/infobutton-content";
 
 const SeasonOverviewContent: React.FC = () => {
   const dispatch = useAppDispatch();

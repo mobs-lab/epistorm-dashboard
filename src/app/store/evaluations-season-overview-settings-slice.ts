@@ -1,8 +1,8 @@
 // src/app/store/forecastSettingsSlice.ts
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
-import { EvaluationsSeasonOverviewSeasonOption, AggregationPeriod } from "@/interfaces/forecast-interfaces";
+import { EvaluationsSeasonOverviewSeasonOption, AggregationPeriod } from "@/types/domains/evaluations";
 import { parseISO } from "date-fns";
-import { modelNames } from "@/interfaces/epistorm-constants";
+import { modelNames } from "@/types/common";
 
 interface EvaluationsSeasonOverviewSettingsState {
   /* Location Related */

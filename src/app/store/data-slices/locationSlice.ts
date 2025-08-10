@@ -1,6 +1,6 @@
 // src/app/store/locationSlice.ts
-import {createSlice, PayloadAction} from '@reduxjs/toolkit';
-import {LocationData} from '@/interfaces/forecast-interfaces';
+import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { LocationData } from '@/types/domains/forecasting';
 
 interface LocationState {
     data: LocationData[];

@@ -1,4 +1,5 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { AppDataEvaluationsPrecalculated } from "@/types/domains/evaluations";
 
 // Evaluation data structure matching DataContract.md
 interface EvaluationDataState {
@@ -6,56 +7,7 @@ interface EvaluationDataState {
   isJsonDataLoaded: boolean;
 
   // Pre-calculated evaluation data
-  precalculated: {
-    iqr: {
-      [seasonId: string]: {
-        [metric: string]: {
-          // "WIS/Baseline", "MAPE", "Coverage"
-          [model: string]: {
-            [horizon: number]: {
-              q05: number;
-              q25: number;
-              median: number;
-              q75: number;
-              q95: number;
-              min: number;
-              max: number;
-              mean: number;
-              count: number;
-              scores: number[];
-            };
-          };
-        };
-      };
-    };
-    stateMap_aggregates: {
-      [seasonId: string]: {
-        [metric: string]: {
-          [model: string]: {
-            [stateNum: string]: {
-              [horizon: number]: {
-                sum: number;
-                count: number;
-              };
-            };
-          };
-        };
-      };
-    };
-    detailedCoverage_aggregates: {
-      [seasonId: string]: {
-        [model: string]: {
-          [horizon: number]: {
-            [pi_level: number]: {
-              // 10, 20, 30, ... 98
-              sum: number;
-              count: number;
-            };
-          };
-        };
-      };
-    };
-  };
+  precalculated: AppDataEvaluationsPrecalculated;
 }
 
 const initialState: EvaluationDataState = {
@@ -71,7 +23,7 @@ const evaluationDataSlice = createSlice({
   name: "evaluationData",
   initialState,
   reducers: {
-    setEvaluationJsonData: (state, action: PayloadAction<EvaluationDataState["precalculated"]>) => {
+    setEvaluationJsonData: (state, action: PayloadAction<AppDataEvaluationsPrecalculated>) => {
       state.precalculated = action.payload;
       state.isJsonDataLoaded = true;
       console.debug("JSON evaluation data loaded successfully");

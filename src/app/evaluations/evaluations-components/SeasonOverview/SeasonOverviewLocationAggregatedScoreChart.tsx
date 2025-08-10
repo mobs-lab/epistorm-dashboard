@@ -4,10 +4,11 @@
 import React, { useEffect, useRef, useMemo } from "react";
 import * as d3 from "d3";
 import { useAppSelector } from "@/store/hooks";
-import { modelColorMap, modelNames } from "@/interfaces/epistorm-constants";
-import { useResponsiveSVG } from "@/interfaces/responsiveSVG";
+import { modelColorMap, modelNames } from "@/types/common";
+import { useResponsiveSVG } from "@/utils/responsiveSVG";
 import { calculateBoxplotStats } from "@/utils/evals-so-statistics";
 import { addWeeks } from "date-fns";
+import { selectSeasonOverviewData, selectShouldUseJsonData } from "@/store/selector/evaluationSelectors";
 
 // Options for controlling to which direction tooltip appears relative to the mouse pointer
 export enum TooltipDirection {
@@ -40,9 +41,12 @@ const SeasonOverviewLocationAggregatedScoreChart: React.FC<SeasonOverviewLocatio
   });
   const chartRef = useRef<SVGSVGElement>(null);
 
-  // Get required data from Redux store
-  const evaluationsScoreData = useAppSelector((state) => state.evaluationsSingleModelScoreData.data);
+  // Get data from selectors
+  const shouldUseJsonData = useAppSelector(selectShouldUseJsonData);
+  const seasonOverviewData = useAppSelector(selectSeasonOverviewData);
 
+  // Fallback to old CSV data
+  const evaluationsScoreData = useAppSelector((state) => state.evaluationsSingleModelScoreData.data);
   const {
     evaluationSeasonOverviewHorizon,
     selectedAggregationPeriod,
@@ -53,46 +57,70 @@ const SeasonOverviewLocationAggregatedScoreChart: React.FC<SeasonOverviewLocatio
   } = useAppSelector((state) => state.evaluationsSeasonOverviewSettings);
 
   // Process evaluation score data based on selected criteria, enhanced with memoization
+  // Process data using JSON when available, otherwise fall back to CSV processing
   const processedData = useMemo(() => {
-    // Return empty array if required data is missing
+    if (shouldUseJsonData && seasonOverviewData) {
+      // Use JSON data
+      const metric = type === "wis" ? "WIS/Baseline" : "MAPE";
+      const iqrData = seasonOverviewData.iqrData[metric] || {};
+
+      const results: IQRData[] = [];
+
+      // Combine data across selected horizons for each model
+      for (const modelName of modelNames.filter((m) => seasonOverviewData.selectedModels.includes(m))) {
+        const modelData = iqrData[modelName];
+        if (!modelData) continue;
+
+        // Aggregate across selected horizons
+        const allScores: number[] = [];
+
+        seasonOverviewData.horizons.forEach((horizon) => {
+          const horizonData = modelData[horizon];
+          if (horizonData && horizonData.scores) {
+            allScores.push(...horizonData.scores);
+          }
+        });
+
+        if (allScores.length === 0) continue;
+
+        // Calculate stats for combined data
+        const stats = calculateBoxplotStats(allScores);
+
+        results.push({
+          model: modelName,
+          q05: Number(stats.q05.toFixed(3)),
+          q25: Number(stats.q25.toFixed(3)),
+          median: Number(stats.median.toFixed(3)),
+          q75: Number(stats.q75.toFixed(3)),
+          q95: Number(stats.q95.toFixed(3)),
+          count: stats.count,
+        });
+      }
+
+      console.debug("Using JSON data for aggregated chart:", results);
+      return results;
+    }
+
+    // Fallback to original CSV processing logic
     if (!evaluationsScoreData || evaluationSeasonOverviewHorizon.length === 0 || !selectedAggregationPeriod) {
       return [];
     }
 
-    // Find selected time period
     const selectedPeriod = aggregationPeriods.find((p) => p.id === selectedAggregationPeriod);
+    if (!selectedPeriod) return [];
 
-    if (!selectedPeriod) {
-      return [];
-    }
-
-    // The score metric we want to use
     const scoreMetric = type === "wis" ? "WIS/Baseline" : "MAPE";
-
-    // Pre-filter evaluations data by metric to avoid repeated filtering
     const relevantEvaluations = evaluationsScoreData.filter((data) => data.scoreMetric === scoreMetric);
-
-    // Set for faster horizon lookups
     const horizonSet = new Set(evaluationSeasonOverviewHorizon);
-
-    // Process data for each model
     const results: IQRData[] = [];
 
-    const debugResults = new Map();
-
     for (const modelName of modelNames.filter((model) => evaluationSeasonOverviewSelectedModels.includes(model))) {
-      // Find this model's data
       const modelData = relevantEvaluations.find((data) => data.modelName === modelName);
-
       if (!modelData?.scoreData?.length) continue;
 
-      // Filter scores using optimized conditions
       const filteredScores: number[] = [];
 
-      const debugWinnerEntries = [];
-
       for (const entry of modelData.scoreData) {
-        // Use early bailout for faster filtering
         if (!horizonSet.has(entry.horizon)) continue;
 
         const referenceDate = entry.referenceDate;
@@ -100,18 +128,13 @@ const SeasonOverviewLocationAggregatedScoreChart: React.FC<SeasonOverviewLocatio
 
         if (referenceDate < selectedPeriod.startDate || targetDate > selectedPeriod.endDate) continue;
 
-        // This entry passed all filters
         filteredScores.push(entry.score);
-
-        debugWinnerEntries.push(entry);
       }
-      if (filteredScores.length === 0) continue;
-      debugResults.set(modelName, debugWinnerEntries);
 
-      // Calculate stats for this model
+      if (filteredScores.length === 0) continue;
+
       const stats = calculateBoxplotStats(filteredScores);
 
-      // Add model with rounded values
       results.push({
         model: modelName,
         q05: Number(stats.q05.toFixed(3)),
@@ -122,10 +145,12 @@ const SeasonOverviewLocationAggregatedScoreChart: React.FC<SeasonOverviewLocatio
         count: stats.count,
       });
     }
-    console.debug("Debug: Aggregated Chart: winning entries by model: ", debugResults);
 
+    console.debug("Using CSV fallback data for aggregated chart:", results);
     return results;
   }, [
+    shouldUseJsonData,
+    seasonOverviewData,
     evaluationsScoreData,
     evaluationSeasonOverviewHorizon,
     selectedAggregationPeriod,
@@ -464,9 +489,8 @@ const SeasonOverviewLocationAggregatedScoreChart: React.FC<SeasonOverviewLocatio
       .style("font-size", "11px");
 
     // X axis label beneath the ticks
-    g.append("g")
-    .attr("transform", `translate(${innerWidth / 2}, ${innerHeight + 10})`);
-    
+    g.append("g").attr("transform", `translate(${innerWidth / 2}, ${innerHeight + 10})`);
+
     if (type == "wis") {
       g.append("text")
         .attr("x", innerWidth / 2)
@@ -475,8 +499,7 @@ const SeasonOverviewLocationAggregatedScoreChart: React.FC<SeasonOverviewLocatio
         .attr("fill", "white")
         .style("font-size", "14px")
         .text("WIS/Baseline");
-    }
-    else{
+    } else {
       g.append("text")
         .attr("x", innerWidth / 2)
         .attr("y", innerHeight + margin.bottom - 10)

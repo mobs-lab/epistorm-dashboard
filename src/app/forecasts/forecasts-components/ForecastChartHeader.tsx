@@ -1,5 +1,5 @@
 import InfoButton from "../../components/InfoButton";
-import { weeklyHospitalAdmissionsInfo } from "@/interfaces/infobutton-content";
+import { weeklyHospitalAdmissionsInfo } from "types/infobutton-content";
 import React from "react";
 import { Switch } from "@/styles/material-tailwind-wrapper";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";

@@ -1,6 +1,5 @@
 import { configureStore } from "@reduxjs/toolkit";
 
-// Import existing data reducers (keep ALL of these)
 import groundTruthReducer from "./data-slices/groundTruthSlice";
 import predictionsReducer from "./data-slices/predictionsSlice";
 import locationReducer from "./data-slices/locationSlice";
@@ -12,14 +11,13 @@ import evaluationsSingleModelScoreDataReducer from "./data-slices/evaluationsSco
 // Import All-in-one new Evaluation Data Slice
 import evaluationDataReducer from "./data-slices/evaluationDataSlice";
 
-// Import settings reducers (unchanged)
+// Import settings reducers
 import forecastSettingsReducer from "./forecast-settings-slice";
 import evaluationsSeasonOverviewSettingsReducer from "./evaluations-season-overview-settings-slice";
 import evaluationsSingleModelSettingsReducer from "./evaluations-single-model-settings-slice";
 
 const store = configureStore({
   reducer: {
-    // EXISTING: Keep all existing slices unchanged (for backward compatibility)
     groundTruth: groundTruthReducer,
     predictions: predictionsReducer,
     location: locationReducer,
@@ -40,5 +38,7 @@ const store = configureStore({
 
 export type RootState = ReturnType<typeof store.getState>;
 export type AppDispatch = typeof store.dispatch;
+
+export * from './selector/evaluationSelectors';
 
 export default store;
