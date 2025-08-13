@@ -1,5 +1,8 @@
 import {createSlice, PayloadAction} from '@reduxjs/toolkit';
-import { DetailedCoverageCollection, EvaluationsScoreDataCollection } from '@/types/domains/evaluations';
+import {
+    DetailedCoverageCollection,
+    EvaluationsScoreDataCollection,
+} from '@/interfaces/forecast-interfaces';
 
 interface EvaluationsSingleModelScoreDataState {
     data: EvaluationsScoreDataCollection[];

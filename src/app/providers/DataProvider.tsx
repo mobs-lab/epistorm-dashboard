@@ -1,4 +1,4 @@
-"use client";
+'use client'
 
 // File: src/app/providers/DataProvider.tsx
 import React, { createContext, useContext, useEffect, useState } from "react";
@@ -18,19 +18,21 @@ import {
   startOfWeek,
   subWeeks,
 } from "date-fns";
+import { useAppDispatch } from "@/store/hooks";
 import {
   DataPoint,
   LocationData,
   ModelPrediction,
   PredictionDataPoint,
   SeasonOption,
+  LoadingStates,
   ProcessedDataWithDateRange,
-} from "@/types/domains/forecasting";
-import { LoadingStates } from "@/types/app";
-import { EvaluationsScoreDataCollection, CoverageScoreData, DetailedCoverageCollection } from "@/types/domains/evaluations";
-import { modelNames } from "@/types/common";
+  EvaluationsScoreDataCollection,
+  CoverageScoreData,
+  DetailedCoverageCollection,
+} from "@/interfaces/forecast-interfaces";
+import { modelNames } from "@/interfaces/epistorm-constants";
 
-import { useAppDispatch } from "@/store/hooks";
 // Forecast Actions and Reducers
 import { setGroundTruthData } from "@/store/data-slices/groundTruthSlice";
 import { setPredictionsData } from "@/store/data-slices/predictionsSlice";
@@ -42,17 +44,12 @@ import { setSeasonOptions, updateDateEnd, updateDateRange, updateDateStart, upda
 
 // Evaluations Actions and Reducers
 import { setDetailedCoverageData, setEvaluationsSingleModelScoreData } from "@/store/data-slices/evaluationsScoreDataSlice";
-import { setEvaluationJsonData, clearEvaluationJsonData } from "@/store/data-slices/evaluationDataSlice"; // Stores pre-aggregated JSON per DataContract
-
-// Evaluation Single Model Settings Slice
 import {
   updateEvaluationSingleModelViewDateStart,
   updateEvaluationSingleModelViewDateEnd,
   updateEvaluationsSingleModelViewDateRange,
   updateEvaluationSingleModelViewSeasonOptions,
-} from "@/store/evaluations-single-model-settings-slice";
-
-// Evaluations Season Overview Settings Slice
+} from "@/store//evaluations-single-model-settings-slice";
 import { updateDynamicPeriods } from "@/store/evaluations-season-overview-settings-slice";
 
 interface DataContextType {
@@ -64,9 +61,6 @@ const DataContext = createContext<DataContextType | undefined>(undefined);
 
 export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const dispatch = useAppDispatch();
-  const updateLoadingState = (key: keyof LoadingStates, value: boolean) => {
-    setLoadingStates((prev) => ({ ...prev, [key]: value }));
-  };
   const [loadingStates, setLoadingStates] = useState<LoadingStates>({
     evaluationScores: true,
     groundTruth: true,
@@ -80,10 +74,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   });
   const [dataFetchStarted, setDataFetchStarted] = useState(false);
 
-  // When true, prefer pre-aggregated JSON (app_data_evaluations.json) for Season Overview
-  // CSV fallback remains in place for older data sources or local testing
-  const USE_JSON_EVALUATIONS_DATA = true;
-
   const safeCSVFetch = async (url: string) => {
     try {
       return await d3.csv(url);
@@ -93,38 +83,61 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Fetch app_data_evaluations.json and populate the new evaluationData slice.
-  // If not available, fall back to CSV flow and keep existing slices populated.
-  const loadJsonEvaluationData = async () => {
-    if (!USE_JSON_EVALUATIONS_DATA) {
-      console.log("JSON evaluations disabled, using CSV fallback");
-      return false;
-    }
+  /* const addBackEmptyDatesWithPrediction = (
+    groundTruthData: DataPoint[],
+    predictionsData: ModelPrediction[],
+    locationData: LocationData[]
+  ): ProcessedDataWithDateRange => {
 
-    try {
-      console.log("Loading JSON evaluation data...");
-      const response = await fetch("/data/app_data_evaluations.json");
+    let earliestDate = new Date(8640000000000000);
+    let latestDate = new Date(0);
 
-      if (!response.ok) {
-        throw new Error(`Failed to fetch evaluation JSON: ${response.status}`);
-      }
+    groundTruthData.forEach((d) => {
+      if (d.date < earliestDate) earliestDate = d.date;
+      if (d.date > latestDate) latestDate = d.date;
+    });
 
-      const evalData = await response.json();
-      console.log("JSON evaluation data loaded:", {
-        size: JSON.stringify(evalData).length,
-        seasons: Object.keys(evalData.precalculated?.iqr || {}).length,
-        metrics: Object.keys(evalData.precalculated?.iqr?.["season-2023-2024"] || {}).length,
+    predictionsData.forEach((model) => {
+      model.predictionData.forEach((d) => {
+        if (d.referenceDate < earliestDate) earliestDate = d.referenceDate;
+        if (d.targetEndDate > latestDate) latestDate = d.targetEndDate;
       });
+    });
 
-      // Dispatch to new Redux store
-      dispatch(setEvaluationJsonData(evalData.precalculated));
-      return true;
-    } catch (error) {
-      console.warn("Failed to load JSON evaluation data, falling back to CSV:", error);
-      dispatch(clearEvaluationJsonData());
-      return false;
-    }
-  };
+    const allSaturdays = eachWeekOfInterval(
+      {
+        start: startOfWeek(earliestDate, { weekStartsOn: 6 }),
+        end: endOfWeek(latestDate, { weekStartsOn: 6 }),
+      },
+      { weekStartsOn: 6 }
+    );
+
+    const existingDataMap = new Map(groundTruthData.map((d) => [format(d.date, "yyyy-MM-dd"), d]));
+    const placeholderData: DataPoint[] = [];
+
+    allSaturdays.forEach((date) => {
+      const dateString = format(date, "yyyy-MM-dd");
+      if (!existingDataMap.has(dateString)) {
+        locationData.forEach((location) => {
+          placeholderData.push({
+            date,
+            stateNum: location.stateNum,
+            stateName: location.stateName,
+            admissions: -1,
+            weeklyRate: 0,
+          });
+        });
+      }
+    });
+
+    const combinedData = [...groundTruthData, ...placeholderData].sort((a, b) => a.date.getTime() - b.date.getTime());
+
+    return {
+      data: combinedData,
+      earliestDate,
+      latestDate,
+    };
+  }; */
 
   // Optimized version of generateSeasonOptions that doesn't re-iterate through the data
   function generateSeasonOptionsOptimized(earliestDate: Date, latestDate: Date, groundTruthData: DataPoint[]): SeasonOption[] {
@@ -184,10 +197,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setDataFetchStarted(true);
 
     try {
-      const jsonEvaluationLoaded = await loadJsonEvaluationData();
-      console.log(`Evaluation data strategy: ${jsonEvaluationLoaded ? "JSON (fast)" : "CSV (fallback)"}`);
-
-      // Location data first
+      // Start with location data first
       const locationData = await d3.csv("/data/locations.csv");
       const parsedLocationData = locationData.map((d) => ({
         stateNum: d.location,
@@ -421,18 +431,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       updateLoadingState("seasonOptions", false);
 
-      // Modified: Only load CSV evaluations if JSON failed
-      if (!jsonEvaluationLoaded) {
-        console.log("Loading evaluation data from CSV (fallback mode)...");
-        await fetchEvaluationsScoreData(); // Keep existing CSV logic
-      } else {
-        console.log("Using pre-aggregated JSON evaluation data...");
-        updateLoadingState("evaluationScores", false);
-        updateLoadingState("evaluationDetailedCoverage", false);
-      }
-
-      // Fetch other data in parallel (existing logic)
-      await Promise.all([fetchNowcastTrendsData(), fetchThresholdsData(), fetchHistoricalGroundTruthData()]);
+      // Fetch other data in parallel
+      await Promise.all([fetchNowcastTrendsData(), fetchThresholdsData(), fetchHistoricalGroundTruthData(), fetchEvaluationsScoreData()]);
     } catch (error) {
       console.error("Error in fetchAndProcessData:", error);
       // Update loading states to false for error cases
@@ -549,6 +549,16 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  /* Fetch the `/public/evaluations-score/` path's `WIS_ratio.csv` and `MAPE.csv` asyncly, then organize them into model and metrics respectively;
+   *  WIS_ratio.csv produces EvaluationsScoreDataCollection with scoreMetric as "WIS_Ratio", while MAPE.csv produces "MAPE" respectively;
+   *  modelName can be found in each CSV files' entries' 'Model' column;
+   * in each score data-slices point, (again, consult the custom interfaces), referenceDate is the date of the score, and score is the actual score value:
+   *   - MAPE: the column is literally named 'MAPE'
+   *   - WIS_Ratio: the column is literally named 'wis_ratio'
+   * Note: I am keeping the number float point precision to as much as possible, until the limit of d3.js' precision, which is 16 digits (?)
+   *
+   * Then in the end we push the data-slices into store using dispatch(setEvaluationsSingleModelScoreData(data-slices));
+   *  */
   const fetchEvaluationsScoreData = async () => {
     try {
       const [wisRatioData, mapeData, coverageData] = await Promise.all([
@@ -557,7 +567,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         d3.csv("/data/evaluations-score/coverage.csv"),
       ]);
 
-      // Process WIS Ratio data
+      // Process WIS Ratio data-slices
       const wisRatioByModel = new Map<
         string,
         {
@@ -573,6 +583,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Only process models in our modelNames list
         if (!modelNames.includes(modelName)) return;
 
+        /* Filter out needed models here! */
         const scoreData = {
           referenceDate: parseISO(entry.reference_date),
           score: +entry.wis_ratio,
@@ -587,7 +598,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         wisRatioByModel.get(key)?.push(scoreData);
       });
 
-      // Process MAPE data
+      // Process MAPE data-slices
       const mapeByModel = new Map<
         string,
         {
@@ -602,8 +613,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (!modelNames.includes(modelName)) return;
         const scoreData = {
           referenceDate: parseISO(entry.reference_date),
-          score: +entry.MAPE * 100, // Convert to percentage
-          location: entry.Location, // Note: Different capitalization in MAPE CSV
+          score: +entry.MAPE * 100, // This is to make it into a percentage
+          location: entry.Location, // Changed from entry.location
           horizon: +entry.horizon,
         };
 
@@ -619,7 +630,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         string,
         {
           referenceDate: Date;
-          score: number; // This will be the 95% coverage score
+          score: number; //This will be the 95% coverage score
           location: string;
           horizon: number;
         }[]
@@ -652,10 +663,11 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           coverage98: +entry["98_cov"] * 100,
         };
 
-        // Create simplified score data entry for State-specific Model performance map
+        // Create simplified score data entry, for State-specific Model performance map
         const scoreData = {
           referenceDate: parseISO(entry.reference_date),
-          score: +entry["95_cov"] * 100, // Use 95% coverage as the main score
+          /* TODO: 95 column? Confirmation needed */
+          score: +entry["95_cov"] * 100,
           location: entry.location,
           horizon: +entry.horizon,
         };
@@ -699,7 +711,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       coverageByModel.forEach((scoreData, modelName) => {
         evaluationsData.push({
           modelName,
-          scoreMetric: "Coverage",
+          scoreMetric: "Coverage", // Use "Coverage" as the metric name
           scoreData: scoreData.sort((a, b) => a.referenceDate.getTime() - b.referenceDate.getTime()),
         });
       });
@@ -722,8 +734,11 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (error) {
       console.error("Error fetching evaluation score data:", error);
       updateLoadingState("evaluationScores", false);
-      updateLoadingState("evaluationDetailedCoverage", false);
     }
+  };
+
+  const updateLoadingState = (key: keyof LoadingStates, value: boolean) => {
+    setLoadingStates((prev) => ({ ...prev, [key]: value }));
   };
 
   useEffect(() => {
