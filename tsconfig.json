@@ -21,7 +21,7 @@
     "paths": {
       "@/shared-components/*": ["components/*"],
       "@/providers/*": ["providers/*"],
-      "@/types/*": ["types/*"],
+      "@/interfaces/*": ["interfaces/*"],
       "@/store/*": ["store/*"],
       "@/styles/*": ["css/*"],
       "@/evaluations/*": ["evaluations/*"],

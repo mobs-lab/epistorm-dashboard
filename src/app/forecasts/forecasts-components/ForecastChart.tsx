@@ -6,11 +6,10 @@ import * as d3 from "d3";
 import { Axis, BaseType, NumberValue, ScaleLinear, ScaleLogarithmic, ScaleTime } from "d3";
 import { subWeeks } from "date-fns";
 
-import { DataPoint, HistoricalDataEntry, ModelPrediction, PredictionDataPoint } from "@/types/domains/forecasting";
-import { isUTCDateEqual } from "@/utils/date";
-import { useResponsiveSVG } from "@/utils/responsiveSVG";
-import { useChartMargins } from "@/utils/chart-margin-utils";
-import { modelColorMap } from "@/types/common";
+import { DataPoint, HistoricalDataEntry, isUTCDateEqual, ModelPrediction, PredictionDataPoint } from "@/interfaces/forecast-interfaces";
+import { useResponsiveSVG } from "@/interfaces/responsiveSVG";
+import { useChartMargins } from "@/interfaces/chart-margin-utils";
+import { modelColorMap } from "@/interfaces/epistorm-constants";
 
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { updateUserSelectedWeek } from "@/store/forecast-settings-slice";

@@ -5,10 +5,13 @@ import React, { useEffect, useRef, useState, useMemo } from "react";
 import * as d3 from "d3";
 import * as topojson from "topojson-client";
 import { addWeeks } from "date-fns";
-import { useResponsiveSVG } from "@/utils/responsiveSVG";
+import { useResponsiveSVG } from "@/interfaces/responsiveSVG";
 import { useAppSelector } from "@/store/hooks";
-import { selectSeasonOverviewData, selectShouldUseJsonData } from "@/store/selector/evaluationSelectors";
 import MapSelectorPanel from "./MapSelectorPanel";
+import tippy, { followCursor } from "tippy.js";
+import "tippy.js/dist/tippy.css";
+import "tippy.js/animations/shift-away.css";
+import "tippy.js/themes/light.css";
 
 // Define color constants
 const NAVY_BLUE = "#00495F";
@@ -18,12 +21,8 @@ const NO_DATA_COLOR = "#363b43"; // Color for states with no data
 
 const SeasonOverviewUSStateMap: React.FC = () => {
   const { containerRef, dimensions, isResizing } = useResponsiveSVG();
-  const svgRef = useRef<SVGSVGElement>(null); 
+  const svgRef = useRef<SVGSVGElement>(null);
   const [mapData, setMapData] = useState<any>(null);
-
-  // Get data from selectors
-  const shouldUseJsonData = useAppSelector(selectShouldUseJsonData);
-  const seasonOverviewData = useAppSelector(selectSeasonOverviewData);
 
   // Get data and settings variables from Redux store
   const locationData = useAppSelector((state) => state.location.data);
@@ -52,66 +51,50 @@ const SeasonOverviewUSStateMap: React.FC = () => {
   }, []);
 
   // Calculate state performance data based on selected criteria
-  // Calculate state performance data using JSON or CSV fallback
   const modelPerformanceData = useMemo(() => {
-    if (shouldUseJsonData && seasonOverviewData) {
-      // Use JSON data structure
-      const statePerformanceMap = new Map();
-      const stateMapData = seasonOverviewData.stateMapData[mapSelectedScoringOption] || {};
-      const modelData = stateMapData[mapSelectedModel] || {};
-      
-      // Calculate averages across selected horizons for each state
-      Object.entries(modelData).forEach(([stateNum, horizonData]) => {
-        let totalScore = 0;
-        let totalCount = 0;
-        
-        seasonOverviewData.horizons.forEach(horizon => {
-          const horizonStats = (horizonData as any)[horizon];
-          if (horizonStats && horizonStats.sum !== undefined && horizonStats.count > 0) {
-            totalScore += horizonStats.sum;
-            totalCount += horizonStats.count;
-          }
-        });
-        
-        if (totalCount > 0) {
-          const stateId = stateNum.toString().padStart(2, "0");
-          statePerformanceMap.set(stateId, totalScore / totalCount);
-        }
-      });
-      
-      console.debug("Using JSON data for state map:", statePerformanceMap);
-      return statePerformanceMap;
-    }
-
-    // Fallback to original CSV processing logic
     if (!evaluationsScoreData || evaluationSeasonOverviewHorizon.length === 0 || !selectedAggregationPeriod || !locationData) {
       return new Map();
     }
 
+    // Find the selected aggregation period
     const selectedPeriod = aggregationPeriods.find((p) => p.id === selectedAggregationPeriod);
-    if (!selectedPeriod) return new Map();
 
+    if (!selectedPeriod) {
+      return new Map();
+    }
+
+    // Create a map to store performance scores by state
     const statePerformanceData = new Map();
+
+    // Only process data for the selected model
     const modelData = [
       evaluationsScoreData.find((data) => data.modelName === mapSelectedModel && data.scoreMetric === mapSelectedScoringOption),
-    ].filter(Boolean);
+    ].filter(Boolean); // Remove undefined values
 
+    // For each state, calculate average score for the selected model and horizons
     locationData.forEach((location) => {
       const stateCode = location.stateNum;
+
       let totalScore = 0;
       let count = 0;
 
+      // For the selected model and horizons, get relevant scores
       modelData.forEach((modelScoreData) => {
         if (modelScoreData && modelScoreData.scoreData) {
           evaluationSeasonOverviewHorizon.forEach((horizon) => {
+            // Filter scores by state, horizon, and date range
             const scores = modelScoreData.scoreData.filter((entry) => {
+              // Match state and horizon
               if (entry.location !== stateCode || entry.horizon !== horizon) {
                 return false;
               }
+
+              // Check if target date is within range
               const targetDate = addWeeks(entry.referenceDate, horizon);
               return entry.referenceDate >= selectedPeriod.startDate && targetDate <= selectedPeriod.endDate;
             });
 
+            // Calculate performance metric
             scores.forEach((score) => {
               totalScore += score.score;
               count++;
@@ -120,17 +103,15 @@ const SeasonOverviewUSStateMap: React.FC = () => {
         }
       });
 
+      // Calculate average if we have scores
       if (count > 0) {
         const stateId = stateCode.padStart(2, "0");
         statePerformanceData.set(stateId, totalScore / count);
       }
     });
 
-    console.debug("Using CSV fallback data for state map:", statePerformanceData);
     return statePerformanceData;
   }, [
-    shouldUseJsonData,
-    seasonOverviewData,
     evaluationsScoreData,
     evaluationSeasonOverviewHorizon,
     selectedAggregationPeriod,
@@ -655,7 +636,7 @@ const SeasonOverviewUSStateMap: React.FC = () => {
       .on("mouseover", function (event) {
         // Highlight DC on hover
         d3.select(this).attr("stroke-width", 2);
-
+        
         const stateName = "District of Columbia";
         const metricName = mapSelectedScoringOption || "Score";
 

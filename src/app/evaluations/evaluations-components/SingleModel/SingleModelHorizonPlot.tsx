@@ -4,11 +4,15 @@ import React, { useEffect, useRef, useState } from "react";
 import * as d3 from "d3";
 import { addWeeks } from "date-fns";
 
-import { modelColorMap } from "@/types/common";
-import { DataPoint, ModelPrediction, PredictionDataPoint } from "@/types/domains/forecasting";
-import { isUTCDateEqual } from "@/utils/date";
+import { modelColorMap } from "@/interfaces/epistorm-constants";
+import {
+  DataPoint,
+  isUTCDateEqual,
+  ModelPrediction,
+  PredictionDataPoint,
+} from "@/interfaces/forecast-interfaces";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { useResponsiveSVG } from "@/utils/responsiveSVG";
+import { useResponsiveSVG } from "@/interfaces/responsiveSVG";
 import { filter } from "lodash";
 
 interface HoverData {
