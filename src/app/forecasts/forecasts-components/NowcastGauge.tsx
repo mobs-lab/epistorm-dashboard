@@ -17,11 +17,14 @@ const LegendBoxes: React.FC = () => {
   ];
 
   return (
-    <div className='flex flex-row justify-evenly items-end h-full w-full'>
+    <div className="flex flex-row justify-evenly items-end h-full w-full">
       {legendData.map((item) => (
-        <div key={item.label} className='flex items-center'>
-          <div className='w-[1rem] h-[1rem]' style={{ backgroundColor: item.color }}></div>
-          <span className='text-sm mx-2'>{item.label}</span>
+        <div key={item.label} className="flex items-center">
+          <div
+            className="w-[1rem] h-[1rem]"
+            style={{ backgroundColor: item.color }}
+          ></div>
+          <span className="text-sm mx-2">{item.label}</span>
         </div>
       ))}
     </div>
@@ -39,32 +42,74 @@ const NowcastGauge: React.FC<RiskLevelGaugeProps> = ({ riskLevel }) => {
   const svgRef = useRef<SVGSVGElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
-  const [containerDimensions, setContainerDimensions] = useState({ width: 0, height: 0 });
-
-  const [infoButtonPosition, setInfoButtonPosition] = useState<InfoButtonPosition>({
-    left: 0,
-    top: 0,
-    visible: false,
+  const [containerDimensions, setContainerDimensions] = useState({
+    width: 0,
+    height: 0,
   });
 
-  const nowcastTrendsCollection = useAppSelector((state) => state.nowcastTrends.allData);
-  const { USStateNum, userSelectedRiskLevelModel, userSelectedWeek } = useAppSelector((state) => state.forecastSettings);
+  const [infoButtonPosition, setInfoButtonPosition] =
+    useState<InfoButtonPosition>({
+      left: 0,
+      top: 0,
+      visible: false,
+    });
+
+  const nowcastTrendsCollection = useAppSelector(
+    (state) => state.nowcastTrends.allData,
+  );
+  const { USStateNum, userSelectedRiskLevelModel, userSelectedWeek } =
+    useAppSelector((state) => state.forecastSettings);
 
   const updateDimensions = useCallback(() => {
     if (containerRef.current) {
       const { width, height } = containerRef.current.getBoundingClientRect();
-      setContainerDimensions({ width, height: height * 0.8 }); // Adjust height to leave space for legend
+
+      // Make sure the entire container height is shared by Gauge and the legend ref underneath it
+      const heightForGauge = height * 0.8;
+
+      setContainerDimensions({
+        width: Math.floor(width),
+        height: Math.floor(heightForGauge),
+      });
     }
   }, []);
 
   useEffect(() => {
+    let timeoutId: NodeJS.Timeout;
+
+    const debouncedUpdate = () => {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        updateDimensions();
+      }, 100); // Debounce to 100ms
+    };
+
+    // Initial dimension calculation
     updateDimensions();
-    const resizeObserver = new ResizeObserver(updateDimensions);
+
+    const resizeObserver = new ResizeObserver((entries) => {
+      // Only respond to size changes, not just any ResizeObserver firing
+      for (const entry of entries) {
+        const { width, height } = entry.contentRect;
+        if (
+          Math.abs(width - containerDimensions.width) > 5 ||
+          Math.abs(height - containerDimensions.height) > 5
+        ) {
+          debouncedUpdate();
+          break;
+        }
+      }
+    });
+
     if (containerRef.current) {
       resizeObserver.observe(containerRef.current);
     }
-    return () => resizeObserver.disconnect();
-  }, [updateDimensions]);
+
+    return () => {
+      clearTimeout(timeoutId);
+      resizeObserver.disconnect();
+    };
+  }, [updateDimensions, containerDimensions.width, containerDimensions.height]);
 
   const drawGauge = useCallback(() => {
     if (!svgRef.current || containerDimensions.width === 0) return;
@@ -73,36 +118,61 @@ const NowcastGauge: React.FC<RiskLevelGaugeProps> = ({ riskLevel }) => {
     svg.selectAll("*").remove();
 
     const { width, height } = containerDimensions;
-    const margin = { top: 20, right: 10, bottom: 5, left: 10 };
+
+    const margin = { top: 20, right: 10, bottom: 0, left: 10 };
     const gaugeWidth = width - margin.left - margin.right;
     const gaugeHeight = height - margin.top - margin.bottom;
 
-    const diagonalLength = Math.sqrt((gaugeWidth / 2) ** 2 + gaugeHeight ** 2) * 0.62;
+    const diagonalLength =
+      Math.sqrt((gaugeWidth / 2) ** 2 + gaugeHeight ** 2) * 0.62;
 
-    const radius = Math.min(Math.min(gaugeWidth / 2, diagonalLength), gaugeHeight * 1.12);
+    const maxRadiusFromWidth = gaugeWidth / 2;
+    const maxRadiusFromHeight = gaugeHeight; // Full height available for semicircle
 
-    svg.attr("viewBox", `0 0 ${width} ${height}`).attr("preserveAspectRatio", "xMidYMid meet");
+    // Use the best, largest dimension possible
+    const radius = Math.max(
+      150,
+      Math.max(diagonalLength, (Math.min(maxRadiusFromWidth * 0.85, maxRadiusFromHeight * 0.85))),
+    );
 
-    const chartGroup = svg.append("g").attr("transform", `translate(${width / 2}, ${height - margin.bottom})`);
+    svg
+      .attr("viewBox", `0 0 ${width} ${height}`)
+      .attr("preserveAspectRatio", "xMidYMid meet");
+
+    const chartGroup = svg
+      .append("g")
+      .attr(
+        "transform",
+        `translate(${width / 2}, ${height - margin.bottom})`,
+      );
 
     // Find the model or create a placeholder if not found
-    const matchingModelNowcast = nowcastTrendsCollection.find((model) => model.modelName === userSelectedRiskLevelModel) || {
+    const matchingModelNowcast = nowcastTrendsCollection.find(
+      (model) => model.modelName === userSelectedRiskLevelModel,
+    ) || {
       modelName: userSelectedRiskLevelModel,
       data: [],
     };
 
     const modelData = matchingModelNowcast.data;
-    const matchingStateData = modelData.filter((entry) => entry.location === USStateNum);
+    const matchingStateData = modelData.filter(
+      (entry) => entry.location === USStateNum,
+    );
 
-    const latestTrend = matchingStateData.find((entry) => isUTCDateEqual(new Date(entry.reference_date), userSelectedWeek));
+    const latestTrend = matchingStateData.find((entry) =>
+      isUTCDateEqual(new Date(entry.reference_date), userSelectedWeek),
+    );
 
     const trendToUse = latestTrend || null;
 
-    const formattedCurrentWeekDate = userSelectedWeek.toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
+    const formattedCurrentWeekDate = userSelectedWeek.toLocaleDateString(
+      "en-US",
+      {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      },
+    );
     const lastWeekDate = new Date(userSelectedWeek);
     lastWeekDate.setDate(lastWeekDate.getDate() - 6);
     const formattedLastWeekDate = lastWeekDate.toLocaleDateString("en-US", {
@@ -129,7 +199,11 @@ const NowcastGauge: React.FC<RiskLevelGaugeProps> = ({ riskLevel }) => {
       .range(["#478791", "#b9d6d6", "#eae78b", "rgba(200, 200, 200, 0.1)"]);
 
     const data = trendToUse
-      ? [Math.max(0.001, trendToUse.decrease), Math.max(0.001, trendToUse.stable), Math.max(0.001, trendToUse.increase)]
+      ? [
+          Math.max(0.001, trendToUse.decrease),
+          Math.max(0.001, trendToUse.stable),
+          Math.max(0.001, trendToUse.increase),
+        ]
       : [1]; // Single slice for "no data-slices"
 
     const paths = chartGroup
@@ -138,11 +212,14 @@ const NowcastGauge: React.FC<RiskLevelGaugeProps> = ({ riskLevel }) => {
       .enter()
       .append("path")
       .attr("d", arc)
-      .attr("fill", (d, i) => (trendToUse ? color(i.toString()) : "rgba(200, 200, 200, 0.1)"))
+      .attr("fill", (d, i) =>
+        trendToUse ? color(i.toString()) : "rgba(200, 200, 200, 0.1)",
+      )
       .attr("stroke", "lightgray")
       .attr("stroke-width", 2);
 
-    const fontSize = width < height ? 16 : Math.min(24, Math.max(12, radius * 0.1));
+    const fontSize =
+      width < height ? 16 : Math.min(24, Math.max(12, radius * 0.1));
 
     chartGroup
       .append("text")
@@ -203,7 +280,9 @@ const NowcastGauge: React.FC<RiskLevelGaugeProps> = ({ riskLevel }) => {
           value = trendToUse.increase;
         }
 
-        tooltip.html(`${label}: ${value === "N/A" ? value : value.toFixed(3)}`).style("display", "block");
+        tooltip
+          .html(`${label}: ${value === "N/A" ? value : value.toFixed(3)}`)
+          .style("display", "block");
 
         updateTooltipPosition(event);
       })
@@ -229,14 +308,26 @@ const NowcastGauge: React.FC<RiskLevelGaugeProps> = ({ riskLevel }) => {
           let top = y - tooltipHeight - 10; // Position above the cursor
 
           // Ensure the tooltip stays within the container bounds
-          left = Math.max(0, Math.min(left, containerRect.width - tooltipWidth));
-          top = Math.max(0, Math.min(top, containerRect.height - tooltipHeight));
+          left = Math.max(
+            0,
+            Math.min(left, containerRect.width - tooltipWidth),
+          );
+          top = Math.max(
+            0,
+            Math.min(top, containerRect.height - tooltipHeight),
+          );
 
           tooltip.style("left", `${left}px`).style("top", `${top}px`);
         }
       }
     }
-  }, [containerDimensions, nowcastTrendsCollection, userSelectedRiskLevelModel, USStateNum, userSelectedWeek]);
+  }, [
+    containerDimensions,
+    nowcastTrendsCollection,
+    userSelectedRiskLevelModel,
+    USStateNum,
+    userSelectedWeek,
+  ]);
 
   useEffect(() => {
     drawGauge();
@@ -252,28 +343,39 @@ const NowcastGauge: React.FC<RiskLevelGaugeProps> = ({ riskLevel }) => {
   }, [drawGauge]);
 
   return (
-    <div ref={containerRef} className='flex flex-col h-full items-stretch justify-stretch py-2 relative'>
-      <div className='flex-grow relative'>
-        <svg ref={svgRef} className='w-full h-full' />
+    <div
+      ref={containerRef}
+      className="flex flex-col h-full items-stretch justify-stretch py-2 relative"
+    >
+      <div className="flex-grow relative">
+        <svg ref={svgRef} className="w-full h-full" />
 
         {infoButtonPosition.visible && (
           <div
-            className='absolute'
+            className="absolute"
             style={{
               left: `${infoButtonPosition.left}px`,
               top: `${infoButtonPosition.top}px`,
               zIndex: 5,
-            }}>
-            <InfoButton title='Trend Forecast Information' content={trendForecastInfo} displayStyle='icon' size='sm' dialogSize="lg" />
+            }}
+          >
+            <InfoButton
+              title="Trend Forecast Information"
+              content={trendForecastInfo}
+              displayStyle="icon"
+              size="sm"
+              dialogSize="lg"
+            />
           </div>
         )}
 
         <div
           ref={tooltipRef}
-          className='absolute hidden bg-white text-black rounded shadow-md p-2 text-sm'
-          style={{ pointerEvents: "none", zIndex: 10 }}></div>
+          className="absolute hidden bg-white text-black rounded shadow-md p-2 text-sm"
+          style={{ pointerEvents: "none", zIndex: 10 }}
+        ></div>
       </div>
-      <div className='h-1/5'>
+      <div className="h-1/5">
         <LegendBoxes />
       </div>
     </div>
