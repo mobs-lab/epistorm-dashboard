@@ -42,7 +42,7 @@ const SeasonOverviewContent: React.FC = () => {
   return (
     <div className='flex flex-col h-full gap-4 overflow-y-auto overflow-x-hidden util-no-sb-length'>
       <div className='items-center self-end'>
-        <InfoButton content={seasonOverviewInfo} title='Season Overview' displayStyle='icon' size='md' dialogSize='lg'></InfoButton>
+        <InfoButton content={seasonOverviewInfo} title='Season Overview' displayStyle='icon'></InfoButton>
       </div>
       {/* Top charts section - 3 charts in a row */}
       <div className='grid grid-cols-3 gap-4 min-h-[480px]'>
