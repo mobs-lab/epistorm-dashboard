@@ -1,15 +1,16 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import { useAppSelector } from "@/store/hooks";
+import { modelColorMap } from "@/types/common";
+import { DataPoint, ModelPrediction } from "@/types/domains/forecasting";
+import { useResponsiveSVG } from "@/utils/responsiveSVG";
 import * as d3 from "d3";
 import { addWeeks } from "date-fns";
-
-import { modelColorMap } from "@/types/common";
-import { DataPoint, ModelPrediction, PredictionDataPoint } from "@/types/domains/forecasting";
-import { isUTCDateEqual } from "@/utils/date";
-import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { useResponsiveSVG } from "@/utils/responsiveSVG";
-import { filter } from "lodash";
+import React, { useEffect, useRef } from "react";
+import {
+  selectSingleModelTimeSeriesData,
+  selectIsCoreDataLoaded,
+} from "@/store/selector/singleModelSelectors";
 
 interface HoverData {
   date: Date;
@@ -24,6 +25,10 @@ interface HoverData {
 const SingleModelHorizonPlot: React.FC = () => {
   const { containerRef, dimensions, isResizing } = useResponsiveSVG();
   const svgRef = useRef<SVGSVGElement>(null);
+
+  // New selector for using new Core App Data
+  const timeSeriesData = useAppSelector(selectSingleModelTimeSeriesData);
+  const isCoreDataLoaded = useAppSelector(selectIsCoreDataLoaded);
 
   // Get the ground and prediction data-slices from store
   const groundTruthData = useAppSelector((state) => state.groundTruth.data);
@@ -43,7 +48,7 @@ const SingleModelHorizonPlot: React.FC = () => {
   function filterGroundTruthData(
     data: DataPoint[],
     state: string,
-    dateRange: [Date, Date]
+    dateRange: [Date, Date],
   ): DataPoint[] {
     let filteredData = data.filter((d) => d.stateNum === state);
 
@@ -51,7 +56,7 @@ const SingleModelHorizonPlot: React.FC = () => {
 
     // Filter data-slices by date range
     filteredData = filteredData.filter(
-      (d) => d.date >= dateRange[0] && d.date <= dateRange[1]
+      (d) => d.date >= dateRange[0] && d.date <= dateRange[1],
     );
 
     return filteredData;
@@ -63,10 +68,10 @@ const SingleModelHorizonPlot: React.FC = () => {
     modelName: string,
     state: string,
     horizon: number,
-    dateRange: [Date, Date]
+    dateRange: [Date, Date],
   ) {
     const modelPrediction = predictions.find(
-      (model) => model.modelName === modelName
+      (model) => model.modelName === modelName,
     );
     if (!modelPrediction) return [];
 
@@ -75,7 +80,7 @@ const SingleModelHorizonPlot: React.FC = () => {
       (d) =>
         d.stateNum === state &&
         d.referenceDate >= dateRange[0] &&
-        d.referenceDate <= dateRange[1]
+        d.referenceDate <= dateRange[1],
     );
 
     /* console.debug(
@@ -85,7 +90,7 @@ const SingleModelHorizonPlot: React.FC = () => {
 
     // Group by target end date to ensure the horizons are correctly mapped
     const groupedData = d3.group(stateData, (d) =>
-      d.targetEndDate.toISOString()
+      d.targetEndDate.toISOString(),
     );
 
     // Process each group
@@ -104,13 +109,13 @@ const SingleModelHorizonPlot: React.FC = () => {
         // Calculate weeks between dates
         const weeksDiff = Math.round(
           (targetEndUTC.getTime() - d.referenceDate.getTime()) /
-            (7 * 24 * 60 * 60 * 1000)
+            (7 * 24 * 60 * 60 * 1000),
         );
 
         // Buffer for same-day comparison
         const bufferMs = 2 * 60 * 60 * 1000;
         const timeDiff = Math.abs(
-          targetEndUTC.getTime() - expectedTargetDate.getTime()
+          targetEndUTC.getTime() - expectedTargetDate.getTime(),
         );
 
         // Only return true if this is exactly the horizon we want
@@ -132,11 +137,11 @@ const SingleModelHorizonPlot: React.FC = () => {
   }
 
   function createScalesAndAxes(
-    groundTruthData: DataPoint[],
+    groundTruthData: any[],
     visualData: any[],
     chartWidth: number,
     chartHeight: number,
-    saturdayTicks: Date[]
+    saturdayTicks: Date[],
   ) {
     // Create band scale for x-axis
     const xScale = d3
@@ -191,7 +196,7 @@ const SingleModelHorizonPlot: React.FC = () => {
     ]);
 
     const allValuesFromSurveillanceData = groundTruthData.flatMap(
-      (d) => d.admissions
+      (d) => d.admissions,
     );
 
     const maxPredictionValue = d3.max(allValues);
@@ -225,7 +230,7 @@ const SingleModelHorizonPlot: React.FC = () => {
     modelName: string,
     state: string,
     dateRange: [Date, Date],
-    horizon: number
+    horizon: number,
   ): [Date, Date] {
     /* First calcualte using horizon number, a buffer for how many weeks ahead we should seek for end date within the final range */
 
@@ -235,12 +240,12 @@ const SingleModelHorizonPlot: React.FC = () => {
         d.stateNum === state &&
         d.admissions >= -1 &&
         d.date >= dateRange[0] &&
-        d.date <= dateRange[1]
+        d.date <= dateRange[1],
     );
 
     // Get the model's prediction data-slices
     const modelPrediction = predictionsData.find(
-      (model) => model.modelName === modelName
+      (model) => model.modelName === modelName,
     );
     // Check each date for valid predictions, only dates with predictions are included
     const validPredictions =
@@ -248,14 +253,12 @@ const SingleModelHorizonPlot: React.FC = () => {
         (d) =>
           d.stateNum === state &&
           d.referenceDate >= dateRange[0] &&
-          d.targetEndDate <= dateRange[1]
+          d.targetEndDate <= dateRange[1],
       ) || [];
 
     // Find the earliest and latest dates with actual data-slices, only those that both have valid admission value & has predictions made on that day
     const startDates = [
-      validGroundTruth.length > 0
-        ? validGroundTruth[0].date
-        : dateRange[1],
+      validGroundTruth.length > 0 ? validGroundTruth[0].date : dateRange[1],
       validPredictions.length > 0
         ? validPredictions[0].referenceDate
         : dateRange[1],
@@ -270,7 +273,7 @@ const SingleModelHorizonPlot: React.FC = () => {
       validPredictions.length > 0
         ? addWeeks(
             validPredictions[validPredictions.length - 1].referenceDate,
-            horizon
+            horizon,
           )
         : dateRange[0],
     ];
@@ -284,6 +287,24 @@ const SingleModelHorizonPlot: React.FC = () => {
 
   function renderBoxPlot() {
     if (!svgRef.current || !dimensions.width || !dimensions.height) return;
+    if (!isCoreDataLoaded || !timeSeriesData) {
+      // Show loading or no data message
+      const svg = d3.select(svgRef.current);
+      svg.selectAll("*").remove();
+      svg
+        .append("text")
+        .attr("x", dimensions.width / 2)
+        .attr("y", dimensions.height / 2)
+        .attr("text-anchor", "middle")
+        .attr("fill", "white")
+        .style("font-family", "var(--font-dm-sans)")
+        .text(
+          isCoreDataLoaded
+            ? "No data available for selected criteria"
+            : "Loading data...",
+        );
+      return;
+    }
 
     const svg = d3.select(svgRef.current);
     svg.selectAll("*").remove();
@@ -303,20 +324,20 @@ const SingleModelHorizonPlot: React.FC = () => {
     const chartWidth = width - margin.left - margin.right;
     const chartHeight = height - margin.top - margin.bottom;
 
-    // Get data-slices range and filter data-slices
+    /* // Get data-slices range and filter data-slices
     const [actualStart, actualEnd] = findActualDataRange(
       groundTruthData,
       predictionsData,
       evaluationsSingleModelViewModel,
       evaluationsSingleModelViewSelectedStateCode,
       [evaluationsSingleModelViewDateStart, evaluationSingleModelViewDateEnd],
-      evaluationSingleModelViewHorizon
+      evaluationSingleModelViewHorizon,
     );
 
     const filteredGroundTruth = filterGroundTruthData(
       groundTruthData,
       evaluationsSingleModelViewSelectedStateCode,
-      [actualStart, actualEnd]
+      [actualStart, actualEnd],
     );
 
     filteredGroundTruth.sort((a, b) => a.date.getTime() - b.date.getTime());
@@ -326,7 +347,7 @@ const SingleModelHorizonPlot: React.FC = () => {
       evaluationsSingleModelViewModel,
       evaluationsSingleModelViewSelectedStateCode,
       evaluationSingleModelViewHorizon,
-      [actualStart, actualEnd]
+      [actualStart, actualEnd],
     );
 
     if (visualizationData.length === 0) {
@@ -339,20 +360,55 @@ const SingleModelHorizonPlot: React.FC = () => {
         .style("font-family", "var(--font-dm-sans)")
         .text("No data available for selected criteria");
       return;
+    } */
+    // Process the combined data from the selector
+    const { data: combinedData, metadata } = timeSeriesData;
+
+    // Separate ground truth and predictions
+    const groundTruthPoints = combinedData
+      .filter((d) => d.groundTruth && d.groundTruth.admissions >= 0)
+      .map((d) => ({
+        date: d.referenceDate,
+        admissions: d.groundTruth.admissions,
+        weeklyRate: d.groundTruth.weeklyRate,
+      }));
+
+    const predictionPoints = combinedData
+      .filter((d) => d.prediction)
+      .map((d) => ({
+        date: d.referenceDate,
+        targetDate: d.prediction.targetDate,
+        median: d.prediction.median,
+        quantile05: d.prediction.q05,
+        quantile25: d.prediction.q25,
+        quantile75: d.prediction.q75,
+        quantile95: d.prediction.q95,
+      }));
+
+    if (groundTruthPoints.length === 0 && predictionPoints.length === 0) {
+      svg
+        .append("text")
+        .attr("x", dimensions.width / 2)
+        .attr("y", dimensions.height / 2)
+        .attr("text-anchor", "middle")
+        .attr("fill", "white")
+        .style("font-family", "var(--font-dm-sans)")
+        .text("No data available for selected criteria");
+      return;
     }
 
-    const saturdayTicks = filteredGroundTruth
+    const saturdayTicks = groundTruthPoints
       .filter((d) => d.date.getDay() === 6)
       .map((d) => d.date)
       .sort((a, b) => a.getTime() - b.getTime());
 
     // Create scales and chart group
     const { xScale, yScale, xAxis, yAxis } = createScalesAndAxes(
-      filteredGroundTruth,
-      visualizationData,
+      groundTruthPoints,
+      predictionPoints,
       chartWidth,
       chartHeight,
-      saturdayTicks
+      saturdayTicks,
     );
 
     /* Helper function to wrap x-axis label*/
@@ -415,7 +471,7 @@ const SingleModelHorizonPlot: React.FC = () => {
           .selectAll(".tick line")
           .attr("stroke-opacity", 0.5)
           .attr("stroke-dasharray", "2,2")
-          .attr("x2", chartWidth)
+          .attr("x2", chartWidth),
       )
       .style("font-size", "18px");
 
@@ -444,7 +500,7 @@ const SingleModelHorizonPlot: React.FC = () => {
     const combinedDataMap = new Map();
 
     // Add ground truth data to map
-    filteredGroundTruth.forEach((gt) => {
+    groundTruthPoints.forEach((gt) => {
       const dateKey = gt.date.toISOString();
       combinedDataMap.set(dateKey, {
         date: gt.date,
@@ -459,7 +515,7 @@ const SingleModelHorizonPlot: React.FC = () => {
     });
 
     // Add visualization data to the map, merging with existing ground truth entries
-    visualizationData.forEach((pd) => {
+    predictionPoints.forEach((pd) => {
       const dateKey = pd.date.toISOString();
       const existing = combinedDataMap.get(dateKey) || { date: pd.date };
 
@@ -474,13 +530,13 @@ const SingleModelHorizonPlot: React.FC = () => {
     });
 
     // Convert map to array for rendering, sorted by date
-    const combinedData = Array.from(combinedDataMap.values()).sort(
-      (a, b) => a.date.getTime() - b.date.getTime()
+    const combinedDataSet = Array.from(combinedDataMap.values()).sort(
+      (a, b) => a.date.getTime() - b.date.getTime(),
     );
 
     // Render ground truth points independently to ensure all are displayed
     // Regardless of whether prediction data's date domain is the same
-    filteredGroundTruth.forEach((groundTruthPoint) => {
+    groundTruthPoints.forEach((groundTruthPoint) => {
       if (groundTruthPoint.admissions < 0) return; // Skip placeholders
 
       const x = xScale(groundTruthPoint.date.toISOString());
@@ -497,7 +553,7 @@ const SingleModelHorizonPlot: React.FC = () => {
     });
 
     // Render only prediction data elements for dates with predictions
-    visualizationData.forEach((pd) => {
+    predictionPoints.forEach((pd) => {
       const x = xScale(pd.date.toISOString());
       if (x === undefined) return;
 
@@ -533,7 +589,7 @@ const SingleModelHorizonPlot: React.FC = () => {
     });
 
     // Create hover areas for all dates in the combined dataset
-    combinedData.forEach((d) => {
+    combinedDataSet.forEach((d) => {
       const x = xScale(d.date.toISOString());
       if (x === undefined) return;
 
@@ -608,7 +664,7 @@ const SingleModelHorizonPlot: React.FC = () => {
 
           // Calculate tooltip dimensions and position
           const maxWidth = Math.max(
-            ...textElements.map((el) => el.node()!.getComputedTextLength())
+            ...textElements.map((el) => el.node()!.getComputedTextLength()),
           );
           const [mouseX] = d3.pointer(event);
           const isRightSide = mouseX < chartWidth / 2;
@@ -640,16 +696,6 @@ const SingleModelHorizonPlot: React.FC = () => {
     tooltipGroup.raise();
   }
 
-  /* NOTE:
-        Horizon Plot should react to changes in these Redux slice variables:
-    * - Time (Via Season change, no individual change):
-    *   - evaluationsSingleModelViewDateStart: Date
-    *   - evaluationSingleModelViewDateEnd: Date
-    * - forecast model but UNLIKE Forecast Page, here only a single model can be selected
-    *   - evaluationsSingleViewModel: string
-    * - evaluationSingleModelViewHorizon: number
-    * - evaluationsSingleModelViewSelectedStateCode: string
-    *  */
   useEffect(() => {
     if (!isResizing && dimensions.width > 0 && dimensions.height > 0) {
       renderBoxPlot();
@@ -657,29 +703,27 @@ const SingleModelHorizonPlot: React.FC = () => {
   }, [
     dimensions,
     isResizing,
+    timeSeriesData,
+    isCoreDataLoaded,
     evaluationsSingleModelViewSelectedStateCode,
-    evaluationsSingleModelViewDateStart,
-    evaluationSingleModelViewDateEnd,
     evaluationsSingleModelViewModel,
     evaluationSingleModelViewHorizon,
-    groundTruthData,
-    predictionsData,
   ]);
 
   return (
-    <div ref={containerRef} className='w-full h-full'>
+    <div ref={containerRef} className="w-full h-full">
       <svg
         ref={svgRef}
-        width='100%'
-        height='100%'
-        className='w-full h-full'
+        width="100%"
+        height="100%"
+        className="w-full h-full"
         style={{
           fontFamily: "var(--font-dm-sans)",
           opacity: isResizing ? 0.5 : 1,
           transition: "opacity 0.2s ease",
         }}
         viewBox={`0 0 ${dimensions.width || 100} ${dimensions.height || 100}`}
-        preserveAspectRatio='xMidYMid meet'
+        preserveAspectRatio="xMidYMid meet"
       />
     </div>
   );

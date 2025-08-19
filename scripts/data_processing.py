@@ -785,6 +785,44 @@ def main():
 
     print("\n   - All evaluation aggregations complete")
 
+    # ===== 6b. Store Raw Scores for Single Model Views =====
+    print("   - Storing raw evaluation scores for Single Model views...")
+    raw_scores_data = {}
+
+    # Process each season for raw scores
+    for season_id, season_dates in full_range_seasons.items():
+        # Filter evaluation data for this specific season
+        season_eval_df = eval_scores_df[
+            (eval_scores_df["reference_date"] >= season_dates["start"]) & (eval_scores_df["target_end_date"] <= season_dates["end"])
+        ].copy()
+
+        if len(season_eval_df) == 0:
+            continue
+
+        # Group by metric, model, state, and horizon
+        grouped = season_eval_df.groupby(["metric", "model", "stateNum", "horizon"])
+
+        for (metric, model, state_num, horizon), group_df in grouped:
+            # Convert dates to ISO strings and create score entries
+            score_entries = []
+            for _, row in group_df.iterrows():
+                score_entries.append(
+                    {
+                        "referenceDate": row["reference_date"].strftime("%Y-%m-%d"),
+                        "targetEndDate": row["target_end_date"].strftime("%Y-%m-%d"),
+                        "score": float(row["score"]),
+                    }
+                )
+
+            # Sort by reference date
+            score_entries.sort(key=lambda x: x["referenceDate"])
+
+            # Store in nested structure
+            horizon_int = int(horizon)
+            (raw_scores_data.setdefault(season_id, {}).setdefault(metric, {}).setdefault(model, {}).setdefault(state_num, {})[horizon_int]) = score_entries
+
+    print(f"   - Raw scores stored for {len(raw_scores_data)} seasons")
+
     # ===== 7. Compile and Output Final JSON Files =====
     print("Step 7: Compiling and writing final JSON files...")
 
@@ -853,7 +891,8 @@ def main():
             "iqr": iqr_data,  # Includes both full range seasons and dynamic periods
             "stateMap_aggregates": state_map_data,  # Includes both full range seasons and dynamic periods
             "detailedCoverage_aggregates": coverage_data,  # Includes both full range seasons and dynamic periods
-        }
+        },
+        "rawScores": raw_scores_data,
     }
 
     # Write files to disk
