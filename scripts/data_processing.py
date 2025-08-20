@@ -795,6 +795,8 @@ def main():
         season_eval_df = eval_scores_df[
             (eval_scores_df["reference_date"] >= season_dates["start"]) & (eval_scores_df["target_end_date"] <= season_dates["end"])
         ].copy()
+        
+        season_eval_df = season_eval_df[season_eval_df["metric"] != "Coverage"].copy()
 
         if len(season_eval_df) == 0:
             continue

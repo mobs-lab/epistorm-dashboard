@@ -8,6 +8,7 @@ interface EvaluationDataState {
 
   // Pre-calculated evaluation data
   precalculated: AppDataEvaluationsPrecalculated;
+  rawScores: any;
 }
 
 const initialState: EvaluationDataState = {
@@ -17,16 +18,18 @@ const initialState: EvaluationDataState = {
     stateMap_aggregates: {},
     detailedCoverage_aggregates: {},
   },
+  rawScores: {},
 };
 
 const evaluationDataSlice = createSlice({
   name: "evaluationData",
   initialState,
   reducers: {
-    setEvaluationJsonData: (state, action: PayloadAction<AppDataEvaluationsPrecalculated>) => {
-      state.precalculated = action.payload;
+    setEvaluationJsonData: (state, action: PayloadAction<any>) => {
+      state.precalculated = action.payload.precalculated || action.payload;
+      state.rawScores = action.payload.rawScores || {};
       state.isJsonDataLoaded = true;
-      console.debug("JSON evaluation data loaded successfully");
+      console.debug("JSON evaluation data loaded successfully into Redux `evaluationDataSlice`");
     },
     clearEvaluationJsonData: (state) => {
       state.precalculated = {
@@ -37,20 +40,10 @@ const evaluationDataSlice = createSlice({
       state.isJsonDataLoaded = false;
       console.debug("Cleared JSON evaluation data, falling back to CSV");
     },
-    // DEBUG: Helper methods for debugging
-    updateIQRData: (state, action: PayloadAction<any>) => {
-      state.precalculated.iqr = action.payload;
-    },
-    updateStateMapAggregates: (state, action: PayloadAction<any>) => {
-      state.precalculated.stateMap_aggregates = action.payload;
-    },
-    updateDetailedCoverageAggregates: (state, action: PayloadAction<any>) => {
-      state.precalculated.detailedCoverage_aggregates = action.payload;
-    },
   },
 });
 
-export const { setEvaluationJsonData, clearEvaluationJsonData, updateIQRData, updateStateMapAggregates, updateDetailedCoverageAggregates } =
+export const { setEvaluationJsonData, clearEvaluationJsonData } =
   evaluationDataSlice.actions;
 
 export default evaluationDataSlice.reducer;

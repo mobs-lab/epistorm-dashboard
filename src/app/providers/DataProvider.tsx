@@ -1,7 +1,21 @@
 "use client";
 
-// File: src/app/providers/DataProvider.tsx
-import React, { createContext, useContext, useEffect, useState } from "react";
+// Import Custom Types
+import { LoadingStates } from "@/types/app";
+import { modelNames } from "@/types/common";
+import {
+  CoverageScoreData,
+  DetailedCoverageCollection,
+  EvaluationsScoreDataCollection,
+} from "@/types/domains/evaluations";
+import {
+  DataPoint,
+  ModelPrediction,
+  PredictionDataPoint,
+  SeasonOption
+} from "@/types/domains/forecasting";
+
+// Import critical libraries
 import * as d3 from "d3";
 import {
   addWeeks,
@@ -18,30 +32,16 @@ import {
   startOfWeek,
   subWeeks,
 } from "date-fns";
-import {
-  DataPoint,
-  LocationData,
-  ModelPrediction,
-  PredictionDataPoint,
-  SeasonOption,
-  ProcessedDataWithDateRange,
-} from "@/types/domains/forecasting";
-import { LoadingStates } from "@/types/app";
-import {
-  EvaluationsScoreDataCollection,
-  CoverageScoreData,
-  DetailedCoverageCollection,
-} from "@/types/domains/evaluations";
-import { modelNames } from "@/types/common";
+import React, { createContext, useContext, useEffect, useState } from "react";
 
+// Import Redux 
 import { useAppDispatch } from "@/store/hooks";
-// Forecast Actions and Reducers
 import { setGroundTruthData } from "@/store/data-slices/groundTruthSlice";
-import { setPredictionsData } from "@/store/data-slices/predictionsSlice";
+import { setHistoricalGroundTruthData } from "@/store/data-slices/historicalGroundTruthSlice";
 import { setLocationData } from "@/store/data-slices/locationSlice";
 import { setNowcastTrendsData } from "@/store/data-slices/nowcastTrendsSlice";
+import { setPredictionsData } from "@/store/data-slices/predictionsSlice";
 import { setStateThresholdsData } from "@/store/data-slices/stateThresholdsSlice";
-import { setHistoricalGroundTruthData } from "@/store/data-slices/historicalGroundTruthSlice";
 import {
   setSeasonOptions,
   updateDateEnd,
@@ -52,28 +52,28 @@ import {
 
 // Evaluations Actions and Reducers
 import {
+  clearEvaluationJsonData,
+  setEvaluationJsonData,
+} from "@/store/data-slices/evaluationDataSlice"; // Stores pre-aggregated JSON per DataContract
+import {
   setDetailedCoverageData,
   setEvaluationsSingleModelScoreData,
 } from "@/store/data-slices/evaluationsScoreDataSlice";
-import {
-  setEvaluationJsonData,
-  clearEvaluationJsonData,
-} from "@/store/data-slices/evaluationDataSlice"; // Stores pre-aggregated JSON per DataContract
 
 // Evaluation Single Model Settings Slice
 import {
-  updateEvaluationSingleModelViewDateStart,
   updateEvaluationSingleModelViewDateEnd,
-  updateEvaluationsSingleModelViewDateRange,
+  updateEvaluationSingleModelViewDateStart,
   updateEvaluationSingleModelViewSeasonOptions,
+  updateEvaluationsSingleModelViewDateRange,
 } from "@/store/evaluations-single-model-settings-slice";
 
 // Evaluations Season Overview Settings Slice
-import { updateDynamicPeriods } from "@/store/evaluations-season-overview-settings-slice";
 import {
-  setCoreJsonData,
   clearCoreData,
+  setCoreJsonData,
 } from "@/store/data-slices/coreDataSlice";
+import { updateDynamicPeriods } from "@/store/evaluations-season-overview-settings-slice";
 
 interface DataContextType {
   loadingStates: LoadingStates;
@@ -140,8 +140,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({
         ).length,
       });
 
-      // Dispatch to new Redux store
-      dispatch(setEvaluationJsonData(evalData.precalculated));
+      // Dispatch to Redux store
+      dispatch(setEvaluationJsonData(evalData));
       return true;
     } catch (error) {
       console.warn(

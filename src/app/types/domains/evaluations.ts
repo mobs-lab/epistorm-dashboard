@@ -93,4 +93,23 @@ export interface AppDataEvaluationsPrecalculated {
   };
 }
 
-
+// For single model page score line chart matching targetEndDate
+export interface AppDataEvaluationsSingleModelRawScores {
+  rawScores: {
+    // Keyed by seasonId -> metric -> model -> stateNum -> horizon -> array of scores
+    [seasonId: string]: {
+      [metric: string]: {
+        // "WIS_ratio" | "MAPE"
+        [model: string]: {
+          [stateNum: string]: {
+            [horizon: number]: {
+              referenceDate: string; // ISO date string
+              targetEndDate: string; // ISO date string
+              score: number;
+            };
+          };
+        };
+      };
+    };
+  };
+}
