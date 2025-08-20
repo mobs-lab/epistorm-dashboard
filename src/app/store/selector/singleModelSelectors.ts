@@ -180,7 +180,7 @@ export const selectSingleModelScoreDataFromJSON = createSelector(
       return null;
     }
 
-    const metric = scoreOption === "WIS/Baseline" ? "WIS_ratio" : "MAPE";
+    const metric = scoreOption === "WIS/Baseline" ? "WIS/Baseline" : "MAPE";
 
     // Navigate the nested structure
     const scoreData =
