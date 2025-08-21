@@ -13,14 +13,26 @@ export const selectIsJsonDataLoaded = (state: RootState) => {
 export const selectSeasonOverviewData = createSelector(
   [
     selectIsJsonDataLoaded,
-    (state: RootState) => state.evaluationsSeasonOverviewSettings.selectedAggregationPeriod,
-    (state: RootState) => state.evaluationsSeasonOverviewSettings.aggregationPeriods,
-    (state: RootState) => state.evaluationsSeasonOverviewSettings.evaluationSeasonOverviewHorizon,
-    (state: RootState) => state.evaluationsSeasonOverviewSettings.evaluationSeasonOverviewSelectedModels,
+    (state: RootState) =>
+      state.evaluationsSeasonOverviewSettings.selectedAggregationPeriod,
+    (state: RootState) =>
+      state.evaluationsSeasonOverviewSettings.aggregationPeriods,
+    (state: RootState) =>
+      state.evaluationsSeasonOverviewSettings.evaluationSeasonOverviewHorizon,
+    (state: RootState) =>
+      state.evaluationsSeasonOverviewSettings
+        .evaluationSeasonOverviewSelectedModels,
     (state: RootState) => state.evaluationData.precalculated,
   ],
-  (isJsonLoaded, selectedPeriodId, aggregationPeriods, horizons, selectedModels, precalculatedData) => {
-    console.debug("Selector inputs:", {
+  (
+    isJsonLoaded,
+    selectedPeriodId,
+    aggregationPeriods,
+    horizons,
+    selectedModels,
+    precalculatedData,
+  ) => {
+    /* console.debug("Selector inputs:", {
       isJsonLoaded,
       selectedPeriodId,
       aggregationPeriods: aggregationPeriods,
@@ -28,14 +40,16 @@ export const selectSeasonOverviewData = createSelector(
       selectedModels: selectedModels,
       hasIqrData: Object.keys(precalculatedData.iqr).length > 0,
       availableSeasons: Object.keys(precalculatedData.iqr),
-    });
+    }); */
 
     if (!isJsonLoaded) {
       console.debug("JSON data not loaded, returning null");
       return null;
     }
 
-    const selectedPeriod = aggregationPeriods.find((p) => p.id === selectedPeriodId);
+    const selectedPeriod = aggregationPeriods.find(
+      (p) => p.id === selectedPeriodId,
+    );
     if (!selectedPeriod) {
       console.debug("Selected period not found:", selectedPeriodId);
       return null;
@@ -50,13 +64,17 @@ export const selectSeasonOverviewData = createSelector(
       selectedModels,
       iqrData: precalculatedData.iqr[seasonId] || {},
       stateMapData: precalculatedData.stateMap_aggregates[seasonId] || {},
-      coverageData: precalculatedData.detailedCoverage_aggregates[seasonId] || {},
+      coverageData:
+        precalculatedData.detailedCoverage_aggregates[seasonId] || {},
     };
-  }
+  },
 );
 
 // Helper selector for checking if we should use JSON or fall back to CSV
-export const selectShouldUseJsonData = createSelector([selectIsJsonDataLoaded], (isLoaded) => {
-  console.debug("Should use JSON data:", isLoaded);
-  return isLoaded;
-});
+export const selectShouldUseJsonData = createSelector(
+  [selectIsJsonDataLoaded],
+  (isLoaded) => {
+    console.debug("Should use JSON data:", isLoaded);
+    return isLoaded;
+  },
+);

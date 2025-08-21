@@ -4,7 +4,7 @@
 import { LoadingStates } from "@/types/app";
 import { modelNames } from "@/types/common";
 import {
-  CoverageScoreData,
+  CoverageScoreDataEntry,
   DetailedCoverageCollection,
   EvaluationsScoreDataCollection,
 } from "@/types/domains/evaluations";
@@ -637,7 +637,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({
       }
 
       // Historical data still needs CSV loading for now
-      await fetchHistoricalGroundTruthData();
+      // await fetchHistoricalGroundTruthData();
     } catch (error) {
       console.error("Error in fetchAndProcessData:", error);
       // Update loading states to false for error cases
@@ -842,7 +842,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({
       >();
 
       // Also store detailed coverage data
-      const detailedCoverageByModel = new Map<string, CoverageScoreData[]>();
+      const detailedCoverageByModel = new Map<string, CoverageScoreDataEntry[]>();
 
       coverageData.forEach((entry) => {
         const modelName = entry.Model;
@@ -851,7 +851,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({
         if (!modelNames.includes(modelName)) return;
 
         // Create detailed coverage data entry
-        const detailedCoverageData: CoverageScoreData = {
+        const detailedCoverageData: CoverageScoreDataEntry = {
           referenceDate: parseISO(entry.reference_date),
           location: entry.location,
           horizon: +entry.horizon,

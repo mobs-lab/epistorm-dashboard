@@ -11,7 +11,7 @@ export interface EvaluationsScoreDataCollection {
   scoreData: EvaluationsScoreData[];
 }
 
-export interface CoverageScoreData {
+export interface CoverageScoreDataEntry {
   referenceDate: Date;
   location: string;
   horizon: number;
@@ -30,7 +30,7 @@ export interface CoverageScoreData {
 
 export interface DetailedCoverageCollection {
   modelName: string;
-  coverageData: CoverageScoreData[];
+  coverageData: CoverageScoreDataEntry[];
 }
 
 export interface EvaluationsSeasonOverviewSeasonOption {
@@ -66,7 +66,7 @@ export interface AppDataEvaluationsPrecalculated {
     [seasonId: string]: {
       [metric: string]: {
         [model: string]: {
-          [horizon: number]: BoxplotStats;
+          [horizonKey: number]: BoxplotStats;
         };
       };
     };
