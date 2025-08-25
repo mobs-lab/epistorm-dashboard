@@ -39,7 +39,10 @@ const NowcastGauge: React.FC<RiskLevelGaugeProps> = ({ riskLevel }) => {
   const svgRef = useRef<SVGSVGElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
-  const [containerDimensions, setContainerDimensions] = useState({ width: 0, height: 0 });
+  const [containerDimensions, setContainerDimensions] = useState({
+    width: 0,
+    height: 0,
+  });
 
   const [infoButtonPosition, setInfoButtonPosition] = useState<InfoButtonPosition>({
     left: 0,
@@ -264,7 +267,7 @@ const NowcastGauge: React.FC<RiskLevelGaugeProps> = ({ riskLevel }) => {
               top: `${infoButtonPosition.top}px`,
               zIndex: 5,
             }}>
-            <InfoButton title='Trend Forecast Information' content={trendForecastInfo} displayStyle='icon' size='sm' dialogSize="lg" />
+            <InfoButton title='Trend Forecast Information' content={trendForecastInfo} displayStyle='icon' size='sm' dialogSize='lg' />
           </div>
         )}
 
