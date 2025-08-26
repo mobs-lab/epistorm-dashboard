@@ -3,8 +3,8 @@ import * as topojson from "topojson-client";
 import * as d3 from "d3";
 import { zoom, zoomIdentity, ZoomBehavior } from "d3-zoom";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { updateSelectedState } from "@/store/forecast-settings-slice";
-import { updateEvaluationSingleModelViewSelectedState } from "@/store/evaluations-single-model-settings-slice";
+import { updateSelectedState } from "@/store/data-slices/SettingsSliceForecastNowcast";
+import { updateEvaluationSingleModelViewSelectedState } from "@/store/data-slices/SettingsSliceEvaluationSingleModel";
 import { initial } from "lodash";
 
 interface SettingsStateMapProps {

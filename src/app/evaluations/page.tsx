@@ -18,7 +18,7 @@ import { SeasonOverviewSettings } from "./evaluations-components/SeasonOverview/
 import SeasonOverviewUSStateMap from "./evaluations-components/SeasonOverview/SeasonOverviewUSStateMap";
 
 import InfoButton from "@/shared-components/InfoButton";
-import { setMapeChartScaleType, setWisChartScaleType } from "@/store/evaluations-season-overview-settings-slice";
+import { setMapeChartScaleType, setWisChartScaleType } from "@/store/data-slices/SettingsSliceEvaluationSeasonOverview";
 import { seasonOverviewInfo, singleModelInfo } from "types/infobutton-content";
 import SingleModelHorizonPlot from "./evaluations-components/SingleModel/SingleModelHorizonPlot";
 import SingleModelScoreLineChart from "./evaluations-components/SingleModel/SingleModelScoreLineChart";

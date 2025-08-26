@@ -15,7 +15,7 @@ import {
   updateNumOfWeeksAhead,
   updateSelectedState,
   updateYScale,
-} from "@/store/forecast-settings-slice";
+} from "@/store/data-slices/SettingsSliceForecastNowcast";
 import SettingsStateMap from "@/shared-components/SettingsStateMap";
 import SettingsStyledDatePicker from "./SettingsStyledDatePicker";
 import Image from "next/image";

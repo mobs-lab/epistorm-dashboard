@@ -1,4 +1,4 @@
-import { updateHistoricalDataMode } from "@/store/forecast-settings-slice";
+import { updateHistoricalDataMode } from "@/store/data-slices/SettingsSliceForecastNowcast";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { Switch } from "@/styles/material-tailwind-wrapper";
 import React from "react";

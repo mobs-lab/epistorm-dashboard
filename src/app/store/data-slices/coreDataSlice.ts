@@ -9,9 +9,9 @@ interface CoreDataState {
 
 const initialState: CoreDataState = {
   isLoaded: false,
-  metadata: null,
-  mainData: null,
-  auxiliaryData: null
+  metadata: {},
+  mainData: {},
+  auxiliaryData: {},
 };
 
 const coreDataSlice = createSlice({
@@ -29,8 +29,8 @@ const coreDataSlice = createSlice({
       state.mainData = null;
       state.auxiliaryData = null;
       state.isLoaded = false;
-    }
-  }
+    },
+  },
 });
 
 export const { setCoreJsonData, clearCoreData } = coreDataSlice.actions;

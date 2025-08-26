@@ -8,7 +8,7 @@ import { parseISO } from "date-fns";
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 
 // Import Redux
-import { setSeasonOptions, updateDateEnd, updateDateRange, updateDateStart } from "@/store/forecast-settings-slice";
+import { setSeasonOptions, updateDateEnd, updateDateRange, updateDateStart } from "@/store/data-slices/SettingsSliceForecastNowcast";
 import { useAppDispatch } from "@/store/hooks";
 
 // Evaluations Actions and Reducers
@@ -22,7 +22,7 @@ import {
   updateEvaluationSingleModelViewDateStart,
   updateEvaluationSingleModelViewSeasonOptions,
   updateEvaluationsSingleModelViewDateRange,
-} from "@/store/evaluations-single-model-settings-slice";
+} from "@/store/data-slices/SettingsSliceEvaluationSingleModel";
 
 interface DataContextType {
   loadingStates: LoadingStates;

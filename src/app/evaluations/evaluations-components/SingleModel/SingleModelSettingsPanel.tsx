@@ -17,7 +17,7 @@ import {
   updateEvaluationSingleModelViewSelectedState,
   updateEvaluationsSingleModelViewDateRange,
   updateEvaluationsSingleModelViewModel,
-} from "@/store/evaluations-single-model-settings-slice";
+} from "@/store/data-slices/SettingsSliceEvaluationSingleModel";
 
 import { Radio, Typography } from "@/styles/material-tailwind-wrapper";
 

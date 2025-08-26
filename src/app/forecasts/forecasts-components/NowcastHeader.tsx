@@ -1,14 +1,12 @@
 import React from "react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { updateUserSelectedRiskLevelModel } from "@/store/forecast-settings-slice";
+import { updateUserSelectedRiskLevelModel } from "@/store/data-slices/SettingsSliceForecastNowcast";
 import InfoButton from "../../components/InfoButton";
 import { activityLevelsInfo } from "types/infobutton-content";
 
 const NowcastHeader: React.FC = () => {
   const dispatch = useAppDispatch();
   const { USStateNum, userSelectedRiskLevelModel } = useAppSelector((state) => state.forecastSettings);
-  const locationData = useAppSelector((state) => state.location.data);
-  const modelOptions = useAppSelector((state) => state.nowcastTrends.allData.map((model) => model.modelName));
 
   const selectedState = locationData.find((location) => location.stateNum === USStateNum);
   const stateName = selectedState
