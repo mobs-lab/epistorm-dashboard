@@ -1,4 +1,4 @@
-export interface DataPoint {
+export interface SurveillanceSingleWeekDataPoint {
   date: Date;
   stateNum: string;
   stateName: string;
@@ -6,7 +6,7 @@ export interface DataPoint {
   weeklyRate: number;
 }
 
-export interface PredictionDataPoint {
+export interface PredictionSingleWeekDataPoint {
   referenceDate: Date;
   targetEndDate: Date;
   stateNum: string;
@@ -21,9 +21,9 @@ export interface PredictionDataPoint {
   confidence_high: number;
 }
 
-export interface ModelPrediction {
+export interface PredictionDataGroupedByModel {
   modelName: string;
-  predictionData: PredictionDataPoint[];
+  predictionData: PredictionSingleWeekDataPoint[];
 }
 
 export interface SeasonOption {
@@ -34,25 +34,10 @@ export interface SeasonOption {
   endDate: Date;
 }
 
-export interface DynamicSeasonOption {
-  index: number;
-  label: string;
-  displayString: string;
-  isDynamic: boolean;
-  subDisplayValue: string;
-  startDate: Date;
-  endDate: Date;
-}
 
-export interface ProcessedDataWithDateRange {
-  data: DataPoint[];
-  earliestDate: Date;
-  latestDate: Date;
-}
-
-export interface HistoricalDataEntry {
+export interface HistoricalDataCollectionByDate {
   associatedDate: Date;
-  historicalData: DataPoint[];
+  historicalData: SurveillanceSingleWeekDataPoint[];
 }
 
 export interface LocationData {
@@ -69,4 +54,23 @@ export interface StateThresholds {
   veryHigh: number;
 }
 
+export interface TimeSeriesData {
+  [seasonId: string]: {
+        // Redundantly store the important dates seen across all models, for some components to use
+        // Models may vary in actual prediction output, so storing important dates for each model separately, for Evaluations components (especially Single-Model Page)
+        [modelName: string]: {
+          // Critical dates for this specific season, for this specific model
+          firstPredRefDate?: string; // ISO Date string
+          lastPredRefDate?: string; // ISO Date string
+          lastPredTargetDate?: string; // ISO Date string
 
+          partitions: {
+            "pre-forecast": TimeSeriesPartition; //*See Below
+            "full-forecast": TimeSeriesPartition;
+            "forecast-tail": TimeSeriesPartition;
+            "post-forecast": TimeSeriesPartition;
+          };
+        };
+      };
+    }
+}

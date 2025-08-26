@@ -37,3 +37,6 @@ export const nowcastModelNames: string[] = [
   "CEPH-Rtrend_fluH",
   "FluSight-ensemble",
 ];
+
+export const nowcastRiskLevels = ["No Data", "Low", "Medium", "High"];
+export const nowcastRiskColors = ["#363b43", "#7cd8c9", "#2bafe2", "#435fce"];

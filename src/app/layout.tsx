@@ -29,16 +29,16 @@ export const metadata: Metadata = {
   ],
   creator: "MOBs Lab",
   publisher: "MOBs Lab",
-  
-robots: {
+
+  robots: {
     index: true,
     follow: true,
     googleBot: {
       index: true,
       follow: true,
-      'max-video-preview': -1,
-      'max-image-preview': 'large',
-      'max-snippet': -1,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
     },
   },
 
@@ -63,8 +63,8 @@ robots: {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={dmSans.className}>
-      <body className="flex flex-col min-h-screen bg-mobs-lab-color text-white overflow-clip">
+    <html lang='en' className={dmSans.className}>
+      <body className='flex flex-col min-h-screen bg-mobs-lab-color text-white overflow-clip'>
         <ClientLayout>{children}</ClientLayout>
       </body>
     </html>

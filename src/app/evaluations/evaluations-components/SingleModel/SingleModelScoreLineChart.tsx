@@ -1,6 +1,5 @@
 import * as d3 from "d3";
 import React, { useEffect, useRef } from "react";
-import { subWeeks } from "date-fns";
 
 import { useAppSelector } from "@/store/hooks";
 import { selectSingleModelScoreDataFromJSON } from "@/store/index";
@@ -42,7 +41,7 @@ const SingleModelScoreLineChart: React.FC = () => {
     svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
     margin: { top: number; right: number; bottom: number; left: number },
     chartWidth: number,
-    chartHeight: number,
+    chartHeight: number
   ) {
     // Mouse follow line
     const mouseFollowLine = svg
@@ -56,10 +55,7 @@ const SingleModelScoreLineChart: React.FC = () => {
       .style("opacity", 0);
 
     // Vertical indicator group
-    const indicatorGroup = svg
-      .append("g")
-      .attr("class", "vertical-indicator-group")
-      .style("opacity", 0);
+    const indicatorGroup = svg.append("g").attr("class", "vertical-indicator-group").style("opacity", 0);
 
     indicatorGroup
       .append("line")
@@ -78,10 +74,7 @@ const SingleModelScoreLineChart: React.FC = () => {
       .attr("y", margin.top + 20);
 
     // Corner tooltip
-    const cornerTooltip = svg
-      .append("g")
-      .attr("class", "corner-tooltip")
-      .style("opacity", 0);
+    const cornerTooltip = svg.append("g").attr("class", "corner-tooltip").style("opacity", 0);
 
     // Event capture area
     const eventOverlay = svg
@@ -108,16 +101,12 @@ const SingleModelScoreLineChart: React.FC = () => {
     data: ProcessedScoreDataPoint,
     isRightSide: boolean,
     chartWidth: number,
-    scoreOption: string,
+    scoreOption: string
   ) {
     tooltip.selectAll("*").remove();
 
     const padding = 12;
-    const background = tooltip
-      .append("rect")
-      .attr("fill", "#333943")
-      .attr("rx", 8)
-      .attr("ry", 8);
+    const background = tooltip.append("rect").attr("fill", "#333943").attr("rx", 8).attr("ry", 8);
 
     const dateText = tooltip
       .append("text")
@@ -138,9 +127,7 @@ const SingleModelScoreLineChart: React.FC = () => {
       .style("font-family", "var(--font-dm-sans)")
       .style("font-size", "13px")
       .style("line-height", "22.5px")
-      .text(
-        `Forecast Submission Date: ${data.referenceDate.toUTCString().slice(5, 16)}`,
-      );
+      .text(`Forecast Submission Date: ${data.referenceDate.toUTCString().slice(5, 16)}`);
 
     const scoreText = tooltip
       .append("text")
@@ -150,21 +137,17 @@ const SingleModelScoreLineChart: React.FC = () => {
       .style("font-family", "var(--font-dm-sans)")
       .style("font-size", "13px")
       .style("line-height", "22.5px")
-      .text(
-        `${scoreOption}: ${scoreOption === "MAPE" ? `${data.score.toFixed(1)}%` : data.score.toFixed(3)}`,
-      );
+      .text(`${scoreOption}: ${scoreOption === "MAPE" ? `${data.score.toFixed(1)}%` : data.score.toFixed(3)}`);
 
     const textWidth = Math.max(
       dateText.node()!.getComputedTextLength(),
       refDateText.node()!.getComputedTextLength(),
-      scoreText.node()!.getComputedTextLength(),
+      scoreText.node()!.getComputedTextLength()
     );
 
     background.attr("width", textWidth + padding * 2).attr("height", 84);
 
-    const tooltipX = isRightSide
-      ? chartWidth - textWidth + padding * 3
-      : padding * 5;
+    const tooltipX = isRightSide ? chartWidth - textWidth + padding * 3 : padding * 5;
 
     tooltip.attr("transform", `translate(${tooltipX}, 10)`).style("opacity", 1);
   }
@@ -173,7 +156,7 @@ const SingleModelScoreLineChart: React.FC = () => {
     mouseX: number,
     xScale: d3.ScaleBand<string>,
     margin: any,
-    filteredData: ProcessedScoreDataPoint[],
+    filteredData: ProcessedScoreDataPoint[]
   ): ProcessedScoreDataPoint | null {
     if (filteredData.length === 0) return null;
 
@@ -194,11 +177,7 @@ const SingleModelScoreLineChart: React.FC = () => {
 
     // Find the actual data point closest to this date
     const targetDate = dates[index];
-    return (
-      filteredData.find(
-        (d) => d.targetDate.getTime() === targetDate.getTime(),
-      ) || null
-    );
+    return filteredData.find((d) => d.targetDate.getTime() === targetDate.getTime()) || null;
   }
 
   function createScalesAndAxes(
@@ -206,7 +185,7 @@ const SingleModelScoreLineChart: React.FC = () => {
     processedData: ProcessedScoreDataPoint[],
     chartWidth: number,
     chartHeight: number,
-    scoreOption: string,
+    scoreOption: string
   ) {
     // Create band scale for x-axis
     const xScale = d3
@@ -220,11 +199,7 @@ const SingleModelScoreLineChart: React.FC = () => {
     const maxScore = scores.length > 0 ? Math.max(...scores) : 1;
     const yDomain = [0, maxScore * 1.02];
 
-    const yScale = d3
-      .scaleLinear()
-      .domain(yDomain)
-      .range([chartHeight, 0])
-      .nice();
+    const yScale = d3.scaleLinear().domain(yDomain).range([chartHeight, 0]).nice();
 
     // Create axes
     const xAxis = d3
@@ -262,15 +237,13 @@ const SingleModelScoreLineChart: React.FC = () => {
         }
       });
 
-    const yAxis = d3
-      .axisLeft(yScale)
-      .tickFormat((d: d3.NumberValue, i: number) => {
-        const value = Number(d.valueOf());
-        if (scoreOption === "MAPE") {
-          return value >= 10 ? `${value.toFixed(0)}%` : `${value.toFixed(1)}%`;
-        }
-        return value.toFixed(1);
-      });
+    const yAxis = d3.axisLeft(yScale).tickFormat((d: d3.NumberValue, i: number) => {
+      const value = Number(d.valueOf());
+      if (scoreOption === "MAPE") {
+        return value >= 10 ? `${value.toFixed(0)}%` : `${value.toFixed(1)}%`;
+      }
+      return value.toFixed(1);
+    });
 
     return { xScale, yScale, xAxis, yAxis };
   }
@@ -299,33 +272,21 @@ const SingleModelScoreLineChart: React.FC = () => {
       processedData: ProcessedScoreDataPoint[];
       isDragging: boolean;
       scoreOption: string;
-    },
+    }
   ) {
     const [mouseX] = d3.pointer(event);
-    const dataPoint = findClosestDataPoint(
-      mouseX,
-      xScale,
-      margin,
-      processedData,
-    );
+    const dataPoint = findClosestDataPoint(mouseX, xScale, margin, processedData);
 
     if (!dataPoint) return;
 
     // Calculate position using the band scale
-    const xPos =
-      (xScale(dataPoint.targetDate.toISOString()) || 0) +
-      xScale.bandwidth() / 2 +
-      margin.left;
+    const xPos = (xScale(dataPoint.targetDate.toISOString()) || 0) + xScale.bandwidth() / 2 + margin.left;
     const isRightSide = mouseX < chartWidth / 2;
 
-    mouseFollowLine
-      .attr("transform", `translate(${xPos}, 0)`)
-      .style("opacity", 1);
+    mouseFollowLine.attr("transform", `translate(${xPos}, 0)`).style("opacity", 1);
 
     if (isDragging) {
-      indicatorGroup
-        .attr("transform", `translate(${xPos}, 0)`)
-        .style("opacity", 1);
+      indicatorGroup.attr("transform", `translate(${xPos}, 0)`).style("opacity", 1);
 
       dateLabel
         .attr("x", isRightSide ? 5 : -5)
@@ -333,13 +294,7 @@ const SingleModelScoreLineChart: React.FC = () => {
         .text(dataPoint.targetDate.toUTCString().slice(5, 16));
     }
 
-    updateCornerTooltip(
-      cornerTooltip,
-      dataPoint,
-      isRightSide,
-      chartWidth,
-      scoreOption,
-    );
+    updateCornerTooltip(cornerTooltip, dataPoint, isRightSide, chartWidth, scoreOption);
   }
 
   function renderVisualElements(
@@ -348,7 +303,7 @@ const SingleModelScoreLineChart: React.FC = () => {
     xScale: d3.ScaleBand<string>,
     yScale: d3.ScaleLinear<number, number>,
     modelName: string,
-    scoreOption: string,
+    scoreOption: string
   ) {
     // Draw reference line at y = 1 for WIS_ratio
     if (scoreOption === "WIS/Baseline") {
@@ -375,10 +330,7 @@ const SingleModelScoreLineChart: React.FC = () => {
     const line = d3
       .line<ProcessedScoreDataPoint>()
       .defined((d) => !isNaN(d.score))
-      .x(
-        (d) =>
-          (xScale(d.targetDate.toISOString()) || 0) + xScale.bandwidth() / 2,
-      )
+      .x((d) => (xScale(d.targetDate.toISOString()) || 0) + xScale.bandwidth() / 2)
       .y((d) => yScale(d.score));
 
     // Draw line
@@ -396,11 +348,7 @@ const SingleModelScoreLineChart: React.FC = () => {
       .data(processedData)
       .enter()
       .append("circle")
-      .attr(
-        "cx",
-        (d) =>
-          (xScale(d.targetDate.toISOString()) || 0) + xScale.bandwidth() / 2,
-      )
+      .attr("cx", (d) => (xScale(d.targetDate.toISOString()) || 0) + xScale.bandwidth() / 2)
       .attr("cy", (d) => yScale(d.score))
       .attr("r", 4)
       .attr("fill", modelColorMap[modelName]);
@@ -409,9 +357,7 @@ const SingleModelScoreLineChart: React.FC = () => {
   /**
    * Helper function to wrap x-axis labels for better readability
    */
-  function wrapAxisLabels(
-    text: d3.Selection<d3.BaseType, unknown, SVGGElement, unknown>,
-  ) {
+  function wrapAxisLabels(text: d3.Selection<d3.BaseType, unknown, SVGGElement, unknown>) {
     text.each(function () {
       const text = d3.select(this);
       const lines = text.text().split(/\n+/);
@@ -429,8 +375,7 @@ const SingleModelScoreLineChart: React.FC = () => {
       // Create a tspan for each line with progressively increasing offsets
       lines.forEach((line, i) => {
         // For 3-line labels, increase vertical spacing between lines 2 and 3
-        const currentDy =
-          i === 0 ? dy : i === 2 ? lineHeight * 1.6 : lineHeight;
+        const currentDy = i === 0 ? dy : i === 2 ? lineHeight * 1.6 : lineHeight;
 
         text
           .append("tspan")
@@ -470,11 +415,7 @@ const SingleModelScoreLineChart: React.FC = () => {
     const svg = d3.select(chartRef.current);
     svg.selectAll("*").remove();
 
-    if (
-      !scoreDataFromJSON ||
-      scoreDataFromJSON.length === 0 ||
-      !timeSeriesData
-    ) {
+    if (!scoreDataFromJSON || scoreDataFromJSON.length === 0 || !timeSeriesData) {
       svg
         .append("text")
         .attr("x", dimensions.width / 2)
@@ -495,14 +436,9 @@ const SingleModelScoreLineChart: React.FC = () => {
       referenceDate: normalizeToUTCMidDay(entry.referenceDate),
     }));
 
-    const actualScoreDates = normalizedScoreData
-      .map((d) => d.targetEndDate)
-      .sort((a, b) => a.getTime() - b.getTime());
+    const actualScoreDates = normalizedScoreData.map((d) => d.targetEndDate).sort((a, b) => a.getTime() - b.getTime());
 
-    const allSaturdays = generateSaturdayDatesUTC(
-      displayStartDate,
-      displayEndDate,
-    );
+    const allSaturdays = generateSaturdayDatesUTC(displayStartDate, displayEndDate);
 
     // Create a Set for efficient lookup and deduplication
     const dateSet = new Set<string>();
@@ -561,23 +497,14 @@ const SingleModelScoreLineChart: React.FC = () => {
       processedData, // Use only actual data for y-scale
       chartWidth,
       chartHeight,
-      evaluationSingleModelViewScoresOption,
+      evaluationSingleModelViewScoresOption
     );
 
     // Create main chart group
-    const chart = svg
-      .append("g")
-      .attr("transform", `translate(${margin.left},${margin.top})`);
+    const chart = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
 
     // Render visual elements
-    renderVisualElements(
-      chart,
-      processedData,
-      xScale,
-      yScale,
-      evaluationsSingleModelViewModel,
-      evaluationSingleModelViewScoresOption,
-    );
+    renderVisualElements(chart, processedData, xScale, yScale, evaluationsSingleModelViewModel, evaluationSingleModelViewScoresOption);
 
     // Add axes with styling
     chart
@@ -600,29 +527,12 @@ const SingleModelScoreLineChart: React.FC = () => {
       .style("font-family", "var(--font-dm-sans)")
       .call(yAxis as any)
       .call((g) => g.select(".domain").remove())
-      .call((g) =>
-        g
-          .selectAll(".tick line")
-          .attr("stroke-opacity", 0.5)
-          .attr("stroke-dasharray", "2,2")
-          .attr("x2", chartWidth),
-      )
+      .call((g) => g.selectAll(".tick line").attr("stroke-opacity", 0.5).attr("stroke-dasharray", "2,2").attr("x2", chartWidth))
       .style("font-size", "18px");
 
     // Add interactivity
-    const interactiveElements = createInteractiveElements(
-      svg,
-      margin,
-      chartWidth,
-      chartHeight,
-    );
-    const {
-      mouseFollowLine,
-      indicatorGroup,
-      dateLabel,
-      cornerTooltip,
-      eventOverlay,
-    } = interactiveElements;
+    const interactiveElements = createInteractiveElements(svg, margin, chartWidth, chartHeight);
+    const { mouseFollowLine, indicatorGroup, dateLabel, cornerTooltip, eventOverlay } = interactiveElements;
 
     // Add interaction handlers
     let isDragging = isDraggingRef.current;
@@ -692,19 +602,19 @@ const SingleModelScoreLineChart: React.FC = () => {
   ]);
 
   return (
-    <div ref={containerRef} className="w-full h-full">
+    <div ref={containerRef} className='w-full h-full'>
       <svg
         ref={chartRef}
-        width="100%"
-        height="100%"
-        className="w-full h-full"
+        width='100%'
+        height='100%'
+        className='w-full h-full'
         style={{
           fontFamily: "var(--font-dm-sans)",
           opacity: isResizing ? 0.5 : 1,
           transition: "opacity 0.2s ease",
         }}
         viewBox={`0 0 ${dimensions.width || 100} ${dimensions.height || 100}`}
-        preserveAspectRatio="xMidYMid meet"
+        preserveAspectRatio='xMidYMid meet'
       />
     </div>
   );

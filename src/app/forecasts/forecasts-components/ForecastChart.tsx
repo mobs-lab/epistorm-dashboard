@@ -1,19 +1,19 @@
 // src/app/components/forecasts-components/ForecastChart.tsx
 "use client";
 
-import React, { useEffect, useRef } from "react";
 import * as d3 from "d3";
 import { Axis, BaseType, NumberValue, ScaleLinear, ScaleLogarithmic, ScaleTime } from "d3";
 import { subWeeks } from "date-fns";
+import React, { useEffect, useRef } from "react";
 
-import { DataPoint, HistoricalDataEntry, ModelPrediction, PredictionDataPoint } from "@/types/domains/forecasting";
+import { modelColorMap } from "@/types/common";
+import { SurveillanceSingleWeekDataPoint, HistoricalDataCollectionByDate, PredictionDataGroupedByModel, PredictionSingleWeekDataPoint } from "@/types/domains/forecasting";
+import { useChartMargins } from "@/utils/chart-margin-utils";
 import { isUTCDateEqual } from "@/utils/date";
 import { useResponsiveSVG } from "@/utils/responsiveSVG";
-import { useChartMargins } from "@/utils/chart-margin-utils";
-import { modelColorMap } from "@/types/common";
 
-import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { updateUserSelectedWeek } from "@/store/forecast-settings-slice";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
 
 const ForecastChart: React.FC = () => {
   // reference to svg object
@@ -45,7 +45,7 @@ const ForecastChart: React.FC = () => {
   const dispatch = useAppDispatch();
 
   // Function to filter ground truth data-slices by selected state and dates
-  function filterGroundTruthData(data: DataPoint[], state: string, groundTruthDateRange: [Date, Date]) {
+  function filterGroundTruthData(data: SurveillanceSingleWeekDataPoint[], state: string, groundTruthDateRange: [Date, Date]) {
     var filteredGroundTruthDataByState = data.filter((d) => d.stateNum === state);
 
     // Filter data-slices by extracting those entries that fall within the selected date range
@@ -59,7 +59,7 @@ const ForecastChart: React.FC = () => {
   }
 
   function processPredictionData(
-    allPredictions: ModelPrediction[],
+    allPredictions: PredictionDataGroupedByModel[],
     selectedModels: string[],
     state: string,
     selectedWeek: any,
@@ -151,14 +151,14 @@ const ForecastChart: React.FC = () => {
   }
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  function createScalesAndAxes(ground: DataPoint[], predictions: {}, chartWidth: number, chartHeight: number, yAxisScale: string) {
+  function createScalesAndAxes(ground: SurveillanceSingleWeekDataPoint[], predictions: {}, chartWidth: number, chartHeight: number, yAxisScale: string) {
     // Find the maximum date in the ground truth data-slices
     const maxGroundTruthDate = d3.max(ground, (d) => d.date) as Date;
 
     // Find the maximum date in the prediction data-slices
     const maxPredictionDate = Object.values(predictions)
       .flatMap((modelData: any) => modelData[0]?.data || [])
-      .reduce((maxDate: Date, dataPoint: PredictionDataPoint) => {
+      .reduce((maxDate: Date, dataPoint: PredictionSingleWeekDataPoint) => {
         const targetEndDate = new Date(dataPoint.targetEndDate);
         return targetEndDate > maxDate ? targetEndDate : maxDate;
         3;
@@ -258,9 +258,9 @@ const ForecastChart: React.FC = () => {
     // console.debug("DEBUG: ForecastChart: createScalesAndAxes(): predictions: ", predictions);
 
     if (predictions && Object.keys(predictions).length > 0) {
-      maxPredictionValue = Object.values(predictions).reduce((max, modelData: PredictionDataPoint[]) => {
+      maxPredictionValue = Object.values(predictions).reduce((max, modelData: PredictionSingleWeekDataPoint[]) => {
         const modelMax = modelData.reduce((modelMax, intervalData) => {
-          const intervalMax = d3.max(intervalData.data, (p: PredictionDataPoint) => {
+          const intervalMax = d3.max(intervalData.data, (p: PredictionSingleWeekDataPoint) => {
             // Use the highest confidence interval available
             if (p.confidence_high !== undefined) {
               return p.confidence_high;
@@ -407,7 +407,7 @@ const ForecastChart: React.FC = () => {
 
   function renderGroundTruthData(
     svg: Selection<BaseType, unknown, HTMLElement, any>,
-    surveillanceData: DataPoint[],
+    surveillanceData: SurveillanceSingleWeekDataPoint[],
     xScale: ScaleTime<number, number, never>,
     yScale: ScaleLogarithmic<number, number, never> | ScaleLinear<number, number, never>,
     marginLeft: number,
@@ -417,7 +417,7 @@ const ForecastChart: React.FC = () => {
     svg.selectAll(".ground-truth-path, .ground-truth-dot").remove();
 
     const line = d3
-      .line<DataPoint>()
+      .line<SurveillanceSingleWeekDataPoint>()
       .defined((d) => d.admissions !== -1 || d.admissions === null) // Include placeholder points
       .x((d) => xScale(d.date))
       .y((d) => (d.admissions !== -1 ? yScale(d.admissions) : yScale.range()[0])); // Use bottom of chart for placeholders
@@ -449,7 +449,7 @@ const ForecastChart: React.FC = () => {
 
   function renderHistoricalData(
     svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
-    historicalData: HistoricalDataEntry[],
+    historicalData: HistoricalDataCollectionByDate[],
     xScale: d3.ScaleTime<number, number>,
     yScale: d3.ScaleLinear<number, number> | d3.ScaleLogarithmic<number, number>,
     marginLeft: number,
@@ -475,7 +475,7 @@ const ForecastChart: React.FC = () => {
     const historicalDataToDraw = matchingHistoricalData.historicalData.filter((d) => d.date >= dateStart);
 
     const historicalLine = d3
-      .line<DataPoint>()
+      .line<SurveillanceSingleWeekDataPoint>()
       .defined((d) => d.admissions !== -1 && !isNaN(d.admissions))
       .x((d) => xScale(d.date))
       .y((d) => yScale(d.admissions));
@@ -724,10 +724,10 @@ const ForecastChart: React.FC = () => {
   }
 
   function updateCornerTooltip(
-    data: DataPoint,
-    groundTruthData: DataPoint[],
+    data: SurveillanceSingleWeekDataPoint,
+    groundTruthData: SurveillanceSingleWeekDataPoint[],
     predictionData: any,
-    historicalGroundTruthData: HistoricalDataEntry[],
+    historicalGroundTruthData: HistoricalDataCollectionByDate[],
     xScale: d3.ScaleTime<number, number>,
     chartWidth: number,
     marginLeft: number,
@@ -740,25 +740,25 @@ const ForecastChart: React.FC = () => {
 
     // Layout constants
     const layout = {
-        padding: 10,
-        lineHeight: 20,
-        sectionGap: 10,
-        modelColorBoxSize: 12,
-        colGap: 30,
-        fontFamily: "var(--font-dm-sans), sans-serif",
-        fontSize: "13px",
-        fontColor: "white",
-        bgColor: "#333943",
-        // Define column widths for the prediction table
-        medianColWidth: 60,
-        piColWidth: 110,
+      padding: 10,
+      lineHeight: 20,
+      sectionGap: 10,
+      modelColorBoxSize: 12,
+      colGap: 30,
+      fontFamily: "var(--font-dm-sans), sans-serif",
+      fontSize: "13px",
+      fontColor: "white",
+      bgColor: "#333943",
+      // Define column widths for the prediction table
+      medianColWidth: 60,
+      piColWidth: 110,
     };
-// --- 2. PREPARE DATA ---
+    // --- 2. PREPARE DATA ---
     const currentPredictions = findPredictionsForDate(predictionData, data.date);
     const ciOptions = [];
-    if (confidenceInterval.includes("50")) ciOptions.push({ label: "50% PI", low: 'confidence250', high: 'confidence750'});
-    if (confidenceInterval.includes("90")) ciOptions.push({ label: "90% PI", low: 'confidence050', high: 'confidence950'});
-    if (confidenceInterval.includes("95")) ciOptions.push({ label: "95% PI", low: 'confidence025', high: 'confidence975'});
+    if (confidenceInterval.includes("50")) ciOptions.push({ label: "50% PI", low: "confidence250", high: "confidence750" });
+    if (confidenceInterval.includes("90")) ciOptions.push({ label: "90% PI", low: "confidence050", high: "confidence950" });
+    if (confidenceInterval.includes("95")) ciOptions.push({ label: "95% PI", low: "confidence025", high: "confidence975" });
 
     let maxWidth = 0;
     let currentY = layout.padding + 8;
@@ -769,107 +769,128 @@ const ForecastChart: React.FC = () => {
 
     // Helper function to add a line of text and update dimensions
     const addTextLine = (label: string, value: string, yPos: number) => {
-        const text = contentGroup.append("text")
-            .attr("x", layout.padding)
-            .attr("y", yPos)
-            .attr("fill", layout.fontColor)
-            .style("font-family", layout.fontFamily)
-            .attr("font-size", layout.fontSize);
+      const text = contentGroup
+        .append("text")
+        .attr("x", layout.padding)
+        .attr("y", yPos)
+        .attr("fill", layout.fontColor)
+        .style("font-family", layout.fontFamily)
+        .attr("font-size", layout.fontSize);
 
-        text.append("tspan").text(label);
-        text.append("tspan").text(value).attr("font-weight", "bold");
-        
-        // Update the maximum width needed for the tooltip
-        maxWidth = Math.max(maxWidth, text.node().getComputedTextLength());
-        return yPos + layout.lineHeight;
+      text.append("tspan").text(label);
+      text.append("tspan").text(value).attr("font-weight", "bold");
+
+      // Update the maximum width needed for the tooltip
+      maxWidth = Math.max(maxWidth, text.node().getComputedTextLength());
+      return yPos + layout.lineHeight;
     };
-    
+
     // A. Add Date and Admissions Info
     currentY = addTextLine("Date: ", data.date.toUTCString().slice(5, 16), currentY);
     currentY = addTextLine("Admissions: ", formatNumber(data.admissions, true), currentY);
 
     // B. Add Historical Admissions Info (if toggled)
     if (isHistoricalDataMode) {
-        const historicalValue = historicalGroundTruthData
-            .find(file => isUTCDateEqual(file.associatedDate, subWeeks(userSelectedWeek, 1)))
-            ?.historicalData.find(entry => isUTCDateEqual(entry.date, data.date) && entry.stateNum === data.stateNum)
-            ?.admissions || NaN;
-        currentY = addTextLine("Historical: ", formatNumber(historicalValue, true), currentY);
+      const historicalValue =
+        historicalGroundTruthData
+          .find((file) => isUTCDateEqual(file.associatedDate, subWeeks(userSelectedWeek, 1)))
+          ?.historicalData.find((entry) => isUTCDateEqual(entry.date, data.date) && entry.stateNum === data.stateNum)?.admissions || NaN;
+      currentY = addTextLine("Historical: ", formatNumber(historicalValue, true), currentY);
     }
 
     // C. Add Prediction Data (if available)
     if (currentPredictions) {
-        currentY += layout.sectionGap; // Add space before the prediction section
+      currentY += layout.sectionGap; // Add space before the prediction section
 
-        // Calculate the total width of the prediction table
-        const tableWidth = layout.medianColWidth + (ciOptions.length * (layout.piColWidth + layout.colGap));
-        maxWidth = Math.max(maxWidth, tableWidth);
+      // Calculate the total width of the prediction table
+      const tableWidth = layout.medianColWidth + ciOptions.length * (layout.piColWidth + layout.colGap);
+      maxWidth = Math.max(maxWidth, tableWidth);
 
-        Object.entries(currentPredictions).forEach(([modelName, modelData]: [string, any]) => {
-            // Model Name and Color Box
-            const modelGroup = contentGroup.append("g")
-                .attr("transform", `translate(${layout.padding}, ${currentY})`);
+      Object.entries(currentPredictions).forEach(([modelName, modelData]: [string, any]) => {
+        // Model Name and Color Box
+        const modelGroup = contentGroup.append("g").attr("transform", `translate(${layout.padding}, ${currentY})`);
 
-            modelGroup.append("rect")
-                .attr("width", layout.modelColorBoxSize)
-                .attr("height", layout.modelColorBoxSize)
-                .attr("y", -layout.modelColorBoxSize / 1.5) // Center align with text
-                .attr("fill", modelColorMap[modelName]);
+        modelGroup
+          .append("rect")
+          .attr("width", layout.modelColorBoxSize)
+          .attr("height", layout.modelColorBoxSize)
+          .attr("y", -layout.modelColorBoxSize / 1.5) // Center align with text
+          .attr("fill", modelColorMap[modelName]);
 
-            modelGroup.append("text")
-                .attr("x", layout.modelColorBoxSize + 6)
-                .attr("fill", layout.fontColor)
-                .attr("font-weight", "bold")
-                .style("font-family", layout.fontFamily)
-                .attr("font-size", layout.fontSize)
-                .text(modelName);
-            
-            currentY += layout.lineHeight;
+        modelGroup
+          .append("text")
+          .attr("x", layout.modelColorBoxSize + 6)
+          .attr("fill", layout.fontColor)
+          .attr("font-weight", "bold")
+          .style("font-family", layout.fontFamily)
+          .attr("font-size", layout.fontSize)
+          .text(modelName);
 
-            // Prediction Table (Headers and Values)
-            const tableGroup = contentGroup.append("g")
-                .attr("transform", `translate(${layout.padding}, ${currentY})`);
+        currentY += layout.lineHeight;
 
-            // Headers
-            tableGroup.append("text").text("Median").attr("x", 0).attr("fill", layout.fontColor).style("font-family", layout.fontFamily).attr("font-size", layout.fontSize);
-            ciOptions.forEach((ci, i) => {
-                tableGroup.append("text").text(ci.label)
-                    .attr("x", layout.medianColWidth + layout.colGap + (i * (layout.piColWidth + layout.colGap)))
-                    .attr("fill", layout.fontColor).style("font-family", layout.fontFamily).attr("font-size", layout.fontSize);
-            });
-            
-            currentY += layout.lineHeight;
+        // Prediction Table (Headers and Values)
+        const tableGroup = contentGroup.append("g").attr("transform", `translate(${layout.padding}, ${currentY})`);
 
-            // Values
-            const valueRow = contentGroup.append("g")
-                 .attr("transform", `translate(${layout.padding}, ${currentY})`);
-
-            valueRow.append("text").text(formatNumber(modelData.confidence500))
-                .attr("x", 0)
-                .attr("fill", layout.fontColor).style("font-family", layout.fontFamily).attr("font-size", layout.fontSize).attr("font-weight", "bold");
-            
-            ciOptions.forEach((ci, i) => {
-                const ciText = `[${formatNumber(modelData[ci.low])}, ${formatNumber(modelData[ci.high])}]`;
-                valueRow.append("text").text(ciText)
-                    .attr("x", layout.medianColWidth + layout.colGap + (i * (layout.piColWidth + layout.colGap)))
-                    .attr("fill", layout.fontColor).style("font-family", layout.fontFamily).attr("font-size", layout.fontSize);
-            });
-
-            currentY += layout.lineHeight;
+        // Headers
+        tableGroup
+          .append("text")
+          .text("Median")
+          .attr("x", 0)
+          .attr("fill", layout.fontColor)
+          .style("font-family", layout.fontFamily)
+          .attr("font-size", layout.fontSize);
+        ciOptions.forEach((ci, i) => {
+          tableGroup
+            .append("text")
+            .text(ci.label)
+            .attr("x", layout.medianColWidth + layout.colGap + i * (layout.piColWidth + layout.colGap))
+            .attr("fill", layout.fontColor)
+            .style("font-family", layout.fontFamily)
+            .attr("font-size", layout.fontSize);
         });
+
+        currentY += layout.lineHeight;
+
+        // Values
+        const valueRow = contentGroup.append("g").attr("transform", `translate(${layout.padding}, ${currentY})`);
+
+        valueRow
+          .append("text")
+          .text(formatNumber(modelData.confidence500))
+          .attr("x", 0)
+          .attr("fill", layout.fontColor)
+          .style("font-family", layout.fontFamily)
+          .attr("font-size", layout.fontSize)
+          .attr("font-weight", "bold");
+
+        ciOptions.forEach((ci, i) => {
+          const ciText = `[${formatNumber(modelData[ci.low])}, ${formatNumber(modelData[ci.high])}]`;
+          valueRow
+            .append("text")
+            .text(ciText)
+            .attr("x", layout.medianColWidth + layout.colGap + i * (layout.piColWidth + layout.colGap))
+            .attr("fill", layout.fontColor)
+            .style("font-family", layout.fontFamily)
+            .attr("font-size", layout.fontSize);
+        });
+
+        currentY += layout.lineHeight;
+      });
     }
 
     // --- 4. DRAW BACKGROUND AND POSITION THE TOOLTIP ---
     const EXTRAPADDING = 20;
-    const finalWidth = maxWidth + (layout.padding * 2) + EXTRAPADDING;
+    const finalWidth = maxWidth + layout.padding * 2 + EXTRAPADDING;
     const finalHeight = currentY + layout.padding - layout.lineHeight / 2;
 
     // Add the background rectangle now that we have the final dimensions
-    contentGroup.insert("rect", ":first-child") // Insert behind all content
-        .attr("width", finalWidth)
-        .attr("height", finalHeight)
-        .attr("fill", layout.bgColor)
-        .attr("rx", 8).attr("ry", 8);
+    contentGroup
+      .insert("rect", ":first-child") // Insert behind all content
+      .attr("width", finalWidth)
+      .attr("height", finalHeight)
+      .attr("fill", layout.bgColor)
+      .attr("rx", 8)
+      .attr("ry", 8);
 
     // Decide whether to show the tooltip on the left or right
     const cursorX = xScale(data.date);
@@ -878,13 +899,11 @@ const ForecastChart: React.FC = () => {
     // Calculate the final X position for the entire tooltip group.
     // This is the key to correct alignment. The internal layout is always LTR.
     const tooltipX = showOnLeftSide
-        ? marginLeft + 20 // Show on the left side
-        : chartWidth + marginLeft - finalWidth; // Show on the right side
-    
+      ? marginLeft + 20 // Show on the left side
+      : chartWidth + marginLeft - finalWidth; // Show on the right side
+
     // Apply the final position and make it visible
-    cornerTooltip
-        .attr("transform", `translate(${tooltipX}, ${marginTop})`)
-        .style("opacity", 1);
+    cornerTooltip.attr("transform", `translate(${tooltipX}, ${marginTop})`).style("opacity", 1);
   }
 
   function findPredictionsForDate(predictionData: any, date: Date) {
@@ -1009,7 +1028,7 @@ const ForecastChart: React.FC = () => {
       .style("font-size", "18px");
   }
 
-  function findNearestDataPoint(data: DataPoint[], targetDate: Date): DataPoint {
+  function findNearestDataPoint(data: SurveillanceSingleWeekDataPoint[], targetDate: Date): SurveillanceSingleWeekDataPoint {
     return data.reduce((prev, curr) => {
       const prevDiff = Math.abs(prev.date.getTime() - targetDate.getTime());
       const currDiff = Math.abs(curr.date.getTime() - targetDate.getTime());
@@ -1039,8 +1058,8 @@ const ForecastChart: React.FC = () => {
       .attr("fill", "white")
       .text(message);
   }
-  
-  function createCombinedDataset(groundTruthData: DataPoint[], predictionData: any): DataPoint[] {
+
+  function createCombinedDataset(groundTruthData: SurveillanceSingleWeekDataPoint[], predictionData: any): SurveillanceSingleWeekDataPoint[] {
     // First deconstruct the whole of ground truth data-slices into a new array
     let combinedData = [...groundTruthData];
 
@@ -1067,9 +1086,9 @@ const ForecastChart: React.FC = () => {
 
   function renderChartComponents(
     svg: d3.Selection<BaseType, unknown, null, undefined>,
-    filteredGroundTruthData: DataPoint[],
+    filteredGroundTruthData: SurveillanceSingleWeekDataPoint[],
     processedPredictionData: any,
-    historicalGroundTruthData: HistoricalDataEntry[],
+    historicalGroundTruthData: HistoricalDataCollectionByDate[],
     xScale: d3.ScaleTime<number, number>,
     yScale: d3.ScaleLinear<number, number>,
     marginLeft: number,

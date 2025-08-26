@@ -1,6 +1,6 @@
 // src/app/store/forecastSettingsSlice.ts
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
-import { EvaluationsSeasonOverviewSeasonOption, AggregationPeriod } from "@/types/domains/evaluations";
+import { EvaluationsSeasonOption, AggregationPeriod } from "@/types/domains/evaluations";
 import { parseISO } from "date-fns";
 import { modelNames } from "@/types/common";
 
@@ -14,7 +14,7 @@ interface EvaluationsSeasonOverviewSettingsState {
   evaluationSeasonOverviewSelectedModels: String[];
 
   /* Time Range Related */
-  evaluationSeasonOverviewSeasonOptions: EvaluationsSeasonOverviewSeasonOption[];
+  evaluationSeasonOverviewSeasonOptions: EvaluationsSeasonOption[];
   aggregationPeriods: AggregationPeriod[];
   selectedAggregationPeriod: string;
 
@@ -119,7 +119,7 @@ const evaluationsSeasonOverviewSettingsSlice = createSlice({
     setEvaluationSeasonOverviewHorizon: (state, action: PayloadAction<number[]>) => {
       state.evaluationSeasonOverviewHorizon = action.payload;
     },
-    updateEvaluationSeasonOverviewSeasonOptions: (state, action: PayloadAction<EvaluationsSeasonOverviewSeasonOption[]>) => {
+    updateEvaluationSeasonOverviewSeasonOptions: (state, action: PayloadAction<EvaluationsSeasonOption[]>) => {
       state.evaluationSeasonOverviewSeasonOptions = action.payload;
     },
     updateSelectedAggregationPeriod: (state, action: PayloadAction<string>) => {

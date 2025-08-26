@@ -1,9 +1,9 @@
-import InfoButton from "../../components/InfoButton";
-import { weeklyHospitalAdmissionsInfo } from "types/infobutton-content";
-import React from "react";
-import { Switch } from "@/styles/material-tailwind-wrapper";
-import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { updateHistoricalDataMode } from "@/store/forecast-settings-slice";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { Switch } from "@/styles/material-tailwind-wrapper";
+import React from "react";
+import { weeklyHospitalAdmissionsInfo } from "types/infobutton-content";
+import InfoButton from "../../components/InfoButton";
 
 const ForecastChartHeader: React.FC = () => {
   const dispatch = useAppDispatch();

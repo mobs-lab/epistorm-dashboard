@@ -1,5 +1,5 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
-import { AppDataEvaluationsPrecalculated } from "@/types/domains/evaluations";
+import { AppDataEvaluationsPrecalculated, AppDataEvaluationsSingleModelRawScores } from "@/types/domains/evaluations";
 
 // Evaluation data structure matching DataContract.md
 interface EvaluationDataState {
@@ -8,7 +8,7 @@ interface EvaluationDataState {
 
   // Pre-calculated evaluation data
   precalculated: AppDataEvaluationsPrecalculated;
-  rawScores: any;
+  rawScores: AppDataEvaluationsSingleModelRawScores;
 }
 
 const initialState: EvaluationDataState = {
