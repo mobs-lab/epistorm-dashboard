@@ -54,19 +54,25 @@ export interface StateThresholds {
 }
 
 // Following interfaces are for Redux Data Slice to validate fetched JSON data
-
-export interface TimeSeriesData {
+export interface GroundTruthData {
   [seasonId: string]: {
-    // Redundantly store the important dates seen across all models, for some components to use
-    // Models may vary in actual prediction output, so storing important dates for each model separately, for Evaluations components (especially Single-Model Page)
-    [modelName: string]: {
-      // Critical dates for this specific season, for this specific model
-      firstPredRefDate?: string; // ISO Date string
-      lastPredRefDate?: string; // ISO Date string
-      lastPredTargetDate?: string; // ISO Date string
+    [referenceDateISO: string]: {
+      [stateNum: string]: { admissions: number; weeklyRate: number };
+    };
+  };
+}
 
+export interface PredictionData {
+  [seasonId: string]: {
+    firstPredRefDate?: string;
+    lastPredRefDate?: string;
+    lastPredTargetDate?: string;
+    [modelName: string]: {
+      firstPredRefDate?: string;
+      lastPredRefDate?: string;
+      lastPredTargetDate?: string;
       partitions: {
-        "pre-forecast": TimeSeriesPartition; //*See Below
+        "pre-forecast": TimeSeriesPartition;
         "full-forecast": TimeSeriesPartition;
         "forecast-tail": TimeSeriesPartition;
         "post-forecast": TimeSeriesPartition;
@@ -76,21 +82,34 @@ export interface TimeSeriesData {
 }
 
 export interface TimeSeriesPartition {
-  // Keyed by State -> Reference Date -> Data
   [referenceDateISO: string]: {
     [stateNum: string]: {
-      groundTruth?: { admissions: number; weeklyRate: number };
-      // Predictions keyed by targetEndDate (equivalent to horizon) for both Forecast Chart & Single-Model components to use efficiently
       predictions?: {
         [targetEndDateISO: string]: {
           horizon: number;
-          median: number; // confidence500
-          q25: number; // confidence250
-          q75: number; // confidence750
-          q05: number; // confidence050
-          q95: number; // confidence950
+          median: number;
+          q25: number;
+          q75: number;
+          q05: number;
+          q95: number;
         };
       };
+    };
+  };
+}
+
+export interface NowcastTrendsData {
+  [modelName: string]: {
+    [isoDate: string]: {
+      [stateNum: string]: { decrease: number; increase: number; stable: number };
+    };
+  };
+}
+
+export interface HistoricalDataMap {
+  [isoDateMatchingUserSelected: string]: {
+    [referenceDateHistorical: string]: {
+      [stateNum: string]: { admissions: number; weeklyRate: number };
     };
   };
 }

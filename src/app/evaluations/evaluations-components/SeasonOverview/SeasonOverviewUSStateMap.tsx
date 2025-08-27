@@ -7,7 +7,8 @@ import * as topojson from "topojson-client";
 import { addWeeks } from "date-fns";
 import { useResponsiveSVG } from "@/utils/responsiveSVG";
 import { useAppSelector } from "@/store/hooks";
-import { selectSeasonOverviewData, selectShouldUseJsonData } from "@/store/selector/evaluationSelectors";
+import { selectSeasonOverviewData, selectShouldUseJsonData } from "@/store/selectors/evaluationSelectors";
+import { selectLocationData } from "@/store/selectors";
 import MapSelectorPanel from "./MapSelectorPanel";
 
 // Define color constants
@@ -24,6 +25,8 @@ const SeasonOverviewUSStateMap: React.FC = () => {
   // Get data from selectors
   const shouldUseJsonData = useAppSelector(selectShouldUseJsonData);
   const seasonOverviewData = useAppSelector(selectSeasonOverviewData);
+
+  const locationData = useAppSelector(selectLocationData);
 
   const {
     evaluationSeasonOverviewHorizon,

@@ -8,7 +8,7 @@ import { addWeeks } from "date-fns";
 import { useAppSelector } from "@/store/hooks";
 import { useResponsiveSVG } from "@/utils/responsiveSVG";
 import { modelColorMap, modelNames } from "@/types/common";
-import { selectSeasonOverviewData, selectShouldUseJsonData } from "@/store/selector/evaluationSelectors";
+import { selectSeasonOverviewData, selectShouldUseJsonData } from "@/store/selectors/evaluationSelectors";
 
 // Interface for processed data structure
 interface ProcessedCoverageData {
@@ -75,7 +75,7 @@ const SeasonOverviewPIChart: React.FC = () => {
         }
       }
 
-      console.debug("Using JSON data for PI chart:", results);
+      // console.debug("Using JSON data for PI chart:", results);
       return results;
     }
   }, [shouldUseJsonData, seasonOverviewData]);

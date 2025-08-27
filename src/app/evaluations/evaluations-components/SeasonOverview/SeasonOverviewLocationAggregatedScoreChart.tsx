@@ -8,7 +8,7 @@ import { modelColorMap, modelNames } from "@/types/common";
 import { useResponsiveSVG } from "@/utils/responsiveSVG";
 import { calculateBoxplotStats } from "@/utils/evals-so-statistics";
 import { addWeeks } from "date-fns";
-import { selectSeasonOverviewData, selectShouldUseJsonData } from "@/store/selector/evaluationSelectors";
+import { selectSeasonOverviewData, selectShouldUseJsonData } from "@/store/selectors/evaluationSelectors";
 import { BoxplotStats } from "@/types/domains/evaluations";
 
 // Options for controlling to which direction tooltip appears relative to the mouse pointer
@@ -88,12 +88,12 @@ const SeasonOverviewLocationAggregatedScoreChart: React.FC<SeasonOverviewLocatio
             count: finalDataForModel.count,
           });
         } else {
-          console.debug(
+          console.warn(
             `DEBUG: Seaon Overview/LocationAggregationBoxPlot/processedData()/No pre-calculated IQR data for ${modelName} matching horizons: ${horizonKey}.`
           );
         }
       }
-      console.debug("Using JSON data for aggregated chart:", results);
+      // console.debug("Using JSON data for aggregated chart:", results);
       return results;
     } else {
       // Fallback to original CSV processing logic
@@ -141,7 +141,7 @@ const SeasonOverviewLocationAggregatedScoreChart: React.FC<SeasonOverviewLocatio
         });
       }
 
-      console.debug("Using CSV fallback data for aggregated chart:", results);
+      // console.debug("Using CSV fallback data for aggregated chart:", results);
       return results;
     }
   }, [

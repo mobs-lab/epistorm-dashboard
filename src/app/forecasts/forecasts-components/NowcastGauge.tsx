@@ -4,6 +4,7 @@ import { useAppSelector } from "@/store/hooks";
 import { isUTCDateEqual } from "@/utils/date";
 import InfoButton from "@/shared-components/InfoButton";
 import { trendForecastInfo } from "types/infobutton-content";
+import { selectNowcastTrendsForModelAndDate } from "@/store/selectors";
 
 interface RiskLevelGaugeProps {
   riskLevel: string;
@@ -50,8 +51,10 @@ const NowcastGauge: React.FC<RiskLevelGaugeProps> = ({ riskLevel }) => {
     visible: false,
   });
 
-  const nowcastTrendsCollection = useAppSelector((state) => state.nowcastTrends.allData);
   const { USStateNum, userSelectedRiskLevelModel, userSelectedWeek } = useAppSelector((state) => state.forecastSettings);
+  const nowcastTrends = useAppSelector((state) =>
+    selectNowcastTrendsForModelAndDate(state, userSelectedRiskLevelModel, userSelectedWeek, USStateNum)
+  );
 
   const updateDimensions = useCallback(() => {
     if (containerRef.current) {
@@ -88,18 +91,7 @@ const NowcastGauge: React.FC<RiskLevelGaugeProps> = ({ riskLevel }) => {
 
     const chartGroup = svg.append("g").attr("transform", `translate(${width / 2}, ${height - margin.bottom})`);
 
-    // Find the model or create a placeholder if not found
-    const matchingModelNowcast = nowcastTrendsCollection.find((model) => model.modelName === userSelectedRiskLevelModel) || {
-      modelName: userSelectedRiskLevelModel,
-      data: [],
-    };
-
-    const modelData = matchingModelNowcast.data;
-    const matchingStateData = modelData.filter((entry) => entry.location === USStateNum);
-
-    const latestTrend = matchingStateData.find((entry) => isUTCDateEqual(new Date(entry.reference_date), userSelectedWeek));
-
-    const trendToUse = latestTrend || null;
+    const trendToUse = nowcastTrends;
 
     const formattedCurrentWeekDate = userSelectedWeek.toLocaleDateString("en-US", {
       month: "short",
@@ -239,7 +231,7 @@ const NowcastGauge: React.FC<RiskLevelGaugeProps> = ({ riskLevel }) => {
         }
       }
     }
-  }, [containerDimensions, nowcastTrendsCollection, userSelectedRiskLevelModel, USStateNum, userSelectedWeek]);
+  }, [containerDimensions, nowcastTrends, userSelectedWeek]);
 
   useEffect(() => {
     drawGauge();

@@ -1,10 +1,17 @@
 import { useAppSelector } from "@/store/hooks";
+import {
+  selectGroundTruthInRange,
+  selectPredictionsForModelAndWeek, // Use the single model selector
+  selectLocationData,
+  selectThresholds,
+} from "@/store/selectors/forecastSelectors";
 import { nowcastRiskColors, nowcastRiskLevels } from "@/types/common";
 import { isUTCDateEqual } from "@/utils/date";
 import * as d3 from "d3";
 import { format, subDays } from "date-fns";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import * as topojson from "topojson-client";
+import { FeatureCollection } from "geojson";
 
 const shapeFile = "/states-10m.json";
 
@@ -113,17 +120,33 @@ const NowcastStateThermo: React.FC = () => {
 
   const { selectedStateName, USStateNum, userSelectedRiskLevelModel, userSelectedWeek } = useAppSelector((state) => state.forecastSettings);
 
-  const groundTruthData = useAppSelector((state) => state.groundTruth.data);
-  const predictionsData = useAppSelector((state) => state.predictions.data);
-  const locationData = useAppSelector((state) => state.location.data);
-  const thresholdsData = useAppSelector((state) => state.stateThresholds.data);
+  const [currentWeek, setCurrentWeek] = useState("");
+  const [previousWeek, setPreviousWeek] = useState("");
+
+  // Use useMemo to stabilize date objects and prevent re-renders
+  const { relativeLastWeek, groundTruthDateStart, groundTruthDateEnd } = useMemo(() => {
+    const currentSelected = new Date(userSelectedWeek);
+    const relative = new Date(currentSelected);
+    relative.setDate(relative.getDate() - 7);
+
+    const groundTruthStart = new Date(relative);
+    groundTruthStart.setDate(groundTruthStart.getDate() - 3);
+    const groundTruthEnd = new Date(relative);
+    groundTruthEnd.setDate(groundTruthEnd.getDate() + 3);
+
+    return { relativeLastWeek: relative, groundTruthDateStart: groundTruthStart, groundTruthDateEnd: groundTruthEnd };
+  }, [userSelectedWeek]);
+
+  const groundTruthData = useAppSelector((state) => selectGroundTruthInRange(state, groundTruthDateStart, groundTruthDateEnd, USStateNum));
+  const locationData = useAppSelector(selectLocationData);
+  const thresholdsData = useAppSelector(selectThresholds);
+  const predictionsData = useAppSelector((state) =>
+    selectPredictionsForModelAndWeek(state, userSelectedRiskLevelModel, USStateNum, userSelectedWeek)
+  );
 
   const [riskColor, setRiskColor] = useState("#7cd8c9"); // Default to low risk color
   const [currentRiskLevel, setCurrentRiskLevel] = useState("Low");
   const [previousRiskLevel, setPreviousRiskLevel] = useState("Low");
-
-  const [currentWeek, setCurrentWeek] = useState("");
-  const [previousWeek, setPreviousWeek] = useState("");
 
   // UseEffect for resizing dimensions
   useEffect(() => {
@@ -144,7 +167,7 @@ const NowcastStateThermo: React.FC = () => {
     const drawMap = async () => {
       try {
         const us: any = await d3.json(shapeFile);
-        const statesTopoData = topojson.feature(us, us.objects.states);
+        const statesTopoData = topojson.feature(us, us.objects.states) as unknown as FeatureCollection;
 
         const svg = d3.select(mapSvgRef.current);
         svg.selectAll("*").remove();
@@ -188,10 +211,11 @@ const NowcastStateThermo: React.FC = () => {
     };
 
     drawMap();
-  }, [dimensions, selectedStateName, riskColor]);
+  }, [dimensions, selectedStateName, riskColor, USStateNum]);
 
   /* NOTE: useEffect that draws the Thermometer */
-  useEffect(() => {0
+  useEffect(() => {
+    0;
     if (!thermometerSvgRef.current || !tooltipRef.current) return;
 
     const svg = d3.select(thermometerSvgRef.current);
@@ -233,31 +257,23 @@ const NowcastStateThermo: React.FC = () => {
       { level: "max", position: 1 },
     ];
 
-    // Calculate relative last week and current selected week
-    const currentSelectedWeek = new Date(userSelectedWeek);
-    const relativeLastWeek = new Date(currentSelectedWeek);
-    relativeLastWeek.setDate(relativeLastWeek.getDate() - 7);
-    // console.log('DEBUG: Relative last week:', relativeLastWeek);
-
     // Get ground truth value
     const groundTruthEntry = groundTruthData.find((d) => d.stateNum === USStateNum && isUTCDateEqual(d.date, relativeLastWeek));
     const groundTruthValue = groundTruthEntry ? groundTruthEntry.weeklyRate : 0;
     // console.log('DEBUG: Ground truth value:', groundTruthValue);
 
-    // Get predicted value
+    // Get predicted value, always the 0-horizon forecast but matching selected date-location-NowcastModel.
     let predictedValue = 0;
-    const selectedModel = predictionsData.find((m) => m.modelName === userSelectedRiskLevelModel);
-    if (selectedModel) {
-      const prediction = selectedModel.predictionData.find(
-        (p) =>
-          p.stateNum === USStateNum &&
-          isUTCDateEqual(p.referenceDate, currentSelectedWeek) &&
-          isUTCDateEqual(p.targetEndDate, currentSelectedWeek)
-      );
-      if (prediction) {
+
+    if (predictionsData) {
+      // Find the 0-horizon prediction (target date equals reference date)
+      const targetDateISO = userSelectedWeek.toISOString().split("T")[0];
+      const prediction = predictionsData[targetDateISO];
+
+      if (prediction && prediction.horizon === 0) {
         const statePopulation = locationData.find((l) => l.stateNum === USStateNum)?.population;
         if (statePopulation) {
-          predictedValue = (prediction.confidence500 / statePopulation) * 100000;
+          predictedValue = (prediction.median / statePopulation) * 100000;
         }
       }
     }
@@ -292,7 +308,6 @@ const NowcastStateThermo: React.FC = () => {
         yPosition = -1;
       }
 
-      console.debug("Forecast/NowcastStateThermo/Thermometer/line calculation: risk level and yPosition: ", riskLevel, yPosition);
       return { riskLevel, yPosition };
     };
 
@@ -457,6 +472,7 @@ const NowcastStateThermo: React.FC = () => {
     predictionsData,
     locationData,
     thresholdsData,
+    relativeLastWeek,
   ]);
 
   useEffect(() => {

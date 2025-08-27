@@ -1,11 +1,11 @@
-import React, { useEffect, useRef, useState, useCallback } from "react";
-import * as topojson from "topojson-client";
-import * as d3 from "d3";
-import { zoom, zoomIdentity, ZoomBehavior } from "d3-zoom";
-import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { updateSelectedState } from "@/store/data-slices/SettingsSliceForecastNowcast";
 import { updateEvaluationSingleModelViewSelectedState } from "@/store/data-slices/SettingsSliceEvaluationSingleModel";
-import { initial } from "lodash";
+import { updateSelectedState } from "@/store/data-slices/SettingsSliceForecastNowcast";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { selectLocationData } from "@/store/selectors/forecastSelectors";
+import * as d3 from "d3";
+import { zoom, ZoomBehavior, zoomIdentity } from "d3-zoom";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import * as topojson from "topojson-client";
 
 interface SettingsStateMapProps {
   pageSelected: string;
@@ -24,13 +24,13 @@ const SettingsStateMap: React.FC<SettingsStateMapProps> = ({ pageSelected }) => 
 
   const [isMapReady, setIsMapReady] = useState(false);
 
-  // OPTIMIZATION: Store fetched TopoJSON data to avoid unnecessary re-fetching
+  //Store fetched TopoJSON data to avoid unnecessary re-fetching
   const [usTopoJsonData, setUsTopoJsonData] = useState<any>(null);
 
   const dispatch = useAppDispatch();
   const { selectedStateName } = useAppSelector((state) => state.forecastSettings);
   const { evaluationsSingleModelViewSelectedStateName } = useAppSelector((state) => state.evaluationsSingleModelSettings);
-  const locationData = useAppSelector((state) => state.location.data);
+  const locationData = useAppSelector(selectLocationData);
 
   const updateDimensions = useCallback(() => {
     if (containerRef.current) {
@@ -77,9 +77,12 @@ const SettingsStateMap: React.FC<SettingsStateMapProps> = ({ pageSelected }) => 
   }, []);
 
   // Wrapper to update respective page's state selection via the map
-  const updateRespectivePageState = useCallback((arg0: { stateName: any; stateNum: any }) => {
-    pageSelected === "forecast" ? dispatch(updateSelectedState(arg0)) : dispatch(updateEvaluationSingleModelViewSelectedState(arg0));
-  }, [pageSelected, dispatch]);
+  const updateRespectivePageState = useCallback(
+    (arg0: { stateName: any; stateNum: any }) => {
+      pageSelected === "forecast" ? dispatch(updateSelectedState(arg0)) : dispatch(updateEvaluationSingleModelViewSelectedState(arg0));
+    },
+    [pageSelected, dispatch]
+  );
 
   const handleClick = useCallback(
     (event: any, d: any, path: any) => {
@@ -104,7 +107,7 @@ const SettingsStateMap: React.FC<SettingsStateMapProps> = ({ pageSelected }) => 
       // Zoom out to the initial view after a certain duration
       try {
         /* DEBUG */
-        console.debug("Components/SettingsStateMap.tsx/handleClick(): delayed zooming-back-out starting...");
+        /* console.debug("Components/SettingsStateMap.tsx/handleClick(): delayed zooming-back-out starting..."); */
         setTimeout(() => {
           if (zoomBehaviorRef.current && initialTransformRef.current) {
             svg.transition().duration(750).call(zoomBehaviorRef.current.transform, initialTransformRef.current);

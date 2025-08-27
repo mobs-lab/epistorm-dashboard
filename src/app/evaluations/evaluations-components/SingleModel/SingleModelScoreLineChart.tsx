@@ -2,8 +2,8 @@ import * as d3 from "d3";
 import React, { useEffect, useRef } from "react";
 
 import { useAppSelector } from "@/store/hooks";
-import { selectSingleModelScoreDataFromJSON } from "@/store/index";
-import { selectSingleModelTimeSeriesData } from "@/store/selector/singleModelSelectors";
+import { selectSingleModelScoreDataFromJSON } from "@/store/selectors/index";
+import { selectSingleModelTimeSeriesData } from "@/store/selectors/singleModelSelectors";
 
 import { modelColorMap } from "@/types/common";
 import { useResponsiveSVG } from "@/utils/responsiveSVG";

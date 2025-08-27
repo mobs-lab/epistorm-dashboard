@@ -465,7 +465,7 @@ def main():
 
     print("   - Season metadata structure prepared")
 
-    # ===== 5. Partition Time-Series Data by Season =====
+    # ===== 5a. Partition Time-Series Data by Season =====
     print("Step 5: Partitioning time-series data by season...")
     time_series_data = {}
 
@@ -576,7 +576,8 @@ def main():
 
                         entry = partition_data[ref_date_iso][state_num]
 
-                        # Add ground truth data if available
+                        # No longer storing duplicate ground truth inside model
+                        """ # Add ground truth data if available
                         try:
                             gt_row = gt_df_indexed.loc[(ref_date, state_num)]
                             if pd.notna(gt_row["admissions"]) and gt_row["admissions"] >= 0:
@@ -585,7 +586,7 @@ def main():
                                     "weeklyRate": float(gt_row["weeklyRate"]),
                                 }
                         except KeyError:
-                            pass  # No ground truth data for this date/location
+                            pass  # No ground truth data for this date/location """
 
                         # Add prediction data for this specific model
                         try:
@@ -619,8 +620,48 @@ def main():
 
     print("   - Time series partitioning complete (full range seasons only)")
 
+    # ===== 5b. Process Ground Truth Data =====
+    print("Step 5b: Processing centralized ground truth data...")
+    ground_truth_data = {}
+
+    # Process each full range season for ground truth
+    for season_id, dates in full_range_seasons.items():
+        print(f"   - Processing ground truth for season: {season_id}")
+
+        ground_truth_data[season_id] = {}
+
+        # Get all dates in this season
+        season_dates = pd.date_range(start=dates["start"], end=dates["end"], freq="W-SAT")
+
+        for ref_date in season_dates:
+            ref_date_iso = ref_date.strftime("%Y-%m-%d")
+            ground_truth_data[season_id][ref_date_iso] = {}
+
+            # Get ground truth for all states on this date
+            for state_num in all_locations:
+                try:
+                    gt_row = gt_df_fixed[(gt_df_fixed["date"] == ref_date) & (gt_df_fixed["stateNum"] == state_num)]
+                    if not gt_row.empty and pd.notna(gt_row.iloc[0]["admissions"]) and gt_row.iloc[0]["admissions"] >= 0:
+                        ground_truth_data[season_id][ref_date_iso][state_num] = {
+                            "admissions": float(gt_row.iloc[0]["admissions"]),
+                            "weeklyRate": float(gt_row.iloc[0]["weeklyRate"]),
+                        }
+                except (KeyError, IndexError):
+                    # No ground truth data for this date/location
+                    pass
+
+    print(f"   - Ground truth data processed for {len(ground_truth_data)} seasons")
+    # Debug: Print some sample ground truth data
+    if ground_truth_data:
+        sample_season = list(ground_truth_data.keys())[0]
+        sample_dates = list(ground_truth_data[sample_season].keys())[:3]
+        print(f"   - Sample ground truth data for {sample_season}:")
+        for date in sample_dates:
+            state_count = len(ground_truth_data[sample_season][date])
+            print(f"     {date}: {state_count} states with data")
+
     # ===================================================
-    # Debug: Print a sample of the final nested structure
+    # Debug: Print a sample of the final nested prediction data structure
     try:
         if time_series_data:
             sample_season = list(time_series_data.keys())[0]
@@ -908,7 +949,8 @@ def main():
         "mainData": {
             "nowcastTrends": nowcast_dict,
             "historicalDataMap": {},  # Note: Historical data processing would go here if needed
-            "timeSeriesData": time_series_data,  # Only contains full range seasons
+            "groundTruthData": ground_truth_data,  # Note: Historical data processing would go here if needed
+            "predictionData": time_series_data,  # Only contains full range seasons
         },
         "auxiliary-data": {
             "locations": locations_list,

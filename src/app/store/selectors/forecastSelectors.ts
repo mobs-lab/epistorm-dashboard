@@ -1,0 +1,313 @@
+// src/store/selector/forecastSelectors.ts
+
+import { createSelector } from "@reduxjs/toolkit";
+import { RootState } from "../index";
+import { StateThresholds, SurveillanceSingleWeekDataPoint } from "@/types/domains/forecasting";
+import { filter } from "lodash";
+
+// Selector for thresholds - handles dictionary format
+// TODO: Get rid of this after changing the component to use Dictionary instead for faster access, less find() operations
+export const selectThresholds = createSelector([(state: RootState) => state.coreData.auxiliaryData], (auxiliaryData) => {
+  const thresholds = auxiliaryData?.thresholds;
+  if (!thresholds) {
+    console.warn("Warning: selectThresholds: No thresholds data available");
+    return [];
+  }
+
+  // Convert dictionary to array format expected by components
+  const thresholdArray: StateThresholds[] = Object.entries(thresholds).map(([location, data]: [string, any]) => ({
+    location,
+    medium: data.medium,
+    high: data.high,
+    veryHigh: data.veryHigh,
+  }));
+
+  return thresholdArray;
+});
+
+// Selector for a specific state's thresholds
+export const selectStateThresholds = createSelector(
+  [(state: RootState) => state.coreData.auxiliaryData, (state: RootState, stateNum: string) => stateNum],
+  (auxiliaryData, stateNum) => {
+    const thresholds = auxiliaryData?.thresholds;
+    if (!thresholds || !thresholds[stateNum]) {
+      console.warn(`Warning: selectStateThresholds: No thresholds for state ${stateNum}`);
+      return null;
+    }
+
+    return {
+      location: stateNum,
+      ...thresholds[stateNum],
+    };
+  }
+);
+
+// Selector for locations
+export const selectLocationData = createSelector([(state: RootState) => state.coreData.auxiliaryData], (auxiliaryData) => {
+  if (!auxiliaryData?.locations) {
+    console.warn("Warning: selectLocationData: No location data available");
+    return [];
+  }
+  return auxiliaryData.locations;
+});
+
+// Selector for nowcast trends - simpler direct access
+export const selectNowcastTrends = createSelector([(state: RootState) => state.coreData.mainData?.nowcastTrends], (nowcastTrends) => {
+  if (!nowcastTrends) {
+    console.warn("Warning: selectNowcastTrends: No nowcast trends available");
+    return {};
+  }
+  return nowcastTrends;
+});
+
+export const selectNowcastTrendsForModelAndDate = createSelector(
+  [
+    (state: RootState) => state.coreData.mainData?.nowcastTrends,
+    (state: RootState, modelName: string) => modelName,
+    (state: RootState, modelName: string, date: Date) => date,
+    (state: RootState, modelName: string, date: Date, stateNum: string) => stateNum,
+  ],
+  (nowcastTrends, modelName, date, stateNum) => {
+    if (!nowcastTrends || !nowcastTrends[modelName]) {
+      return null;
+    }
+
+    const dateISO = date.toISOString().split("T")[0];
+    const dateData = nowcastTrends[modelName][dateISO];
+    if (!dateData) {
+      return null;
+    }
+
+    return dateData[stateNum] || null;
+  }
+);
+
+// Find ground truth within a date range, by examining across seasons and find potential partitions, then filter
+export const selectGroundTruthInRange = createSelector(
+  [
+    (state: RootState) => state.coreData.mainData?.groundTruthData,
+    (state: RootState) => state.coreData.metadata?.seasons,
+    (state: RootState, startDate: Date, endDate: Date) => ({ startDate, endDate }),
+    (state: RootState, startDate: Date, endDate: Date, stateNum: string) => stateNum,
+  ],
+  (groundTruthData, seasons, { startDate, endDate }, stateNum) => {
+    if (!groundTruthData || !seasons) {
+      console.warn("Warning: selectGroundTruthInRange: Missing required data");
+      return [];
+    }
+
+    // Find which season contains our date range
+    const relevantSeasons = findRelevantSeasons(seasons, startDate, endDate);
+
+    if (relevantSeasons.length === 0) {
+      console.warn("Warning: selectGroundTruthInRange: No relevant seasons found");
+      return [];
+    }
+
+    const groundTruthPoints: SurveillanceSingleWeekDataPoint[] = [];
+
+    // For each relevant season, extract ground truth from centralized collection
+    for (const seasonId of relevantSeasons) {
+      const seasonData = groundTruthData[seasonId];
+      if (!seasonData) continue;
+
+      // Iterate through all reference dates in this season
+      Object.entries(seasonData).forEach(([dateISO, statesData]) => {
+        const date = new Date(dateISO);
+
+        // Check if date is within our range
+        if (date >= startDate && date <= endDate) {
+          const stateData = statesData[stateNum];
+          if (stateData) {
+            groundTruthPoints.push({
+              date,
+              stateNum,
+              stateName: "", // Would need location data for full name, skip for now
+              admissions: stateData.admissions,
+              weeklyRate: stateData.weeklyRate,
+            });
+          }
+        }
+      });
+    }
+
+    // Sort by date and remove duplicates
+    const uniquePoints = Array.from(new Map(groundTruthPoints.map((p) => [p.date.toISOString(), p])).values()).sort(
+      (a, b) => a.date.getTime() - b.date.getTime()
+    );
+
+    return uniquePoints;
+  }
+);
+
+/* For Weekly Hospitalization Chart, select multiple model's prediction data matching date-models-location. Filtering on Horizons & handling of values done in frontend component. */
+/* NOTE: This changes how much prediction data is offloaded to Weekly Hospitalization Forecast Chart.
+    Previously, all prediction data associated with the date range are selected to be ready to be selected;
+    This new one finds matching ones only when `referenceDate` change, so only triggers when user selects some dates. */
+export const selectPredictionsForMultipleModels = createSelector(
+  [
+    (state: RootState) => state.coreData.mainData?.predictionData,
+    (state: RootState) => state.coreData.metadata?.seasons,
+    (state: RootState, modelNames: string[], stateNum: string, referenceDate: Date, horizon: number) => ({
+      modelNames,
+      stateNum,
+      referenceDate,
+      horizon,
+    }),
+  ],
+  (predictionData, seasons, { modelNames, stateNum, referenceDate, horizon }) => {
+    if (!predictionData || !seasons) {
+      return {};
+    }
+
+    const dateISO = referenceDate.toISOString().split("T")[0];
+    const seasonId = findSeasonForDate(seasons, referenceDate);
+    if (!seasonId) return {};
+
+    const predictions: {} = {};
+
+    modelNames.forEach((modelName) => {
+      const modelData = predictionData[seasonId]?.[modelName];
+      if (!modelData) return;
+
+      for (const partitionName of ["full-forecast", "forecast-tail"]) {
+        const partition = modelData.partitions[partitionName];
+        if (!partition || !partition[dateISO]) continue;
+
+        const stateData = partition[dateISO][stateNum];
+        if (stateData?.predictions) {
+          // Container to put all horizon-matching final single-prediction-points, keyed by targetDateISO
+          const filteredPredictions = {};
+          Object.entries(stateData.predictions).forEach(([targetDateISO, pred]) => {
+            if (pred.horizon <= horizon) {
+              filteredPredictions[targetDateISO] = pred;
+            }
+          });
+          if (Object.keys(filteredPredictions).length > 0) {
+            predictions[modelName] = filteredPredictions;
+          }
+          break;
+        }
+      }
+    });
+
+    return predictions;
+  }
+);
+
+// Selector for predictions from a specific model. Used mainly by NowcastStateThermo for calculating risk level value for a given date-location-nowcastModel. In the frontend it then narrows to horizon-0 parts.
+export const selectPredictionsForModelAndWeek = createSelector(
+  [
+    (state: RootState) => state.coreData.mainData?.predictionData,
+    (state: RootState) => state.coreData.metadata?.seasons,
+    (state: RootState, modelName: string) => modelName,
+    (state: RootState, modelName: string, stateNum: string) => stateNum,
+    (state: RootState, modelName: string, stateNum: string, referenceDate: Date) => referenceDate,
+  ],
+  (timeSeriesData, seasons, modelName, stateNum, referenceDate) => {
+    if (!timeSeriesData || !seasons) {
+      console.debug("Warning: selectPredictionsForModelAndWeek: Missing data");
+      return null;
+    }
+
+    const dateISO = referenceDate.toISOString().split("T")[0];
+
+    // Find relevant season
+    const seasonId = findSeasonForDate(seasons, referenceDate);
+    if (!seasonId) {
+      console.warn("Warning: selectPredictionsForModelAndWeek: No season found for date", dateISO);
+      return null;
+    }
+
+    const modelData = timeSeriesData[seasonId]?.[modelName];
+    if (!modelData) {
+      console.warn("Warning: selectPredictionsForModelAndWeek: No model data", { seasonId, modelName });
+      return null;
+    }
+
+    // Check each partition for this date
+    for (const partitionName of ["full-forecast", "forecast-tail"]) {
+      const partition = modelData.partitions[partitionName];
+      if (!partition || !partition[dateISO]) continue;
+
+      const stateData = partition[dateISO][stateNum];
+      if (stateData?.predictions) {
+        /* console.debug("DEBUG: selectPredictionsForModelAndWeek: Found predictions", {
+          modelName,
+          dateISO,
+          stateNum,
+          predictionCount: Object.keys(stateData.predictions).length,
+        }); */
+        return stateData.predictions;
+      }
+    }
+
+    console.warn("Warning: selectPredictionsForModelAndWeek: No predictions found");
+    return null;
+  }
+);
+
+// Helper functions
+function findRelevantSeasons(seasons: any, startDate: Date, endDate: Date): string[] {
+  const relevantSeasons: string[] = [];
+
+  // Check full range seasons ONLY
+  if (seasons.fullRangeSeasons) {
+    seasons.fullRangeSeasons.forEach((season: any) => {
+      const seasonStart = new Date(season.startDate);
+      const seasonEnd = new Date(season.endDate);
+
+      // Check if date ranges overlap
+      if (!(endDate < seasonStart || startDate > seasonEnd)) {
+        const seasonId = `season-${seasonStart.getFullYear()}-${seasonEnd.getFullYear()}`;
+        relevantSeasons.push(seasonId);
+      }
+    });
+  }
+
+  return relevantSeasons;
+}
+
+function findSeasonForDate(seasons: any, date: Date): string | null {
+  if (!seasons.fullRangeSeasons) return null;
+
+  for (const season of seasons.fullRangeSeasons) {
+    const seasonStart = new Date(season.startDate);
+    const seasonEnd = new Date(season.endDate);
+
+    if (date >= seasonStart && date <= seasonEnd) {
+      return `season-${seasonStart.getFullYear()}-${seasonEnd.getFullYear()}`;
+    }
+  }
+
+  return null;
+}
+
+// Selector for date constraints from metadata
+export const selectDateConstraints = createSelector([(state: RootState) => state.coreData.metadata?.seasons], (seasons) => {
+  if (!seasons?.fullRangeSeasons || seasons.fullRangeSeasons.length === 0) {
+    // Fallback to hardcoded dates if no metadata
+    return {
+      earliestDate: new Date("2022-08-23T12:00:00.000Z"),
+      latestDate: new Date("2024-05-24T12:00:00.000Z"),
+    };
+  }
+
+  // Find overall earliest and latest dates across all full range seasons
+  let earliestDate = new Date(seasons.fullRangeSeasons[0].startDate);
+  let latestDate = new Date(seasons.fullRangeSeasons[0].endDate);
+
+  seasons.fullRangeSeasons.forEach((season) => {
+    const seasonStart = new Date(season.startDate);
+    const seasonEnd = new Date(season.endDate);
+
+    if (seasonStart < earliestDate) {
+      earliestDate = seasonStart;
+    }
+    if (seasonEnd > latestDate) {
+      latestDate = seasonEnd;
+    }
+  });
+
+  return { earliestDate, latestDate };
+});

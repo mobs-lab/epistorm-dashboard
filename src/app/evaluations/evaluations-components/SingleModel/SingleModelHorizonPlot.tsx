@@ -4,7 +4,7 @@ import { useAppSelector } from "@/store/hooks";
 import {
   selectIsCoreDataLoaded,
   selectSingleModelTimeSeriesData,
-} from "@/store/selector/singleModelSelectors";
+} from "@/store/selectors/singleModelSelectors";
 import { modelColorMap } from "@/types/common";
 import { normalizeToUTCMidDay } from "@/utils/date";
 import { useResponsiveSVG } from "@/utils/responsiveSVG";

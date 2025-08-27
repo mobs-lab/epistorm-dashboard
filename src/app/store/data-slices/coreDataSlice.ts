@@ -1,17 +1,49 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { 
+  GroundTruthData, 
+  PredictionData, 
+  NowcastTrendsData, 
+  HistoricalDataMap,
+  LocationData,
+  StateThresholds,
+  SeasonOption
+} from "@/types/domains/forecasting";
 
 interface CoreDataState {
   isLoaded: boolean;
-  metadata: any;
-  mainData: any;
-  auxiliaryData: any;
+  metadata: {
+    seasons?: {
+      fullRangeSeasons: SeasonOption[];
+      dynamicTimePeriod: SeasonOption[];
+    };
+    modelNames?: string[];
+    defaultSeasonTimeValue?: string;
+  };
+  mainData: {
+    groundTruthData: GroundTruthData;
+    predictionData: PredictionData;
+    nowcastTrends: NowcastTrendsData;
+    historicalDataMap: HistoricalDataMap;
+  };
+  auxiliaryData: {
+    locations: LocationData[];
+    thresholds: StateThresholds[];
+  };
 }
 
 const initialState: CoreDataState = {
   isLoaded: false,
   metadata: {},
-  mainData: {},
-  auxiliaryData: {},
+  mainData: {
+    groundTruthData: {},
+    predictionData: {},
+    nowcastTrends: {},
+    historicalDataMap: {},
+  },
+  auxiliaryData: {
+    locations: [],
+    thresholds: [],
+  },
 };
 
 const coreDataSlice = createSlice({
@@ -19,15 +51,31 @@ const coreDataSlice = createSlice({
   initialState,
   reducers: {
     setCoreJsonData: (state, action: PayloadAction<any>) => {
-      state.metadata = action.payload.metadata;
-      state.mainData = action.payload.mainData;
-      state.auxiliaryData = action.payload.auxiliaryData || action.payload["auxiliary-data"];
+      state.metadata = action.payload.metadata || {};
+      state.mainData = {
+        groundTruthData: action.payload.mainData?.groundTruthData || {},
+        predictionData: action.payload.mainData?.predictionData || {},
+        nowcastTrends: action.payload.mainData?.nowcastTrends || {},
+        historicalDataMap: action.payload.mainData?.historicalDataMap || {},
+      };
+      state.auxiliaryData = {
+        locations: action.payload.auxiliaryData?.locations || action.payload["auxiliary-data"]?.locations || [],
+        thresholds: action.payload.auxiliaryData?.thresholds || action.payload["auxiliary-data"]?.thresholds || [],
+      };
       state.isLoaded = true;
     },
     clearCoreData: (state) => {
-      state.metadata = null;
-      state.mainData = null;
-      state.auxiliaryData = null;
+      state.metadata = {};
+      state.mainData = {
+        groundTruthData: {},
+        predictionData: {},
+        nowcastTrends: {},
+        historicalDataMap: {},
+      };
+      state.auxiliaryData = {
+        locations: [],
+        thresholds: [],
+      };
       state.isLoaded = false;
     },
   },
