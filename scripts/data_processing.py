@@ -822,9 +822,7 @@ def main():
                         all_states = set()
                         for horizon in horizon_combo:
                             for state_num in model_data.keys():
-                                # In location-aggregation, we don't want to include in "US", but only every single state
-                                if state_num == "US":
-                                    continue
+                                # In location Aggregation, we ACTUALLY want "US" to be included. We need 52 states + US data.
                                 if horizon in model_data[state_num]:
                                     all_states.add(state_num)
 
