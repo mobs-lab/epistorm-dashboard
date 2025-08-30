@@ -8,7 +8,8 @@ import { modelColorMap, modelNames } from "@/types/common";
 import { useResponsiveSVG } from "@/utils/responsiveSVG";
 import { calculateBoxplotStats } from "@/utils/evals-so-statistics";
 import { addWeeks } from "date-fns";
-import { selectSeasonOverviewData, selectShouldUseJsonData } from "@/store/selector/evaluationSelectors";
+import { selectSeasonOverviewData, selectShouldUseJsonData } from "@/store/selectors/evaluationSelectors";
+import { BoxplotStats } from "@/types/domains/evaluations";
 
 // Options for controlling to which direction tooltip appears relative to the mouse pointer
 export enum TooltipDirection {
@@ -45,8 +46,6 @@ const SeasonOverviewLocationAggregatedScoreChart: React.FC<SeasonOverviewLocatio
   const shouldUseJsonData = useAppSelector(selectShouldUseJsonData);
   const seasonOverviewData = useAppSelector(selectSeasonOverviewData);
 
-  // Fallback to old CSV data
-  const evaluationsScoreData = useAppSelector((state) => state.evaluationsSingleModelScoreData.data);
   const {
     evaluationSeasonOverviewHorizon,
     selectedAggregationPeriod,
@@ -62,29 +61,74 @@ const SeasonOverviewLocationAggregatedScoreChart: React.FC<SeasonOverviewLocatio
     if (shouldUseJsonData && seasonOverviewData) {
       // Use JSON data
       const metric = type === "wis" ? "WIS/Baseline" : "MAPE";
-      const iqrData = seasonOverviewData.iqrData[metric] || {};
-
       const results: IQRData[] = [];
 
+      // Parse user-selected key to string then send to selector
+      const horizonKey = seasonOverviewData.horizons
+        .slice()
+        .sort((a, b) => a - b)
+        .join(",");
+
+      // Final processed data output should be grouped by model
       // Combine data across selected horizons for each model
       for (const modelName of modelNames.filter((m) => seasonOverviewData.selectedModels.includes(m))) {
-        const modelData = iqrData[modelName];
-        if (!modelData) continue;
+        const iqrData = seasonOverviewData.iqrData[metric]?.[modelName];
+        if (!iqrData) continue;
 
-        // Aggregate across selected horizons
-        const allScores: number[] = [];
+        const finalDataForModel: BoxplotStats = iqrData?.[horizonKey];
 
-        seasonOverviewData.horizons.forEach((horizon) => {
-          const horizonData = modelData[horizon];
-          if (horizonData && horizonData.scores) {
-            allScores.push(...horizonData.scores);
-          }
-        });
+        if (finalDataForModel) {
+          results.push({
+            model: modelName,
+            q05: Number(finalDataForModel.q05.toFixed(3)),
+            q25: Number(finalDataForModel.q25.toFixed(3)),
+            median: Number(finalDataForModel.median.toFixed(3)),
+            q75: Number(finalDataForModel.q75.toFixed(3)),
+            q95: Number(finalDataForModel.q95.toFixed(3)),
+            count: finalDataForModel.count,
+          });
+        } else {
+          console.warn(
+            `DEBUG: Seaon Overview/LocationAggregationBoxPlot/processedData()/No pre-calculated IQR data for ${modelName} matching horizons: ${horizonKey}.`
+          );
+        }
+      }
+      // console.debug("Using JSON data for aggregated chart:", results);
+      return results;
+    } else {
+      // Fallback to original CSV processing logic
+      if (!evaluationsScoreData || evaluationSeasonOverviewHorizon.length === 0 || !selectedAggregationPeriod) {
+        return [];
+      }
 
-        if (allScores.length === 0) continue;
+      const selectedPeriod = aggregationPeriods.find((p) => p.id === selectedAggregationPeriod);
+      if (!selectedPeriod) return [];
 
-        // Calculate stats for combined data
-        const stats = calculateBoxplotStats(allScores);
+      const scoreMetric = type === "wis" ? "WIS/Baseline" : "MAPE";
+      const relevantEvaluations = evaluationsScoreData.filter((data) => data.scoreMetric === scoreMetric);
+      const horizonSet = new Set(evaluationSeasonOverviewHorizon);
+      const results: IQRData[] = [];
+
+      for (const modelName of modelNames.filter((model) => evaluationSeasonOverviewSelectedModels.includes(model))) {
+        const modelData = relevantEvaluations.find((data) => data.modelName === modelName);
+        if (!modelData?.scoreData?.length) continue;
+
+        const filteredScores: number[] = [];
+
+        for (const entry of modelData.scoreData) {
+          if (!horizonSet.has(entry.horizon)) continue;
+
+          const referenceDate = entry.referenceDate;
+          const targetDate = addWeeks(referenceDate, entry.horizon);
+
+          if (referenceDate < selectedPeriod.startDate || targetDate > selectedPeriod.endDate) continue;
+
+          filteredScores.push(entry.score);
+        }
+
+        if (filteredScores.length === 0) continue;
+
+        const stats = calculateBoxplotStats(filteredScores);
 
         results.push({
           model: modelName,
@@ -97,61 +141,12 @@ const SeasonOverviewLocationAggregatedScoreChart: React.FC<SeasonOverviewLocatio
         });
       }
 
-      console.debug("Using JSON data for aggregated chart:", results);
+      // console.debug("Using CSV fallback data for aggregated chart:", results);
       return results;
     }
-
-    // Fallback to original CSV processing logic
-    if (!evaluationsScoreData || evaluationSeasonOverviewHorizon.length === 0 || !selectedAggregationPeriod) {
-      return [];
-    }
-
-    const selectedPeriod = aggregationPeriods.find((p) => p.id === selectedAggregationPeriod);
-    if (!selectedPeriod) return [];
-
-    const scoreMetric = type === "wis" ? "WIS/Baseline" : "MAPE";
-    const relevantEvaluations = evaluationsScoreData.filter((data) => data.scoreMetric === scoreMetric);
-    const horizonSet = new Set(evaluationSeasonOverviewHorizon);
-    const results: IQRData[] = [];
-
-    for (const modelName of modelNames.filter((model) => evaluationSeasonOverviewSelectedModels.includes(model))) {
-      const modelData = relevantEvaluations.find((data) => data.modelName === modelName);
-      if (!modelData?.scoreData?.length) continue;
-
-      const filteredScores: number[] = [];
-
-      for (const entry of modelData.scoreData) {
-        if (!horizonSet.has(entry.horizon)) continue;
-
-        const referenceDate = entry.referenceDate;
-        const targetDate = addWeeks(referenceDate, entry.horizon);
-
-        if (referenceDate < selectedPeriod.startDate || targetDate > selectedPeriod.endDate) continue;
-
-        filteredScores.push(entry.score);
-      }
-
-      if (filteredScores.length === 0) continue;
-
-      const stats = calculateBoxplotStats(filteredScores);
-
-      results.push({
-        model: modelName,
-        q05: Number(stats.q05.toFixed(3)),
-        q25: Number(stats.q25.toFixed(3)),
-        median: Number(stats.median.toFixed(3)),
-        q75: Number(stats.q75.toFixed(3)),
-        q95: Number(stats.q95.toFixed(3)),
-        count: stats.count,
-      });
-    }
-
-    console.debug("Using CSV fallback data for aggregated chart:", results);
-    return results;
   }, [
     shouldUseJsonData,
     seasonOverviewData,
-    evaluationsScoreData,
     evaluationSeasonOverviewHorizon,
     selectedAggregationPeriod,
     aggregationPeriods,

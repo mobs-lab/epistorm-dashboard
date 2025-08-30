@@ -6,25 +6,23 @@
 
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
-import { Card } from "@/styles/material-tailwind-wrapper";
-import { isFeatureEnabled } from "@/utils/featureFlag";
 import { useDataContext } from "@/providers/DataProvider";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { Card } from "@/styles/material-tailwind-wrapper";
+import { isFeatureEnabled } from "@/utils/featureFlag";
+import React, { useState } from "react";
 
-import SeasonOverviewLocationAggregatedScoreChart, {
-  TooltipDirection,
-} from "./evaluations-components/SeasonOverview/SeasonOverviewLocationAggregatedScoreChart";
+import SeasonOverviewLocationAggregatedScoreChart from "./evaluations-components/SeasonOverview/SeasonOverviewLocationAggregatedScoreChart";
 import SeasonOverviewPIChart from "./evaluations-components/SeasonOverview/SeasonOverviewPIChart";
-import SeasonOverviewUSStateMap from "./evaluations-components/SeasonOverview/SeasonOverviewUSStateMap";
 import { SeasonOverviewSettings } from "./evaluations-components/SeasonOverview/SeasonOverviewSettingsPanel";
+import SeasonOverviewUSStateMap from "./evaluations-components/SeasonOverview/SeasonOverviewUSStateMap";
 
-import SingleModelSettingsPanel from "./evaluations-components/SingleModel/SingleModelSettingsPanel";
+import InfoButton from "@/shared-components/InfoButton";
+import { setMapeChartScaleType, setWisChartScaleType } from "@/store/data-slices/SettingsSliceEvaluationSeasonOverview";
+import { seasonOverviewInfo, singleModelInfo } from "types/infobutton-content";
 import SingleModelHorizonPlot from "./evaluations-components/SingleModel/SingleModelHorizonPlot";
 import SingleModelScoreLineChart from "./evaluations-components/SingleModel/SingleModelScoreLineChart";
-import { setMapeChartScaleType, setWisChartScaleType } from "@/store/evaluations-season-overview-settings-slice";
-import InfoButton from "@/shared-components/InfoButton";
-import { seasonOverviewInfo, singleModelInfo } from "types/infobutton-content";
+import SingleModelSettingsPanel from "./evaluations-components/SingleModel/SingleModelSettingsPanel";
 
 const SeasonOverviewContent: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -141,13 +139,14 @@ const SingleModelContent = () => {
 const isSeasonOverviewEnabled = isFeatureEnabled("seasonOverviewTab");
 
 const EvaluationsPage = () => {
-  const defaultTab = isSeasonOverviewEnabled ? "season-overview" : "single-model";
+  // const defaultTab = isSeasonOverviewEnabled ? "season-overview" : "single-model";
+  const defaultTab = isSeasonOverviewEnabled ? "single-model" : "season-overview";
   const [activeTab, setActiveTab] = useState(defaultTab);
   const { loadingStates, isFullyLoaded } = useDataContext();
 
   // Determine which data-slices is needed for each tab
-  const seasonOverviewReady = !loadingStates.groundTruth && !loadingStates.predictions;
-  const singleModelReady = !loadingStates.groundTruth && !loadingStates.predictions;
+  const seasonOverviewReady = !loadingStates.evaluationDetailedCoverage && !loadingStates.evaluationScores;
+  const singleModelReady = !loadingStates.groundTruth && !loadingStates.predictions && !loadingStates.evaluationScores;
 
   const renderContent = () => {
     if (activeTab === "season-overview") {

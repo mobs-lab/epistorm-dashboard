@@ -1,4 +1,4 @@
-export interface DataPoint {
+export interface SurveillanceSingleWeekDataPoint {
   date: Date;
   stateNum: string;
   stateName: string;
@@ -6,7 +6,7 @@ export interface DataPoint {
   weeklyRate: number;
 }
 
-export interface PredictionDataPoint {
+export interface PredictionSingleWeekDataPoint {
   referenceDate: Date;
   targetEndDate: Date;
   stateNum: string;
@@ -21,9 +21,9 @@ export interface PredictionDataPoint {
   confidence_high: number;
 }
 
-export interface ModelPrediction {
+export interface PredictionDataGroupedByModel {
   modelName: string;
-  predictionData: PredictionDataPoint[];
+  predictionData: PredictionSingleWeekDataPoint[];
 }
 
 export interface SeasonOption {
@@ -34,25 +34,9 @@ export interface SeasonOption {
   endDate: Date;
 }
 
-export interface DynamicSeasonOption {
-  index: number;
-  label: string;
-  displayString: string;
-  isDynamic: boolean;
-  subDisplayValue: string;
-  startDate: Date;
-  endDate: Date;
-}
-
-export interface ProcessedDataWithDateRange {
-  data: DataPoint[];
-  earliestDate: Date;
-  latestDate: Date;
-}
-
-export interface HistoricalDataEntry {
+export interface HistoricalDataCollectionByDate {
   associatedDate: Date;
-  historicalData: DataPoint[];
+  historicalData: SurveillanceSingleWeekDataPoint[];
 }
 
 export interface LocationData {
@@ -69,4 +53,63 @@ export interface StateThresholds {
   veryHigh: number;
 }
 
+// Following interfaces are for Redux Data Slice to validate fetched JSON data
+export interface GroundTruthData {
+  [seasonId: string]: {
+    [referenceDateISO: string]: {
+      [stateNum: string]: { admissions: number; weeklyRate: number };
+    };
+  };
+}
 
+export interface PredictionData {
+  [seasonId: string]: {
+    firstPredRefDate?: string;
+    lastPredRefDate?: string;
+    lastPredTargetDate?: string;
+    [modelName: string]: {
+      firstPredRefDate?: string;
+      lastPredRefDate?: string;
+      lastPredTargetDate?: string;
+      partitions: {
+        "pre-forecast": TimeSeriesPartition;
+        "full-forecast": TimeSeriesPartition;
+        "forecast-tail": TimeSeriesPartition;
+        "post-forecast": TimeSeriesPartition;
+      };
+    };
+  };
+}
+
+export interface TimeSeriesPartition {
+  [referenceDateISO: string]: {
+    [stateNum: string]: {
+      predictions?: {
+        [targetEndDateISO: string]: {
+          horizon: number;
+          median: number;
+          q25: number;
+          q75: number;
+          q05: number;
+          q95: number;
+        };
+      };
+    };
+  };
+}
+
+export interface NowcastTrendsData {
+  [modelName: string]: {
+    [isoDate: string]: {
+      [stateNum: string]: { decrease: number; increase: number; stable: number };
+    };
+  };
+}
+
+export interface HistoricalDataMap {
+  [isoDateMatchingUserSelected: string]: {
+    [referenceDateHistorical: string]: {
+      [stateNum: string]: { admissions: number; weeklyRate: number };
+    };
+  };
+}

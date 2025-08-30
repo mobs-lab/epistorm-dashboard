@@ -61,6 +61,18 @@ def calculate_boxplot_stats(series):
     }
 
 
+# Generate all possible horizon combinations
+def generate_horizon_combinations(horizons):
+    """Generate all possible combinations of horizons"""
+    from itertools import combinations
+
+    all_combinations = []
+    for r in range(1, len(horizons) + 1):
+        for combo in combinations(horizons, r):
+            all_combinations.append(list(combo))
+    return all_combinations
+
+
 # ==================================
 # ======== MAIN PROCESSING =========
 # ==================================
@@ -453,7 +465,7 @@ def main():
 
     print("   - Season metadata structure prepared")
 
-    # ===== 5. Partition Time-Series Data by Season =====
+    # ===== 5a. Partition Time-Series Data by Season =====
     print("Step 5: Partitioning time-series data by season...")
     time_series_data = {}
 
@@ -564,7 +576,8 @@ def main():
 
                         entry = partition_data[ref_date_iso][state_num]
 
-                        # Add ground truth data if available
+                        # No longer storing duplicate ground truth inside model
+                        """ # Add ground truth data if available
                         try:
                             gt_row = gt_df_indexed.loc[(ref_date, state_num)]
                             if pd.notna(gt_row["admissions"]) and gt_row["admissions"] >= 0:
@@ -573,7 +586,7 @@ def main():
                                     "weeklyRate": float(gt_row["weeklyRate"]),
                                 }
                         except KeyError:
-                            pass  # No ground truth data for this date/location
+                            pass  # No ground truth data for this date/location """
 
                         # Add prediction data for this specific model
                         try:
@@ -607,8 +620,48 @@ def main():
 
     print("   - Time series partitioning complete (full range seasons only)")
 
+    # ===== 5b. Process Ground Truth Data =====
+    print("Step 5b: Processing centralized ground truth data...")
+    ground_truth_data = {}
+
+    # Process each full range season for ground truth
+    for season_id, dates in full_range_seasons.items():
+        print(f"   - Processing ground truth for season: {season_id}")
+
+        ground_truth_data[season_id] = {}
+
+        # Get all dates in this season
+        season_dates = pd.date_range(start=dates["start"], end=dates["end"], freq="W-SAT")
+
+        for ref_date in season_dates:
+            ref_date_iso = ref_date.strftime("%Y-%m-%d")
+            ground_truth_data[season_id][ref_date_iso] = {}
+
+            # Get ground truth for all states on this date
+            for state_num in all_locations:
+                try:
+                    gt_row = gt_df_fixed[(gt_df_fixed["date"] == ref_date) & (gt_df_fixed["stateNum"] == state_num)]
+                    if not gt_row.empty and pd.notna(gt_row.iloc[0]["admissions"]) and gt_row.iloc[0]["admissions"] >= 0:
+                        ground_truth_data[season_id][ref_date_iso][state_num] = {
+                            "admissions": float(gt_row.iloc[0]["admissions"]),
+                            "weeklyRate": float(gt_row.iloc[0]["weeklyRate"]),
+                        }
+                except (KeyError, IndexError):
+                    # No ground truth data for this date/location
+                    pass
+
+    print(f"   - Ground truth data processed for {len(ground_truth_data)} seasons")
+    # Debug: Print some sample ground truth data
+    if ground_truth_data:
+        sample_season = list(ground_truth_data.keys())[0]
+        sample_dates = list(ground_truth_data[sample_season].keys())[:3]
+        print(f"   - Sample ground truth data for {sample_season}:")
+        for date in sample_dates:
+            state_count = len(ground_truth_data[sample_season][date])
+            print(f"     {date}: {state_count} states with data")
+
     # ===================================================
-    # Debug: Print a sample of the final nested structure
+    # Debug: Print a sample of the final nested prediction data structure
     try:
         if time_series_data:
             sample_season = list(time_series_data.keys())[0]
@@ -680,44 +733,6 @@ def main():
 
     print("   - Evaluation score files cleaned and standardized")
 
-    # DEBUG: Display all season time ranges
-    print("\n DEBUGGING: Season Time Ranges Analysis")
-    print("=" * 60)
-
-    print("Full Range Seasons:")
-    for season_id, dates in full_range_seasons.items():
-        print(f"   {season_id}: {dates['start'].strftime('%Y-%m-%d')} to {dates['end'].strftime('%Y-%m-%d')}")
-
-    print("\n Dynamic Time Periods:")
-    for period_id, dates in dynamic_periods.items():
-        print(f"   {period_id}: {dates['start'].strftime('%Y-%m-%d')} to {dates['end'].strftime('%Y-%m-%d')}")
-
-    # Show evaluation data date ranges
-    eval_ref_date_range = (eval_scores_df["reference_date"].min(), eval_scores_df["reference_date"].max())
-    eval_target_date_range = (eval_scores_df["target_end_date"].min(), eval_scores_df["target_end_date"].max())
-    coverage_ref_date_range = (coverage_long_df["reference_date"].min(), coverage_long_df["reference_date"].max())
-    coverage_target_date_range = (coverage_long_df["target_end_date"].min(), coverage_long_df["target_end_date"].max())
-
-    print("\n Evaluation Data Date Ranges:")
-    print(f"   Standard metrics (reference): {eval_ref_date_range[0].strftime('%Y-%m-%d')} to {eval_ref_date_range[1].strftime('%Y-%m-%d')}")
-    print(f"   Standard metrics (target): {eval_target_date_range[0].strftime('%Y-%m-%d')} to {eval_target_date_range[1].strftime('%Y-%m-%d')}")
-    print(f"   Coverage data (reference): {coverage_ref_date_range[0].strftime('%Y-%m-%d')} to {coverage_ref_date_range[1].strftime('%Y-%m-%d')}")
-    print(f"   Coverage data (target): {coverage_target_date_range[0].strftime('%Y-%m-%d')} to {coverage_target_date_range[1].strftime('%Y-%m-%d')}")
-
-    # Function to assign each evaluation data entries a corresponding season, AND/OR a dynamic time period
-    def assign_all_applicable_seasons(date, all_seasons_dict):
-        """
-        Assign all applicable season IDs to a date.
-        Returns a list of season IDs that contain this date.
-        """
-        applicable_seasons = []
-
-        for season_id, season_dates in all_seasons_dict.items():
-            if season_dates["start"] <= date <= season_dates["end"]:
-                applicable_seasons.append(season_id)
-
-        return applicable_seasons
-
     # Combine all seasons for comprehensive assignment
     all_seasons_combined = {**full_range_seasons, **dynamic_periods}
 
@@ -755,15 +770,6 @@ def main():
                 f"     Target date range: {season_eval_df['target_end_date'].min().strftime('%Y-%m-%d')} to {season_eval_df['target_end_date'].max().strftime('%Y-%m-%d')}"
             )
 
-        # IQR data for box plots
-        if len(season_eval_df) > 0:
-            grouped_iqr = season_eval_df.groupby(["metric", "model", "horizon"])["score"]
-            for (metric, model, horizon), score_group in grouped_iqr:
-                stats = calculate_boxplot_stats(score_group)
-                if stats:
-                    horizon_int = int(horizon)
-                    iqr_data.setdefault(season_id, {}).setdefault(metric, {}).setdefault(model, {})[horizon_int] = stats
-
         # State map aggregations
         if len(season_eval_df) > 0:
             state_map_agg = season_eval_df.groupby(["metric", "model", "stateNum", "horizon"])["score"].agg(["sum", "count"]).reset_index()
@@ -783,7 +789,110 @@ def main():
                     "count": int(row["count"]),
                 }
 
-    print("\n   - All evaluation aggregations complete")
+        # Build state averages from the state_map_data we just calculated
+        # Sanity Check using season_id
+        if season_id in state_map_data:
+            # Dynamically get all available horizons for this season (to accomodate dynamic periods)
+            available_horizons = set()
+            for metric_data in state_map_data[season_id].values():
+                for model_data in metric_data.values():
+                    for state_data in model_data.values():
+                        available_horizons.update(state_data.keys())
+
+            available_horizons = sorted(list(available_horizons))
+            horizon_combinations = generate_horizon_combinations(available_horizons)
+
+            print(f"     Calculating IQR for {len(horizon_combinations)} horizon combinations: {horizon_combinations}")
+
+            for metric, metric_data in state_map_data[season_id].items():
+                # Skip Coverage metric for IQR calculations
+                if metric == "Coverage":
+                    continue
+
+                for model, model_data in metric_data.items():
+                    # Calculate IQR for each horizon combination
+                    for horizon_combo in horizon_combinations:
+                        # Create horizon key (e.g., "0", "1,2", "0,1,2,3")
+                        horizon_key = ",".join(map(str, sorted(horizon_combo)))
+
+                        # Calculate state averages for this combination
+                        state_averages = []
+
+                        # Get all states that have data for any horizon in this combination
+                        all_states = set()
+                        for horizon in horizon_combo:
+                            for state_num in model_data.keys():
+                                # In location Aggregation, we ACTUALLY want "US" to be included. We need 52 states + US data.
+                                if horizon in model_data[state_num]:
+                                    all_states.add(state_num)
+
+                        # Calculate combined average for each state
+                        for state_num in all_states:
+                            total_sum = 0
+                            total_count = 0
+
+                            for horizon in horizon_combo:
+                                if horizon in model_data[state_num]:
+                                    agg_data = model_data[state_num][horizon]
+                                    total_sum += agg_data["sum"]
+                                    total_count += agg_data["count"]
+
+                            if total_count > 0:
+                                state_averages.append(total_sum / total_count)
+
+                        # Calculate IQR stats if we have at least 1 state
+                        if len(state_averages) >= 1:
+                            stats = calculate_boxplot_stats(pd.Series(state_averages))
+                            if stats:
+                                # Update stats with state-level information
+                                stats["count"] = len(state_averages)
+                                stats["stateAverages"] = state_averages
+                                stats["scores"] = state_averages  # Replace with state averages
+
+                                # Store using horizon key
+                                iqr_data.setdefault(season_id, {}).setdefault(metric, {}).setdefault(model, {})[horizon_key] = stats
+
+    print("IQR data calculated for all horizon combinations")
+
+    # ===== 6b. Store Raw Scores for Single Model Views =====
+    print("   - Storing raw evaluation scores for Single Model views...")
+    raw_scores_data = {}
+
+    # Process each season for raw scores
+    for season_id, season_dates in full_range_seasons.items():
+        # Filter evaluation data for this specific season
+        season_eval_df = eval_scores_df[
+            (eval_scores_df["reference_date"] >= season_dates["start"]) & (eval_scores_df["target_end_date"] <= season_dates["end"])
+        ].copy()
+
+        season_eval_df = season_eval_df[season_eval_df["metric"] != "Coverage"].copy()
+
+        if len(season_eval_df) == 0:
+            continue
+
+        # Group by metric, model, state, and horizon
+        grouped = season_eval_df.groupby(["metric", "model", "stateNum", "horizon"])
+
+        for (metric, model, state_num, horizon), group_df in grouped:
+            # Convert dates to ISO strings and create score entries
+            score_entries = []
+            for _, row in group_df.iterrows():
+                score_entries.append(
+                    {
+                        "referenceDate": row["reference_date"].strftime("%Y-%m-%d"),
+                        "targetEndDate": row["target_end_date"].strftime("%Y-%m-%d"),
+                        "score": float(row["score"]),
+                    }
+                )
+
+            # Sort by reference date
+            score_entries.sort(key=lambda x: x["referenceDate"])
+
+            # Store in nested structure
+            horizon_int = int(horizon)
+            (raw_scores_data.setdefault(season_id, {}).setdefault(metric, {}).setdefault(model, {}).setdefault(state_num, {})[horizon_int]) = score_entries
+
+    print(f"   - Raw scores stored for {len(raw_scores_data)} seasons")
 
     # ===== 7. Compile and Output Final JSON Files =====
     print("Step 7: Compiling and writing final JSON files...")
@@ -838,7 +947,8 @@ def main():
         "mainData": {
             "nowcastTrends": nowcast_dict,
             "historicalDataMap": {},  # Note: Historical data processing would go here if needed
-            "timeSeriesData": time_series_data,  # Only contains full range seasons
+            "groundTruthData": ground_truth_data,  # Note: Historical data processing would go here if needed
+            "predictionData": time_series_data,  # Only contains full range seasons
         },
         "auxiliary-data": {
             "locations": locations_list,
@@ -853,7 +963,8 @@ def main():
             "iqr": iqr_data,  # Includes both full range seasons and dynamic periods
             "stateMap_aggregates": state_map_data,  # Includes both full range seasons and dynamic periods
             "detailedCoverage_aggregates": coverage_data,  # Includes both full range seasons and dynamic periods
-        }
+        },
+        "rawScores": raw_scores_data,
     }
 
     # Write files to disk

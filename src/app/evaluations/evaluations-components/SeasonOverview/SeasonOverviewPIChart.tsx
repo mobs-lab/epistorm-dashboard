@@ -8,7 +8,7 @@ import { addWeeks } from "date-fns";
 import { useAppSelector } from "@/store/hooks";
 import { useResponsiveSVG } from "@/utils/responsiveSVG";
 import { modelColorMap, modelNames } from "@/types/common";
-import { selectSeasonOverviewData, selectShouldUseJsonData } from "@/store/selector/evaluationSelectors";
+import { selectSeasonOverviewData, selectShouldUseJsonData } from "@/store/selectors/evaluationSelectors";
 
 // Interface for processed data structure
 interface ProcessedCoverageData {
@@ -26,9 +26,6 @@ const SeasonOverviewPIChart: React.FC = () => {
   // Get data from selectors
   const shouldUseJsonData = useAppSelector(selectShouldUseJsonData);
   const seasonOverviewData = useAppSelector(selectSeasonOverviewData);
-
-  // Get data from Redux store
-  const detailedCoverageData = useAppSelector((state) => state.evaluationsSingleModelScoreData.detailedCoverage);
   const { evaluationSeasonOverviewHorizon, selectedAggregationPeriod, aggregationPeriods, evaluationSeasonOverviewSelectedModels } =
     useAppSelector((state) => state.evaluationsSeasonOverviewSettings);
 
@@ -38,30 +35,30 @@ const SeasonOverviewPIChart: React.FC = () => {
       // Use JSON data structure
       const coverageData = seasonOverviewData.coverageData;
       const results: ProcessedCoverageData[] = [];
-      
+
       // Coverage levels mapping for JSON data
       const coverageLevels = [10, 20, 30, 40, 50, 60, 70, 80, 90, 95, 98];
-      
+
       // Process each selected model
-      for (const modelName of modelNames.filter(m => seasonOverviewData.selectedModels.includes(m))) {
+      for (const modelName of modelNames.filter((m) => seasonOverviewData.selectedModels.includes(m))) {
         const modelCoverageData = coverageData[modelName];
         if (!modelCoverageData) continue;
-        
+
         const coveragePoints: { covLevel: number; coverageValue: number }[] = [];
-        
+
         // Calculate coverage for each level by aggregating across horizons
-        coverageLevels.forEach(level => {
+        coverageLevels.forEach((level) => {
           let totalSum = 0;
           let totalCount = 0;
-          
-          seasonOverviewData.horizons.forEach(horizon => {
+
+          seasonOverviewData.horizons.forEach((horizon) => {
             const horizonData = modelCoverageData[horizon];
             if (horizonData && horizonData[level]) {
               totalSum += horizonData[level].sum;
               totalCount += horizonData[level].count;
             }
           });
-          
+
           if (totalCount > 0) {
             coveragePoints.push({
               covLevel: level,
@@ -69,7 +66,7 @@ const SeasonOverviewPIChart: React.FC = () => {
             });
           }
         });
-        
+
         if (coveragePoints.length > 0) {
           results.push({
             modelName,
@@ -77,88 +74,18 @@ const SeasonOverviewPIChart: React.FC = () => {
           });
         }
       }
-      
-      console.debug("Using JSON data for PI chart:", results);
+
+      // console.debug("Using JSON data for PI chart:", results);
       return results;
     }
-
-    // Fallback to original CSV processing logic
-    if (!detailedCoverageData || evaluationSeasonOverviewHorizon.length === 0 || !selectedAggregationPeriod) {
-      return [];
-    }
-
-    const selectedPeriod = aggregationPeriods.find((p) => p.id === selectedAggregationPeriod);
-    if (!selectedPeriod) return [];
-
-    const horizonSet = new Set(evaluationSeasonOverviewHorizon);
-    const results: ProcessedCoverageData[] = [];
-
-    const coverageMapping = [
-      { field: "coverage10", level: 10 },
-      { field: "coverage20", level: 20 },
-      { field: "coverage30", level: 30 },
-      { field: "coverage40", level: 40 },
-      { field: "coverage50", level: 50 },
-      { field: "coverage60", level: 60 },
-      { field: "coverage70", level: 70 },
-      { field: "coverage80", level: 80 },
-      { field: "coverage90", level: 90 },
-      { field: "coverage95", level: 95 },
-      { field: "coverage98", level: 98 },
-    ];
-
-    for (const model of detailedCoverageData) {
-      if (!evaluationSeasonOverviewSelectedModels.includes(model.modelName) || !model.coverageData || model.coverageData.length === 0)
-        continue;
-
-      const coverageSums = coverageMapping.map(() => 0);
-      const coverageCounts = coverageMapping.map(() => 0);
-
-      for (const entry of model.coverageData) {
-        if (!horizonSet.has(entry.horizon)) continue;
-
-        const referenceDate = entry.referenceDate;
-        const targetDate = addWeeks(referenceDate, entry.horizon);
-
-        if (referenceDate < selectedPeriod.startDate || targetDate > selectedPeriod.endDate) continue;
-
-        coverageMapping.forEach((mapping, index) => {
-          coverageSums[index] += entry[mapping.field as keyof typeof entry] as number;
-          coverageCounts[index]++;
-        });
-      }
-
-      if (coverageCounts.some((count) => count > 0)) {
-        const coveragePoints = coverageMapping.map((mapping, index) => ({
-          covLevel: mapping.level,
-          coverageValue: coverageCounts[index] > 0 ? coverageSums[index] / coverageCounts[index] : 0,
-        }));
-
-        results.push({
-          modelName: model.modelName,
-          coveragePoints: coveragePoints,
-        });
-      }
-    }
-
-    console.debug("Using CSV fallback data for PI chart:", results);
-    return results;
-  }, [
-    shouldUseJsonData,
-    seasonOverviewData,
-    detailedCoverageData,
-    evaluationSeasonOverviewHorizon,
-    selectedAggregationPeriod,
-    aggregationPeriods,
-    evaluationSeasonOverviewSelectedModels,
-  ]);
+  }, [shouldUseJsonData, seasonOverviewData]);
 
   /* UseEffect Hook for rendering the chart */
   useEffect(() => {
     if (!isResizing && dimensions.width > 0 && dimensions.height > 0 && chartRef.current) {
       renderChart();
     }
-  }, [dimensions, isResizing, processedData]);
+  }, [dimensions, isResizing]);
 
   const renderChart = () => {
     if (!chartRef.current) return;

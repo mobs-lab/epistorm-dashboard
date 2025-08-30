@@ -1,13 +1,13 @@
-import React, { useEffect, useRef } from "react";
 import * as d3 from "d3";
-import { addWeeks, subWeeks, format } from "date-fns";
+import React, { useEffect, useRef } from "react";
 
 import { useAppSelector } from "@/store/hooks";
+import { selectSingleModelScoreDataFromJSON } from "@/store/selectors/index";
+import { selectSingleModelTimeSeriesData } from "@/store/selectors/singleModelSelectors";
 
-import { DataPoint, ModelPrediction } from "@/types/domains/forecasting";
-import { isUTCDateEqual } from "@/utils/date";
-import { useResponsiveSVG } from "@/utils/responsiveSVG";
 import { modelColorMap } from "@/types/common";
+import { useResponsiveSVG } from "@/utils/responsiveSVG";
+import { normalizeToUTCMidDay } from "@/utils/date";
 
 interface ScoreDataPoint {
   referenceDate: Date;
@@ -26,146 +26,16 @@ const SingleModelScoreLineChart: React.FC = () => {
   const chartRef = useRef<SVGSVGElement>(null);
   const isDraggingRef = useRef(false);
 
-  // Get the ground and prediction data from store
-  const groundTruthData = useAppSelector((state) => state.groundTruth.data);
-  const predictionsData = useAppSelector((state) => state.predictions.data);
+  const scoreDataFromJSON = useAppSelector(selectSingleModelScoreDataFromJSON);
 
-  // Get data and settings from Redux
-  const evaluationsScoreData = useAppSelector((state) => state.evaluationsSingleModelScoreData.data);
+  const timeSeriesData = useAppSelector(selectSingleModelTimeSeriesData);
+
   const {
     evaluationsSingleModelViewModel,
     evaluationsSingleModelViewSelectedStateCode,
-    evaluationsSingleModelViewDateStart,
-    evaluationSingleModelViewDateEnd,
     evaluationSingleModelViewScoresOption,
     evaluationSingleModelViewHorizon,
   } = useAppSelector((state) => state.evaluationsSingleModelSettings);
-
-  /**
-   * Finds the actual data range to render, ensuring we have both valid
-   * surveillance data and prediction data at the start, and valid surveillance data at the end
-   */
-  function findActualDataRange(
-    groundTruthData: DataPoint[],
-    predictionsData: ModelPrediction[],
-    modelName: string,
-    state: string,
-    dateRange: [Date, Date],
-    horizon: number
-  ): [Date, Date] {
-    /* First calcualte using horizon number, a buffer for how many weeks ahead we should seek for end date within the final range */
-
-    /* console.log(
-      "end date calculated considering horizon: ",
-      endDateWithHorizon
-    ); */
-
-    // Filter ground truth data-slices for valid entries (with valid admissions, including placeholders)
-    const validGroundTruth = groundTruthData.filter(
-      (d) => d.stateNum === state && d.admissions >= -1 && d.date >= dateRange[0] && d.date <= dateRange[1]
-    );
-
-    // Get the model's prediction data-slices
-    const modelPrediction = predictionsData.find((model) => model.modelName === modelName);
-    // Check each date for valid predictions, only dates with predictions are included
-    const validPredictions =
-      modelPrediction?.predictionData.filter(
-        (d) => d.stateNum === state && d.referenceDate >= dateRange[0] && d.referenceDate <= dateRange[1]
-      ) || [];
-
-    // Find the earliest and latest dates with actual data-slices, only those that both have valid admission value & has predictions made on that day
-    const startDates = [
-      validGroundTruth.length > 0 ? validGroundTruth[0].date : dateRange[1],
-      validPredictions.length > 0 ? validPredictions[0].referenceDate : dateRange[1],
-    ];
-
-    // const endDates = [endDateWithHorizon];
-
-    const endDates = [
-      validGroundTruth.length > 0 ? validGroundTruth[validGroundTruth.length - 1].date : dateRange[0],
-      validPredictions.length > 0 ? addWeeks(validPredictions[validPredictions.length - 1].referenceDate, horizon) : dateRange[0],
-    ];
-
-    // Use max and min to cut the ones missing prediction/admission, and we end up with range with actual concrete data-slices values
-    return [new Date(Math.max(...startDates.map((d) => d.getTime()))), new Date(Math.min(...endDates.map((d) => d.getTime())))];
-  }
-
-  /**
-   * Generate Saturday dates within a date range
-   */
-  function generateSaturdayDates(startDate: Date, endDate: Date): Date[] {
-    const dates: Date[] = [];
-    let currentDate = new Date(startDate);
-
-    // Move to the first Saturday if not already on one
-    while (currentDate.getDay() !== 6) {
-      currentDate.setDate(currentDate.getDate() + 1);
-    }
-
-    // Generate all Saturdays until end date
-    while (currentDate <= endDate) {
-      dates.push(new Date(currentDate));
-      currentDate.setDate(currentDate.getDate() + 7);
-    }
-
-    return dates;
-  }
-
-  /**
-   * Process score data to match with chart x-axis values (Saturdays)
-   * Maps score data using a calculation of referenceDate + horizon weeks
-   */
-  function processScoreData(
-    scoreDataCollection: any[],
-    modelName: string,
-    state: string,
-    scoreOption: string,
-    horizon: number,
-    saturdayDates: Date[]
-  ): ProcessedScoreDataPoint[] {
-    // Find relevant score data for selected model and metric
-    const scoreData =
-      scoreDataCollection
-        .find((d: any) => d.modelName === modelName && d.scoreMetric === scoreOption)
-        ?.scoreData.filter((d: any) => d.location === state && d.horizon === horizon) || [];
-
-    if (scoreData.length === 0) {
-      return [];
-    }
-
-    // Create a map for quick lookup of score data by reference date (ISO string)
-    const scoreDataMap = new Map<string, ScoreDataPoint>();
-    scoreData.forEach((d: any) => {
-      scoreDataMap.set(d.referenceDate.toISOString(), {
-        referenceDate: d.referenceDate,
-        score: d.score,
-        horizon: d.horizon,
-        // targetEndDate: addWeeks(d.referenceDate, d.horizon)
-      });
-    });
-
-    // For each Saturday, find the corresponding score data
-    const processedData: ProcessedScoreDataPoint[] = [];
-
-    saturdayDates.forEach((targetDate) => {
-      // Calculate the reference date for this target date
-      const referenceDate = subWeeks(targetDate, horizon);
-      const referenceDateKey = referenceDate.toISOString();
-
-      // Find score data for this reference date
-      const matchingScore = scoreDataMap.get(referenceDateKey);
-
-      if (matchingScore) {
-        processedData.push({
-          targetDate,
-          referenceDate: matchingScore.referenceDate,
-          score: matchingScore.score,
-        });
-      }
-    });
-
-    return processedData;
-  }
 
   function createInteractiveElements(
     svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
@@ -487,7 +357,7 @@ const SingleModelScoreLineChart: React.FC = () => {
   /**
    * Helper function to wrap x-axis labels for better readability
    */
-  function wrapAxisLabels(text: d3.Selection<d3.BaseType, unknown, SVGGElement, unknown>, width: number) {
+  function wrapAxisLabels(text: d3.Selection<d3.BaseType, unknown, SVGGElement, unknown>) {
     text.each(function () {
       const text = d3.select(this);
       const lines = text.text().split(/\n+/);
@@ -517,11 +387,84 @@ const SingleModelScoreLineChart: React.FC = () => {
     });
   }
 
+  // Helper function to generate all Saturday dates for mapping out x-axis
+  function generateSaturdayDatesUTC(startDate: Date, endDate: Date): Date[] {
+    const dates: Date[] = [];
+
+    // Normalize start and end dates to UTC midnight
+    let currentDate = normalizeToUTCMidDay(startDate);
+    const normalizedEndDate = normalizeToUTCMidDay(endDate);
+
+    // Move to the first Saturday if not already on one (using UTC day)
+    while (currentDate.getUTCDay() !== 6) {
+      currentDate = new Date(currentDate.getTime() + 24 * 60 * 60 * 1000);
+    }
+
+    // Generate all Saturdays until end date
+    while (currentDate <= normalizedEndDate) {
+      dates.push(new Date(currentDate));
+      currentDate = new Date(currentDate.getTime() + 7 * 24 * 60 * 60 * 1000);
+    }
+
+    return dates;
+  }
+
   function renderChart() {
     if (!chartRef.current || !dimensions.width || !dimensions.height) return;
 
     const svg = d3.select(chartRef.current);
     svg.selectAll("*").remove();
+
+    if (!scoreDataFromJSON || scoreDataFromJSON.length === 0 || !timeSeriesData) {
+      svg
+        .append("text")
+        .attr("x", dimensions.width / 2)
+        .attr("y", dimensions.height / 2)
+        .attr("text-anchor", "middle")
+        .attr("fill", "white")
+        .style("font-family", "var(--font-dm-sans)")
+        .text("No score data available for selected criteria");
+      return;
+    }
+    // Get the time range from metadata to sync up with horizon plot
+    const { displayStartDate, displayEndDate } = timeSeriesData.metadata;
+
+    // Get actual score data dates
+    const normalizedScoreData = scoreDataFromJSON.map((entry) => ({
+      ...entry,
+      targetEndDate: normalizeToUTCMidDay(entry.targetEndDate),
+      referenceDate: normalizeToUTCMidDay(entry.referenceDate),
+    }));
+
+    const actualScoreDates = normalizedScoreData.map((d) => d.targetEndDate).sort((a, b) => a.getTime() - b.getTime());
+
+    const allSaturdays = generateSaturdayDatesUTC(displayStartDate, displayEndDate);
+
+    // Create a Set for efficient lookup and deduplication
+    const dateSet = new Set<string>();
+
+    // Add all Saturdays from metadata range
+    allSaturdays.forEach((date) => {
+      dateSet.add(date.toISOString());
+    });
+
+    // Add all actual score dates
+    actualScoreDates.forEach((date) => {
+      dateSet.add(date.toISOString());
+    });
+
+    // Convert back to sorted array
+    const saturdayDates = Array.from(dateSet)
+      .map((dateStr) => new Date(dateStr))
+      .sort((a, b) => a.getTime() - b.getTime());
+
+    // Create processed data directly from scoreDataFromJSON
+    const processedData = normalizedScoreData.map((entry) => ({
+      targetDate: entry.targetEndDate,
+      referenceDate: entry.referenceDate,
+      score: entry.score,
+    }));
+    console.debug("Processed data points with scores:", processedData);
 
     // Setup dimensions
     const width = dimensions.width;
@@ -534,29 +477,6 @@ const SingleModelScoreLineChart: React.FC = () => {
     };
     const chartWidth = width - margin.left - margin.right;
     const chartHeight = height - margin.top - margin.bottom;
-
-    // Get data range and prepare data
-    const [actualStart, actualEnd] = findActualDataRange(
-      groundTruthData,
-      predictionsData,
-      evaluationsSingleModelViewModel,
-      evaluationsSingleModelViewSelectedStateCode,
-      [evaluationsSingleModelViewDateStart, evaluationSingleModelViewDateEnd],
-      evaluationSingleModelViewHorizon
-    );
-
-    // Generate all Saturdays within the actual date range
-    const saturdayDates = generateSaturdayDates(actualStart, actualEnd);
-
-    // Process score data to match with x-axis dates
-    const processedData = processScoreData(
-      evaluationsScoreData,
-      evaluationsSingleModelViewModel,
-      evaluationsSingleModelViewSelectedStateCode,
-      evaluationSingleModelViewScoresOption,
-      evaluationSingleModelViewHorizon,
-      saturdayDates
-    );
 
     // Handle when no data is present
     if (processedData.length === 0) {
@@ -573,8 +493,8 @@ const SingleModelScoreLineChart: React.FC = () => {
 
     // Create scales and axes
     const { xScale, yScale, xAxis, yAxis } = createScalesAndAxes(
-      saturdayDates,
-      processedData,
+      saturdayDates, // Use full range for x-axis
+      processedData, // Use only actual data for y-scale
       chartWidth,
       chartHeight,
       evaluationSingleModelViewScoresOption
@@ -673,13 +593,12 @@ const SingleModelScoreLineChart: React.FC = () => {
   }, [
     dimensions,
     isResizing,
+    scoreDataFromJSON,
+    timeSeriesData,
     evaluationsSingleModelViewModel,
     evaluationsSingleModelViewSelectedStateCode,
-    evaluationsSingleModelViewDateStart,
-    evaluationSingleModelViewDateEnd,
     evaluationSingleModelViewScoresOption,
     evaluationSingleModelViewHorizon,
-    evaluationsScoreData,
   ]);
 
   return (

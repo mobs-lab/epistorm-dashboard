@@ -1,4 +1,4 @@
-export interface EvaluationsScoreData {
+export interface EvaluationsScoreDataEntry {
   referenceDate: Date;
   score: number;
   location: string;
@@ -8,10 +8,10 @@ export interface EvaluationsScoreData {
 export interface EvaluationsScoreDataCollection {
   modelName: string;
   scoreMetric: string;
-  scoreData: EvaluationsScoreData[];
+  scoreData: EvaluationsScoreDataEntry[];
 }
 
-export interface CoverageScoreData {
+export interface CoverageScoreDataEntry {
   referenceDate: Date;
   location: string;
   horizon: number;
@@ -28,12 +28,12 @@ export interface CoverageScoreData {
   coverage98: number;
 }
 
-export interface DetailedCoverageCollection {
+export interface CoverageScoreDataCollectionByModel {
   modelName: string;
-  coverageData: CoverageScoreData[];
+  coverageData: CoverageScoreDataEntry[];
 }
 
-export interface EvaluationsSeasonOverviewSeasonOption {
+export interface EvaluationsSeasonOption {
   displayString: string;
   startDate: Date;
   endDate: Date;
@@ -66,7 +66,7 @@ export interface AppDataEvaluationsPrecalculated {
     [seasonId: string]: {
       [metric: string]: {
         [model: string]: {
-          [horizon: number]: BoxplotStats;
+          [horizonKey: number]: BoxplotStats;
         };
       };
     };
@@ -93,4 +93,21 @@ export interface AppDataEvaluationsPrecalculated {
   };
 }
 
-
+// For single model page score line chart matching targetEndDate
+export interface AppDataEvaluationsSingleModelRawScores {
+  // Keyed by seasonId -> metric -> model -> stateNum -> horizon -> array of scores
+  [seasonId: string]: {
+    [metric: string]: {
+      // "WIS_ratio" | "MAPE"
+      [model: string]: {
+        [stateNum: string]: {
+          [horizon: number]: {
+            referenceDate: string; // ISO date string
+            targetEndDate: string; // ISO date string
+            score: number;
+          };
+        };
+      };
+    };
+  };
+}
