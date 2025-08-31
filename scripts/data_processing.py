@@ -4,12 +4,16 @@ import json
 from pathlib import Path
 from datetime import timedelta
 
+# Import new auxiliary data processing functions
+from process_auxiliary_data import process_locations, process_thresholds, process_historical_ground_truth
+
 
 # ========================
 # === HELPER FUNCTIONS ===
 # ========================
 
 
+# NOTE: This function might need to change when the file moves.
 def get_project_root():
     """Returns the project's root directory as a Path object."""
     return Path(__file__).resolve().parent.parent
@@ -78,28 +82,36 @@ def generate_horizon_combinations(horizons):
 # ==================================
 def main():
     project_root = get_project_root()
+    data_processing_dir = project_root / "data_processing_dir"
+    raw_data_dir = data_processing_dir / "raw"
     public_data_dir = project_root / "public" / "data"
     print("----- Starting Full Data Pre-Processing -----")
 
     # ===== 1. Get All Data From Sources =====
     print("Step 1: Ingesting all data from sources...")
     try:
-        # Load static data files
-        locations_df = pd.read_csv(public_data_dir / "locations.csv", dtype={"location": str})
+        # Load static data files from the new raw data directory
+        locations_df = pd.read_csv(data_processing_dir / "locations.csv", dtype={"location": str})
         locations_df = locations_df.loc[:, ~locations_df.columns.str.contains("^Unnamed")]  # Remove empty columns
 
         gt_df = pd.read_csv(
-            public_data_dir / "ground-truth/target-hospital-admissions.csv",
+            raw_data_dir / "ground-truth/target-hospital-admissions.csv",
             parse_dates=["date"],
             dtype={"location": str},
         )
 
-        thresholds_df = pd.read_csv(public_data_dir / "thresholds.csv", dtype={"Location": str})
+        thresholds_df = pd.read_csv(data_processing_dir / "thresholds.csv", dtype={"Location": str})
+
+        # Load historical ground truth data
+        historical_gt_path = raw_data_dir / "ground-truth" / "historical-data"
+        historical_data_map = process_historical_ground_truth(historical_gt_path)
+        print(f"   - Processed {len(historical_data_map)} historical ground truth snapshots")
 
         # Load evaluation score data
-        wis_df = pd.read_csv(public_data_dir / "evaluations-score/WIS_ratio.csv", dtype={"location": str, "horizon": int})
-        mape_df = pd.read_csv(public_data_dir / "evaluations-score/MAPE.csv", dtype={"Location": str, "horizon": int})
-        coverage_df = pd.read_csv(public_data_dir / "evaluations-score/coverage.csv", dtype={"location": str, "horizon": int})
+        eval_score_dir = raw_data_dir / "evaluations-score"
+        wis_df = pd.read_csv(eval_score_dir / "WIS_ratio.csv", dtype={"location": str, "horizon": int})
+        mape_df = pd.read_csv(eval_score_dir / "MAPE.csv", dtype={"Location": str, "horizon": int})
+        coverage_df = pd.read_csv(eval_score_dir / "coverage.csv", dtype={"location": str, "horizon": int})
 
         # Define model names (should match epistorm-constants.ts)
         model_names = [
@@ -120,7 +132,7 @@ def main():
         # Load "unprocessed" (new format) prediction files
         unprocessed_dfs = []
         for model in model_names:
-            model_path = public_data_dir / f"unprocessed/{model}"
+            model_path = raw_data_dir / f"unprocessed/{model}"
             csv_files = list(model_path.glob("*.csv"))
             if not csv_files:
                 print(f"   - No unprocessed files found for {model}")
@@ -139,7 +151,7 @@ def main():
         # Load "archive" (old format) prediction files
         archive_dfs = []
         for model in model_names:
-            archive_path = public_data_dir / f"archive/{model}"
+            archive_path = raw_data_dir / f"archive/{model}"
             csv_files = list(archive_path.glob("*.csv"))
             if not csv_files:
                 print(f"   - No archive files found for {model}")
@@ -897,16 +909,9 @@ def main():
     # ===== 7. Compile and Output Final JSON Files =====
     print("Step 7: Compiling and writing final JSON files...")
 
-    # Process thresholds data for core JSON
+    # Process thresholds data for core JSON using imported function
     print("   - Processing thresholds data...")
-    thresholds_df.rename(columns={"Location": "stateNum"}, inplace=True)
-    thresholds_dict = {}
-    for _, row in thresholds_df.iterrows():
-        thresholds_dict[row["stateNum"]] = {
-            "medium": float(row["Medium"]),
-            "high": float(row["High"]),
-            "veryHigh": float(row["Very High"]),
-        }
+    thresholds_dict = process_thresholds(thresholds_df)
 
     # Process nowcast trends data for core JSON
     print("   - Processing nowcast trends data...")
@@ -923,18 +928,9 @@ def main():
                 "stable": float(row["stable"]),
             }
 
-    # Process locations data for core JSON
+    # Process locations data for core JSON using imported function
     print("   - Processing locations data...")
-    locations_list = []
-    for _, row in locations_df.iterrows():
-        locations_list.append(
-            {
-                "stateNum": row["location"],
-                "state": row["abbreviation"],
-                "stateName": row["location_name"],
-                "population": int(row["population"]),
-            }
-        )
+    locations_list = process_locations(locations_df)
 
     # Assemble app_data_core.json according to DataContract.md
     print("   - Assembling core data JSON...")
@@ -946,8 +942,8 @@ def main():
         },
         "mainData": {
             "nowcastTrends": nowcast_dict,
-            "historicalDataMap": {},  # Note: Historical data processing would go here if needed
-            "groundTruthData": ground_truth_data,  # Note: Historical data processing would go here if needed
+            "historicalDataMap": historical_data_map,
+            "groundTruthData": ground_truth_data,
             "predictionData": time_series_data,  # Only contains full range seasons
         },
         "auxiliary-data": {

@@ -62,22 +62,25 @@ export interface GroundTruthData {
   };
 }
 
+export interface ModelPredictionData {
+  firstPredRefDate?: string;
+  lastPredRefDate?: string;
+  lastPredTargetDate?: string;
+  partitions: {
+    "pre-forecast": TimeSeriesPartition;
+    "full-forecast": TimeSeriesPartition;
+    "forecast-tail": TimeSeriesPartition;
+    "post-forecast": TimeSeriesPartition;
+  };
+}
+
 export interface PredictionData {
   [seasonId: string]: {
     firstPredRefDate?: string;
     lastPredRefDate?: string;
     lastPredTargetDate?: string;
-    [modelName: string]: {
-      firstPredRefDate?: string;
-      lastPredRefDate?: string;
-      lastPredTargetDate?: string;
-      partitions: {
-        "pre-forecast": TimeSeriesPartition;
-        "full-forecast": TimeSeriesPartition;
-        "forecast-tail": TimeSeriesPartition;
-        "post-forecast": TimeSeriesPartition;
-      };
-    };
+  } & {
+    [modelName: string]: ModelPredictionData;
   };
 }
 

@@ -7,17 +7,17 @@ NEW_SURVEILLANCE_ARCHIVE_DATA_COPIED=false
 NEW_EVALUATIONS_DATA_COPIED=false
 
 PREDICTION_DATA_SOURCE_LOCATION='FluSight-forecast-hub/model-output'
-PREDICTION_DATA_TARGET_LOCATION='public/data/unprocessed'
+PREDICTION_DATA_TARGET_LOCATION='data_processing_dir/raw/unprocessed'
 
 SURVEILLANCE_DATA_SOURCE_LOCATION='FluSight-forecast-hub/target-data'
-SURVEILLANCE_DATA_TARGET_LOCATION='public/data/ground-truth/compare' #NOTE: Added "compare" so this script does not compare new ones with cleaned up ones (which will always be different)
+SURVEILLANCE_DATA_TARGET_LOCATION='data_processing_dir/raw/ground-truth/compare' #NOTE: Added "compare" so this script does not compare new ones with cleaned up ones (which will always be different)
 SURVEILLANCE_DATA_FILE_NAME='target-hospital-admissions.csv'
 
 SURVEILLANCE_ARCHIVE_DATA_SOURCE_LOCATION='FluSight-forecast-hub/auxiliary-data/target-data-archive'
-SURVEILLANCE_ARCHIVE_DATA_TARGET_LOCATION='public/data/ground-truth/historical-data'
+SURVEILLANCE_ARCHIVE_DATA_TARGET_LOCATION='data_processing_dir/raw/ground-truth/historical-data'
 
 EVALUATION_DATA_SOURCE_LOCATION='epistorm-evaluations/evaluations'
-EVALUATION_DATA_TARGET_LOCATION='public/data/evaluations-score'
+EVALUATION_DATA_TARGET_LOCATION='data_processing_dir/raw/evaluations-score'
 
 # Function to get the most recent files in a directory
 get_most_recent_files() {
@@ -118,9 +118,7 @@ for file in "$SURVEILLANCE_ARCHIVE_DATA_SOURCE_LOCATION"/*; do
 done
 #endregion
 
-
 #region Check if new evaluations data is available, and copy over if yes
-
 if [ ! -d "$EVALUATION_DATA_TARGET_LOCATION" ]; then
     mkdir -p "$EVALUATION_DATA_TARGET_LOCATION"
 fi
@@ -145,7 +143,6 @@ for file in "${evaluation_files[@]}"; do
     fi
 done
 #endregion
-
 
 # Export the environment variables to be used by the CI/CD Pipeline
 {

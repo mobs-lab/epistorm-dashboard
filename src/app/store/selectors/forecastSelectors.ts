@@ -140,6 +140,114 @@ export const selectGroundTruthInRange = createSelector(
   }
 );
 
+// Extended ground truth selector that includes prediction horizons for tooltip display
+export const selectExtendedGroundTruthInRange = createSelector(
+  [
+    (state: RootState) => state.coreData.mainData?.groundTruthData,
+    (state: RootState) => state.coreData.metadata?.seasons,
+    (state: RootState, startDate: Date, endDate: Date, horizon: number) => ({ startDate, endDate, horizon }),
+    (state: RootState, startDate: Date, endDate: Date, horizon: number, stateNum: string) => stateNum,
+  ],
+  (groundTruthData, seasons, { startDate, endDate, horizon }, stateNum) => {
+    if (!groundTruthData || !seasons) {
+      console.warn("Warning: selectExtendedGroundTruthInRange: Missing required data");
+      return [];
+    }
+
+    // Calculate extended end date based on horizon
+    const extendedEndDate = new Date(endDate);
+    if (horizon > 0) {
+      // Add horizon weeks to the end date
+      extendedEndDate.setUTCDate(extendedEndDate.getUTCDate() + horizon * 7);
+    }
+
+    // Find which season contains our extended date range
+    const relevantSeasons = findRelevantSeasons(seasons, startDate, extendedEndDate);
+
+    if (relevantSeasons.length === 0) {
+      console.warn("Warning: selectExtendedGroundTruthInRange: No relevant seasons found");
+      return [];
+    }
+
+    const groundTruthPoints: SurveillanceSingleWeekDataPoint[] = [];
+
+    // For each relevant season, extract ground truth from centralized collection
+    for (const seasonId of relevantSeasons) {
+      const seasonData = groundTruthData[seasonId];
+      if (!seasonData) continue;
+
+      // Iterate through all reference dates in this season
+      Object.entries(seasonData).forEach(([dateISO, statesData]) => {
+        const date = new Date(dateISO);
+
+        // Check if date is within our extended range
+        if (date >= startDate && date <= extendedEndDate) {
+          const stateData = (statesData as any)[stateNum];
+          if (stateData) {
+            groundTruthPoints.push({
+              date,
+              stateNum,
+              stateName: "", // Would need location data for full name, skip for now
+              admissions: stateData.admissions,
+              weeklyRate: stateData.weeklyRate,
+            });
+          }
+        }
+      });
+    }
+
+    // Sort by date and remove duplicates
+    const uniquePoints = Array.from(new Map(groundTruthPoints.map((p) => [p.date.toISOString(), p])).values()).sort(
+      (a, b) => a.date.getTime() - b.date.getTime()
+    );
+
+    return uniquePoints;
+  }
+);
+
+// Selector for historical ground truth data for a specific week
+export const selectHistoricalDataForWeek = createSelector(
+  [
+    (state: RootState) => state.coreData.mainData?.historicalDataMap,
+    (state: RootState, userSelectedWeek: Date) => userSelectedWeek,
+    (state: RootState, userSelectedWeek: Date, stateNum: string) => stateNum,
+  ],
+  (historicalDataMap, userSelectedWeek, stateNum) => {
+    if (!historicalDataMap) {
+      console.warn("Warning: selectHistoricalDataForWeek: No historical data available");
+      return [];
+    }
+
+    // Find the snapshot date that is one week before the user selected week
+    const targetSnapshotDate = new Date(userSelectedWeek);
+    targetSnapshotDate.setUTCDate(targetSnapshotDate.getUTCDate() - 7);
+    const targetSnapshotISO = targetSnapshotDate.toISOString().split("T")[0];
+
+    const snapshotData = historicalDataMap[targetSnapshotISO];
+    if (!snapshotData) {
+      // console.debug(`DEBUG: No historical snapshot found for ${targetSnapshotISO}`);
+      return [];
+    }
+
+    // Convert the snapshot data into the SurveillanceSingleWeekDataPoint array format
+    const historicalPoints: SurveillanceSingleWeekDataPoint[] = [];
+    Object.entries(snapshotData).forEach(([dateISO, statesData]) => {
+      const stateData = (statesData as any)[stateNum];
+      if (stateData) {
+        historicalPoints.push({
+          date: new Date(dateISO),
+          stateNum,
+          stateName: "", // location data needed for full name, skip for now
+          admissions: stateData.admissions,
+          weeklyRate: stateData.weeklyRate,
+        });
+      }
+    });
+
+    return historicalPoints.sort((a, b) => a.date.getTime() - b.date.getTime());
+  }
+);
+
 /* For Weekly Hospitalization Chart, select multiple model's prediction data matching date-models-location. Filtering on Horizons & handling of values done in frontend component. */
 /* NOTE: This changes how much prediction data is offloaded to Weekly Hospitalization Forecast Chart.
     Previously, all prediction data associated with the date range are selected to be ready to be selected;
