@@ -176,16 +176,13 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         updateLoadingState("nowcastTrends", false);
         updateLoadingState("thresholds", false);
         updateLoadingState("seasonOptions", false);
+        updateLoadingState("historicalGroundTruth", false);
       }
 
       if (jsonEvaluationLoaded) {
         updateLoadingState("evaluationScores", false);
         updateLoadingState("evaluationDetailedCoverage", false);
       }
-
-      // Historical data still needs CSV loading for now
-      // await fetchHistoricalGroundTruthData();
-      updateLoadingState("historicalGroundTruth", false);
     } catch (error) {
       console.error("Error in fetchAndProcessData:", error);
     }
