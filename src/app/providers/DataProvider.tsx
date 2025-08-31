@@ -51,7 +51,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const updateLoadingState = useCallback((key: keyof LoadingStates, value: boolean) => {
     setLoadingStates((prev) => ({ ...prev, [key]: value }));
   }, []);
-  const [dataFetchStarted, setDataFetchStarted] = useState(false);
 
   // When true, prefer pre-aggregated JSON (app_data_evaluations.json) for Season Overview
   // CSV fallback remains in place for older data sources or local testing
@@ -74,10 +73,10 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       const evalData = await response.json();
-      console.log("JSON evaluation data loaded:", {
+      /* console.log("JSON evaluation data loaded:", {
         size: JSON.stringify(evalData).length,
         seasons: Object.keys(evalData.precalculated?.iqr || {}).length,
-      });
+      }); */
 
       // Dispatch to Redux store
       dispatch(setEvaluationJsonData(evalData));
@@ -99,11 +98,11 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       const coreData = await response.json();
-      console.log("JSON core data loaded successfully", {
+      /* console.log("JSON core data loaded successfully", {
         hasMetadata: !!coreData.metadata,
         hasMainData: !!coreData.mainData,
         hasAuxiliary: !!(coreData.auxiliaryData || coreData["auxiliary-data"]),
-      });
+      }); */
 
       // Store the entire core data structure
       dispatch(setCoreJsonData(coreData));
@@ -143,7 +142,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       // Process auxiliary data (Location, Thresholds)
-      const auxiliaryData = coreData.auxiliaryData || coreData["auxiliary-data"];
+      // const auxiliaryData = coreData.auxiliaryData || coreData["auxiliary-data"];
 
       return true;
     } catch (error) {
@@ -186,20 +185,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       // Historical data still needs CSV loading for now
       // await fetchHistoricalGroundTruthData();
+      updateLoadingState("historicalGroundTruth", false);
     } catch (error) {
       console.error("Error in fetchAndProcessData:", error);
-      // Reset loading states on error
-      setLoadingStates({
-        evaluationScores: false,
-        groundTruth: false,
-        predictions: false,
-        locations: false,
-        nowcastTrends: false,
-        thresholds: false,
-        historicalGroundTruth: false,
-        seasonOptions: false,
-        evaluationDetailedCoverage: false,
-      });
     }
   }, [loadJsonEvaluationData, loadJsonCoreData, updateLoadingState]);
 

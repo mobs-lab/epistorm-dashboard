@@ -2,27 +2,34 @@
 "use client";
 
 import * as d3 from "d3";
-import { Axis, BaseType, NumberValue, ScaleLinear, ScaleLogarithmic, ScaleTime } from "d3";
+import { Axis, BaseType, NumberValue } from "d3";
 import { subWeeks } from "date-fns";
 import React, { useCallback, useEffect, useRef } from "react";
 
 import { modelColorMap } from "@/types/common";
-import {
-  SurveillanceSingleWeekDataPoint,
-  HistoricalDataCollectionByDate,
-  PredictionDataGroupedByModel,
-  PredictionSingleWeekDataPoint,
-} from "@/types/domains/forecasting";
+import { HistoricalDataCollectionByDate, SurveillanceSingleWeekDataPoint } from "@/types/domains/forecasting";
 import { useChartMargins } from "@/utils/chart-margin-utils";
 import { isUTCDateEqual } from "@/utils/date";
 import { useResponsiveSVG } from "@/utils/responsiveSVG";
 
 import { updateUserSelectedWeek } from "@/store/data-slices/SettingsSliceForecastNowcast";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { selectGroundTruthInRange, selectPredictionsForMultipleModels, selectLocationData } from "@/store/selectors";
+import {
+  selectExtendedGroundTruthInRange,
+  selectGroundTruthInRange,
+  selectHistoricalDataForWeek,
+  selectLocationData,
+  selectPredictionsForMultipleModels,
+} from "@/store/selectors";
+
+interface ConfidenceIntervalData {
+  interval: string;
+  data: any[];
+}
+type PredictionDataForRender = { [modelName: string]: ConfidenceIntervalData[] };
 
 const ForecastChart: React.FC = () => {
-  const svgRef = useRef(null);
+  const svgRef = useRef<SVGSVGElement>(null);
   const { containerRef, dimensions, isResizing } = useResponsiveSVG();
   const margins = useChartMargins(dimensions.width, dimensions.height, "default");
   const dispatch = useAppDispatch();
@@ -43,18 +50,20 @@ const ForecastChart: React.FC = () => {
   // Get data using new selectors
   const locationData = useAppSelector(selectLocationData);
   const groundTruthData = useAppSelector((state) => selectGroundTruthInRange(state, dateStart, dateEnd, USStateNum));
+  const extendedGroundTruthData = useAppSelector((state) =>
+    selectExtendedGroundTruthInRange(state, dateStart, dateEnd, numOfWeeksAhead, USStateNum)
+  );
   const allModelPredictions = useAppSelector((state) =>
     selectPredictionsForMultipleModels(state, forecastModel, USStateNum, userSelectedWeek, numOfWeeksAhead)
   );
 
-  // TODO: Temporarily disabled during refactor, change this after backend is done
-  // Historical Ground Truth Data
-  const historicalGroundTruthData: HistoricalDataCollectionByDate[] = [];
+  // Get historical ground truth data
+  const historicalGroundTruthData = useAppSelector((state) => selectHistoricalDataForWeek(state, userSelectedWeek, USStateNum));
 
   // Convert new prediction data structure to the format expected by rendering functions
   const convertPredictionsToRenderFormat = useCallback(
     (predictions: any) => {
-      const result: { [modelName: string]: any[] } = {};
+      const result: PredictionDataForRender = {};
 
       Object.entries(predictions).forEach(([modelName, modelPredictions]: [string, any]) => {
         if (!modelPredictions || Object.keys(modelPredictions).length === 0) {
@@ -119,7 +128,8 @@ const ForecastChart: React.FC = () => {
 
   const createScalesAndAxes = useCallback(
     (ground: SurveillanceSingleWeekDataPoint[], predictions: any, chartWidth: number, chartHeight: number, yAxisScale: string) => {
-      // Find the maximum date in the ground truth data
+      // Find the maximum date in the ground truth data, but within the `dateStart` and `dateEnd` range, to avoid showing horizon-ahead data
+      // const maxGroundTruthDate = d3.max(ground, (d) => d.date) as Date;
       const maxGroundTruthDate = d3.max(ground, (d) => d.date) as Date;
 
       // Find the maximum date in the prediction data
@@ -177,9 +187,10 @@ const ForecastChart: React.FC = () => {
         .axisBottom(xScale)
         .tickValues(selectedTicks)
         .tickFormat((date, i) => {
-          const year = d3.timeFormat("%Y")(date);
-          const month = d3.timeFormat("%b")(date);
-          const day = d3.timeFormat("%d")(date);
+          const dateObj = date instanceof Date ? date : new Date(date as number);
+          const year = d3.timeFormat("%Y")(dateObj);
+          const month = d3.timeFormat("%b")(dateObj);
+          const day = d3.timeFormat("%d")(dateObj);
 
           // First tick always gets full treatment
           if (i === 0) {
@@ -188,7 +199,6 @@ const ForecastChart: React.FC = () => {
 
           const prevDate = selectedTicks[i - 1];
           // Ensure both date and prevDate are Date objects (d3 may pass number timestamps)
-          const dateObj = date instanceof Date ? date : new Date(date as number);
           const prevDateObj = prevDate instanceof Date ? prevDate : new Date(prevDate as number);
           const isNewYear = dateObj.getUTCFullYear() > prevDateObj.getUTCFullYear();
           const isNewMonth = dateObj.getUTCMonth() !== prevDateObj.getUTCMonth();
@@ -274,14 +284,14 @@ const ForecastChart: React.FC = () => {
         .axisLeft(yScale)
         .tickValues(ticks)
         .tickFormat((d) => {
-          d = d.valueOf();
-          if (d === 0) return "0";
-          if (d >= 10000) return d3.format(".2~s")(d);
-          if (d >= 1000) return d3.format(".2~s")(d);
-          if (d >= 100) return d3.format(".0f")(d);
-          if (d >= 10) return d3.format(".0f")(d);
-          if (d >= 1) return d3.format(".0f")(d);
-          return d3.format(".1f")(d);
+          const val = d.valueOf();
+          if (val === 0) return "0";
+          if (val >= 10000) return d3.format(".2~s")(val);
+          if (val >= 1000) return d3.format(".2~s")(val);
+          if (val >= 100) return d3.format(".0f")(val);
+          if (val >= 10) return d3.format(".0f")(val);
+          if (val >= 1) return d3.format(".0f")(val);
+          return d3.format(".1f")(val);
         });
 
       yAxis.tickSize(-chartWidth);
@@ -408,7 +418,7 @@ const ForecastChart: React.FC = () => {
 
   function renderHistoricalData(
     svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
-    historicalData: HistoricalDataCollectionByDate[],
+    historicalData: SurveillanceSingleWeekDataPoint[],
     xScale: d3.ScaleTime<number, number>,
     yScale: d3.ScaleLinear<number, number> | d3.ScaleLogarithmic<number, number>,
     marginLeft: number,
@@ -417,21 +427,13 @@ const ForecastChart: React.FC = () => {
     console.debug("DEBUG: ForecastChart: Rendering historical data-slices:", historicalData);
     console.debug("DEBUG: ForecastChart: User selected week:", userSelectedWeek);
 
-    // Find the historical data-slices file that is 1 week before the user selected week,
-    // While accounting for day light saving time transitions, using a 2-hour buffer, using isUTCDateEqual
-    const matchingHistoricalData = historicalData.find((entry) => isUTCDateEqual(entry.associatedDate, subWeeks(userSelectedWeek, 1)));
-
-    // const matchingHistoricalData = historicalData.find((entry) => isUTCDateEqual(entry.associatedDate, userSelectedWeek));
-
-    if (!matchingHistoricalData) {
-      console.debug("DEBUG: No matching historical data-slices found for:", userSelectedWeek.toISOString());
+    if (!historicalData || historicalData.length === 0) {
+      console.debug("DEBUG: No historical data available for the selected week.");
       return;
     }
 
-    console.debug("DEBUG: Matching historical data-slices:", matchingHistoricalData);
-
     /*Ensure the historical data-slices to be drawn is cutoff before dateStart*/
-    const historicalDataToDraw = matchingHistoricalData.historicalData.filter((d) => d.date >= dateStart);
+    const historicalDataToDraw = historicalData.filter((d) => d.date >= dateStart);
 
     const historicalLine = d3
       .line<SurveillanceSingleWeekDataPoint>()
@@ -463,8 +465,8 @@ const ForecastChart: React.FC = () => {
   }
 
   function renderPredictionData(
-    svg: d3.Selection<null, unknown, null, undefined>,
-    predictionData: {},
+    svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
+    predictionData: PredictionDataForRender,
     xScale: d3.ScaleTime<number, number, never>,
     yScale: d3.ScaleLinear<number, number, never>,
     marginLeft: number,
@@ -521,8 +523,8 @@ const ForecastChart: React.FC = () => {
               .enter()
               .append("circle")
               .attr("class", `prediction-dot prediction-dot-${index}`)
-              .attr("cx", (d) => xScale(new Date(d.targetEndDate)))
-              .attr("cy", (d) => yScale(d.confidence500))
+              .attr("cx", (d: any) => xScale(new Date(d.targetEndDate)))
+              .attr("cy", (d: any) => yScale(d.confidence500))
               .attr("r", 3)
               .attr("fill", modelColor)
               .attr("transform", `translate(${marginLeft}, ${marginTop})`);
@@ -536,7 +538,7 @@ const ForecastChart: React.FC = () => {
           const modelName = Object.keys(predictionData)[index];
           const modelColor = modelColorMap[modelName] || `hsl(${index * 60}, 100%, 50%)`;
 
-          predictions.forEach((confidenceIntervalData) => {
+          predictions.forEach((confidenceIntervalData: ConfidenceIntervalData) => {
             const area = d3
               .area<any>()
               .x((d) => xScale(new Date(d.targetEndDate)))
@@ -553,6 +555,7 @@ const ForecastChart: React.FC = () => {
                     : 1;
 
             const color = d3.color(modelColor);
+            if (!color) return;
             color.opacity = opacity;
 
             svg
@@ -667,7 +670,7 @@ const ForecastChart: React.FC = () => {
     (
       data: SurveillanceSingleWeekDataPoint,
       predictionData: any,
-      historicalGroundTruthData: HistoricalDataCollectionByDate[],
+      historicalGroundTruthData: SurveillanceSingleWeekDataPoint[],
       xScale: d3.ScaleTime<number, number>,
       chartWidth: number,
       marginLeft: number,
@@ -695,7 +698,7 @@ const ForecastChart: React.FC = () => {
       };
       // --- 2. PREPARE DATA ---
       const currentPredictions = findPredictionsForDate(predictionData, data.date);
-      const ciOptions = [];
+      const ciOptions: { label: string; low: string; high: string }[] = [];
       if (confidenceInterval.includes("50")) ciOptions.push({ label: "50% PI", low: "confidence250", high: "confidence750" });
       if (confidenceInterval.includes("90")) ciOptions.push({ label: "90% PI", low: "confidence050", high: "confidence950" });
       if (confidenceInterval.includes("95")) ciOptions.push({ label: "95% PI", low: "confidence025", high: "confidence975" });
@@ -721,7 +724,10 @@ const ForecastChart: React.FC = () => {
         text.append("tspan").text(value).attr("font-weight", "bold");
 
         // Update the maximum width needed for the tooltip
-        maxWidth = Math.max(maxWidth, text.node().getComputedTextLength());
+        const node = text.node();
+        if (node) {
+          maxWidth = Math.max(maxWidth, node.getComputedTextLength());
+        }
         return yPos + layout.lineHeight;
       };
 
@@ -730,11 +736,10 @@ const ForecastChart: React.FC = () => {
       currentY = addTextLine("Admissions: ", formatNumber(data.admissions, true), currentY);
 
       // B. Add Historical Admissions Info (if toggled)
-      if (isHistoricalDataMode) {
+      if (isHistoricalDataMode && historicalGroundTruthData) {
         const historicalValue =
-          historicalGroundTruthData
-            .find((file) => isUTCDateEqual(file.associatedDate, subWeeks(userSelectedWeek, 1)))
-            ?.historicalData.find((entry) => isUTCDateEqual(entry.date, data.date) && entry.stateNum === data.stateNum)?.admissions || NaN;
+          historicalGroundTruthData.find((entry) => isUTCDateEqual(entry.date, data.date) && entry.stateNum === data.stateNum)
+            ?.admissions || NaN;
         currentY = addTextLine("Historical: ", formatNumber(historicalValue, true), currentY);
       }
 
@@ -845,7 +850,7 @@ const ForecastChart: React.FC = () => {
       // Apply the final position and make it visible
       cornerTooltip.attr("transform", `translate(${tooltipX}, ${marginTop})`).style("opacity", 1);
     },
-    [confidenceInterval, userSelectedWeek]
+    [confidenceInterval]
   );
 
   function formatNumber(value: number, isAdmission: boolean = false): string {
@@ -854,6 +859,9 @@ const ForecastChart: React.FC = () => {
     }
 
     if (isAdmission) {
+      if (value == -1) {
+        return "N/A";
+      }
       // Surveillance data-slices should be integer; just in case
       return Math.round(value).toString();
     }
@@ -871,7 +879,7 @@ const ForecastChart: React.FC = () => {
   }
 
   function findPredictionsForDate(predictionData: any, date: Date) {
-    const foundPredictions = {};
+    const foundPredictions: { [key: string]: any } = {};
     Object.entries(predictionData).forEach(([modelName, modelPredictions]: [string, any]) => {
       const prediction = modelPredictions[0].data.find((p: any) => isUTCDateEqual(new Date(p.targetEndDate), date));
       if (prediction) {
@@ -918,12 +926,12 @@ const ForecastChart: React.FC = () => {
       .style("font-family", "var(--font-dm-sans)")
       .call(xAxis);
 
-    function wrap(text, width) {
-      text.each(function () {
+    function wrap(text: d3.Selection<d3.BaseType, unknown, SVGGElement, any>, width: number) {
+      text.each(function (this: d3.BaseType) {
         var text = d3.select(this),
           words = text.text().split(/\n+/).reverse(),
           word,
-          line = [],
+          line: string[] = [],
           lineNumber = 0,
           lineHeight = 1.0, // ems
           y = text.attr("y"),
@@ -937,7 +945,8 @@ const ForecastChart: React.FC = () => {
         while ((word = words.pop())) {
           line.push(word);
           tspan.text(line.join(" "));
-          if (tspan.node().getComputedTextLength() > width) {
+          const node = tspan.node();
+          if (node && node.getComputedTextLength() > width) {
             line.pop();
             tspan.text(line.join(" "));
             line = [word];
@@ -1061,10 +1070,11 @@ const ForecastChart: React.FC = () => {
 
   const renderChartComponents = useCallback(
     (
-      svg: d3.Selection<BaseType, unknown, null, undefined>,
+      svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
       filteredGroundTruthData: SurveillanceSingleWeekDataPoint[],
+      extendedGroundTruthDataForTooltip: SurveillanceSingleWeekDataPoint[],
       processedPredictionData: any,
-      historicalGroundTruthData: HistoricalDataCollectionByDate[],
+      historicalGroundTruthData: SurveillanceSingleWeekDataPoint[],
       xScale: d3.ScaleTime<number, number>,
       marginLeft: number,
       marginTop: number,
@@ -1073,7 +1083,7 @@ const ForecastChart: React.FC = () => {
       height: number,
       marginBottom: number
     ) => {
-      const combinedData = createCombinedDataset(filteredGroundTruthData, processedPredictionData);
+      const combinedData = createCombinedDataset(extendedGroundTruthDataForTooltip, processedPredictionData);
 
       const mouseFollowLine = createMouseFollowLine(svg, marginLeft, marginTop, height, marginBottom);
       const {
@@ -1206,7 +1216,7 @@ const ForecastChart: React.FC = () => {
       const allPlaceholders = groundTruthData.every((d) => d.admissions === -1);
 
       if (allPlaceholders) {
-        renderMessage(svg, "Not enough data, please extend date range.", chartWidth, chartHeight, marginLeft, marginTop);
+        renderMessage(svg as any, "Not enough data, please extend date range.", chartWidth, chartHeight, marginLeft, marginTop);
         return;
       }
 
@@ -1232,18 +1242,19 @@ const ForecastChart: React.FC = () => {
         yAxisScale
       );
 
-      // Skip historical data for now as requested
+      // Render historical data if the mode is enabled
       if (historicalDataMode) {
-        console.warn("Historical data mode temporarily disabled during refactor");
+        renderHistoricalData(svg, historicalGroundTruthData, xScale, yScale, marginLeft, marginTop);
       }
 
       renderGroundTruthData(svg, groundTruthData, xScale, yScale, marginLeft, marginTop);
       renderPredictionData(svg, processedPredictionData, xScale, yScale, marginLeft, marginTop, confidenceInterval, false);
-      appendAxes(svg, xAxis, yAxis, xScale, marginLeft, marginTop, chartWidth, chartHeight, dateStart, dateEnd);
+      appendAxes(svg as any, xAxis, yAxis, xScale, marginLeft, marginTop, chartWidth, chartHeight, dateStart, dateEnd);
 
       const { mouseFollowLine, verticalIndicatorGroup, lineTooltip, cornerTooltip } = renderChartComponents(
         svg,
         groundTruthData,
+        extendedGroundTruthData,
         processedPredictionData,
         historicalGroundTruthData,
         xScale,
@@ -1262,6 +1273,7 @@ const ForecastChart: React.FC = () => {
     isResizing,
     margins,
     groundTruthData,
+    extendedGroundTruthData,
     allModelPredictions,
     USStateNum,
     forecastModel,
@@ -1279,6 +1291,7 @@ const ForecastChart: React.FC = () => {
     historicalGroundTruthData,
     updateVerticalIndicator,
     convertPredictionsToRenderFormat,
+    renderHistoricalData,
   ]);
 
   // Return the SVG object using reference

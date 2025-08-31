@@ -1,15 +1,12 @@
 "use client";
 
 import { useAppSelector } from "@/store/hooks";
-import {
-  selectIsCoreDataLoaded,
-  selectSingleModelTimeSeriesData,
-} from "@/store/selectors/singleModelSelectors";
+import { selectIsCoreDataLoaded, selectSingleModelTimeSeriesData } from "@/store/selectors/singleModelSelectors";
 import { modelColorMap } from "@/types/common";
 import { normalizeToUTCMidDay } from "@/utils/date";
 import { useResponsiveSVG } from "@/utils/responsiveSVG";
 import * as d3 from "d3";
-import React, { useEffect, useRef } from "react";
+import React, { useCallback, useEffect, useRef } from "react";
 
 const SingleModelHorizonPlot: React.FC = () => {
   const { containerRef, dimensions, isResizing } = useResponsiveSVG();
@@ -19,11 +16,9 @@ const SingleModelHorizonPlot: React.FC = () => {
   const timeSeriesData = useAppSelector(selectSingleModelTimeSeriesData);
   const isCoreDataLoaded = useAppSelector(selectIsCoreDataLoaded);
 
-  const {
-    evaluationsSingleModelViewSelectedStateCode,
-    evaluationsSingleModelViewModel,
-    evaluationSingleModelViewHorizon,
-  } = useAppSelector((state) => state.evaluationsSingleModelSettings);
+  const { evaluationsSingleModelViewSelectedStateCode, evaluationsSingleModelViewModel, evaluationSingleModelViewHorizon } = useAppSelector(
+    (state) => state.evaluationsSingleModelSettings
+  );
 
   function generateSaturdayDatesUTC(startDate: Date, endDate: Date): Date[] {
     const dates: Date[] = [];
@@ -51,7 +46,7 @@ const SingleModelHorizonPlot: React.FC = () => {
     groundTruthData: any[],
     visualData: any[],
     chartWidth: number,
-    chartHeight: number,
+    chartHeight: number
   ) {
     // Create band scale for x-axis using ALL Saturdays (same as line chart)
     const xScale = d3
@@ -96,26 +91,14 @@ const SingleModelHorizonPlot: React.FC = () => {
         }
       });
 
-    // Rest of the function remains the same
-    const allValues = visualData.flatMap((d) => [
-      d.quantile05,
-      d.quantile25,
-      d.median,
-      d.quantile75,
-      d.quantile95,
-    ]);
+    const allValues = visualData.flatMap((d) => [d.quantile05, d.quantile25, d.median, d.quantile75, d.quantile95]);
 
-    const allValuesFromSurveillanceData = groundTruthData.flatMap(
-      (d) => d.admissions,
-    );
+    const allValuesFromSurveillanceData = groundTruthData.flatMap((d) => d.admissions);
 
     const maxPredictionValue = d3.max(allValues);
     const maxSurveillanceValue = d3.max(allValuesFromSurveillanceData) || 1;
 
-    const maxValue =
-      maxPredictionValue > maxSurveillanceValue
-        ? maxPredictionValue
-        : maxSurveillanceValue;
+    const maxValue = maxPredictionValue > maxSurveillanceValue ? maxPredictionValue : maxSurveillanceValue;
 
     const yScale = d3
       .scaleLinear()
@@ -133,7 +116,7 @@ const SingleModelHorizonPlot: React.FC = () => {
     return { xScale, yScale, xAxis, yAxis };
   }
 
-  function renderBoxPlot() {
+  const renderBoxPlot = useCallback(() => {
     if (!svgRef.current || !dimensions.width || !dimensions.height) return;
     if (!isCoreDataLoaded || !timeSeriesData) {
       // Show loading or no data message
@@ -146,11 +129,7 @@ const SingleModelHorizonPlot: React.FC = () => {
         .attr("text-anchor", "middle")
         .attr("fill", "white")
         .style("font-family", "var(--font-dm-sans)")
-        .text(
-          isCoreDataLoaded
-            ? "No data available for selected criteria"
-            : "Loading data...",
-        );
+        .text(isCoreDataLoaded ? "No data available for selected criteria" : "Loading data...");
       return;
     }
 
@@ -177,10 +156,7 @@ const SingleModelHorizonPlot: React.FC = () => {
 
     const { displayStartDate, displayEndDate } = metadata;
 
-    const allSaturdays = generateSaturdayDatesUTC(
-      displayStartDate,
-      displayEndDate,
-    );
+    const allSaturdays = generateSaturdayDatesUTC(displayStartDate, displayEndDate);
 
     console.debug("Horizon plot using metadata time range:", {
       displayStartDate: displayStartDate.toISOString(),
@@ -227,7 +203,7 @@ const SingleModelHorizonPlot: React.FC = () => {
       groundTruthPoints,
       predictionPoints,
       chartWidth,
-      chartHeight,
+      chartHeight
     );
 
     /* Helper function to wrap x-axis label*/
@@ -249,8 +225,7 @@ const SingleModelHorizonPlot: React.FC = () => {
         // Create a tspan for each line with progressively increasing offsets
         lines.forEach((line, i) => {
           // For 3-line labels, increase vertical spacing between lines 2 and 3
-          const currentDy =
-            i === 0 ? dy : i === 2 ? lineHeight * 1.6 : lineHeight;
+          const currentDy = i === 0 ? dy : i === 2 ? lineHeight * 1.6 : lineHeight;
 
           text
             .append("tspan")
@@ -263,9 +238,7 @@ const SingleModelHorizonPlot: React.FC = () => {
     }
 
     // Create main chart group
-    const chart = svg
-      .append("g")
-      .attr("transform", `translate(${margin.left},${margin.top})`);
+    const chart = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
 
     const xAxisGroup = chart
       .append("g")
@@ -274,24 +247,14 @@ const SingleModelHorizonPlot: React.FC = () => {
       .call(xAxis);
 
     // Apply the wrap function to all x-axis label elements
-    xAxisGroup
-      .selectAll(".tick text")
-      .style("text-anchor", "middle")
-      .style("font-size", "13px")
-      .call(wrap, 20);
+    xAxisGroup.selectAll(".tick text").style("text-anchor", "middle").style("font-size", "13px").call(wrap, 20);
 
     const yAxisGroup = chart
       .append("g")
       .style("font-family", "var(--font-dm-sans)")
       .call(yAxis)
       .call((g) => g.select(".domain").remove())
-      .call((g) =>
-        g
-          .selectAll(".tick line")
-          .attr("stroke-opacity", 0.5)
-          .attr("stroke-dasharray", "2,2")
-          .attr("x2", chartWidth),
-      )
+      .call((g) => g.selectAll(".tick line").attr("stroke-opacity", 0.5).attr("stroke-dasharray", "2,2").attr("x2", chartWidth))
       .style("font-size", "18px");
 
     // Create container for all visual elements
@@ -303,17 +266,10 @@ const SingleModelHorizonPlot: React.FC = () => {
     const pointsGroup = visualContainer.append("g").attr("class", "points");
 
     // Create hover areas group
-    const hoverGroup = visualContainer
-      .append("g")
-      .attr("class", "hover-areas")
-      .style("pointer-events", "all");
+    const hoverGroup = visualContainer.append("g").attr("class", "hover-areas").style("pointer-events", "all");
 
     // Create tooltip group (will be raised to top)
-    const tooltipGroup = chart
-      .append("g")
-      .attr("class", "horizon-tooltip")
-      .style("opacity", 0)
-      .style("pointer-events", "none");
+    const tooltipGroup = chart.append("g").attr("class", "horizon-tooltip").style("opacity", 0).style("pointer-events", "none");
 
     // Create a combined data structure that includes both ground truth and prediction data
     const combinedDataMap = new Map();
@@ -349,9 +305,7 @@ const SingleModelHorizonPlot: React.FC = () => {
     });
 
     // Convert map to array for rendering, sorted by date
-    const combinedDataSet = Array.from(combinedDataMap.values()).sort(
-      (a, b) => a.date.getTime() - b.date.getTime(),
-    );
+    const combinedDataSet = Array.from(combinedDataMap.values()).sort((a, b) => a.date.getTime() - b.date.getTime());
 
     // Render ground truth points independently to ensure all are displayed
     // Regardless of whether prediction data's date domain is the same
@@ -436,11 +390,7 @@ const SingleModelHorizonPlot: React.FC = () => {
           let currentY = padding;
           const lineHeight = 24;
 
-          const background = tooltipGroup
-            .append("rect")
-            .attr("fill", "#333943")
-            .attr("rx", 8)
-            .attr("ry", 8);
+          const background = tooltipGroup.append("rect").attr("fill", "#333943").attr("rx", 8).attr("ry", 8);
 
           // Tooltip content - adapt based on available data
           const items = [];
@@ -449,14 +399,8 @@ const SingleModelHorizonPlot: React.FC = () => {
           // Add prediction data to tooltip if available
           if (d.median !== undefined) {
             items.push([`Median: ${d.median.toFixed(1)}`, false]);
-            items.push([
-              `90% PI: [${d.quantile05.toFixed(1)}, ${d.quantile95.toFixed(1)}]`,
-              false,
-            ]);
-            items.push([
-              `50% PI: [${d.quantile25.toFixed(1)}, ${d.quantile75.toFixed(1)}]`,
-              false,
-            ]);
+            items.push([`90% PI: [${d.quantile05.toFixed(1)}, ${d.quantile95.toFixed(1)}]`, false]);
+            items.push([`50% PI: [${d.quantile25.toFixed(1)}, ${d.quantile75.toFixed(1)}]`, false]);
           } else {
             items.push(["No prediction data for this date", false]);
           }
@@ -482,23 +426,15 @@ const SingleModelHorizonPlot: React.FC = () => {
           });
 
           // Calculate tooltip dimensions and position
-          const maxWidth = Math.max(
-            ...textElements.map((el) => el.node()!.getComputedTextLength()),
-          );
+          const maxWidth = Math.max(...textElements.map((el) => el.node()!.getComputedTextLength()));
           const [mouseX] = d3.pointer(event);
           const isRightSide = mouseX < chartWidth / 2;
 
-          background
-            .attr("width", maxWidth + padding * 2)
-            .attr("height", currentY + padding);
+          background.attr("width", maxWidth + padding * 2).attr("height", currentY + padding);
 
-          const tooltipX = isRightSide
-            ? chartWidth - maxWidth - padding * 2 - 10
-            : 10;
+          const tooltipX = isRightSide ? chartWidth - maxWidth - padding * 2 - 10 : 10;
 
-          tooltipGroup
-            .attr("transform", `translate(${tooltipX}, 10)`)
-            .style("opacity", 1);
+          tooltipGroup.attr("transform", `translate(${tooltipX}, 10)`).style("opacity", 1);
         })
         .on("mouseout", function (event) {
           event.stopPropagation();
@@ -513,36 +449,28 @@ const SingleModelHorizonPlot: React.FC = () => {
 
     // Ensure tooltip is always on top
     tooltipGroup.raise();
-  }
+  }, [dimensions, timeSeriesData, isCoreDataLoaded, evaluationsSingleModelViewModel]);
 
   useEffect(() => {
     if (!isResizing && dimensions.width > 0 && dimensions.height > 0) {
       renderBoxPlot();
     }
-  }, [
-    dimensions,
-    isResizing,
-    timeSeriesData,
-    isCoreDataLoaded,
-    evaluationsSingleModelViewSelectedStateCode,
-    evaluationsSingleModelViewModel,
-    evaluationSingleModelViewHorizon,
-  ]);
+  }, [isResizing, evaluationsSingleModelViewSelectedStateCode, evaluationSingleModelViewHorizon, renderBoxPlot, dimensions]);
 
   return (
-    <div ref={containerRef} className="w-full h-full">
+    <div ref={containerRef} className='w-full h-full'>
       <svg
         ref={svgRef}
-        width="100%"
-        height="100%"
-        className="w-full h-full"
+        width='100%'
+        height='100%'
+        className='w-full h-full'
         style={{
           fontFamily: "var(--font-dm-sans)",
           opacity: isResizing ? 0.5 : 1,
           transition: "opacity 0.2s ease",
         }}
         viewBox={`0 0 ${dimensions.width || 100} ${dimensions.height || 100}`}
-        preserveAspectRatio="xMidYMid meet"
+        preserveAspectRatio='xMidYMid meet'
       />
     </div>
   );

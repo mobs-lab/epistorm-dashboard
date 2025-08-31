@@ -34,8 +34,6 @@ const SettingsPanel: React.FC = () => {
     (state) => state.forecastSettings
   );
 
-  const groundTruthData = useAppSelector((state) => selectGroundTruthInRange(state, dateStart, dateEnd, USStateNum));
-
   const onStateSelectionChange = (stateNum: string) => {
     const selectedState = locationData.find((state) => state.stateNum === stateNum);
     if (selectedState) {
