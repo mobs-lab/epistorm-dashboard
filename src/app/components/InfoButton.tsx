@@ -71,7 +71,6 @@ const InfoButton: React.FC<InfoButtonProps> = ({
 
       default:
         // Default to icon style if invalid displayStyle provided
-        console.warn(`Invalid displayStyle: ${displayStyle}. Defaulting to "icon".`);
         return (
           <Button variant='text' className={`p-0 min-w-0 rounded-full ${sizeConfigs[size].button}`} onClick={handleOpen}>
             <InformationCircleIcon className={`${sizeConfigs[size].icon} text-white`} />
