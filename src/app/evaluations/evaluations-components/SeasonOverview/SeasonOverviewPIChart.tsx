@@ -1,9 +1,8 @@
 // File: /src/app/evaluations/evaluations-components/SeasonOverview/PIChart.tsx
 "use client";
 
-import React, { useEffect, useRef, useMemo } from "react";
+import React, { useEffect, useRef, useMemo, useCallback } from "react";
 import * as d3 from "d3";
-import { addWeeks } from "date-fns";
 
 import { useAppSelector } from "@/store/hooks";
 import { useResponsiveSVG } from "@/utils/responsiveSVG";
@@ -26,8 +25,6 @@ const SeasonOverviewPIChart: React.FC = () => {
   // Get data from selectors
   const shouldUseJsonData = useAppSelector(selectShouldUseJsonData);
   const seasonOverviewData = useAppSelector(selectSeasonOverviewData);
-  const { evaluationSeasonOverviewHorizon, selectedAggregationPeriod, aggregationPeriods, evaluationSeasonOverviewSelectedModels } =
-    useAppSelector((state) => state.evaluationsSeasonOverviewSettings);
 
   // Process the detailed coverage data using JSON when available, otherwise CSV fallback
   const processedData = useMemo(() => {
@@ -41,7 +38,7 @@ const SeasonOverviewPIChart: React.FC = () => {
 
       // Process each selected model
       for (const modelName of modelNames.filter((m) => seasonOverviewData.selectedModels.includes(m))) {
-        const modelCoverageData = coverageData[modelName];
+        const modelCoverageData = (coverageData as any)[modelName];
         if (!modelCoverageData) continue;
 
         const coveragePoints: { covLevel: number; coverageValue: number }[] = [];
@@ -78,23 +75,17 @@ const SeasonOverviewPIChart: React.FC = () => {
       // console.debug("Using JSON data for PI chart:", results);
       return results;
     }
+    return [];
   }, [shouldUseJsonData, seasonOverviewData]);
 
-  /* UseEffect Hook for rendering the chart */
-  useEffect(() => {
-    if (!isResizing && dimensions.width > 0 && dimensions.height > 0 && chartRef.current) {
-      renderChart();
-    }
-  }, [dimensions, isResizing]);
-
-  const renderChart = () => {
+  const renderChart = useCallback(() => {
     if (!chartRef.current) return;
 
     const svg = d3.select(chartRef.current);
     svg.selectAll("*").remove();
 
     // If no data to display
-    if (processedData.length === 0) {
+    if (!processedData || processedData.length === 0) {
       svg
         .append("text")
         .attr("x", dimensions.width / 2)
@@ -238,12 +229,12 @@ const SeasonOverviewPIChart: React.FC = () => {
         .enter()
         .append("circle")
         .attr("class", `point-${model.modelName}`)
-        .attr("cx", (d) => xScale(d.covLevel))
-        .attr("cy", (d) => yScale(d.coverageValue))
+        .attr("cx", (d: { covLevel: number; coverageValue: number }) => xScale(d.covLevel))
+        .attr("cy", (d: { covLevel: number; coverageValue: number }) => yScale(d.coverageValue))
         .attr("r", 5)
         .attr("fill", color)
         .style("cursor", "pointer")
-        .on("mouseover", function (event, d) {
+        .on("mouseover", function (event, d: { covLevel: number; coverageValue: number }) {
           const [mouseX, mouseY] = d3.pointer(event, svg.node());
 
           // Prepare tooltip content
@@ -313,7 +304,14 @@ const SeasonOverviewPIChart: React.FC = () => {
           d3.select(this).attr("r", 5).attr("stroke", "none");
         });
     });
-  };
+  }, [processedData, dimensions]);
+
+  /* UseEffect Hook for rendering the chart */
+  useEffect(() => {
+    if (!isResizing && dimensions.width > 0 && dimensions.height > 0 && chartRef.current) {
+      renderChart();
+    }
+  }, [dimensions, isResizing, processedData, renderChart]);
 
   return (
     <div ref={containerRef} className='w-full h-full'>

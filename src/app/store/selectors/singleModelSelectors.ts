@@ -22,14 +22,6 @@ function calculateDisplayTimeRange(
   // Extend end date by horizon weeks to show forecast-tail predictions
   const endDate = addWeeks(baseEndDate, horizon);
 
-  console.debug("Calculated display time range:", {
-    firstPredRefDate,
-    lastPredRefDate,
-    horizon,
-    startDate: startDate.toISOString(),
-    endDate: endDate.toISOString(),
-  });
-
   return { startDate, endDate };
 }
 
@@ -46,32 +38,61 @@ export const selectSingleModelTimeSeriesData = createSelector(
   ],
   (isLoaded, predictionData, groundTruthData, dateRange, modelName, stateCode, horizon) => {
     if (!isLoaded || !predictionData || !groundTruthData || !dateRange || !modelName) {
-      console.debug("Missing required data for time series selector", {
-        isLoaded,
-        hasPredictionData: !!predictionData,
-        hasGroundTruthData: !!groundTruthData,
-        dateRange,
-        modelName,
-      });
-      return null;
+      return {
+        data: [],
+        metadata: {
+          firstPredRefDate: null,
+          lastPredRefDate: null,
+          lastPredTargetDate: null,
+          displayStartDate: new Date(),
+          displayEndDate: new Date(),
+        },
+      };
     }
 
     const seasonId = mapDateRangeToSeasonId(dateRange);
     if (!seasonId) {
       console.warn("Could not map date range to season ID:", dateRange);
-      return null;
+      return {
+        data: [],
+        metadata: {
+          firstPredRefDate: null,
+          lastPredRefDate: null,
+          lastPredTargetDate: null,
+          displayStartDate: new Date(),
+          displayEndDate: new Date(),
+        },
+      };
     }
 
     const seasonData = predictionData[seasonId];
     if (!seasonData) {
       console.warn("No data for season:", seasonId);
-      return null;
+      return {
+        data: [],
+        metadata: {
+          firstPredRefDate: null,
+          lastPredRefDate: null,
+          lastPredTargetDate: null,
+          displayStartDate: new Date(),
+          displayEndDate: new Date(),
+        },
+      };
     }
 
     const modelData = seasonData[modelName];
     if (!modelData) {
       console.warn("No data for model in season:", modelName, seasonId);
-      return null;
+      return {
+        data: [],
+        metadata: {
+          firstPredRefDate: null,
+          lastPredRefDate: null,
+          lastPredTargetDate: null,
+          displayStartDate: new Date(),
+          displayEndDate: new Date(),
+        },
+      };
     }
 
     // Calculate display time range based on metadata
@@ -79,15 +100,17 @@ export const selectSingleModelTimeSeriesData = createSelector(
 
     if (!timeRange) {
       console.error("Could not calculate display time range");
-      return null;
+      return {
+        data: [],
+        metadata: {
+          firstPredRefDate: null,
+          lastPredRefDate: null,
+          lastPredTargetDate: null,
+          displayStartDate: new Date(),
+          displayEndDate: new Date(),
+        },
+      };
     }
-
-    console.debug("Processing time series data for:", {
-      modelName,
-      stateCode,
-      horizon,
-      timeRange,
-    });
 
     const combinedData = combinePartitionsForStateAndHorizon(
       modelData.partitions,
@@ -125,27 +148,27 @@ export const selectSingleModelScoreDataFromJSON = createSelector(
   (rawScores, timeSeriesData, dateRange, modelName, stateCode, horizon, scoreOption) => {
     if (!rawScores || !timeSeriesData || !dateRange || !modelName) {
       console.debug("Missing required data for score selector");
-      return null;
+      return [];
     }
 
     const seasonId = mapDateRangeToSeasonId(dateRange);
     if (!seasonId || !rawScores[seasonId]) {
       console.debug("No score data for season:", seasonId);
-      return null;
+      return [];
     }
 
     // Get the same time range calculation as time series data
     const modelData = timeSeriesData[seasonId]?.[modelName];
     if (!modelData) {
       console.debug("No model data for time range calculation");
-      return null;
+      return [];
     }
 
     const timeRange = calculateDisplayTimeRange(modelData.firstPredRefDate, modelData.lastPredRefDate, horizon);
 
     if (!timeRange) {
       console.debug("Could not calculate time range for scores");
-      return null;
+      return [];
     }
 
     const metric = scoreOption === "WIS/Baseline" ? "WIS/Baseline" : "MAPE";
@@ -161,7 +184,7 @@ export const selectSingleModelScoreDataFromJSON = createSelector(
         stateCode,
         horizon,
       });
-      return null;
+      return [];
     }
 
     console.debug("Found score data entries:", scoreData);
@@ -244,12 +267,10 @@ function combinePartitionsForStateAndHorizon(
       continue;
     }
 
-    console.debug(`Processing ${partitionName} partition`);
-
     for (const [referenceDateISO, statesData] of Object.entries(partition)) {
       if (!statesData || typeof statesData !== "object") continue;
 
-      const stateData = statesData[stateCode];
+      const stateData = (statesData as any)[stateCode];
       if (!stateData) continue;
 
       const refDate = new Date(referenceDateISO);
@@ -283,29 +304,25 @@ function combinePartitionsForStateAndHorizon(
 
           const targetDate = new Date(targetDateISO);
 
+          const predDataTyped = predData as any;
           // Check if this prediction matches our horizon and is within display range
-          if (predData.horizon === horizon && targetDate >= displayStartDate && targetDate <= displayEndDate) {
+          if (predDataTyped.horizon === horizon && targetDate >= displayStartDate && targetDate <= displayEndDate) {
             // For horizon plot, we position the prediction at its target date
             const predictionPoint = {
               referenceDate: targetDate, // Use target date for x-axis positioning
               groundTruth: null, // Don't show ground truth at prediction position
               prediction: {
                 targetDate: targetDate,
-                horizon: predData.horizon,
-                median: predData.median,
-                q05: predData.q05,
-                q25: predData.q25,
-                q75: predData.q75,
-                q95: predData.q95,
+                horizon: predDataTyped.horizon,
+                median: predDataTyped.median,
+                q05: predDataTyped.q05,
+                q25: predDataTyped.q25,
+                q75: predDataTyped.q75,
+                q95: predDataTyped.q95,
               },
             };
 
             result.push(predictionPoint);
-            console.debug("Added prediction point:", {
-              referenceDate: referenceDateISO,
-              targetDate: targetDateISO,
-              horizon: predData.horizon,
-            });
             break; // Only one prediction per reference date for this horizon
           }
         }
@@ -314,10 +331,6 @@ function combinePartitionsForStateAndHorizon(
       // Add ground truth point if we have it (positioned at reference date)
       if (dataPoint.groundTruth) {
         result.push(dataPoint);
-        console.debug("Added ground truth point:", {
-          referenceDate: referenceDateISO,
-          admissions: dataPoint.groundTruth.admissions,
-        });
       }
     }
   }
@@ -332,8 +345,6 @@ function combinePartitionsForStateAndHorizon(
   });
 
   const finalResult = Array.from(uniqueResults.values()).sort((a, b) => a.referenceDate.getTime() - b.referenceDate.getTime());
-
-  console.debug("Final combined data points:", finalResult.length);
 
   return finalResult;
 }

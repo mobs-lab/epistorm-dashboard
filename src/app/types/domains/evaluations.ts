@@ -33,18 +33,13 @@ export interface CoverageScoreDataCollectionByModel {
   coverageData: CoverageScoreDataEntry[];
 }
 
-export interface EvaluationsSeasonOption {
-  displayString: string;
+export interface EvaluationSeasonOverviewTimeRangeOption {
+  name: string; // For redux selector to find correct range in evaluation data, matching name
+  displayString: string; // For Season Overview Settings Panel's display
+  isDynamic: boolean;
+  subDisplayValue?: string; // For Season Overview Settings Panel's display, smaller text after each dynamic option
   startDate: Date;
   endDate: Date;
-}
-
-export interface AggregationPeriod {
-  id: string;
-  label: string;
-  startDate: Date;
-  endDate: Date;
-  isDynamic?: boolean;
 }
 
 // Centralized data contract for pre-aggregated evaluation JSON
@@ -66,7 +61,7 @@ export interface AppDataEvaluationsPrecalculated {
     [seasonId: string]: {
       [metric: string]: {
         [model: string]: {
-          [horizonKey: number]: BoxplotStats;
+          [horizonKey: string]: BoxplotStats;
         };
       };
     };
@@ -76,7 +71,7 @@ export interface AppDataEvaluationsPrecalculated {
       [metric: string]: {
         [model: string]: {
           [stateNum: string]: {
-            [horizon: number]: { sum: number; count: number };
+            [horizon: string]: { sum: number; count: number };
           };
         };
       };

@@ -4,8 +4,8 @@
 import { LoadingStates } from "@/types/app";
 
 // Import critical libraries
-import { parseISO } from "date-fns";
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
+import { parseISO } from "date-fns";
 
 // Import Redux
 import {
@@ -19,16 +19,19 @@ import { useAppDispatch } from "@/store/hooks";
 // Evaluations Actions and Reducers
 import { clearEvaluationJsonData, setEvaluationJsonData } from "@/store/data-slices/domains/evaluationDataSlice"; // Stores pre-aggregated JSON per DataContract
 
-import { clearCoreData, setCoreJsonData } from "@/store/data-slices/domains/coreDataSlice";
 import { clearAuxiliaryData, setAuxiliaryJsonData } from "@/store/data-slices/domains/auxiliaryDataSlice";
+import { clearCoreData, setCoreJsonData } from "@/store/data-slices/domains/coreDataSlice";
 
 // Evaluation Single Model Settings Slice
+import { updateEvaluationSeasonOverviewTimeRangeOptions } from "@/store/data-slices/settings/SettingsSliceEvaluationSeasonOverview";
 import {
   updateEvaluationSingleModelViewDateEnd,
   updateEvaluationSingleModelViewDateStart,
   updateEvaluationSingleModelViewSeasonOptions,
   updateEvaluationsSingleModelViewDateRange,
 } from "@/store/data-slices/settings/SettingsSliceEvaluationSingleModel";
+import { EvaluationSeasonOverviewTimeRangeOption } from "@/types/domains/evaluations";
+import { SeasonOption } from "@/types/domains/forecasting";
 
 interface DataContextType {
   loadingStates: LoadingStates;
@@ -110,7 +113,10 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       // Extract and process metadata
       if (coreData.metadata) {
-        // Process season options
+        // Initialize the list of time range options for season overview page
+        let evalSOTimeRangeOptions: EvaluationSeasonOverviewTimeRangeOption[] = [];
+        let numOfFullRangeSeasons = 0;
+        // Process season options for forecast and single-model page
         if (coreData.metadata.seasons?.fullRangeSeasons) {
           const seasonOptions = coreData.metadata.seasons.fullRangeSeasons.map(
             (season: { index: number; displayString: string; timeValue: string; startDate: string; endDate: string }) => ({
@@ -119,9 +125,50 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
               endDate: parseISO(season.endDate),
             })
           );
-
           dispatch(setSeasonOptions(seasonOptions));
           dispatch(updateEvaluationSingleModelViewSeasonOptions(seasonOptions));
+
+          // Process full range season options for season overview page, into EvaluationSeasonOverviewTimeRangeOption, filling some fields with placeholder values
+          const fullRangeSeasonOptionsForEvalSO: EvaluationSeasonOverviewTimeRangeOption[] = seasonOptions.map((season: SeasonOption) => ({
+            // "name" for full range season need to be in the shape of "season-{year}-{year}", so we need to parse it using available fields
+            name: `season-${season.startDate.getFullYear()}-${season.endDate.getFullYear()}`,
+            displayString: season.displayString,
+            isDynamic: false,
+            startDate: season.startDate,
+            endDate: season.endDate,
+            subDisplayValue: undefined,
+          }));
+          // Add these full season options to the final list for season overview page
+          evalSOTimeRangeOptions = [...evalSOTimeRangeOptions, ...fullRangeSeasonOptionsForEvalSO];
+          // Update the number of full range seasons
+          numOfFullRangeSeasons = fullRangeSeasonOptionsForEvalSO.length;
+        }
+
+        // Check if metadata has dynamic time periods, and put them into redux slice if any (they should already be in perfect shape for settings panel to display)
+        if (coreData.metadata.seasons?.dynamicTimePeriod) {
+          const dynamicTimePeriods: EvaluationSeasonOverviewTimeRangeOption[] = coreData.metadata.seasons.dynamicTimePeriod.map(
+            (tp: {
+              index: number;
+              label: string;
+              displayString: string;
+              isDynamic: boolean;
+              subDisplayValue: string;
+              startDate: string;
+              endDate: string;
+            }) => ({
+              name: tp.label,
+              displayString: tp.displayString,
+              isDynamic: tp.isDynamic,
+              subDisplayValue: tp.subDisplayValue,
+              startDate: parseISO(tp.startDate),
+              endDate: parseISO(tp.endDate),
+            })
+          );
+          // Add the dynamic time periods options to the entire options list as well
+          evalSOTimeRangeOptions = [...evalSOTimeRangeOptions, ...dynamicTimePeriods];
+          console.debug("evalSOTimeRangeOptions:", evalSOTimeRangeOptions);
+          // Dispatch the entire list of time range options to the redux slice
+          dispatch(updateEvaluationSeasonOverviewTimeRangeOptions(evalSOTimeRangeOptions));
         }
 
         // Set default date range if provided

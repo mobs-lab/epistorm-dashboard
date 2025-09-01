@@ -106,8 +106,6 @@ const SettingsStateMap: React.FC<SettingsStateMapProps> = ({ pageSelected }) => 
 
       // Zoom out to the initial view after a certain duration
       try {
-        /* DEBUG */
-        /* console.debug("Components/SettingsStateMap.tsx/handleClick(): delayed zooming-back-out starting..."); */
         setTimeout(() => {
           if (zoomBehaviorRef.current && initialTransformRef.current) {
             svg.transition().duration(750).call(zoomBehaviorRef.current.transform, initialTransformRef.current);

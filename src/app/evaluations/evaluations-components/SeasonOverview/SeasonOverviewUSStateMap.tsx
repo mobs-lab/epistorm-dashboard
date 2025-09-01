@@ -28,14 +28,9 @@ const SeasonOverviewUSStateMap: React.FC = () => {
 
   const locationData = useAppSelector(selectLocationData);
 
-  const {
-    evaluationSeasonOverviewHorizon,
-    selectedAggregationPeriod,
-    aggregationPeriods,
-    mapSelectedModel,
-    mapSelectedScoringOption,
-    useLogColorScale,
-  } = useAppSelector((state) => state.evaluationsSeasonOverviewSettings);
+  const { mapSelectedModel, mapSelectedScoringOption, useLogColorScale } = useAppSelector(
+    (state) => state.evaluationsSeasonOverviewSettings
+  );
 
   // Load US map data
   useEffect(() => {
@@ -52,12 +47,11 @@ const SeasonOverviewUSStateMap: React.FC = () => {
   }, []);
 
   // Calculate state performance data based on selected criteria
-  // Calculate state performance data using JSON or CSV fallback
   const modelPerformanceData = useMemo(() => {
     if (shouldUseJsonData && seasonOverviewData) {
       // Use JSON data structure
       const statePerformanceMap = new Map();
-      const stateMapData = seasonOverviewData.stateMapData[mapSelectedScoringOption] || {};
+      const stateMapData = (seasonOverviewData.stateMapData as any)[mapSelectedScoringOption] || {};
       const modelData = stateMapData[mapSelectedModel] || {};
 
       // Calculate averages across selected horizons for each state
@@ -144,7 +138,7 @@ const SeasonOverviewUSStateMap: React.FC = () => {
 
       // Size the tooltip background
       const textBBox = valueText.node()?.getBBox() || { width: 100, height: 20 };
-      const titleBBox = tooltip.select("text").node()?.getBBox() || { width: 100, height: 20 };
+      const titleBBox = tooltip.select("text").node()?.getBBox() || { width: 100, height: 20 }; 
       const textWidth = Math.max(textBBox.width, titleBBox.width);
       tooltipRect.attr("width", textWidth + 20).attr("height", 45);
 

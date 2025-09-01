@@ -13,34 +13,50 @@ export const selectIsJsonDataLoaded = (state: RootState) => {
 export const selectSeasonOverviewData = createSelector(
   [
     selectIsJsonDataLoaded,
-    (state: RootState) => state.evaluationsSeasonOverviewSettings.selectedAggregationPeriod,
-    (state: RootState) => state.evaluationsSeasonOverviewSettings.aggregationPeriods,
+    (state: RootState) => state.evaluationsSeasonOverviewSettings.selectedDynamicTimePeriod,
+    (state: RootState) => state.evaluationsSeasonOverviewSettings.evalSOTimeRangeOptions,
     (state: RootState) => state.evaluationsSeasonOverviewSettings.evaluationSeasonOverviewHorizon,
     (state: RootState) => state.evaluationsSeasonOverviewSettings.evaluationSeasonOverviewSelectedModels,
     (state: RootState) => state.evaluationData.precalculated,
   ],
-  (isJsonLoaded, selectedPeriodId, aggregationPeriods, horizons, selectedModels, precalculatedData) => {
+  (isJsonLoaded, selectedPeriodName, evalSOTimeRangeOptions, horizons, selectedModels, precalculatedData) => {
+    // Always return a valid structure, even if data is not loaded
+    const defaultReturn = {
+      seasonId: selectedPeriodName || "",
+      selectedPeriod: null,
+      horizons: horizons || [],
+      selectedModels: selectedModels || [],
+      iqrData: {},
+      stateMapData: {},
+      coverageData: {},
+    };
+
     if (!isJsonLoaded) {
-      console.debug("JSON data not loaded, returning null");
-      return null;
+      console.debug("JSON data not loaded, returning empty structure");
+      return defaultReturn;
     }
 
-    const selectedPeriod = aggregationPeriods.find((p) => p.id === selectedPeriodId);
+    const selectedPeriod = evalSOTimeRangeOptions.find((p) => p.name === selectedPeriodName);
     if (!selectedPeriod) {
-      console.debug("Selected period not found:", selectedPeriodId);
-      return null;
+      console.debug("Selected period not found:", selectedPeriodName);
+      return defaultReturn;
     }
 
-    const seasonId = selectedPeriodId;
+    const seasonId = selectedPeriodName;
+    console.debug("Debuggin Evaluation Data selector for season overview component:");
+    console.debug("seasonId:", seasonId);
+    console.debug("selectedPeriod:", selectedPeriod);
+    console.debug("horizons:", horizons);
+    console.debug("selectedModels:", selectedModels);
 
     return {
       seasonId,
-      selectedPeriod: aggregationPeriods.find((p) => p.id === selectedPeriodId),
+      selectedPeriod,
       horizons,
       selectedModels,
-      iqrData: precalculatedData.iqr[seasonId] || {},
-      stateMapData: precalculatedData.stateMap_aggregates[seasonId] || {},
-      coverageData: precalculatedData.detailedCoverage_aggregates[seasonId] || {},
+      iqrData: precalculatedData?.iqr?.[seasonId] || {},
+      stateMapData: precalculatedData?.stateMap_aggregates?.[seasonId] || {},
+      coverageData: precalculatedData?.detailedCoverage_aggregates?.[seasonId] || {},
     };
   }
 );
@@ -49,4 +65,9 @@ export const selectSeasonOverviewData = createSelector(
 export const selectShouldUseJsonData = createSelector([selectIsJsonDataLoaded], (isLoaded) => {
   console.debug("Should use JSON data:", isLoaded);
   return isLoaded;
+});
+
+// Selector for checking if season overview has valid data structure
+export const selectHasSeasonOverviewData = createSelector([selectSeasonOverviewData], (seasonOverviewData) => {
+  return seasonOverviewData && Object.keys(seasonOverviewData.iqrData).length > 0 && seasonOverviewData.selectedModels.length > 0;
 });
