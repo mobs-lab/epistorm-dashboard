@@ -3,7 +3,6 @@
 import { createSelector } from "@reduxjs/toolkit";
 import { RootState } from "../index";
 import { StateThresholds, SurveillanceSingleWeekDataPoint } from "@/types/domains/forecasting";
-import { filter } from "lodash";
 
 // Selector for thresholds - handles dictionary format
 // TODO: Get rid of this after changing the component to use Dictionary instead for faster access, less find() operations

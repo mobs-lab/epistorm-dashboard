@@ -139,8 +139,8 @@ const SingleModelContent = () => {
 const isSeasonOverviewEnabled = isFeatureEnabled("seasonOverviewTab");
 
 const EvaluationsPage = () => {
-  // const defaultTab = isSeasonOverviewEnabled ? "season-overview" : "single-model";
-  const defaultTab = isSeasonOverviewEnabled ? "single-model" : "season-overview";
+  const defaultTab = isSeasonOverviewEnabled ? "season-overview" : "single-model";
+  // const defaultTab = isSeasonOverviewEnabled ? "single-model" : "season-overview";
   const [activeTab, setActiveTab] = useState(defaultTab);
   const { loadingStates, isFullyLoaded } = useDataContext();
 

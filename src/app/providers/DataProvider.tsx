@@ -104,10 +104,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       const coreData = await response.json();
-      /* console.log("JSON core data loaded successfully", {
-        hasMetadata: !!coreData.metadata,
-        hasMainData: !!coreData.mainData,
-      }); */
 
       // Store the entire core data structure
       dispatch(setCoreJsonData(coreData));

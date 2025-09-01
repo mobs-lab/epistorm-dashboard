@@ -331,3 +331,5 @@ cython_debug/
 
 .prettierrc
 package-lock.json
+
+.vscode
