@@ -53,14 +53,9 @@ jobs:
           pip install numpy pandas glob2
 
       - name: Execute Data Transformation
-        if: ${{ env.NEW_PREDICTION_DATA_COPIED == 'true' || env.NEW_SURVEILLANCE_DATA_COPIED == 'true' }}
-        run: python scripts/transform_data.py
+        if: ${{ env.NEW_PREDICTION_DATA_COPIED == 'true' || env.NEW_SURVEILLANCE_DATA_COPIED == 'true' || env.NEW_SURVEILLANCE_ARCHIVE_DATA_COPIED == 'true' || env.NEW_EVALUATIONS_DATA_COPIED == 'true' }}
+        run: python scripts/data_processing.py
       # End of python setup and execution
-
-      # Clean up after surveillance data
-      - name: Execute Surveillance Data Cleaning
-        if: ${{ env.NEW_SURVEILLANCE_DATA_COPIED == 'true'|| env.NEW_SURVEILLANCE_ARCHIVE_DATA_COPIED == 'true'}}
-        run: python scripts/clean_surveillance_data.py
 
       - name: Update Main Branch
         if: ${{ env.NEW_PREDICTION_DATA_COPIED == 'true' || env.NEW_SURVEILLANCE_DATA_COPIED == 'true' || env.NEW_SURVEILLANCE_ARCHIVE_DATA_COPIED == 'true' || env.NEW_EVALUATIONS_DATA_COPIED == 'true' }}
@@ -69,16 +64,16 @@ jobs:
           # The timestamp is created once then put into env for easier access
           TIMESTAMP=$(date +'%Y-%m-%d-%H-%M-%S')
           echo "TIMESTAMP=${TIMESTAMP}" >> $GITHUB_ENV
-          
+
           echo "Updating main branch with data changes..."
-          
+
           # Stage data changes
-          git add public/data/unprocessed/* public/data/ground-truth/* public/data/processed/* public/data/evaluations-score/* || true
-          
+          git add public/data/*.json data_processing_dir/raw/
+
           # Stage submodule changes
           git add FluSight-forecast-hub || true
           git add epistorm-evaluations || true
-          
+
           # Check if there are changes to commit
           if ! git diff --staged --quiet; then
             git commit -m "Data update ${TIMESTAMP}
@@ -110,10 +105,10 @@ jobs:
           # Release branch from updated main
           RELEASE_BRANCH="release/data-update/${TIMESTAMP}"
           echo "RELEASE_BRANCH=${RELEASE_BRANCH}" >> $GITHUB_ENV
-          
+
           echo "Creating release branch ${RELEASE_BRANCH} from main..."
           git checkout -b "${RELEASE_BRANCH}" main
-          
+
           # Push the release branch
           if ! git push -u origin "${RELEASE_BRANCH}"; then
             echo "Failed to push release branch"
@@ -127,7 +122,7 @@ jobs:
           echo "Updating production branch..."
           git fetch origin production:production
           git checkout production
-          
+
           # Merge the release branch into production with --no-ff for clean history
           # The [skip ci] is just in case GitHub decides to change workflow-calling restriction
           if ! git merge --no-ff "${RELEASE_BRANCH}" -m "Release data update ${TIMESTAMP} [skip ci]"; then
@@ -138,17 +133,17 @@ jobs:
             git add public/data/
             git commit -m "Resolve merge conflicts for data update ${TIMESTAMP} [skip ci]"
           fi
-          
+
           # Create production tag
           PROD_TAG="data-update/production/${TIMESTAMP}"
           git tag -a "${PROD_TAG}" -m "Production data update at ${TIMESTAMP}"
-          
+
           # Push production changes and tag
           if ! git push origin production && git push origin "${PROD_TAG}"; then
             echo "Failed to push to production"
             exit 1
           fi
-          
+
           echo "PRODUCTION_UPDATED=true" >> $GITHUB_ENV
 
       # Update demo branch via a merge PR from the release branch
@@ -158,7 +153,7 @@ jobs:
           echo "Updating demo branch..."
           git fetch origin demo:demo
           git checkout demo
-          
+
           if ! git merge --no-ff "${RELEASE_BRANCH}" -m "Release data update ${TIMESTAMP} [skip ci]"; then
             echo "Merge conflict detected. Attempting resolution strategy..."
             
@@ -167,17 +162,17 @@ jobs:
             git add public/data/
             git commit -m "Resolve merge conflicts for data update ${TIMESTAMP} [skip ci]"
           fi
-          
+
           # Create demo tag
           DEMO_TAG="data-update/demo/${TIMESTAMP}"
           git tag -a "${DEMO_TAG}" -m "Demo data update at ${TIMESTAMP}"
-          
+
           # Push demo changes and tag
           if ! git push origin demo && git push origin "${DEMO_TAG}"; then
             echo "Failed to push to demo"
             exit 1
           fi
-          
+
           echo "DEMO_UPDATED=true" >> $GITHUB_ENV
 
       # Trigger respective deployments

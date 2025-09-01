@@ -1,17 +1,15 @@
 // Updated SeasonOverviewUSStateMap.tsx
 "use client";
 
-import React, { useEffect, useRef, useState, useMemo } from "react";
+import React, { useEffect, useRef, useState, useMemo, useCallback } from "react";
 import * as d3 from "d3";
 import * as topojson from "topojson-client";
 import { addWeeks } from "date-fns";
-import { useResponsiveSVG } from "@/interfaces/responsiveSVG";
+import { useResponsiveSVG } from "@/utils/responsiveSVG";
 import { useAppSelector } from "@/store/hooks";
+import { selectSeasonOverviewData, selectShouldUseJsonData } from "@/store/selectors/evaluationSelectors";
+import { selectLocationData } from "@/store/selectors";
 import MapSelectorPanel from "./MapSelectorPanel";
-import tippy, { followCursor } from "tippy.js";
-import "tippy.js/dist/tippy.css";
-import "tippy.js/animations/shift-away.css";
-import "tippy.js/themes/light.css";
 
 // Define color constants
 const NAVY_BLUE = "#00495F";
@@ -24,17 +22,15 @@ const SeasonOverviewUSStateMap: React.FC = () => {
   const svgRef = useRef<SVGSVGElement>(null);
   const [mapData, setMapData] = useState<any>(null);
 
-  // Get data and settings variables from Redux store
-  const locationData = useAppSelector((state) => state.location.data);
-  const evaluationsScoreData = useAppSelector((state) => state.evaluationsSingleModelScoreData.data);
-  const {
-    evaluationSeasonOverviewHorizon,
-    selectedAggregationPeriod,
-    aggregationPeriods,
-    mapSelectedModel,
-    mapSelectedScoringOption,
-    useLogColorScale,
-  } = useAppSelector((state) => state.evaluationsSeasonOverviewSettings);
+  // Get data from selectors
+  const shouldUseJsonData = useAppSelector(selectShouldUseJsonData);
+  const seasonOverviewData = useAppSelector(selectSeasonOverviewData);
+
+  const locationData = useAppSelector(selectLocationData);
+
+  const { mapSelectedModel, mapSelectedScoringOption, useLogColorScale } = useAppSelector(
+    (state) => state.evaluationsSeasonOverviewSettings
+  );
 
   // Load US map data
   useEffect(() => {
@@ -52,187 +48,130 @@ const SeasonOverviewUSStateMap: React.FC = () => {
 
   // Calculate state performance data based on selected criteria
   const modelPerformanceData = useMemo(() => {
-    if (!evaluationsScoreData || evaluationSeasonOverviewHorizon.length === 0 || !selectedAggregationPeriod || !locationData) {
-      return new Map();
-    }
+    if (shouldUseJsonData && seasonOverviewData) {
+      // Use JSON data structure
+      const statePerformanceMap = new Map();
+      const stateMapData = (seasonOverviewData.stateMapData as any)[mapSelectedScoringOption] || {};
+      const modelData = stateMapData[mapSelectedModel] || {};
 
-    // Find the selected aggregation period
-    const selectedPeriod = aggregationPeriods.find((p) => p.id === selectedAggregationPeriod);
+      // Calculate averages across selected horizons for each state
+      Object.entries(modelData).forEach(([stateNum, horizonData]) => {
+        let totalScore = 0;
+        let totalCount = 0;
 
-    if (!selectedPeriod) {
-      return new Map();
-    }
+        seasonOverviewData.horizons.forEach((horizon) => {
+          const horizonStats = (horizonData as any)[horizon];
+          if (horizonStats && horizonStats.sum !== undefined && horizonStats.count > 0) {
+            totalScore += horizonStats.sum;
+            totalCount += horizonStats.count;
+          }
+        });
 
-    // Create a map to store performance scores by state
-    const statePerformanceData = new Map();
-
-    // Only process data for the selected model
-    const modelData = [
-      evaluationsScoreData.find((data) => data.modelName === mapSelectedModel && data.scoreMetric === mapSelectedScoringOption),
-    ].filter(Boolean); // Remove undefined values
-
-    // For each state, calculate average score for the selected model and horizons
-    locationData.forEach((location) => {
-      const stateCode = location.stateNum;
-
-      let totalScore = 0;
-      let count = 0;
-
-      // For the selected model and horizons, get relevant scores
-      modelData.forEach((modelScoreData) => {
-        if (modelScoreData && modelScoreData.scoreData) {
-          evaluationSeasonOverviewHorizon.forEach((horizon) => {
-            // Filter scores by state, horizon, and date range
-            const scores = modelScoreData.scoreData.filter((entry) => {
-              // Match state and horizon
-              if (entry.location !== stateCode || entry.horizon !== horizon) {
-                return false;
-              }
-
-              // Check if target date is within range
-              const targetDate = addWeeks(entry.referenceDate, horizon);
-              return entry.referenceDate >= selectedPeriod.startDate && targetDate <= selectedPeriod.endDate;
-            });
-
-            // Calculate performance metric
-            scores.forEach((score) => {
-              totalScore += score.score;
-              count++;
-            });
-          });
+        if (totalCount > 0) {
+          const stateId = stateNum.toString().padStart(2, "0");
+          statePerformanceMap.set(stateId, totalScore / totalCount);
         }
       });
 
-      // Calculate average if we have scores
-      if (count > 0) {
-        const stateId = stateCode.padStart(2, "0");
-        statePerformanceData.set(stateId, totalScore / count);
-      }
-    });
-
-    return statePerformanceData;
-  }, [
-    evaluationsScoreData,
-    evaluationSeasonOverviewHorizon,
-    selectedAggregationPeriod,
-    aggregationPeriods,
-    locationData,
-    mapSelectedModel,
-    mapSelectedScoringOption,
-  ]);
-
-  // Render map when dimensions or data change
-  useEffect(() => {
-    // Debounce or delay rendering slightly after resize finishes
-    let timeoutId: NodeJS.Timeout | null = null;
-    if (!isResizing && dimensions.width > 0 && dimensions.height > 0 && mapData && svgRef.current) {
-      // Clear previous timeout if exists
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-      }
-      // Set a small delay to ensure resizing calculations are stable
-      timeoutId = setTimeout(() => {
-        renderMap();
-      }, 50); // 50ms delay
+      console.debug("Using JSON data for state map:", statePerformanceMap);
+      return statePerformanceMap;
     }
-
-    // Cleanup timeout on unmount or before next effect run
-    return () => {
-      if (timeoutId) clearTimeout(timeoutId);
-    };
-  }, [dimensions, isResizing, mapData, modelPerformanceData, useLogColorScale]);
+  }, [shouldUseJsonData, seasonOverviewData, mapSelectedModel, mapSelectedScoringOption]);
 
   const createTooltip = (svg: d3.Selection<SVGSVGElement, unknown, null, undefined>) => {
     return svg.append("g").attr("class", "soStateMap-tooltip").style("opacity", 0).style("pointer-style", "none");
   };
 
-  const updateTooltip = (
-    tooltip: d3.Selection<SVGGElement, unknown, null, undefined>,
-    stateData: {
-      stateName: string;
-      value: number | undefined;
-      metricName: string;
-    },
-    position: [number, number]
-  ) => {
-    tooltip.selectAll("*").remove();
+  const updateTooltip = useCallback(
+    (
+      tooltip: d3.Selection<SVGGElement, unknown, null, undefined>,
+      stateData: {
+        stateName: string;
+        value: number | undefined;
+        metricName: string;
+      },
+      position: [number, number]
+    ) => {
+      tooltip.selectAll("*").remove();
 
-    // Background rectangle
-    const tooltipRect = tooltip
-      .append("rect")
-      .attr("fill", "#323944")
-      .attr("rx", 5)
-      .attr("ry", 5)
-      .attr("opacity", 0.95)
-      .attr("stroke", "#4e585e")
-      .attr("stroke-width", 1);
+      // Background rectangle
+      const tooltipRect = tooltip
+        .append("rect")
+        .attr("fill", "#323944")
+        .attr("rx", 5)
+        .attr("ry", 5)
+        .attr("opacity", 0.95)
+        .attr("stroke", "#4e585e")
+        .attr("stroke-width", 1);
 
-    // State name
-    tooltip
-      .append("text")
-      .attr("x", 10)
-      .attr("y", 16)
-      .attr("fill", "white")
-      .attr("font-weight", "bold")
-      .style("font-size", "13px")
-      .style("font-family", "var(--font-dm-sans)")
-      .text(stateData.stateName);
+      // State name
+      tooltip
+        .append("text")
+        .attr("x", 10)
+        .attr("y", 16)
+        .attr("fill", "white")
+        .attr("font-weight", "bold")
+        .style("font-size", "13px")
+        .style("font-family", "var(--font-dm-sans)")
+        .text(stateData.stateName);
 
-    // Value information
-    const valueText = tooltip
-      .append("text")
-      .attr("x", 10)
-      .attr("y", 35)
-      .attr("fill", "white")
-      .style("font-size", "12px")
-      .style("font-family", "var(--font-dm-sans)");
+      // Value information
+      const valueText = tooltip
+        .append("text")
+        .attr("x", 10)
+        .attr("y", 35)
+        .attr("fill", "white")
+        .style("font-size", "12px")
+        .style("font-family", "var(--font-dm-sans)");
 
-    if (stateData.value !== undefined) {
-      let formattedValue: string;
-      if (mapSelectedScoringOption === "Coverage") {
-        formattedValue = `${stateData.value.toFixed(1)}%`;
+      if (stateData.value !== undefined) {
+        let formattedValue: string;
+        if (mapSelectedScoringOption === "Coverage") {
+          formattedValue = `${stateData.value.toFixed(1)}%`;
+        } else {
+          formattedValue = stateData.value.toFixed(2);
+        }
+        valueText.text(`${stateData.metricName}: ${formattedValue}`);
       } else {
-        formattedValue = stateData.value.toFixed(2);
+        valueText.attr("fill", "#aaa").text("No data available");
       }
-      valueText.text(`${stateData.metricName}: ${formattedValue}`);
-    } else {
-      valueText.attr("fill", "#aaa").text("No data available");
-    }
 
-    // Size the tooltip background
-    const textBBox = valueText.node()?.getBBox() || { width: 100, height: 20 };
-    const titleBBox = tooltip.select("text").node()?.getBBox() || { width: 100, height: 20 };
-    const textWidth = Math.max(textBBox.width, titleBBox.width);
-    tooltipRect.attr("width", textWidth + 20).attr("height", 45);
+      // Size the tooltip background
+      const textBBox = valueText.node()?.getBBox() || { width: 100, height: 20 };
+      const titleBBox = tooltip.select("text").node()?.getBBox() || { width: 100, height: 20 }; 
+      const textWidth = Math.max(textBBox.width, titleBBox.width);
+      tooltipRect.attr("width", textWidth + 20).attr("height", 45);
 
-    // Get SVG dimensions
-    const svgNode = tooltip.node()?.ownerSVGElement;
-    const svgWidth = svgNode?.clientWidth || dimensions.width;
-    const svgHeight = svgNode?.clientHeight || dimensions.height;
+      // Get SVG dimensions
+      const svgNode = tooltip.node()?.ownerSVGElement;
+      const svgWidth = svgNode?.clientWidth || dimensions.width;
+      const svgHeight = svgNode?.clientHeight || dimensions.height;
 
-    // Adjust tooltip position based on boundaries
-    const tooltipWidth = textWidth + 20;
-    const tooltipHeight = 45;
+      // Adjust tooltip position based on boundaries
+      const tooltipWidth = textWidth + 20;
+      const tooltipHeight = 45;
 
-    // Calculate offsets to keep tooltip in view
-    let xOffset = 10;
-    let yOffset = -tooltipHeight - 5;
+      // Calculate offsets to keep tooltip in view
+      let xOffset = 10;
+      let yOffset = -tooltipHeight - 5;
 
-    // Check right edge
-    if (position[0] + tooltipWidth + xOffset > svgWidth - 10) {
-      xOffset = -tooltipWidth - 10;
-    }
+      // Check right edge
+      if (position[0] + tooltipWidth + xOffset > svgWidth - 10) {
+        xOffset = -tooltipWidth - 10;
+      }
 
-    // Check top edge
-    if (position[1] + yOffset < 10) {
-      yOffset = 10;
-    }
+      // Check top edge
+      if (position[1] + yOffset < 10) {
+        yOffset = 10;
+      }
 
-    // Apply position
-    tooltip.attr("transform", `translate(${position[0] + xOffset},${position[1] + yOffset})`).style("opacity", 1);
-  };
+      // Apply position
+      tooltip.attr("transform", `translate(${position[0] + xOffset},${position[1] + yOffset})`).style("opacity", 1);
+    },
+    [dimensions.height, dimensions.width, mapSelectedScoringOption]
+  );
 
-  const renderMap = () => {
+  const renderMap = useCallback(() => {
     if (!svgRef.current || !mapData || !dimensions || dimensions.width <= 0 || dimensions.height <= 0) return;
 
     const svg = d3.select(svgRef.current);
@@ -636,7 +575,7 @@ const SeasonOverviewUSStateMap: React.FC = () => {
       .on("mouseover", function (event) {
         // Highlight DC on hover
         d3.select(this).attr("stroke-width", 2);
-        
+
         const stateName = "District of Columbia";
         const metricName = mapSelectedScoringOption || "Score";
 
@@ -687,7 +626,28 @@ const SeasonOverviewUSStateMap: React.FC = () => {
       .attr("dy", "0.05em") // Slight vertical adjustment
       .style("pointer-events", "none") // Prevent text from blocking circle hover
       .text("DC");
-  };
+  }, [dimensions, mapData, mapSelectedScoringOption, modelPerformanceData, updateTooltip, useLogColorScale]);
+
+  // Render map when dimensions or data change
+  useEffect(() => {
+    // Debounce or delay rendering slightly after resize finishes
+    let timeoutId: NodeJS.Timeout | null = null;
+    if (!isResizing && dimensions.width > 0 && dimensions.height > 0 && mapData && svgRef.current) {
+      // Clear previous timeout if exists
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+      // Set a small delay to ensure resizing calculations are stable
+      timeoutId = setTimeout(() => {
+        renderMap();
+      }, 50); // 50ms delay
+    }
+
+    // Cleanup timeout on unmount or before next effect run
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+  }, [dimensions, isResizing, mapData, modelPerformanceData, renderMap, useLogColorScale]);
 
   return (
     <div ref={containerRef} className='w-full h-full'>
