@@ -1,14 +1,15 @@
 import React from "react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { updateUserSelectedRiskLevelModel } from "@/store/forecast-settings-slice";
+import { selectLocationData } from "@/store/selectors/forecastSelectors";
+import { updateUserSelectedRiskLevelModel } from "@/store/data-slices/settings/SettingsSliceForecastNowcast";
 import InfoButton from "../../components/InfoButton";
-import { activityLevelsInfo } from "@/interfaces/infobutton-content";
+import { activityLevelsInfo } from "types/infobutton-content";
+import { modelNames } from "@/types/common";
 
 const NowcastHeader: React.FC = () => {
   const dispatch = useAppDispatch();
   const { USStateNum, userSelectedRiskLevelModel } = useAppSelector((state) => state.forecastSettings);
-  const locationData = useAppSelector((state) => state.location.data);
-  const modelOptions = useAppSelector((state) => state.nowcastTrends.allData.map((model) => model.modelName));
+  const locationData = useAppSelector(selectLocationData);
 
   const selectedState = locationData.find((location) => location.stateNum === USStateNum);
   const stateName = selectedState
@@ -17,7 +18,6 @@ const NowcastHeader: React.FC = () => {
         .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
         .join(" ")
     : "United States";
-
 
   const handleModelChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     dispatch(updateUserSelectedRiskLevelModel(event.target.value));
@@ -35,7 +35,7 @@ const NowcastHeader: React.FC = () => {
       <div className='flex flex-row justify-between items-center'>
         <div className='flex'>
           <h2 className='util-responsive-text font-bold mr-2'>Hospitalization Activity Forecast</h2>
-          <InfoButton title='State Map Information' content={activityLevelsInfo} dialogSize="lg"/>
+          <InfoButton title='State Map Information' content={activityLevelsInfo} dialogSize='lg' />
         </div>
         <div className='flex items-center justify-between'>
           <div>
@@ -46,7 +46,7 @@ const NowcastHeader: React.FC = () => {
               value={userSelectedRiskLevelModel}
               onChange={handleModelChange}
               className='bg-mobs-lab-color text-white text-sm font-light border-[#5d636a] border-2 rounded-md my-1 ml-1 px-1 py-1'>
-              {modelOptions.map((model) => (
+              {modelNames.map((model) => (
                 <option key={model} value={model}>
                   {model}
                 </option>

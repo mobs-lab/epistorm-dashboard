@@ -1,0 +1,32 @@
+# This file specifies files and directories that should not be uploaded to Google App Engine when deploying.
+
+.gcloudignore
+.git
+.gitignore
+
+# Node.js dependencies
+node_modules/
+
+# Local environment variables
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Next.js build artifacts
+.next/
+
+# Raw data and processing scripts not needed in production
+data_processing_dir/
+scripts/
+
+# Documentation and other non-essential files
+README.md
+
+# Submodules, just in case
+/epistorm-evaluations/
+/FluSight-forecast-hub/
+
+# IDE and OS files
+.DS_Store
+.vscode/

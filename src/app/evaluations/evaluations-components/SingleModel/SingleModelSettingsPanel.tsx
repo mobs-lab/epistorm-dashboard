@@ -1,37 +1,33 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useState } from "react";
 
-import { modelColorMap, modelNames } from "@/interfaces/epistorm-constants";
-import { SeasonOption } from "@/interfaces/forecast-interfaces";
+import { modelColorMap, modelNames } from "@/types/common";
+import { SeasonOption } from "@/types/domains/forecasting";
 
 import SettingsStateMap from "@/shared-components/SettingsStateMap";
 
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 
 import {
-  updateEvaluationSingleModelViewSelectedState,
-  updateEvaluationsSingleModelViewModel,
-  updateEvaluationSingleModelViewHorizon,
-  updateEvaluationSingleModelViewDateStart,
-  updateEvaluationSingleModelViewDateEnd,
-  updateEvaluationsSingleModelViewDateRange,
   updateEvaluationScores,
-  // updateEvaluationSingleModelViewSeasonOptions,
-} from "@/store/evaluations-single-model-settings-slice";
+  updateEvaluationSingleModelViewDateEnd,
+  updateEvaluationSingleModelViewDateStart,
+  updateEvaluationSingleModelViewHorizon,
+  updateEvaluationSingleModelViewSelectedState,
+  updateEvaluationsSingleModelViewDateRange,
+  updateEvaluationsSingleModelViewModel,
+} from "@/store/data-slices/settings/SettingsSliceEvaluationSingleModel";
 
 import { Radio, Typography } from "@/styles/material-tailwind-wrapper";
 
-import Image from "next/image";
-import { horizonSelectorsInfo } from "@/interfaces/infobutton-content";
 import InfoButton from "@/shared-components/InfoButton";
+import Image from "next/image";
+import { horizonSelectorsInfo } from "types/infobutton-content";
 
 const SingleModelSettingsPanel: React.FC = () => {
   /* Redux-Managed State Variables */
   const dispatch = useAppDispatch();
-
-  const groundTruthData = useAppSelector((state) => state.groundTruth.data);
-  const locationData = useAppSelector((state) => state.location.data);
 
   const [scoreOptions] = useState(["WIS/Baseline", "MAPE"]);
 
@@ -44,6 +40,8 @@ const SingleModelSettingsPanel: React.FC = () => {
     evaluationsSingleModelViewDateRange,
     evaluationSingleModelViewSeasonOptions,
   } = useAppSelector((state) => state.evaluationsSingleModelSettings);
+
+  const locationData = useAppSelector((state) => state.auxiliaryData["locations"]);
 
   // State selection handlers (reused from forecast)
   const onStateSelectionChange = (stateNum: string) => {

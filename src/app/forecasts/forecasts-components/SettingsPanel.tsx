@@ -1,11 +1,8 @@
 // components/SettingsPanel.tsx
 "use client";
 
-import React, { useEffect, useMemo } from "react";
-import { modelColorMap, modelNames } from "@/interfaces/epistorm-constants";
-import { SeasonOption } from "@/interfaces/forecast-interfaces";
-import { Radio, Typography } from "@/styles/material-tailwind-wrapper";
-import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import InfoButton from "@/shared-components/InfoButton";
+import SettingsStateMap from "@/shared-components/SettingsStateMap";
 import {
   updateConfidenceInterval,
   updateDateEnd,
@@ -15,41 +12,27 @@ import {
   updateNumOfWeeksAhead,
   updateSelectedState,
   updateYScale,
-} from "@/store/forecast-settings-slice";
-import SettingsStateMap from "@/shared-components/SettingsStateMap";
-import SettingsStyledDatePicker from "./SettingsStyledDatePicker";
+} from "@/store/data-slices/settings/SettingsSliceForecastNowcast";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { selectDateConstraints, selectLocationData, selectGroundTruthInRange } from "@/store/selectors/forecastSelectors";
+import { Radio, Typography } from "@/styles/material-tailwind-wrapper";
+import { modelColorMap, modelNames } from "@/types/common";
+import { SeasonOption } from "@/types/domains/forecasting";
 import Image from "next/image";
-import InfoButton from "@/shared-components/InfoButton";
-import { horizonSelectorsInfo } from "@/interfaces/infobutton-content";
+import React, { useMemo } from "react";
+import { horizonSelectorsInfo } from "types/infobutton-content";
+import SettingsStyledDatePicker from "./SettingsStyledDatePicker";
 
 const SettingsPanel: React.FC = () => {
   /* Redux-Managed State Variables */
   const dispatch = useAppDispatch();
 
-  const groundTruthData = useAppSelector((state) => state.groundTruth.data);
-  const locationData = useAppSelector((state) => state.location.data);
+  const locationData = useAppSelector(selectLocationData);
+  const { earliestDate, latestDate } = useAppSelector(selectDateConstraints);
 
   const { USStateNum, forecastModel, dateStart, dateEnd, dateRange, confidenceInterval, seasonOptions } = useAppSelector(
     (state) => state.forecastSettings
   );
-
-  const { earliestDayFromGroundTruthData, latestDayFromGroundTruthData } = useMemo(() => {
-    if (groundTruthData.length === 0) {
-      return {
-        earliestDayFromGroundTruthData: new Date("2022-08-23T12:00:00.000Z"),
-        latestDayFromGroundTruthData: new Date("2024-05-24T12:00:00.000Z"),
-      };
-    }
-
-    const sortedData = [...groundTruthData].sort((a, b) => a.date.getTime() - b.date.getTime());
-    return {
-      earliestDayFromGroundTruthData: sortedData[0].date,
-      latestDayFromGroundTruthData: sortedData[sortedData.length - 1].date,
-    };
-  }, [groundTruthData]);
-
-  /*console.debug("DEBUG: earliestDayFromGroundTruthData: ", earliestDayFromGroundTruthData);
-    console.debug("DEBUG: latestDayFromGroundTruthData: ", latestDayFromGroundTruthData);*/
 
   const onStateSelectionChange = (stateNum: string) => {
     const selectedState = locationData.find((state) => state.stateNum === stateNum);
@@ -76,16 +59,16 @@ const SettingsPanel: React.FC = () => {
     dispatch(updateNumOfWeeksAhead(Number(event.target.value)));
   };
 
-  const onDateStartSelectionChange = (date: Date | undefined) => {
-    if (date && date >= earliestDayFromGroundTruthData && date <= dateEnd) {
+  const onDateStartSelectionChange = (date: Date | null) => {
+    if (date && date >= earliestDate && date <= dateEnd) {
       dispatch(updateDateStart(date));
     } else {
       console.debug("SettingsPanel.tsx: Invalid dateStart selection");
     }
   };
 
-  const onDateEndSelectionChange = (date: Date | undefined) => {
-    if (date && date >= dateStart && date <= latestDayFromGroundTruthData) {
+  const onDateEndSelectionChange = (date: Date | null) => {
+    if (date && date >= dateStart && date <= latestDate) {
       dispatch(updateDateEnd(date));
     } else {
       console.debug("SettingsPanel.tsx: Invalid dateEnd selection");
@@ -102,8 +85,8 @@ const SettingsPanel: React.FC = () => {
   };
 
   const handleShowAllDates = () => {
-    dispatch(updateDateStart(earliestDayFromGroundTruthData));
-    dispatch(updateDateEnd(latestDayFromGroundTruthData));
+    dispatch(updateDateStart(earliestDate));
+    dispatch(updateDateEnd(latestDate));
   };
 
   const onYAxisScaleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -208,7 +191,7 @@ const SettingsPanel: React.FC = () => {
             <SettingsStyledDatePicker
               value={dateStart}
               onChange={onDateStartSelectionChange}
-              minDate={earliestDayFromGroundTruthData}
+              minDate={earliestDate}
               maxDate={dateEnd}
               className='w-full border-[#5d636a] border-2 rounded-md'
             />
@@ -222,7 +205,7 @@ const SettingsPanel: React.FC = () => {
               value={dateEnd}
               onChange={onDateEndSelectionChange}
               minDate={dateStart}
-              maxDate={latestDayFromGroundTruthData}
+              maxDate={latestDate}
               className='w-full border-[#5d636a] border-2 rounded-md'
             />
           </div>

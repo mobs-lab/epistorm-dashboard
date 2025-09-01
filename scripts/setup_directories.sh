@@ -1,17 +1,22 @@
 # File: scripts/setup_directories.sh
 # For models
-mkdir -p public/data/processed
-mkdir -p public/data/processed/MOBS-GLEAM_FLUH
-mkdir -p public/data/processed/MIGHTE-Nsemble
-mkdir -p public/data/processed/NU_UCSD-GLEAM_AI_FLUH
-mkdir -p public/data/processed/CEPH-Rtrend_fluH
-mkdir -p public/data/processed/FluSight-ensemble
-mkdir -p public/data/processed/MIGHTE-Joint
-mkdir -p public/data/processed/NEU_ISI-AdaptiveEnsemble
-mkdir -p public/data/processed/NEU_ISI-FluBcast
+mkdir -p data_processing_dir/processed/MOBS-GLEAM_FLUH
+mkdir -p data_processing_dir/processed/MIGHTE-Nsemble
+mkdir -p data_processing_dir/processed/NU_UCSD-GLEAM_AI_FLUH
+mkdir -p data_processing_dir/processed/CEPH-Rtrend_fluH
+mkdir -p data_processing_dir/processed/FluSight-ensemble
+mkdir -p data_processing_dir/processed/MIGHTE-Joint
+mkdir -p data_processing_dir/processed/NEU_ISI-AdaptiveEnsemble
+mkdir -p data_processing_dir/processed/NEU_ISI-FluBcast
 
 # For historical ground truth
-mkdir -p public/data/ground-truth/historical-data
+mkdir -p data_processing_dir/raw/ground-truth/historical-data
 
 # Evaluations Score
-mkdir -p public/data/evaluations-score
+mkdir -p data_processing_dir/raw/evaluations-score
+
+# Raw unprocessed prediction data
+mkdir -p data_processing_dir/raw/unprocessed
+
+# Staging for ground truth
+mkdir -p data_processing_dir/raw/ground-truth/compare

@@ -1,7 +1,7 @@
 import React from "react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { modelNames, modelColorMap } from "@/interfaces/epistorm-constants";
-import { setMapSelectedModel, setMapSelectedScoringOption, setUseLogColorScale } from "@/store/evaluations-season-overview-settings-slice";
+import { modelNames, modelColorMap } from "@/types/common";
+import { setMapSelectedModel, setMapSelectedScoringOption, setUseLogColorScale } from "@/store/data-slices/settings/SettingsSliceEvaluationSeasonOverview";
 
 interface MapSelectorPanelProps {
   className?: string;
