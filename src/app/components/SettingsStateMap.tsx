@@ -1,5 +1,5 @@
-import { updateEvaluationSingleModelViewSelectedState } from "@/store/data-slices/SettingsSliceEvaluationSingleModel";
-import { updateSelectedState } from "@/store/data-slices/SettingsSliceForecastNowcast";
+import { updateEvaluationSingleModelViewSelectedState } from "@/store/data-slices/settings/SettingsSliceEvaluationSingleModel";
+import { updateSelectedState } from "@/store/data-slices/settings/SettingsSliceForecastNowcast";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { selectLocationData } from "@/store/selectors/forecastSelectors";
 import * as d3 from "d3";

@@ -52,13 +52,8 @@ jobs:
           python -m pip install --upgrade pip
           pip install numpy pandas glob2
 
-      # Clean up surveillance data 
-      - name: Execute Surveillance Data Cleaning
-        if: ${{ env.NEW_SURVEILLANCE_DATA_COPIED == 'true'|| env.NEW_SURVEILLANCE_ARCHIVE_DATA_COPIED == 'true'}}
-        run: python scripts/clean_surveillance_data.py
-
       - name: Execute Data Transformation
-        if: ${{ env.NEW_PREDICTION_DATA_COPIED == 'true' || env.NEW_SURVEILLANCE_DATA_COPIED == 'true' }}
+        if: ${{ env.NEW_PREDICTION_DATA_COPIED == 'true' || env.NEW_SURVEILLANCE_DATA_COPIED == 'true' || env.NEW_SURVEILLANCE_ARCHIVE_DATA_COPIED == 'true' || env.NEW_EVALUATIONS_DATA_COPIED == 'true' }}
         run: python scripts/data_processing.py
       # End of python setup and execution
 

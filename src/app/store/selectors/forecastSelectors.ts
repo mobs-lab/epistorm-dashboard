@@ -7,7 +7,7 @@ import { filter } from "lodash";
 
 // Selector for thresholds - handles dictionary format
 // TODO: Get rid of this after changing the component to use Dictionary instead for faster access, less find() operations
-export const selectThresholds = createSelector([(state: RootState) => state.coreData.auxiliaryData], (auxiliaryData) => {
+export const selectThresholds = createSelector([(state: RootState) => state.auxiliaryData], (auxiliaryData) => {
   const thresholds = auxiliaryData?.thresholds;
   if (!thresholds) {
     console.warn("Warning: selectThresholds: No thresholds data available");
@@ -27,7 +27,7 @@ export const selectThresholds = createSelector([(state: RootState) => state.core
 
 // Selector for a specific state's thresholds
 export const selectStateThresholds = createSelector(
-  [(state: RootState) => state.coreData.auxiliaryData, (state: RootState, stateNum: string) => stateNum],
+  [(state: RootState) => state.auxiliaryData, (state: RootState, stateNum: string) => stateNum],
   (auxiliaryData, stateNum) => {
     const thresholds = auxiliaryData?.thresholds;
     if (!thresholds || !thresholds[stateNum]) {
@@ -43,7 +43,7 @@ export const selectStateThresholds = createSelector(
 );
 
 // Selector for locations
-export const selectLocationData = createSelector([(state: RootState) => state.coreData.auxiliaryData], (auxiliaryData) => {
+export const selectLocationData = createSelector([(state: RootState) => state.auxiliaryData], (auxiliaryData) => {
   if (!auxiliaryData?.locations) {
     console.warn("Warning: selectLocationData: No location data available");
     return [];
@@ -208,7 +208,7 @@ export const selectExtendedGroundTruthInRange = createSelector(
 // Selector for historical ground truth data for a specific week
 export const selectHistoricalDataForWeek = createSelector(
   [
-    (state: RootState) => state.coreData.mainData?.historicalDataMap,
+    (state: RootState) => state.auxiliaryData?.historicalDataMap,
     (state: RootState, userSelectedWeek: Date) => userSelectedWeek,
     (state: RootState, userSelectedWeek: Date, stateNum: string) => stateNum,
   ],

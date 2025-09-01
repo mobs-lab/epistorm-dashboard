@@ -53,6 +53,15 @@ export interface StateThresholds {
   veryHigh: number;
 }
 
+// Dictionary format for thresholds as provided by the backend
+export interface StateThresholdsDict {
+  [stateNum: string]: {
+    medium: number;
+    high: number;
+    veryHigh: number;
+  };
+}
+
 // Following interfaces are for Redux Data Slice to validate fetched JSON data
 export interface GroundTruthData {
   [seasonId: string]: {

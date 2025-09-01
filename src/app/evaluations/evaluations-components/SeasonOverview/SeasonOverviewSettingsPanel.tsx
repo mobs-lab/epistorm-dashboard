@@ -10,7 +10,7 @@ import {
   updateSelectedAggregationPeriod,
   toggleModelSelection,
   selectAllModels,
-} from "@/store/data-slices/SettingsSliceEvaluationSeasonOverview";
+} from "@/store/data-slices/settings/SettingsSliceEvaluationSeasonOverview";
 
 import { Radio, Typography, List, ListItem, ListItemPrefix } from "@/styles/material-tailwind-wrapper";
 import Image from "next/image";

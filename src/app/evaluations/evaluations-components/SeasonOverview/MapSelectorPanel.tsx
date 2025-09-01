@@ -1,7 +1,7 @@
 import React from "react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { modelNames, modelColorMap } from "@/types/common";
-import { setMapSelectedModel, setMapSelectedScoringOption, setUseLogColorScale } from "@/store/data-slices/SettingsSliceEvaluationSeasonOverview";
+import { setMapSelectedModel, setMapSelectedScoringOption, setUseLogColorScale } from "@/store/data-slices/settings/SettingsSliceEvaluationSeasonOverview";
 
 interface MapSelectorPanelProps {
   className?: string;

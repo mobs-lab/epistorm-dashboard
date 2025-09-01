@@ -1,7 +1,7 @@
 import React from "react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { selectLocationData } from "@/store/selectors/forecastSelectors";
-import { updateUserSelectedRiskLevelModel } from "@/store/data-slices/SettingsSliceForecastNowcast";
+import { updateUserSelectedRiskLevelModel } from "@/store/data-slices/settings/SettingsSliceForecastNowcast";
 import InfoButton from "../../components/InfoButton";
 import { activityLevelsInfo } from "types/infobutton-content";
 import { modelNames } from "@/types/common";

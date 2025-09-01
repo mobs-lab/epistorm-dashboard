@@ -3,9 +3,6 @@ import {
   GroundTruthData, 
   PredictionData, 
   NowcastTrendsData, 
-  HistoricalDataMap,
-  LocationData,
-  StateThresholds,
   SeasonOption
 } from "@/types/domains/forecasting";
 
@@ -23,11 +20,6 @@ interface CoreDataState {
     groundTruthData: GroundTruthData;
     predictionData: PredictionData;
     nowcastTrends: NowcastTrendsData;
-    historicalDataMap: HistoricalDataMap;
-  };
-  auxiliaryData: {
-    locations: LocationData[];
-    thresholds: StateThresholds[];
   };
 }
 
@@ -38,11 +30,6 @@ const initialState: CoreDataState = {
     groundTruthData: {},
     predictionData: {},
     nowcastTrends: {},
-    historicalDataMap: {},
-  },
-  auxiliaryData: {
-    locations: [],
-    thresholds: [],
   },
 };
 
@@ -56,11 +43,6 @@ const coreDataSlice = createSlice({
         groundTruthData: action.payload.mainData?.groundTruthData || {},
         predictionData: action.payload.mainData?.predictionData || {},
         nowcastTrends: action.payload.mainData?.nowcastTrends || {},
-        historicalDataMap: action.payload.mainData?.historicalDataMap || {},
-      };
-      state.auxiliaryData = {
-        locations: action.payload.auxiliaryData?.locations || action.payload["auxiliary-data"]?.locations || [],
-        thresholds: action.payload.auxiliaryData?.thresholds || action.payload["auxiliary-data"]?.thresholds || [],
       };
       state.isLoaded = true;
     },
@@ -70,11 +52,6 @@ const coreDataSlice = createSlice({
         groundTruthData: {},
         predictionData: {},
         nowcastTrends: {},
-        historicalDataMap: {},
-      };
-      state.auxiliaryData = {
-        locations: [],
-        thresholds: [],
       };
       state.isLoaded = false;
     },

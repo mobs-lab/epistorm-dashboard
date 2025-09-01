@@ -12,7 +12,7 @@ import {
   updateNumOfWeeksAhead,
   updateSelectedState,
   updateYScale,
-} from "@/store/data-slices/SettingsSliceForecastNowcast";
+} from "@/store/data-slices/settings/SettingsSliceForecastNowcast";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { selectDateConstraints, selectLocationData, selectGroundTruthInRange } from "@/store/selectors/forecastSelectors";
 import { Radio, Typography } from "@/styles/material-tailwind-wrapper";

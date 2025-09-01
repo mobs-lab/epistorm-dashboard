@@ -8,13 +8,19 @@ import { parseISO } from "date-fns";
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 
 // Import Redux
-import { setSeasonOptions, updateDateEnd, updateDateRange, updateDateStart } from "@/store/data-slices/SettingsSliceForecastNowcast";
+import {
+  setSeasonOptions,
+  updateDateEnd,
+  updateDateRange,
+  updateDateStart,
+} from "@/store/data-slices/settings/SettingsSliceForecastNowcast";
 import { useAppDispatch } from "@/store/hooks";
 
 // Evaluations Actions and Reducers
-import { clearEvaluationJsonData, setEvaluationJsonData } from "@/store/data-slices/evaluationDataSlice"; // Stores pre-aggregated JSON per DataContract
+import { clearEvaluationJsonData, setEvaluationJsonData } from "@/store/data-slices/domains/evaluationDataSlice"; // Stores pre-aggregated JSON per DataContract
 
-import { clearCoreData, setCoreJsonData } from "@/store/data-slices/coreDataSlice";
+import { clearCoreData, setCoreJsonData } from "@/store/data-slices/domains/coreDataSlice";
+import { clearAuxiliaryData, setAuxiliaryJsonData } from "@/store/data-slices/domains/auxiliaryDataSlice";
 
 // Evaluation Single Model Settings Slice
 import {
@@ -22,7 +28,7 @@ import {
   updateEvaluationSingleModelViewDateStart,
   updateEvaluationSingleModelViewSeasonOptions,
   updateEvaluationsSingleModelViewDateRange,
-} from "@/store/data-slices/SettingsSliceEvaluationSingleModel";
+} from "@/store/data-slices/settings/SettingsSliceEvaluationSingleModel";
 
 interface DataContextType {
   loadingStates: LoadingStates;
@@ -101,7 +107,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       /* console.log("JSON core data loaded successfully", {
         hasMetadata: !!coreData.metadata,
         hasMainData: !!coreData.mainData,
-        hasAuxiliary: !!(coreData.auxiliaryData || coreData["auxiliary-data"]),
       }); */
 
       // Store the entire core data structure
@@ -126,7 +131,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Set default date range if provided
         if (coreData.metadata.defaultSeasonTimeValue) {
           const defaultOption = coreData.metadata.seasons?.fullRangeSeasons?.find(
-            (s) => s.timeValue === coreData.metadata.defaultSeasonTimeValue
+            (s: { timeValue: any }) => s.timeValue === coreData.metadata.defaultSeasonTimeValue
           );
 
           if (defaultOption) {
@@ -141,13 +146,36 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       }
 
-      // Process auxiliary data (Location, Thresholds)
-      // const auxiliaryData = coreData.auxiliaryData || coreData["auxiliary-data"];
-
       return true;
     } catch (error) {
       console.error("Failed to load JSON core data:", error);
       dispatch(clearCoreData());
+      return false;
+    }
+  }, [dispatch]);
+
+  const loadJsonAuxiliaryData = useCallback(async () => {
+    try {
+      console.log("Loading JSON auxiliary data...");
+      const response = await fetch("/data/app_data_auxiliary.json");
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch auxiliary JSON: ${response.status}`);
+      }
+
+      const auxiliaryData = await response.json();
+      console.log("JSON auxiliary data loaded successfully", {
+        hasLocations: !!auxiliaryData.locations,
+        hasThresholds: !!auxiliaryData.thresholds,
+        hasHistoricalData: !!auxiliaryData.historicalDataMap,
+      });
+
+      // Dispatch to Redux store
+      dispatch(setAuxiliaryJsonData(auxiliaryData));
+      return true;
+    } catch (error) {
+      console.error("Failed to load JSON auxiliary data:", error);
+      dispatch(clearAuxiliaryData());
       return false;
     }
   }, [dispatch]);
@@ -163,30 +191,44 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     console.debug("DEBUG: DataProvider: Starting data fetch process");
 
     try {
-      // Load both JSON files first
-      const [jsonCoreLoaded, jsonEvaluationLoaded] = await Promise.all([loadJsonCoreData(), loadJsonEvaluationData()]);
+      // Load all JSON files in parallel for better performance
+      const [jsonCoreLoaded, jsonEvaluationLoaded, jsonAuxiliaryLoaded] = await Promise.allSettled([
+        loadJsonCoreData(),
+        loadJsonEvaluationData(),
+        loadJsonAuxiliaryData(),
+      ]);
 
-      console.log(`Data loading strategy: Core=${jsonCoreLoaded ? "JSON" : "CSV"}, Eval=${jsonEvaluationLoaded ? "JSON" : "CSV"}`);
+      // Check results and handle any failures gracefully
+      const coreSuccess = jsonCoreLoaded.status === "fulfilled" && jsonCoreLoaded.value;
+      const evalSuccess = jsonEvaluationLoaded.status === "fulfilled" && jsonEvaluationLoaded.value;
+      const auxiliarySuccess = jsonAuxiliaryLoaded.status === "fulfilled" && jsonAuxiliaryLoaded.value;
 
-      // If core JSON loaded successfully, skip most CSV processing
-      if (jsonCoreLoaded) {
+      console.log(
+        `Data loading strategy: Core=${coreSuccess ? "JSON" : "CSV"}, Eval=${evalSuccess ? "JSON" : "CSV"}, Auxiliary=${auxiliarySuccess ? "JSON" : "CSV"}`
+      );
+
+      // Update loading states based on what was successfully loaded
+      if (coreSuccess) {
         updateLoadingState("groundTruth", false);
         updateLoadingState("predictions", false);
-        updateLoadingState("locations", false);
         updateLoadingState("nowcastTrends", false);
-        updateLoadingState("thresholds", false);
         updateLoadingState("seasonOptions", false);
+      }
+
+      if (auxiliarySuccess) {
+        updateLoadingState("locations", false);
+        updateLoadingState("thresholds", false);
         updateLoadingState("historicalGroundTruth", false);
       }
 
-      if (jsonEvaluationLoaded) {
+      if (evalSuccess) {
         updateLoadingState("evaluationScores", false);
         updateLoadingState("evaluationDetailedCoverage", false);
       }
     } catch (error) {
       console.error("Error in fetchAndProcessData:", error);
     }
-  }, [loadJsonEvaluationData, loadJsonCoreData, updateLoadingState]);
+  }, [loadJsonEvaluationData, loadJsonCoreData, loadJsonAuxiliaryData, updateLoadingState]);
 
   useEffect(() => {
     fetchAndProcessData();

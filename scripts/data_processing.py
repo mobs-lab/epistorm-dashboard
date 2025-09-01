@@ -909,7 +909,7 @@ def main():
     # ===== 7. Compile and Output Final JSON Files =====
     print("Step 7: Compiling and writing final JSON files...")
 
-    # Process thresholds data for core JSON using imported function
+    # Process thresholds data for auxiliary JSON using imported function
     print("   - Processing thresholds data...")
     thresholds_dict = process_thresholds(thresholds_df)
 
@@ -928,11 +928,11 @@ def main():
                 "stable": float(row["stable"]),
             }
 
-    # Process locations data for core JSON using imported function
+    # Process locations data for auxiliary JSON using imported function
     print("   - Processing locations data...")
     locations_list = process_locations(locations_df)
 
-    # Assemble app_data_core.json according to DataContract.md
+    # Assemble app_data_core.json according to DataContract.md (without historical data)
     print("   - Assembling core data JSON...")
     app_data_core_json = {
         "metadata": {
@@ -942,17 +942,20 @@ def main():
         },
         "mainData": {
             "nowcastTrends": nowcast_dict,
-            "historicalDataMap": historical_data_map,
             "groundTruthData": ground_truth_data,
             "predictionData": time_series_data,  # Only contains full range seasons
         },
-        "auxiliary-data": {
-            "locations": locations_list,
-            "thresholds": thresholds_dict,
-        },
     }
 
-    # Assemble app_data_evaluations.json according to DataContract.md
+    # Assemble app_data_auxiliary.json
+    print("   - Assembling auxiliary data JSON...")
+    app_data_auxiliary_json = {
+        "locations": locations_list,
+        "thresholds": thresholds_dict,
+        "historicalDataMap": historical_data_map,
+    }
+
+    # Assemble app_data_evaluations.json
     print("   - Assembling evaluations data JSON...")
     app_data_evaluations_json = {
         "precalculated": {
@@ -966,12 +969,17 @@ def main():
     # Write files to disk
     print("   - Writing JSON files to disk...")
     core_output_path = public_data_dir / "app_data_core.json"
+    auxiliary_output_path = public_data_dir / "app_data_auxiliary.json"
     eval_output_path = public_data_dir / "app_data_evaluations.json"
 
     try:
         with open(core_output_path, "w") as f:
             json.dump(app_data_core_json, f, cls=NpEncoder)
         print(f"   - Successfully wrote app_data_core.json ({core_output_path.stat().st_size / 1e6:.2f} MB)")
+
+        with open(auxiliary_output_path, "w") as f:
+            json.dump(app_data_auxiliary_json, f, cls=NpEncoder)
+        print(f"   - Successfully wrote app_data_auxiliary.json ({auxiliary_output_path.stat().st_size / 1e6:.2f} MB)")
 
         with open(eval_output_path, "w") as f:
             json.dump(app_data_evaluations_json, f, cls=NpEncoder)

@@ -6,13 +6,15 @@ import {
   evaluationsSeasonOverviewSettingsReducer,
   evaluationsSingleModelSettingsReducer,
   evaluationDataReducer,
-  coreDataReducer
+  coreDataReducer,
+  auxiliaryDataReducer
 } from "./data-slices";
 
 const store = configureStore({
   reducer: {
     coreData: coreDataReducer,
     evaluationData: evaluationDataReducer,
+    auxiliaryData: auxiliaryDataReducer,
     forecastSettings: forecastSettingsReducer,
     evaluationsSeasonOverviewSettings: evaluationsSeasonOverviewSettingsReducer,
     evaluationsSingleModelSettings: evaluationsSingleModelSettingsReducer,

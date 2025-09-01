@@ -12,7 +12,7 @@ import { useChartMargins } from "@/utils/chart-margin-utils";
 import { isUTCDateEqual } from "@/utils/date";
 import { useResponsiveSVG } from "@/utils/responsiveSVG";
 
-import { updateUserSelectedWeek } from "@/store/data-slices/SettingsSliceForecastNowcast";
+import { updateUserSelectedWeek } from "@/store/data-slices/settings/SettingsSliceForecastNowcast";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import {
   selectExtendedGroundTruthInRange,

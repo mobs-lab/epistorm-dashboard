@@ -47,17 +47,36 @@ def process_historical_ground_truth(historical_gt_path: Path):
 
             df = pd.read_csv(csv_file, dtype={"location": str})
 
+            # Clean up each file's data, remove all invalid rows containing NaN, etc.
             # Ensure required columns exist
             required_cols = ["date", "location", "value", "weekly_rate"]
             if not all(col in df.columns for col in required_cols):
                 print(f"Warning: Skipping {csv_file.name}, missing required columns.")
                 continue
 
+            # Clean the data: remove rows with missing or invalid values
+            df = df.dropna(subset=["value", "weekly_rate"])
+            
+            # Remove rows with invalid numeric values (negative admissions, etc.)
+            df = df[df["value"] >= 0]
+            df = df[df["weekly_rate"] >= 0]
+            
+            # Convert location to string and ensure it's properly formatted
+            df["location"] = df["location"].astype(str).str.zfill(2)
+            
+            # Convert dates to datetime for validation
+            df["date"] = pd.to_datetime(df["date"], errors="coerce")
+            df = df.dropna(subset=["date"])  # Remove rows with invalid dates
+
+            if df.empty:
+                print(f"Warning: No valid data found in {csv_file.name} after cleaning")
+                continue
+
             df.rename(columns={"value": "admissions", "weekly_rate": "weeklyRate"}, inplace=True)
 
             # Group by the actual date of the data point
             for _, row in df.iterrows():
-                data_date_iso = pd.to_datetime(row["date"]).strftime("%Y-%m-%d")
+                data_date_iso = row["date"].strftime("%Y-%m-%d")
                 state_num = row["location"]
 
                 if data_date_iso not in historical_data_map[snapshot_date_iso]:
@@ -67,6 +86,8 @@ def process_historical_ground_truth(historical_gt_path: Path):
                     "admissions": float(row["admissions"]),
                     "weeklyRate": float(row["weeklyRate"]),
                 }
+
+            print(f"   - Processed {csv_file.name}: {len(df)} valid rows")
 
         except Exception as e:
             print(f"Error processing historical file {csv_file.name}: {e}")
