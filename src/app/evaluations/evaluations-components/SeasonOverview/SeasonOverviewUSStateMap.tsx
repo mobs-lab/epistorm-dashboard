@@ -71,8 +71,6 @@ const SeasonOverviewUSStateMap: React.FC = () => {
           statePerformanceMap.set(stateId, totalScore / totalCount);
         }
       });
-
-      console.debug("Using JSON data for state map:", statePerformanceMap);
       return statePerformanceMap;
     }
   }, [shouldUseJsonData, seasonOverviewData, mapSelectedModel, mapSelectedScoringOption]);
@@ -253,8 +251,8 @@ const SeasonOverviewUSStateMap: React.FC = () => {
 
       // Calculate exact pixel position for pivot value (1.0), ensure integer for clean rendering
       const pivotPixelPosition = Math.round(tempPixelScale(pivotValue));
-      console.debug("SO/StateMap/tempPixelScale found 1.0 value's pixel position at: ", pivotPixelPosition);
-      console.debug("SO/StateMap/color scale implementation's legendHeight and etc. are: ", legendHeight);
+      /* console.debug("SO/StateMap/tempPixelScale found 1.0 value's pixel position at: ", pivotPixelPosition);
+      console.debug("SO/StateMap/color scale implementation's legendHeight and etc. are: ", legendHeight); */
 
       // Set legend domain and pixels based on calculated pivot position
       legendDomain = colorDomain;

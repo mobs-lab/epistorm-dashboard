@@ -64,13 +64,13 @@ const evaluationsSingleModelSettingsSlice = createSlice({
             state.evaluationSingleModelViewDateEnd = action.payload;
         },
         updateEvaluationsSingleModelViewDateRange: (state, action: PayloadAction<string>) => {
-            // console.debug("DEBUG: Redux: evaluations-single-model-settings-slice.ts: updateEvaluationsSingleModelViewDateRange", action.payload);
+
             state.evaluationsSingleModelViewDateRange = action.payload;
         },
 
         /*TODO: Implement reducer for scores once discussed*/
         updateEvaluationScores: (state, action: PayloadAction<any>) => {
-            // console.debug("DEBUG: Redux: evaluations-single-model-settings-slice.ts: updateEvaluationScores", action.payload);
+
             state.evaluationSingleModelViewScoresOption = action.payload;
         },
     },

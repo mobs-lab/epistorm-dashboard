@@ -1,9 +1,5 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
-import { 
-  LocationData,
-  StateThresholdsDict,
-  HistoricalDataMap
-} from "@/types/domains/forecasting";
+import { LocationData, StateThresholdsDict, HistoricalDataMap } from "@/types/domains/forecasting";
 
 interface AuxiliaryDataState {
   isLoaded: boolean;
@@ -28,14 +24,12 @@ const auxiliaryDataSlice = createSlice({
       state.thresholds = action.payload.thresholds || {};
       state.historicalDataMap = action.payload.historicalDataMap || {};
       state.isLoaded = true;
-      console.debug("JSON auxiliary data loaded successfully into Redux `auxiliaryDataSlice`");
     },
     clearAuxiliaryData: (state) => {
       state.locations = [];
       state.thresholds = {};
       state.historicalDataMap = {};
       state.isLoaded = false;
-      console.debug("Cleared auxiliary data");
     },
   },
 });

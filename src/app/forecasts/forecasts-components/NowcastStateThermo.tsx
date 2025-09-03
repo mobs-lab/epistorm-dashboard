@@ -261,7 +261,6 @@ const NowcastStateThermo: React.FC = () => {
     // Get ground truth value
     const groundTruthEntry = groundTruthData.find((d) => d.stateNum === USStateNum && isUTCDateEqual(d.date, relativeLastWeek));
     const groundTruthValue = groundTruthEntry ? groundTruthEntry.weeklyRate : 0;
-    // console.log('DEBUG: Ground truth value:', groundTruthValue);
 
     // Get predicted value, always the 0-horizon forecast but matching selected date-location-NowcastModel.
     let predictedValue = 0;
@@ -278,7 +277,6 @@ const NowcastStateThermo: React.FC = () => {
         }
       }
     }
-    // console.log('DEBUG: Predicted value:', predictedValue);
 
     // Function to calculate line position and risk level
     const calculateLinePosition = (value: number) => {
@@ -321,7 +319,6 @@ const NowcastStateThermo: React.FC = () => {
     setCurrentRiskLevel(predictedPosition.riskLevel.charAt(0).toUpperCase() + predictedPosition.riskLevel.slice(1));
 
     // Update risk color for the map
-    // console.log("DEBUG: ", predictedPosition.riskLevel);
     setRiskColor(nowcastRiskColors[nowcastRiskLevels.indexOf(predictedPosition.riskLevel)]);
 
     // Helper functions for tooltip
@@ -488,16 +485,10 @@ const NowcastStateThermo: React.FC = () => {
     const currentWeekText = `${formatDate(dateA)} to ${formatDate(dateB)}`;
     const previousWeekText = `${formatDate(dateC)} to ${formatDate(dateD)}`;
 
-    // console.log('DEBUG: Date strings calculated:', {currentWeekText, previousWeekText});
-
     // Update state variables to trigger re-render of ThermoLegendArea
     setCurrentWeek(currentWeekText);
     setPreviousWeek(previousWeekText);
-
-    // console.log('DEBUG: State updated:', {currentWeek, previousWeek});
   }, [userSelectedWeek]);
-
-  // console.log('DEBUG: Rendering NowcastStateThermo', {currentWeek, previousWeek});
 
   return (
     <div ref={containerRef} className='nowcast-state-thermo-grid-layout text-white w-min-full h-min-full py-2'>

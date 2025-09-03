@@ -72,7 +72,6 @@ const SeasonOverviewPIChart: React.FC = () => {
         }
       }
 
-      // console.debug("Using JSON data for PI chart:", results);
       return results;
     }
     return [];

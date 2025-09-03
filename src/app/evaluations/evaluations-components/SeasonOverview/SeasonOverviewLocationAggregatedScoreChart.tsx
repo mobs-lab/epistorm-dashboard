@@ -89,7 +89,6 @@ const SeasonOverviewLocationAggregatedScoreChart: React.FC<SeasonOverviewLocatio
           );
         }
       }
-      console.debug("Using JSON data for aggregated chart:", results);
       return results;
     }
     return [];

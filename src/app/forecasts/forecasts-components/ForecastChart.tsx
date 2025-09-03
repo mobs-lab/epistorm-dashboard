@@ -148,14 +148,11 @@ const ForecastChart: React.FC = () => {
 
       // Use the maximum date from both sources
       const maxDate = d3.max([maxGroundTruthDate, maxPredictionDate]) as Date;
-      console.debug("DEBUG: ForecastChart: createScalesAndAxes(): maxDate: ", maxDate);
 
       const xScale = d3.scaleUtc().domain([dateStart, maxDate]).range([0, chartWidth]);
 
       // Generate ticks for all Saturdays within the date range
       const allSaturdayTracker = d3.timeDay.range(dateStart, maxDate).filter((d) => d.getDay() === 6);
-
-      // console.debug("DEBUG: ForecastChart: createScalesAndAxes(): allSaturdayTracker: ", allSaturdayTracker);
 
       // Determine ideal tick count based on chart width
       const getIdealTickCount = (width: number, totalTicks: number) => {
@@ -247,7 +244,6 @@ const ForecastChart: React.FC = () => {
       }
 
       let maxValue = Math.max(maxGroundTruthValue || 0, maxPredictionValue);
-      // console.debug("DEBUG: ForecastChart: createScalesAndAxes(): maxValue: ", maxValue);
 
       let minValue = d3.min(
         ground.filter((d) => d.admissions !== -1),
@@ -275,8 +271,6 @@ const ForecastChart: React.FC = () => {
           .range([chartHeight, 0]);
       }
 
-      /*console.debug("DEBUG: ForecastChart: createScalesAndAxes(): minValue: ", minValue);
-            console.debug("DEBUG: ForecastChart: createScalesAndAxes(): maxValue: ", maxValue);*/
       const ticks = generateYAxisTicks(minValue, maxValue, isLogScale);
 
       const yAxis = d3
@@ -316,14 +310,13 @@ const ForecastChart: React.FC = () => {
           ticks.push(2.5 * base);
           ticks.push(5 * base);
         }
-        // console.debug("DEBUG: ForecastChart.tsx: generateYAxisTicks(): ticks: ", ticks);
+
       }
       ticks = ticks.filter((tick) => tick >= minValue && tick <= maxValue);
       // if (ticks.length > desiredTickCount) {
       //     const step = Math.ceil(ticks.length / desiredTickCount);
       //     ticks = ticks.filter((_, index) => index % step === 0);
       // }
-      console.debug("DEBUG: ForecastChart.tsx: generateYAxisTicks(): ticks after filtering: ", ticks);
       return ticks;
     } else {
       // Improved linear scale logic
@@ -424,8 +417,6 @@ const ForecastChart: React.FC = () => {
       marginLeft: number,
       marginTop: number
     ) => {
-      console.debug("DEBUG: ForecastChart: Rendering historical data-slices:", historicalData);
-      console.debug("DEBUG: ForecastChart: User selected week:", userSelectedWeek);
 
       if (!historicalData || historicalData.length === 0) {
         console.debug("DEBUG: No historical data available for the selected week.");
@@ -659,7 +650,6 @@ const ForecastChart: React.FC = () => {
   }
 
   function createCornerTooltip(svg: d3.Selection<SVGSVGElement, unknown, null, undefined>, marginLeft: number, marginTop: number) {
-    // console.debug('DEBUG: Initial tooltip position:', marginLeft + 20, marginTop + 20);
     return svg
       .append("g")
       .attr("class", "corner-tooltip")

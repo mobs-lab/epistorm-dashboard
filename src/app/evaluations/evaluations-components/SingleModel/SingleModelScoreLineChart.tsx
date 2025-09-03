@@ -467,7 +467,6 @@ const SingleModelScoreLineChart: React.FC = () => {
       referenceDate: entry.referenceDate,
       score: entry.score,
     }));
-    console.debug("Processed data points with scores:", processedData);
 
     // Setup dimensions
     const width = dimensions.width;
