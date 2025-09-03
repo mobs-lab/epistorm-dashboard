@@ -18,11 +18,11 @@ const ForecastPage: React.FC = () => {
 
   return (
     <div className='layout-grid-forecasts-page w-full h-full pl-4'>
-      <div className='nowcast-header'>
+      <div className='nowcast-header util-no-sb-length'>
         <NowcastHeader />
       </div>
       {!loadingStates.groundTruth && !loadingStates.thresholds && (
-        <div className='nowcast-thermo'>
+        <div className='nowcast-thermo w-full h-full'>
           <NowcastStateThermo />
         </div>
       )}
@@ -32,12 +32,12 @@ const ForecastPage: React.FC = () => {
         </svg>
       </div>
       {!loadingStates.groundTruth && !loadingStates.thresholds && (
-        <div className='nowcast-gauge'>
+        <div className='nowcast-gauge w-full h-full'>
           <NowcastGauge riskLevel='US' />
         </div>
       )}
       {!loadingStates.locations && (
-        <div className='settings-panel'>
+        <div className='settings-panel w-full h-full overflow-scroll util-no-sb-length'>
           <SettingsPanel />
         </div>
       )}
@@ -51,7 +51,7 @@ const ForecastPage: React.FC = () => {
           <div className='chart-header'>
             <ForecastChartHeader />
           </div>
-          <div className='forecast-graph'>
+          <div className='forecast-graph overflow-scroll util-no-sb-length'>
             <ForecastChart />
           </div>
         </>

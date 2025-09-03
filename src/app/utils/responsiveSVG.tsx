@@ -2,113 +2,84 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import debounce from "lodash/debounce";
 import throttle from "lodash/throttle";
 
-interface Dimensions {
+export interface ChartDimensions {
   width: number;
   height: number;
+  zoomLevel: number;
 }
 
 interface ResponsiveSVGOptions {
   debounceMs?: number;
   throttleMs?: number;
-  dimensionChangeThreshold?: number; // unit is pixel
 }
 
 /* Custom hook for SVG visualizations to responsively listen to parent container's size update (which comes from their parent and whole DOM tree re-rendering) and correctly assign respective inner dimensions to the svg containers */
 export function useResponsiveSVG(options: ResponsiveSVGOptions = {}) {
-  const {
-    debounceMs = 400,
-    throttleMs = 200,
-    dimensionChangeThreshold = 10,
-  } = options;
+  const { debounceMs = 400, throttleMs = 200 } = options;
 
   const containerRef = useRef<HTMLDivElement>(null);
-  const [dimensions, setDimensions] = useState<Dimensions>({
+  const [dimensions, setDimensions] = useState<ChartDimensions>({
     width: 0,
     height: 0,
+    zoomLevel: 1,
   });
   const [isResizing, setIsResizing] = useState(false);
-  const previousDimensions = useRef<Dimensions>({ width: 0, height: 0 });
-  const resizeTimeoutRef = useRef<number | null>(null);
 
-  // Only update dimensions if change exceeds threshold
-  const updateDimensions = useCallback(() => {
-    if (containerRef.current) {
-      const { clientWidth, clientHeight } = containerRef.current;
-
-      const widthDiff = Math.abs(
-        clientWidth - previousDimensions.current.width
-      );
-      const heightDiff = Math.abs(
-        clientHeight - previousDimensions.current.height
-      );
-
-      if (
-        widthDiff > dimensionChangeThreshold ||
-        heightDiff > dimensionChangeThreshold
-      ) {
-        previousDimensions.current = {
-          width: clientWidth,
-          height: clientHeight,
-        };
-        setDimensions({ width: clientWidth, height: clientHeight });
-      }
-    }
-  }, [dimensionChangeThreshold]);
+  // Debounced dimension update
+  const debouncedSetDimensions = useCallback(
+    debounce((width: number, height: number, zoom: number) => {
+      setDimensions({ width, height, zoomLevel: zoom });
+      setIsResizing(false);
+    }, debounceMs),
+    [debounceMs]
+  );
 
   // Throttled update for smooth rendering during active resizing
   const throttledUpdate = useCallback(
     throttle(() => {
-      updateDimensions();
+      if (containerRef.current) {
+        const { clientWidth, clientHeight } = containerRef.current;
+        const zoom = window.devicePixelRatio || 1;
+        // We don't call setDimensions directly here to avoid too many re-renders
+        // The final dimensions are set by the debounced function
+        setIsResizing(true);
+      }
     }, throttleMs),
-    [throttleMs, updateDimensions]
-  );
-
-  // Debounced update for final render after resizing stops
-  const debouncedEndResize = useCallback(
-    debounce(() => {
-      setIsResizing(false);
-      updateDimensions();
-    }, debounceMs),
-    [debounceMs, updateDimensions]
+    [throttleMs]
   );
 
   useEffect(() => {
     if (!containerRef.current) return;
 
-    // Initial size measurement
-    updateDimensions();
-
-    // Create ResizeObserver
-    const resizeObserver = new ResizeObserver(() => {
-      // Clear any existing timeout
-      if (resizeTimeoutRef.current !== null) {
-        window.clearTimeout(resizeTimeoutRef.current);
-      }
-
-      // Set resizing state
-      setIsResizing(true);
-
-      // Use throttled update during active resize
-      throttledUpdate();
-
-      // Use debounced update for resize completion
-      debouncedEndResize();
-    });
-
-    // Start observing the container
-    resizeObserver.observe(containerRef.current);
-
-    // Cleanup
-    return () => {
-      resizeObserver.disconnect();
-      throttledUpdate.cancel();
-      debouncedEndResize.cancel();
-
-      if (resizeTimeoutRef.current !== null) {
-        window.clearTimeout(resizeTimeoutRef.current);
+    const updateDimensions = () => {
+      if (containerRef.current) {
+        const { clientWidth, clientHeight } = containerRef.current;
+        const zoom = window.devicePixelRatio || 1;
+        debouncedSetDimensions(clientWidth, clientHeight, zoom);
       }
     };
-  }, [throttledUpdate, debouncedEndResize, updateDimensions]);
+
+    const handleResize = () => {
+      setIsResizing(true);
+      throttledUpdate();
+      updateDimensions(); // This will trigger the debounced update
+    };
+
+    updateDimensions(); // Initial measurement
+
+    const resizeObserver = new ResizeObserver(handleResize);
+    resizeObserver.observe(containerRef.current);
+
+    // Also listen to window resize for zoom changes
+    window.addEventListener("resize", handleResize);
+
+    return () => {
+      resizeObserver.disconnect();
+      window.removeEventListener("resize", handleResize);
+      throttledUpdate.cancel();
+      debouncedSetDimensions.cancel();
+    };
+  }, [debouncedSetDimensions, throttledUpdate]);
 
   return { containerRef, dimensions, isResizing };
 }

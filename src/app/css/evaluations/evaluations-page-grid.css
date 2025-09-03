@@ -41,19 +41,3 @@
     justify-content: stretch;
     align-items: stretch;
 }
-
-/* Chart grid container styles */
-.eval-single-model-chart-grid-container {
-    flex: 1;
-    display: grid;
-    grid-template-rows: 0.02fr 1fr 1fr;
-    gap: 1rem;
-    min-height: 0;
-    overflow: hidden;
-}
-
-.chart-container {
-    min-height: 0;
-    width: 100%;
-    height: 100%;
-}

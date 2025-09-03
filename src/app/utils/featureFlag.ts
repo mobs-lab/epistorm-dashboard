@@ -14,7 +14,6 @@ export const isFeatureEnabled = (feature: FeatureFlag): boolean => {
   const demoOnlyFeatures: FeatureFlag[] = [
     // "seasonOverviewTab",
     /* TODO: Flag the layout change (CSS) for the nowcast widgets */
-
     // Add more here in the future
   ];
 

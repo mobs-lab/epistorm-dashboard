@@ -6,6 +6,7 @@ import * as d3 from "d3";
 import { zoom, ZoomBehavior, zoomIdentity } from "d3-zoom";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import * as topojson from "topojson-client";
+import { useResponsiveSVG } from "@/utils/responsiveSVG";
 
 interface SettingsStateMapProps {
   pageSelected: string;
@@ -14,12 +15,11 @@ interface SettingsStateMapProps {
 const usStateData = "/states-10m.json";
 
 const SettingsStateMap: React.FC<SettingsStateMapProps> = ({ pageSelected }) => {
-  const containerRef = useRef<HTMLDivElement>(null);
+  const { containerRef, dimensions } = useResponsiveSVG();
   const svgRef = useRef<SVGSVGElement>(null);
   const gRef = useRef<SVGGElement>(null);
 
   const zoomBehaviorRef = useRef<ZoomBehavior<SVGSVGElement, unknown> | null>(null);
-  const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
   const initialTransformRef = useRef<d3.ZoomTransform | null>(null);
 
   const [isMapReady, setIsMapReady] = useState(false);
@@ -31,22 +31,6 @@ const SettingsStateMap: React.FC<SettingsStateMapProps> = ({ pageSelected }) => 
   const { selectedStateName } = useAppSelector((state) => state.forecastSettings);
   const { evaluationsSingleModelViewSelectedStateName } = useAppSelector((state) => state.evaluationsSingleModelSettings);
   const locationData = useAppSelector(selectLocationData);
-
-  const updateDimensions = useCallback(() => {
-    if (containerRef.current) {
-      const { width, height } = containerRef.current.getBoundingClientRect();
-      setDimensions({ width: width, height: height });
-    }
-  }, []);
-
-  useEffect(() => {
-    updateDimensions();
-    window.addEventListener("resize", updateDimensions);
-
-    return () => {
-      window.removeEventListener("resize", updateDimensions);
-    };
-  }, [updateDimensions]);
 
   /* OPTIMIZATION: fetch TopoJSON only once when component mounts */
   useEffect(() => {
@@ -212,7 +196,7 @@ const SettingsStateMap: React.FC<SettingsStateMapProps> = ({ pageSelected }) => 
       <button onClick={handleReset} className='absolute top-2 left-2 bg-[#5d636a] text-white text-xs p-1 rounded z-10'>
         Reset
       </button>
-      <svg ref={svgRef} width='100%' height='100%' style={{ minHeight: "240px", maxHeight: "360px" }}>
+      <svg ref={svgRef} width='100%' height='100%'>
         <g ref={gRef}></g>
       </svg>
     </div>

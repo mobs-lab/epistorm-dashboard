@@ -12,6 +12,7 @@ import { format, subDays } from "date-fns";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import * as topojson from "topojson-client";
 import { FeatureCollection } from "geojson";
+import { useResponsiveSVG } from "@/utils/responsiveSVG";
 
 const shapeFile = "/states-10m.json";
 
@@ -112,11 +113,17 @@ const LegendItem: React.FC<{
 );
 
 const NowcastStateThermo: React.FC = () => {
-  const containerRef = useRef<HTMLDivElement>(null);
+  const {
+    containerRef,
+    dimensions,
+    isResizing,
+  } = useResponsiveSVG({
+    debounceMs: 300,
+    throttleMs: 150,
+  });
   const mapSvgRef = useRef<SVGSVGElement>(null);
   const thermometerSvgRef = useRef<SVGSVGElement>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
-  const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
 
   const { selectedStateName, USStateNum, userSelectedRiskLevelModel, userSelectedWeek } = useAppSelector((state) => state.forecastSettings);
 
@@ -147,20 +154,6 @@ const NowcastStateThermo: React.FC = () => {
   const [riskColor, setRiskColor] = useState("#7cd8c9"); // Default to low risk color
   const [currentRiskLevel, setCurrentRiskLevel] = useState("Low");
   const [previousRiskLevel, setPreviousRiskLevel] = useState("Low");
-
-  // UseEffect for resizing dimensions
-  useEffect(() => {
-    const updateDimensions = () => {
-      if (containerRef.current) {
-        const { width, height } = containerRef.current.getBoundingClientRect();
-        setDimensions({ width: width, height: height });
-      }
-    };
-
-    updateDimensions();
-    window.addEventListener("resize", updateDimensions);
-    return () => window.removeEventListener("resize", updateDimensions);
-  }, []);
 
   // Main UseEffect for listening to change in resized dimension, or user-selected different weeks, trigger drawing of the mini state map
   useEffect(() => {

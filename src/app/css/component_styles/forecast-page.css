@@ -20,19 +20,6 @@
 
 .nowcast-header {
     grid-area: nowcastHeader;
-    scrollbar-gutter: auto;
-    scrollbar-width: none;
-}
-
-.forecast-graph {
-    overflow: scroll;
-    scrollbar-gutter: auto;
-    scrollbar-width: none;
-}
-
-.nowcast-thermo, .nowcast-gauge, .settings-panel {
-    width: 100%;
-    height: 100%;
 }
 
 .nowcast-thermo {
@@ -43,9 +30,6 @@
     grid-area: verticalSeparator;
     width: 100%;
     height: 100%;
-    /*display: flex;
-    justify-content: center;
-    align-items: center;*/
 }
 
 .nowcast-gauge {
@@ -54,9 +38,6 @@
 
 .settings-panel {
     grid-area: settings;
-    overflow: scroll;
-    scrollbar-gutter: auto;
-    scrollbar-width: none;
 }
 
 .horizontal-separator {
@@ -76,5 +57,4 @@
 
 .forecast-drag-bar {
     grid-area: dragBar;
-    /*border: 1px solid white;*/
 }
