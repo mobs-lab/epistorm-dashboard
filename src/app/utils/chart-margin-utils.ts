@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import * as d3 from 'd3';
 
 interface MarginConfig {
   minTopMargin: number;
@@ -72,7 +73,7 @@ export function useChartMargins(
       );
       // Ensure margin doesn't exceed 22% of the dimension
       return Math.min(responsiveMargin, dimension * 0.22);
-    };
+    };  
 
     const newMargins = {
       top: calculateMargin(config.minTopMargin, config.topMarginRatio, containerHeight),

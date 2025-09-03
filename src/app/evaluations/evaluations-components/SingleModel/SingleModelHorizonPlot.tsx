@@ -158,12 +158,6 @@ const SingleModelHorizonPlot: React.FC = () => {
 
     const allSaturdays = generateSaturdayDatesUTC(displayStartDate, displayEndDate);
 
-    console.debug("Horizon plot using metadata time range:", {
-      displayStartDate: displayStartDate.toISOString(),
-      displayEndDate: displayEndDate.toISOString(),
-      saturdayCount: allSaturdays.length,
-    });
-
     // Separate ground truth and predictions
     const groundTruthPoints = combinedData
       .filter((d) => d.groundTruth && d.groundTruth.admissions >= 0)
@@ -464,11 +458,6 @@ const SingleModelHorizonPlot: React.FC = () => {
         width='100%'
         height='100%'
         className='w-full h-full'
-        style={{
-          fontFamily: "var(--font-dm-sans)",
-          opacity: isResizing ? 0.5 : 1,
-          transition: "opacity 0.2s ease",
-        }}
         viewBox={`0 0 ${dimensions.width || 100} ${dimensions.height || 100}`}
         preserveAspectRatio='xMidYMid meet'
       />

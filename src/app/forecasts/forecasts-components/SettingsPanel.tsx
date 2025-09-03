@@ -37,7 +37,6 @@ const SettingsPanel: React.FC = () => {
   const onStateSelectionChange = (stateNum: string) => {
     const selectedState = locationData.find((state) => state.stateNum === stateNum);
     if (selectedState) {
-      console.debug("SettingsPanel update: State selected: ", selectedState.stateName, " with stateNum: ", selectedState.stateNum);
       dispatch(
         updateSelectedState({
           stateName: selectedState.stateName,
@@ -63,7 +62,7 @@ const SettingsPanel: React.FC = () => {
     if (date && date >= earliestDate && date <= dateEnd) {
       dispatch(updateDateStart(date));
     } else {
-      console.debug("SettingsPanel.tsx: Invalid dateStart selection");
+      console.error("SettingsPanel.tsx: Invalid dateStart selection");
     }
   };
 
@@ -71,7 +70,7 @@ const SettingsPanel: React.FC = () => {
     if (date && date >= dateStart && date <= latestDate) {
       dispatch(updateDateEnd(date));
     } else {
-      console.debug("SettingsPanel.tsx: Invalid dateEnd selection");
+      console.error("SettingsPanel.tsx: Invalid dateEnd selection");
     }
   };
 
@@ -90,7 +89,6 @@ const SettingsPanel: React.FC = () => {
   };
 
   const onYAxisScaleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    // console.debug("SettingsPanel update: Y-axis scale changed to: ", event.target.value);
     dispatch(updateYScale(event.target.value));
   };
 
@@ -102,7 +100,6 @@ const SettingsPanel: React.FC = () => {
     } else {
       dispatch(updateConfidenceInterval(confidenceInterval.filter((model) => model !== interval)));
     }
-    console.debug("SettingsPanel update: Confidence Interval changed to: ", confidenceInterval);
   };
 
   const handleShowAllModels = () => {
@@ -281,7 +278,7 @@ const SettingsPanel: React.FC = () => {
       </div>
 
       <div className='mt-auto p-2 border-t border-gray-700'>
-        <Image src='/epistorm-logo.png' width={300} height={120} alt='Epistorm Logo' />
+        <Image src='/epistorm-logo.png' width={300} height={120} alt='Epistorm Logo' priority/>
       </div>
     </div>
   );
