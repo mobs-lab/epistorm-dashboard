@@ -1,17 +1,19 @@
 import { useAppSelector } from "@/store/hooks";
 import {
-  selectGroundTruthInRange,
-  selectPredictionsForModelAndWeek, // Use the single model selector
+  selectGroundTruthInRange, // Use the single model selector
   selectLocationData,
+  selectPredictionsForModelAndWeek,
   selectThresholds,
 } from "@/store/selectors/forecastSelectors";
 import { nowcastRiskColors, nowcastRiskLevels } from "@/types/common";
 import { isUTCDateEqual } from "@/utils/date";
+import { useResponsiveSVG } from "@/utils/responsiveSVG";
+import "@/styles/component_styles/nowcast-thermo.css";
 import * as d3 from "d3";
 import { format, subDays } from "date-fns";
+import { FeatureCollection } from "geojson";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import * as topojson from "topojson-client";
-import { FeatureCollection } from "geojson";
 
 const shapeFile = "/states-10m.json";
 
@@ -73,7 +75,18 @@ const ThermoLegendArea: React.FC<{
         />
         {/*Use svg to draw a horizontal divider line that is gray colored*/}
         <svg width='100%' height='10%' className='mt-2'>
-          <line x1='0' y1='1' x2='100%' y2='1' stroke='gray' strokeWidth='1' />
+          <line
+            x1='0'
+            y1='1'
+            x2='100%'
+            y2='1'
+            stroke='gray'
+            strokeWidth='1'
+            style={{
+              fontFamily: "var(--font-dm-sans)",
+              transition: "opacity 0.01s ease",
+            }}
+          />
         </svg>
         <LegendItem
           title='Previous week'
@@ -112,11 +125,13 @@ const LegendItem: React.FC<{
 );
 
 const NowcastStateThermo: React.FC = () => {
-  const containerRef = useRef<HTMLDivElement>(null);
+  const { containerRef, dimensions, isResizing } = useResponsiveSVG({
+    debounceMs: 300,
+    throttleMs: 150,
+  });
   const mapSvgRef = useRef<SVGSVGElement>(null);
   const thermometerSvgRef = useRef<SVGSVGElement>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
-  const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
 
   const { selectedStateName, USStateNum, userSelectedRiskLevelModel, userSelectedWeek } = useAppSelector((state) => state.forecastSettings);
 
@@ -147,20 +162,6 @@ const NowcastStateThermo: React.FC = () => {
   const [riskColor, setRiskColor] = useState("#7cd8c9"); // Default to low risk color
   const [currentRiskLevel, setCurrentRiskLevel] = useState("Low");
   const [previousRiskLevel, setPreviousRiskLevel] = useState("Low");
-
-  // UseEffect for resizing dimensions
-  useEffect(() => {
-    const updateDimensions = () => {
-      if (containerRef.current) {
-        const { width, height } = containerRef.current.getBoundingClientRect();
-        setDimensions({ width: width, height: height });
-      }
-    };
-
-    updateDimensions();
-    window.addEventListener("resize", updateDimensions);
-    return () => window.removeEventListener("resize", updateDimensions);
-  }, []);
 
   // Main UseEffect for listening to change in resized dimension, or user-selected different weeks, trigger drawing of the mini state map
   useEffect(() => {
@@ -260,7 +261,6 @@ const NowcastStateThermo: React.FC = () => {
     // Get ground truth value
     const groundTruthEntry = groundTruthData.find((d) => d.stateNum === USStateNum && isUTCDateEqual(d.date, relativeLastWeek));
     const groundTruthValue = groundTruthEntry ? groundTruthEntry.weeklyRate : 0;
-    // console.log('DEBUG: Ground truth value:', groundTruthValue);
 
     // Get predicted value, always the 0-horizon forecast but matching selected date-location-NowcastModel.
     let predictedValue = 0;
@@ -277,7 +277,6 @@ const NowcastStateThermo: React.FC = () => {
         }
       }
     }
-    // console.log('DEBUG: Predicted value:', predictedValue);
 
     // Function to calculate line position and risk level
     const calculateLinePosition = (value: number) => {
@@ -320,7 +319,6 @@ const NowcastStateThermo: React.FC = () => {
     setCurrentRiskLevel(predictedPosition.riskLevel.charAt(0).toUpperCase() + predictedPosition.riskLevel.slice(1));
 
     // Update risk color for the map
-    // console.log("DEBUG: ", predictedPosition.riskLevel);
     setRiskColor(nowcastRiskColors[nowcastRiskLevels.indexOf(predictedPosition.riskLevel)]);
 
     // Helper functions for tooltip
@@ -473,6 +471,7 @@ const NowcastStateThermo: React.FC = () => {
     locationData,
     thresholdsData,
     relativeLastWeek,
+    containerRef,
   ]);
 
   useEffect(() => {
@@ -486,16 +485,10 @@ const NowcastStateThermo: React.FC = () => {
     const currentWeekText = `${formatDate(dateA)} to ${formatDate(dateB)}`;
     const previousWeekText = `${formatDate(dateC)} to ${formatDate(dateD)}`;
 
-    // console.log('DEBUG: Date strings calculated:', {currentWeekText, previousWeekText});
-
     // Update state variables to trigger re-render of ThermoLegendArea
     setCurrentWeek(currentWeekText);
     setPreviousWeek(previousWeekText);
-
-    // console.log('DEBUG: State updated:', {currentWeek, previousWeek});
   }, [userSelectedWeek]);
-
-  // console.log('DEBUG: Rendering NowcastStateThermo', {currentWeek, previousWeek});
 
   return (
     <div ref={containerRef} className='nowcast-state-thermo-grid-layout text-white w-min-full h-min-full py-2'>

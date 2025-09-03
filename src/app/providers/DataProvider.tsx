@@ -82,10 +82,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       const evalData = await response.json();
-      /* console.log("JSON evaluation data loaded:", {
-        size: JSON.stringify(evalData).length,
-        seasons: Object.keys(evalData.precalculated?.iqr || {}).length,
-      }); */
 
       // Dispatch to Redux store
       dispatch(setEvaluationJsonData(evalData));
@@ -166,7 +162,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           );
           // Add the dynamic time periods options to the entire options list as well
           evalSOTimeRangeOptions = [...evalSOTimeRangeOptions, ...dynamicTimePeriods];
-          console.debug("evalSOTimeRangeOptions:", evalSOTimeRangeOptions);
           // Dispatch the entire list of time range options to the redux slice
           dispatch(updateEvaluationSeasonOverviewTimeRangeOptions(evalSOTimeRangeOptions));
         }
@@ -207,11 +202,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       const auxiliaryData = await response.json();
-      console.log("JSON auxiliary data loaded successfully", {
-        hasLocations: !!auxiliaryData.locations,
-        hasThresholds: !!auxiliaryData.thresholds,
-        hasHistoricalData: !!auxiliaryData.historicalDataMap,
-      });
 
       // Dispatch to Redux store
       dispatch(setAuxiliaryJsonData(auxiliaryData));
@@ -226,12 +216,12 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const fetchAndProcessData = useCallback(async () => {
     // Use ref to prevent multiple runs
     if (dataFetchStartedRef.current) {
-      console.debug("DEBUG: DataProvider: Fetch already started, skipping");
+      console.warn("DataProvider: Fetch already started, skipping");
       return;
     }
     dataFetchStartedRef.current = true;
 
-    console.debug("DEBUG: DataProvider: Starting data fetch process");
+    console.log("DataProvider: Starting data fetch process");
 
     try {
       // Load all JSON files in parallel for better performance
@@ -245,10 +235,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const coreSuccess = jsonCoreLoaded.status === "fulfilled" && jsonCoreLoaded.value;
       const evalSuccess = jsonEvaluationLoaded.status === "fulfilled" && jsonEvaluationLoaded.value;
       const auxiliarySuccess = jsonAuxiliaryLoaded.status === "fulfilled" && jsonAuxiliaryLoaded.value;
-
-      console.log(
-        `Data loading strategy: Core=${coreSuccess ? "JSON" : "CSV"}, Eval=${evalSuccess ? "JSON" : "CSV"}, Auxiliary=${auxiliarySuccess ? "JSON" : "CSV"}`
-      );
 
       // Update loading states based on what was successfully loaded
       if (coreSuccess) {

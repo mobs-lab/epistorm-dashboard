@@ -177,13 +177,6 @@ export const selectSingleModelScoreDataFromJSON = createSelector(
     const scoreData = rawScores[seasonId]?.[metric]?.[modelName]?.[stateCode]?.[horizon];
 
     if (!scoreData || !Array.isArray(scoreData)) {
-      console.debug("No score data found for:", {
-        seasonId,
-        metric,
-        modelName,
-        stateCode,
-        horizon,
-      });
       return [];
     }
 
@@ -203,8 +196,6 @@ export const selectSingleModelScoreDataFromJSON = createSelector(
 
       return isInRange;
     });
-
-    console.debug("Filtered score data entries:", filteredScores.length);
 
     // Convert ISO strings back to Date objects for the component
     return filteredScores.map((entry) => ({

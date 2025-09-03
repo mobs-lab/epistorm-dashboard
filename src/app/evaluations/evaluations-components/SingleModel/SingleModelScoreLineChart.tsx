@@ -1,5 +1,5 @@
 import * as d3 from "d3";
-import React, { useEffect, useRef } from "react";
+import React, { useCallback, useEffect, useRef } from "react";
 
 import { useAppSelector } from "@/store/hooks";
 import { selectSingleModelScoreDataFromJSON } from "@/store/selectors/index";
@@ -248,54 +248,57 @@ const SingleModelScoreLineChart: React.FC = () => {
     return { xScale, yScale, xAxis, yAxis };
   }
 
-  function updateVisuals(
-    event: any,
-    {
-      mouseFollowLine,
-      indicatorGroup,
-      dateLabel,
-      cornerTooltip,
-      xScale,
-      margin,
-      chartWidth,
-      processedData,
-      isDragging,
-      scoreOption,
-    }: {
-      mouseFollowLine: d3.Selection<SVGLineElement, unknown, null, undefined>;
-      indicatorGroup: d3.Selection<SVGGElement, unknown, null, undefined>;
-      dateLabel: d3.Selection<SVGTextElement, unknown, null, undefined>;
-      cornerTooltip: d3.Selection<SVGGElement, unknown, null, undefined>;
-      xScale: d3.ScaleBand<string>;
-      margin: { top: number; right: number; bottom: number; left: number };
-      chartWidth: number;
-      processedData: ProcessedScoreDataPoint[];
-      isDragging: boolean;
-      scoreOption: string;
-    }
-  ) {
-    const [mouseX] = d3.pointer(event);
-    const dataPoint = findClosestDataPoint(mouseX, xScale, margin, processedData);
+  const updateVisuals = useCallback(
+    (
+      event: any,
+      {
+        mouseFollowLine,
+        indicatorGroup,
+        dateLabel,
+        cornerTooltip,
+        xScale,
+        margin,
+        chartWidth,
+        processedData,
+        isDragging,
+        scoreOption,
+      }: {
+        mouseFollowLine: d3.Selection<SVGLineElement, unknown, null, undefined>;
+        indicatorGroup: d3.Selection<SVGGElement, unknown, null, undefined>;
+        dateLabel: d3.Selection<SVGTextElement, unknown, null, undefined>;
+        cornerTooltip: d3.Selection<SVGGElement, unknown, null, undefined>;
+        xScale: d3.ScaleBand<string>;
+        margin: { top: number; right: number; bottom: number; left: number };
+        chartWidth: number;
+        processedData: ProcessedScoreDataPoint[];
+        isDragging: boolean;
+        scoreOption: string;
+      }
+    ) => {
+      const [mouseX] = d3.pointer(event);
+      const dataPoint = findClosestDataPoint(mouseX, xScale, margin, processedData);
 
-    if (!dataPoint) return;
+      if (!dataPoint) return;
 
-    // Calculate position using the band scale
-    const xPos = (xScale(dataPoint.targetDate.toISOString()) || 0) + xScale.bandwidth() / 2 + margin.left;
-    const isRightSide = mouseX < chartWidth / 2;
+      // Calculate position using the band scale
+      const xPos = (xScale(dataPoint.targetDate.toISOString()) || 0) + xScale.bandwidth() / 2 + margin.left;
+      const isRightSide = mouseX < chartWidth / 2;
 
-    mouseFollowLine.attr("transform", `translate(${xPos}, 0)`).style("opacity", 1);
+      mouseFollowLine.attr("transform", `translate(${xPos}, 0)`).style("opacity", 1);
 
-    if (isDragging) {
-      indicatorGroup.attr("transform", `translate(${xPos}, 0)`).style("opacity", 1);
+      if (isDragging) {
+        indicatorGroup.attr("transform", `translate(${xPos}, 0)`).style("opacity", 1);
 
-      dateLabel
-        .attr("x", isRightSide ? 5 : -5)
-        .attr("text-anchor", isRightSide ? "start" : "end")
-        .text(dataPoint.targetDate.toUTCString().slice(5, 16));
-    }
+        dateLabel
+          .attr("x", isRightSide ? 5 : -5)
+          .attr("text-anchor", isRightSide ? "start" : "end")
+          .text(dataPoint.targetDate.toUTCString().slice(5, 16));
+      }
 
-    updateCornerTooltip(cornerTooltip, dataPoint, isRightSide, chartWidth, scoreOption);
-  }
+      updateCornerTooltip(cornerTooltip, dataPoint, isRightSide, chartWidth, scoreOption);
+    },
+    []
+  );
 
   function renderVisualElements(
     chart: d3.Selection<SVGGElement, unknown, null, undefined>,
@@ -409,7 +412,7 @@ const SingleModelScoreLineChart: React.FC = () => {
     return dates;
   }
 
-  function renderChart() {
+  const renderChart = useCallback(() => {
     if (!chartRef.current || !dimensions.width || !dimensions.height) return;
 
     const svg = d3.select(chartRef.current);
@@ -464,7 +467,6 @@ const SingleModelScoreLineChart: React.FC = () => {
       referenceDate: entry.referenceDate,
       score: entry.score,
     }));
-    console.debug("Processed data points with scores:", processedData);
 
     // Setup dimensions
     const width = dimensions.width;
@@ -584,7 +586,15 @@ const SingleModelScoreLineChart: React.FC = () => {
 
     // Ensure tooltip is always on top
     cornerTooltip.raise();
-  }
+  }, [
+    dimensions.width,
+    dimensions.height,
+    scoreDataFromJSON,
+    timeSeriesData,
+    evaluationSingleModelViewScoresOption,
+    evaluationsSingleModelViewModel,
+    updateVisuals,
+  ]);
 
   useEffect(() => {
     if (!isResizing && dimensions.width > 0 && dimensions.height > 0) {
@@ -599,6 +609,7 @@ const SingleModelScoreLineChart: React.FC = () => {
     evaluationsSingleModelViewSelectedStateCode,
     evaluationSingleModelViewScoresOption,
     evaluationSingleModelViewHorizon,
+    renderChart,
   ]);
 
   return (
@@ -608,11 +619,6 @@ const SingleModelScoreLineChart: React.FC = () => {
         width='100%'
         height='100%'
         className='w-full h-full'
-        style={{
-          fontFamily: "var(--font-dm-sans)",
-          opacity: isResizing ? 0.5 : 1,
-          transition: "opacity 0.2s ease",
-        }}
         viewBox={`0 0 ${dimensions.width || 100} ${dimensions.height || 100}`}
         preserveAspectRatio='xMidYMid meet'
       />
