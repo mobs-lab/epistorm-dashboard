@@ -2,7 +2,7 @@
 
 .evaluations-page {
     display: grid;
-    width: 100vw;
+    width: 100%;
     height: calc(100vh - var(--header-height));
     grid-template-columns: 1fr minmax(200px, 350px);
     grid-template-rows: auto 1fr;

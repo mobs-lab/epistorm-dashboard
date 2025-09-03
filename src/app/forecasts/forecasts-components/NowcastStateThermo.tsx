@@ -1,18 +1,19 @@
 import { useAppSelector } from "@/store/hooks";
 import {
-  selectGroundTruthInRange,
-  selectPredictionsForModelAndWeek, // Use the single model selector
+  selectGroundTruthInRange, // Use the single model selector
   selectLocationData,
+  selectPredictionsForModelAndWeek,
   selectThresholds,
 } from "@/store/selectors/forecastSelectors";
 import { nowcastRiskColors, nowcastRiskLevels } from "@/types/common";
 import { isUTCDateEqual } from "@/utils/date";
+import { useResponsiveSVG } from "@/utils/responsiveSVG";
+import "@/styles/component_styles/nowcast-thermo.css";
 import * as d3 from "d3";
 import { format, subDays } from "date-fns";
+import { FeatureCollection } from "geojson";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import * as topojson from "topojson-client";
-import { FeatureCollection } from "geojson";
-import { useResponsiveSVG } from "@/utils/responsiveSVG";
 
 const shapeFile = "/states-10m.json";
 
@@ -74,7 +75,18 @@ const ThermoLegendArea: React.FC<{
         />
         {/*Use svg to draw a horizontal divider line that is gray colored*/}
         <svg width='100%' height='10%' className='mt-2'>
-          <line x1='0' y1='1' x2='100%' y2='1' stroke='gray' strokeWidth='1' />
+          <line
+            x1='0'
+            y1='1'
+            x2='100%'
+            y2='1'
+            stroke='gray'
+            strokeWidth='1'
+            style={{
+              fontFamily: "var(--font-dm-sans)",
+              transition: "opacity 0.01s ease",
+            }}
+          />
         </svg>
         <LegendItem
           title='Previous week'
@@ -113,11 +125,7 @@ const LegendItem: React.FC<{
 );
 
 const NowcastStateThermo: React.FC = () => {
-  const {
-    containerRef,
-    dimensions,
-    isResizing,
-  } = useResponsiveSVG({
+  const { containerRef, dimensions, isResizing } = useResponsiveSVG({
     debounceMs: 300,
     throttleMs: 150,
   });
@@ -466,6 +474,7 @@ const NowcastStateThermo: React.FC = () => {
     locationData,
     thresholdsData,
     relativeLastWeek,
+    containerRef,
   ]);
 
   useEffect(() => {

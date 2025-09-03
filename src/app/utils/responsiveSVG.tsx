@@ -49,7 +49,8 @@ export function useResponsiveSVG(options: ResponsiveSVGOptions = {}) {
   );
 
   useEffect(() => {
-    if (!containerRef.current) return;
+    const container = containerRef.current;
+    if (!container) return;
 
     const updateDimensions = () => {
       if (containerRef.current) {
@@ -65,7 +66,11 @@ export function useResponsiveSVG(options: ResponsiveSVGOptions = {}) {
       updateDimensions(); // This will trigger the debounced update
     };
 
-    updateDimensions(); // Initial measurement
+    // Initial measurement
+    const { clientWidth, clientHeight } = container;
+    const zoom = window.devicePixelRatio || 1;
+    setDimensions({ width: clientWidth, height: clientHeight, zoomLevel: zoom });
+
 
     const resizeObserver = new ResizeObserver(handleResize);
     resizeObserver.observe(containerRef.current);

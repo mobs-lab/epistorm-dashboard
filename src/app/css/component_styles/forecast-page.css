@@ -5,7 +5,7 @@
      *************************************************/
 .layout-grid-forecasts-page {
     display: grid;
-    width: 100vw;
+    width: 100%;
     height: calc(100vh - var(--header-height));
     gap: 0.2fr;
     grid-template-columns: minmax(0, 2fr) 0.1fr minmax(0, 1.2fr) minmax(200px, 350px);

@@ -221,7 +221,7 @@ const NowcastGauge: React.FC<RiskLevelGaugeProps> = ({ riskLevel }) => {
         }
       }
     }
-  }, [containerDimensions, nowcastTrends, userSelectedWeek]);
+  }, [containerDimensions, containerRef, nowcastTrends, userSelectedWeek]);
 
   useEffect(() => {
     drawGauge();
@@ -239,7 +239,7 @@ const NowcastGauge: React.FC<RiskLevelGaugeProps> = ({ riskLevel }) => {
   return (
     <div className='layout-nowcast-gauge'>
       <div ref={containerRef} className='nowcast-gauge-chart-area'>
-        <svg ref={svgRef} className='w-full h-full' />
+        <svg ref={svgRef} className='w-full h-full' preserveAspectRatio='xMidYMid meet' />
         {infoButtonPosition.visible && (
           <div
             className='absolute'

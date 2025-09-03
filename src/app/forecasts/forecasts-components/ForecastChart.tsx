@@ -2,12 +2,11 @@
 "use client";
 
 import * as d3 from "d3";
-import { Axis, BaseType, NumberValue } from "d3";
-import { subWeeks } from "date-fns";
+import { Axis, NumberValue } from "d3";
 import React, { useCallback, useEffect, useRef } from "react";
 
 import { modelColorMap } from "@/types/common";
-import { HistoricalDataCollectionByDate, SurveillanceSingleWeekDataPoint } from "@/types/domains/forecasting";
+import { SurveillanceSingleWeekDataPoint } from "@/types/domains/forecasting";
 import { useChartMargins } from "@/utils/chart-margin-utils";
 import { isUTCDateEqual } from "@/utils/date";
 import { useResponsiveSVG } from "@/utils/responsiveSVG";
@@ -29,10 +28,10 @@ interface ConfidenceIntervalData {
 type PredictionDataForRender = { [modelName: string]: ConfidenceIntervalData[] };
 
 const ForecastChart: React.FC = () => {
+  const dispatch = useAppDispatch();
   const svgRef = useRef<SVGSVGElement>(null);
   const { containerRef, dimensions, isResizing } = useResponsiveSVG();
   const margins = useChartMargins(dimensions.width, dimensions.height, "default");
-  const dispatch = useAppDispatch();
 
   // Get all settings variables from Redux
   const {
@@ -416,53 +415,56 @@ const ForecastChart: React.FC = () => {
       .attr("transform", `translate(${marginLeft}, ${marginTop})`);
   }
 
-  function renderHistoricalData(
-    svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
-    historicalData: SurveillanceSingleWeekDataPoint[],
-    xScale: d3.ScaleTime<number, number>,
-    yScale: d3.ScaleLinear<number, number> | d3.ScaleLogarithmic<number, number>,
-    marginLeft: number,
-    marginTop: number
-  ) {
-    console.debug("DEBUG: ForecastChart: Rendering historical data-slices:", historicalData);
-    console.debug("DEBUG: ForecastChart: User selected week:", userSelectedWeek);
+  const renderHistoricalData = useCallback(
+    (
+      svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
+      historicalData: SurveillanceSingleWeekDataPoint[],
+      xScale: d3.ScaleTime<number, number>,
+      yScale: d3.ScaleLinear<number, number> | d3.ScaleLogarithmic<number, number>,
+      marginLeft: number,
+      marginTop: number
+    ) => {
+      console.debug("DEBUG: ForecastChart: Rendering historical data-slices:", historicalData);
+      console.debug("DEBUG: ForecastChart: User selected week:", userSelectedWeek);
 
-    if (!historicalData || historicalData.length === 0) {
-      console.debug("DEBUG: No historical data available for the selected week.");
-      return;
-    }
+      if (!historicalData || historicalData.length === 0) {
+        console.debug("DEBUG: No historical data available for the selected week.");
+        return;
+      }
 
-    /*Ensure the historical data-slices to be drawn is cutoff before dateStart*/
-    const historicalDataToDraw = historicalData.filter((d) => d.date >= dateStart);
+      /*Ensure the historical data-slices to be drawn is cutoff before dateStart*/
+      const historicalDataToDraw = historicalData.filter((d) => d.date >= dateStart);
 
-    const historicalLine = d3
-      .line<SurveillanceSingleWeekDataPoint>()
-      .defined((d) => d.admissions !== -1 && !isNaN(d.admissions))
-      .x((d) => xScale(d.date))
-      .y((d) => yScale(d.admissions));
+      const historicalLine = d3
+        .line<SurveillanceSingleWeekDataPoint>()
+        .defined((d) => d.admissions !== -1 && !isNaN(d.admissions))
+        .x((d) => xScale(d.date))
+        .y((d) => yScale(d.admissions));
 
-    svg
-      .append("path")
-      .datum(historicalDataToDraw.filter((d) => d.admissions !== -1 && !isNaN(d.admissions) && d.stateNum === USStateNum))
-      .attr("class", "historical-ground-truth-path")
-      .attr("fill", "none")
-      .attr("stroke", "#FFA500") // Orange color for historical data-slices
-      .attr("stroke-width", 3)
-      .attr("d", historicalLine)
-      .attr("transform", `translate(${marginLeft}, ${marginTop})`);
+      svg
+        .append("path")
+        .datum(historicalDataToDraw.filter((d) => d.admissions !== -1 && !isNaN(d.admissions) && d.stateNum === USStateNum))
+        .attr("class", "historical-ground-truth-path")
+        .attr("fill", "none")
+        .attr("stroke", "#FFA500") // Orange color for historical data-slices
+        .attr("stroke-width", 3)
+        .attr("d", historicalLine)
+        .attr("transform", `translate(${marginLeft}, ${marginTop})`);
 
-    svg
-      .selectAll(".historical-ground-truth-dot")
-      .data(historicalDataToDraw.filter((d) => d.admissions !== -1 && !isNaN(d.admissions) && d.stateNum === USStateNum))
-      .enter()
-      .append("circle")
-      .attr("class", "historical-ground-truth-dot")
-      .attr("cx", (d) => xScale(d.date))
-      .attr("cy", (d) => yScale(d.admissions))
-      .attr("r", 6) // Slightly larger than current ground truth dots
-      .attr("fill", "#FFA500")
-      .attr("transform", `translate(${marginLeft}, ${marginTop})`);
-  }
+      svg
+        .selectAll(".historical-ground-truth-dot")
+        .data(historicalDataToDraw.filter((d) => d.admissions !== -1 && !isNaN(d.admissions) && d.stateNum === USStateNum))
+        .enter()
+        .append("circle")
+        .attr("class", "historical-ground-truth-dot")
+        .attr("cx", (d) => xScale(d.date))
+        .attr("cy", (d) => yScale(d.admissions))
+        .attr("r", 6) // Slightly larger than current ground truth dots
+        .attr("fill", "#FFA500")
+        .attr("transform", `translate(${marginLeft}, ${marginTop})`);
+    },
+    [userSelectedWeek, dateStart, USStateNum]
+  );
 
   function renderPredictionData(
     svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
@@ -1303,12 +1305,7 @@ const ForecastChart: React.FC = () => {
         height={"100%"}
         className='w-full h-full'
         preserveAspectRatio='xMidYMid meet'
-        viewBox={`0 0 ${dimensions.width || 100} ${dimensions.height || 100}`}
-        style={{
-          fontFamily: "var(--font-dm-sans)",
-          opacity: isResizing ? 0.6 : 1,
-          transition: "opacity 0.01s ease",
-        }}></svg>
+        viewBox={`0 0 ${dimensions.width || 100} ${dimensions.height || 100}`}></svg>
     </div>
   );
 };

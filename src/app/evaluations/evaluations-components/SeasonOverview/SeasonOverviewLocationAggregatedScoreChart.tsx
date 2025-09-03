@@ -575,11 +575,11 @@ const SeasonOverviewLocationAggregatedScoreChart: React.FC<SeasonOverviewLocatio
         ref={chartRef}
         width='100%'
         height='100%'
-        style={{
+        /* style={{
           fontFamily: "var(--font-dm-sans)",
           opacity: isResizing ? 0.5 : 1,
           transition: "opacity 0.2s ease",
-        }}
+        }} */
         preserveAspectRatio='xMidYMid meet'
       />
     </div>
