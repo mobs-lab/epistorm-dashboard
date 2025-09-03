@@ -5,7 +5,6 @@ import { RootState } from "../index";
 // Selector for checking if JSON data is available
 export const selectIsJsonDataLoaded = (state: RootState) => {
   const isLoaded = state.evaluationData.isJsonDataLoaded;
-  console.debug("JSON data loaded status:", isLoaded);
   return isLoaded;
 };
 
@@ -32,7 +31,6 @@ export const selectSeasonOverviewData = createSelector(
     };
 
     if (!isJsonLoaded) {
-      console.debug("JSON data not loaded, returning empty structure");
       return defaultReturn;
     }
 
@@ -43,11 +41,6 @@ export const selectSeasonOverviewData = createSelector(
     }
 
     const seasonId = selectedPeriodName;
-    console.debug("Debuggin Evaluation Data selector for season overview component:");
-    console.debug("seasonId:", seasonId);
-    console.debug("selectedPeriod:", selectedPeriod);
-    console.debug("horizons:", horizons);
-    console.debug("selectedModels:", selectedModels);
 
     return {
       seasonId,
@@ -63,7 +56,6 @@ export const selectSeasonOverviewData = createSelector(
 
 // Helper selector for checking if we should use JSON or fall back to CSV
 export const selectShouldUseJsonData = createSelector([selectIsJsonDataLoaded], (isLoaded) => {
-  console.debug("Should use JSON data:", isLoaded);
   return isLoaded;
 });
 

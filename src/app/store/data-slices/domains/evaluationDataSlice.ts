@@ -29,7 +29,6 @@ const evaluationDataSlice = createSlice({
       state.precalculated = action.payload.precalculated || action.payload;
       state.rawScores = action.payload.rawScores || {};
       state.isJsonDataLoaded = true;
-      console.debug("JSON evaluation data loaded successfully into Redux `evaluationDataSlice`");
     },
     clearEvaluationJsonData: (state) => {
       state.precalculated = {
@@ -38,12 +37,10 @@ const evaluationDataSlice = createSlice({
         detailedCoverage_aggregates: {},
       };
       state.isJsonDataLoaded = false;
-      console.debug("Cleared JSON evaluation data, falling back to CSV");
     },
   },
 });
 
-export const { setEvaluationJsonData, clearEvaluationJsonData } =
-  evaluationDataSlice.actions;
+export const { setEvaluationJsonData, clearEvaluationJsonData } = evaluationDataSlice.actions;
 
 export default evaluationDataSlice.reducer;

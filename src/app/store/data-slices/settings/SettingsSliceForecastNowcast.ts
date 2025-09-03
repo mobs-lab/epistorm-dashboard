@@ -52,10 +52,7 @@ const forecastSettingsSlice = createSlice({
   name: "forecast-settings-slice",
   initialState,
   reducers: {
-    updateSelectedState: (
-      state,
-      action: PayloadAction<{ stateName: string; stateNum: string }>
-    ) => {
+    updateSelectedState: (state, action: PayloadAction<{ stateName: string; stateNum: string }>) => {
       state.selectedStateName = action.payload.stateName;
       state.USStateNum = action.payload.stateNum;
     },
@@ -84,16 +81,9 @@ const forecastSettingsSlice = createSlice({
       state.seasonOptions = action.payload;
     },
     updateDateRange: (state, action: PayloadAction<string>) => {
-      console.debug(
-        "DEBUG: Redux: forecast-settings-slice.ts: updateDateRange",
-        action.payload
-      );
       state.dateRange = action.payload;
     },
-    updateUserSelectedRiskLevelModel: (
-      state,
-      action: PayloadAction<string>
-    ) => {
+    updateUserSelectedRiskLevelModel: (state, action: PayloadAction<string>) => {
       state.userSelectedRiskLevelModel = action.payload;
     },
     updateUserSelectedWeek: (state, action: PayloadAction<Date>) => {

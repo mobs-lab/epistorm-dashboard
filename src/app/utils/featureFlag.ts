@@ -8,7 +8,6 @@ export type FeatureFlag = "seasonOverviewTab" | string;
 export const isFeatureEnabled = (feature: FeatureFlag): boolean => {
   // Depends on app.yaml or app.demo.yaml, which are determined by branches + CI/CD pipeline
   const environment = process.env.NEXT_PUBLIC_GAE_SERVICE || "default";
-  console.debug(`Feature flag check for ${feature}. Environment is: ${environment} `);
 
   // Define which features are only available in the demo environment
   const demoOnlyFeatures: FeatureFlag[] = [
