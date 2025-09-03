@@ -464,11 +464,6 @@ const SingleModelHorizonPlot: React.FC = () => {
         width='100%'
         height='100%'
         className='w-full h-full'
-        style={{
-          fontFamily: "var(--font-dm-sans)",
-          opacity: isResizing ? 0.5 : 1,
-          transition: "opacity 0.2s ease",
-        }}
         viewBox={`0 0 ${dimensions.width || 100} ${dimensions.height || 100}`}
         preserveAspectRatio='xMidYMid meet'
       />

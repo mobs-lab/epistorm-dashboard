@@ -1,10 +1,10 @@
-import React from "react";
+import { updateUserSelectedRiskLevelModel } from "@/store/data-slices/settings/SettingsSliceForecastNowcast";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { selectLocationData } from "@/store/selectors/forecastSelectors";
-import { updateUserSelectedRiskLevelModel } from "@/store/data-slices/settings/SettingsSliceForecastNowcast";
-import InfoButton from "../../components/InfoButton";
-import { activityLevelsInfo } from "types/infobutton-content";
 import { modelNames } from "@/types/common";
+import React from "react";
+import { activityLevelsInfo } from "types/infobutton-content";
+import InfoButton from "../../components/InfoButton";
 
 const NowcastHeader: React.FC = () => {
   const dispatch = useAppDispatch();

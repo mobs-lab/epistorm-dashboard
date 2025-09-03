@@ -281,7 +281,7 @@ const SettingsPanel: React.FC = () => {
       </div>
 
       <div className='mt-auto p-2 border-t border-gray-700'>
-        <Image src='/epistorm-logo.png' width={300} height={120} alt='Epistorm Logo' />
+        <Image src='/epistorm-logo.png' width={300} height={120} alt='Epistorm Logo' priority/>
       </div>
     </div>
   );

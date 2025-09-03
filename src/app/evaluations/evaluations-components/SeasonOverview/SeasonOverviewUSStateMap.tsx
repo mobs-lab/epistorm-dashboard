@@ -4,7 +4,6 @@
 import React, { useEffect, useRef, useState, useMemo, useCallback } from "react";
 import * as d3 from "d3";
 import * as topojson from "topojson-client";
-import { addWeeks } from "date-fns";
 import { useResponsiveSVG } from "@/utils/responsiveSVG";
 import { useAppSelector } from "@/store/hooks";
 import { selectSeasonOverviewData, selectShouldUseJsonData } from "@/store/selectors/evaluationSelectors";
@@ -138,7 +137,7 @@ const SeasonOverviewUSStateMap: React.FC = () => {
 
       // Size the tooltip background
       const textBBox = valueText.node()?.getBBox() || { width: 100, height: 20 };
-      const titleBBox = tooltip.select("text").node()?.getBBox() || { width: 100, height: 20 }; 
+      const titleBBox = tooltip.select("text").node()?.getBBox() || { width: 100, height: 20 };
       const textWidth = Math.max(textBBox.width, titleBBox.width);
       tooltipRect.attr("width", textWidth + 20).attr("height", 45);
 
@@ -655,11 +654,6 @@ const SeasonOverviewUSStateMap: React.FC = () => {
         ref={svgRef}
         width='100%'
         height='100%'
-        style={{
-          fontFamily: "var(--font-dm-sans)",
-          opacity: isResizing ? 0.5 : 1,
-          transition: "opacity 0.2s ease",
-        }}
         viewBox={`0 0 ${dimensions.width || 100} ${dimensions.height || 100}`}
         preserveAspectRatio='xMidYMid meet'
       />

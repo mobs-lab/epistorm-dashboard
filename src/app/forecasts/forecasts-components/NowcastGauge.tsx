@@ -1,10 +1,12 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import * as d3 from "d3";
 import { useAppSelector } from "@/store/hooks";
-import { isUTCDateEqual } from "@/utils/date";
+
 import InfoButton from "@/shared-components/InfoButton";
 import { trendForecastInfo } from "types/infobutton-content";
 import { selectNowcastTrendsForModelAndDate } from "@/store/selectors";
+import { useResponsiveSVG } from "@/utils/responsiveSVG";
+import "@/styles/component_styles/nowcast-gauge.css";
 
 interface RiskLevelGaugeProps {
   riskLevel: string;
@@ -38,12 +40,15 @@ interface InfoButtonPosition {
 
 const NowcastGauge: React.FC<RiskLevelGaugeProps> = ({ riskLevel }) => {
   const svgRef = useRef<SVGSVGElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const tooltipRef = useRef<HTMLDivElement>(null);
-  const [containerDimensions, setContainerDimensions] = useState({
-    width: 0,
-    height: 0,
+  const {
+    containerRef,
+    dimensions: containerDimensions,
+    isResizing,
+  } = useResponsiveSVG({
+    debounceMs: 300,
+    throttleMs: 150,
   });
+  const tooltipRef = useRef<HTMLDivElement>(null);
 
   const [infoButtonPosition, setInfoButtonPosition] = useState<InfoButtonPosition>({
     left: 0,
@@ -55,22 +60,6 @@ const NowcastGauge: React.FC<RiskLevelGaugeProps> = ({ riskLevel }) => {
   const nowcastTrends = useAppSelector((state) =>
     selectNowcastTrendsForModelAndDate(state, userSelectedRiskLevelModel, userSelectedWeek, USStateNum)
   );
-
-  const updateDimensions = useCallback(() => {
-    if (containerRef.current) {
-      const { width, height } = containerRef.current.getBoundingClientRect();
-      setContainerDimensions({ width, height: height * 0.8 }); // Adjust height to leave space for legend
-    }
-  }, []);
-
-  useEffect(() => {
-    updateDimensions();
-    const resizeObserver = new ResizeObserver(updateDimensions);
-    if (containerRef.current) {
-      resizeObserver.observe(containerRef.current);
-    }
-    return () => resizeObserver.disconnect();
-  }, [updateDimensions]);
 
   const drawGauge = useCallback(() => {
     if (!svgRef.current || containerDimensions.width === 0) return;
@@ -198,7 +187,8 @@ const NowcastGauge: React.FC<RiskLevelGaugeProps> = ({ riskLevel }) => {
           value = trendToUse.increase;
         }
 
-        tooltip.html(`${label}: ${value === "N/A" ? value : value.toFixed(3)}`).style("display", "block");
+        const tooltipContent = value === "N/A" ? `${label}: ${value}` : `${label}: ${(value as number).toFixed(3)}`;
+        tooltip.html(tooltipContent).style("display", "block");
 
         updateTooltipPosition(event);
       })
@@ -231,7 +221,7 @@ const NowcastGauge: React.FC<RiskLevelGaugeProps> = ({ riskLevel }) => {
         }
       }
     }
-  }, [containerDimensions, nowcastTrends, userSelectedWeek]);
+  }, [containerDimensions, containerRef, nowcastTrends, userSelectedWeek]);
 
   useEffect(() => {
     drawGauge();
@@ -247,10 +237,9 @@ const NowcastGauge: React.FC<RiskLevelGaugeProps> = ({ riskLevel }) => {
   }, [drawGauge]);
 
   return (
-    <div ref={containerRef} className='flex flex-col h-full items-stretch justify-stretch py-2 relative'>
-      <div className='flex-grow relative'>
-        <svg ref={svgRef} className='w-full h-full' />
-
+    <div className='layout-nowcast-gauge'>
+      <div ref={containerRef} className='nowcast-gauge-chart-area'>
+        <svg ref={svgRef} className='w-full h-full' preserveAspectRatio='xMidYMid meet' />
         {infoButtonPosition.visible && (
           <div
             className='absolute'
@@ -262,13 +251,12 @@ const NowcastGauge: React.FC<RiskLevelGaugeProps> = ({ riskLevel }) => {
             <InfoButton title='Trend Forecast Information' content={trendForecastInfo} displayStyle='icon' size='sm' dialogSize='lg' />
           </div>
         )}
-
         <div
           ref={tooltipRef}
           className='absolute hidden bg-white text-black rounded shadow-md p-2 text-sm'
           style={{ pointerEvents: "none", zIndex: 10 }}></div>
       </div>
-      <div className='h-1/5'>
+      <div className='nowcast-gauge-legend-area'>
         <LegendBoxes />
       </div>
     </div>

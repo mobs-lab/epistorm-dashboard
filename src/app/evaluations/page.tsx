@@ -102,35 +102,33 @@ const SingleModelContent = () => {
     (state) => state.evaluationsSingleModelSettings
   );
 
-  if (!loadingStates.groundTruth || !loadingStates.predictions) {
+  if (loadingStates.groundTruth || loadingStates.predictions) {
     return (
-      <div className='eval-single-model-chart-grid-container'>
-        <div className='flex flex-row flex-nowrap align-middle justify-between'>
-          {/* Dynamic Title that shows the name of the state selected */}
-          <h1 className='sm:text-sm md:text-base lg:text-2xl xl:text-3xl 2xl:text-4xl font-light util-text-limit max-h-8'>
-            {evaluationsSingleModelViewSelectedStateName}
-          </h1>
-          <div className='items-center'>
-            <InfoButton content={singleModelInfo} title='Single Model Evaluations' displayStyle='icon'></InfoButton>
-          </div>
-        </div>
-        <div className='chart-container'>
-          <div className='p-[0.05rem] border-b border-gray-700 flex justify-between items-center'>Hospitalization Forecasts by Horizon</div>
-          <SingleModelHorizonPlot />
-        </div>
-        <div className='chart-container'>
-          <div className='p-[0.05rem] border-b border-gray-700 flex justify-between items-center'>
-            {evaluationSingleModelViewScoresOption}
-          </div>
-          <SingleModelScoreLineChart />
-        </div>
+      <div className='flex items-center justify-center h-full'>
+        <p className='text-white'>Loading data...</p>
       </div>
     );
   }
 
   return (
-    <div className='flex items-center justify-center h-full'>
-      <p className='text-white'>Loading data...</p>
+    <div className='flex-1 grid grid-rows-[auto,1fr,1fr] gap-4 min-h-0 overflow-hidden'>
+      <div className='flex flex-row flex-nowrap align-middle justify-between'>
+        {/* Dynamic Title that shows the name of the state selected */}
+        <h1 className='sm:text-sm md:text-base lg:text-2xl xl:text-3xl 2xl:text-4xl font-light util-text-limit max-h-8'>
+          {evaluationsSingleModelViewSelectedStateName}
+        </h1>
+        <div className='items-center'>
+          <InfoButton content={singleModelInfo} title='Single Model Evaluations' displayStyle='icon'></InfoButton>
+        </div>
+      </div>
+      <div className='min-h-0 w-full h-full'>
+        <div className='p-[0.05rem] border-b border-gray-700 flex justify-between items-center'>Hospitalization Forecasts by Horizon</div>
+        <SingleModelHorizonPlot />
+      </div>
+      <div className='min-h-0 w-full h-full'>
+        <div className='p-[0.05rem] border-b border-gray-700 flex justify-between items-center'>{evaluationSingleModelViewScoresOption}</div>
+        <SingleModelScoreLineChart />
+      </div>
     </div>
   );
 };

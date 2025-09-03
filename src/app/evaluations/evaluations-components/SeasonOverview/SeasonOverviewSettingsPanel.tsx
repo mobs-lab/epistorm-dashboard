@@ -196,7 +196,7 @@ export const SeasonOverviewSettings = () => {
       </div>
 
       <div className='mt-auto p-2 border-t border-gray-700'>
-        <Image src='/epistorm-logo.png' width={300} height={120} alt='Epistorm Logo' className='mx-auto' />
+        <Image src='/epistorm-logo.png' width={300} height={120} alt='Epistorm Logo' className='mx-auto' priority />
       </div>
     </div>
   );
