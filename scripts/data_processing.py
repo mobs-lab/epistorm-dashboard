@@ -935,11 +935,6 @@ def main():
     # Assemble app_data_core.json according to DataContract.md (without historical data)
     print("   - Assembling core data JSON...")
     app_data_core_json = {
-        "metadata": {
-            "seasons": seasons_metadata,  # Contains both fullRangeSeasons and dynamicTimePeriod
-            "modelNames": model_names,
-            "defaultSeasonTimeValue": default_season_tv,
-        },
         "mainData": {
             "nowcastTrends": nowcast_dict,
             "groundTruthData": ground_truth_data,
@@ -950,10 +945,17 @@ def main():
     # Assemble app_data_auxiliary.json
     print("   - Assembling auxiliary data JSON...")
     app_data_auxiliary_json = {
+        "metadata": {
+            "seasons": seasons_metadata,  # Contains both fullRangeSeasons and dynamicTimePeriod
+            "modelNames": model_names,
+            "defaultSeasonTimeValue": default_season_tv,
+        },
         "locations": locations_list,
         "thresholds": thresholds_dict,
-        "historicalDataMap": historical_data_map,
     }
+
+    print("   - Assembling Historical Ground Truth data JSON...")
+    app_data_historical_json = {"historicalDataMap": historical_data_map}
 
     # Assemble app_data_evaluations.json
     print("   - Assembling evaluations data JSON...")
@@ -971,31 +973,30 @@ def main():
     core_output_path = public_data_dir / "app_data_core.json"
     auxiliary_output_path = public_data_dir / "app_data_auxiliary.json"
     eval_output_path = public_data_dir / "app_data_evaluations.json"
+    historical_output_path = public_data_dir / "app_data_historical.json"
 
     try:
-        with open(core_output_path, "w") as f:
-            json.dump(app_data_core_json, f, cls=NpEncoder)
-        print(f"   - Successfully wrote app_data_core.json ({core_output_path.stat().st_size / 1e6:.2f} MB)")
-
         with open(auxiliary_output_path, "w") as f:
             json.dump(app_data_auxiliary_json, f, cls=NpEncoder)
         print(f"   - Successfully wrote app_data_auxiliary.json ({auxiliary_output_path.stat().st_size / 1e6:.2f} MB)")
 
+        with open(core_output_path, "w") as f:
+            json.dump(app_data_core_json, f, cls=NpEncoder)
+        print(f"   - Successfully wrote app_data_core.json ({core_output_path.stat().st_size / 1e6:.2f} MB)")
+
         with open(eval_output_path, "w") as f:
             json.dump(app_data_evaluations_json, f, cls=NpEncoder)
         print(f"   - Successfully wrote app_data_evaluations.json ({eval_output_path.stat().st_size / 1e6:.2f} MB)")
+
+        with open(historical_output_path, "w") as f:
+            json.dump(app_data_historical_json, f, cls=NpEncoder)
+        print(f"   - Successfully wrote app_data_historical.json ({historical_output_path.stat().st_size / 1e6:.2f} MB)")
 
     except Exception as e:
         print(f"ERROR: Failed to write JSON files: {e}")
         return
 
     print("\n=== Data Processing Complete ===")
-    print("Summary:")
-    print(f"- Processed {len(model_names)} models")
-    print(f"- Generated {len(full_range_season_options)} full range seasons")
-    print(f"- Generated {len(dynamic_season_options)} dynamic time periods")
-    print(f"- Partitioned time series data for {len(time_series_data)} seasons")
-    print("- Pre-aggregated evaluation data for all seasons and periods")
 
 
 if __name__ == "__main__":

@@ -4,8 +4,8 @@
 import { LoadingStates } from "@/types/app";
 
 // Import critical libraries
-import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { parseISO } from "date-fns";
+import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 
 // Import Redux
 import {
@@ -21,6 +21,10 @@ import { clearEvaluationJsonData, setEvaluationJsonData } from "@/store/data-sli
 
 import { clearAuxiliaryData, setAuxiliaryJsonData } from "@/store/data-slices/domains/auxiliaryDataSlice";
 import { clearCoreData, setCoreJsonData } from "@/store/data-slices/domains/coreDataSlice";
+import {
+  clearHistoricalGroundTruthData,
+  setHistoricalGroundTruthJsonData,
+} from "@/store/data-slices/domains/historicalGroundTruthDataSlice";
 
 // Evaluation Single Model Settings Slice
 import { updateEvaluationSeasonOverviewTimeRangeOptions } from "@/store/data-slices/settings/SettingsSliceEvaluationSeasonOverview";
@@ -61,18 +65,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setLoadingStates((prev) => ({ ...prev, [key]: value }));
   }, []);
 
-  // When true, prefer pre-aggregated JSON (app_data_evaluations.json) for Season Overview
-  // CSV fallback remains in place for older data sources or local testing
-  const USE_JSON_EVALUATIONS_DATA = true;
-
   // Fetch app_data_evaluations.json and populate the new evaluationData slice.
-  // If not available, fall back to CSV flow and keep existing slices populated.
   const loadJsonEvaluationData = useCallback(async () => {
-    if (!USE_JSON_EVALUATIONS_DATA) {
-      console.log("JSON evaluations disabled, using CSV fallback");
-      return false;
-    }
-
     try {
       console.log("Loading JSON evaluation data...");
       const response = await fetch("/data/app_data_evaluations.json");
@@ -91,7 +85,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       dispatch(clearEvaluationJsonData());
       return false;
     }
-  }, [USE_JSON_EVALUATIONS_DATA, dispatch]);
+  }, [dispatch]);
 
   const loadJsonCoreData = useCallback(async () => {
     try {
@@ -107,14 +101,34 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Store the entire core data structure
       dispatch(setCoreJsonData(coreData));
 
+      return true;
+    } catch (error) {
+      console.error("Failed to load JSON core data:", error);
+      dispatch(clearCoreData());
+      return false;
+    }
+  }, [dispatch]);
+
+  const loadJsonAuxiliaryData = useCallback(async () => {
+    try {
+      console.log("Loading JSON auxiliary data...");
+      const response = await fetch("/data/app_data_auxiliary.json");
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch auxiliary JSON: ${response.status}`);
+      }
+
+      const auxiliaryData = await response.json();
+      // Dispatch to Redux store
+      dispatch(setAuxiliaryJsonData(auxiliaryData));
       // Extract and process metadata
-      if (coreData.metadata) {
+      if (auxiliaryData.metadata) {
         // Initialize the list of time range options for season overview page
         let evalSOTimeRangeOptions: EvaluationSeasonOverviewTimeRangeOption[] = [];
         let numOfFullRangeSeasons = 0;
         // Process season options for forecast and single-model page
-        if (coreData.metadata.seasons?.fullRangeSeasons) {
-          const seasonOptions = coreData.metadata.seasons.fullRangeSeasons.map(
+        if (auxiliaryData.metadata.seasons?.fullRangeSeasons) {
+          const seasonOptions = auxiliaryData.metadata.seasons.fullRangeSeasons.map(
             (season: { index: number; displayString: string; timeValue: string; startDate: string; endDate: string }) => ({
               ...season,
               startDate: parseISO(season.startDate),
@@ -141,8 +155,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
 
         // Check if metadata has dynamic time periods, and put them into redux slice if any (they should already be in perfect shape for settings panel to display)
-        if (coreData.metadata.seasons?.dynamicTimePeriod) {
-          const dynamicTimePeriods: EvaluationSeasonOverviewTimeRangeOption[] = coreData.metadata.seasons.dynamicTimePeriod.map(
+        if (auxiliaryData.metadata.seasons?.dynamicTimePeriod) {
+          const dynamicTimePeriods: EvaluationSeasonOverviewTimeRangeOption[] = auxiliaryData.metadata.seasons.dynamicTimePeriod.map(
             (tp: {
               index: number;
               label: string;
@@ -167,9 +181,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
 
         // Set default date range if provided
-        if (coreData.metadata.defaultSeasonTimeValue) {
-          const defaultOption = coreData.metadata.seasons?.fullRangeSeasons?.find(
-            (s: { timeValue: any }) => s.timeValue === coreData.metadata.defaultSeasonTimeValue
+        if (auxiliaryData.metadata.defaultSeasonTimeValue) {
+          const defaultOption = auxiliaryData.metadata.seasons?.fullRangeSeasons?.find(
+            (s: { timeValue: any }) => s.timeValue === auxiliaryData.metadata.defaultSeasonTimeValue
           );
 
           if (defaultOption) {
@@ -183,32 +197,26 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
         }
       }
-
-      return true;
-    } catch (error) {
-      console.error("Failed to load JSON core data:", error);
-      dispatch(clearCoreData());
-      return false;
-    }
-  }, [dispatch]);
-
-  const loadJsonAuxiliaryData = useCallback(async () => {
-    try {
-      console.log("Loading JSON auxiliary data...");
-      const response = await fetch("/data/app_data_auxiliary.json");
-
-      if (!response.ok) {
-        throw new Error(`Failed to fetch auxiliary JSON: ${response.status}`);
-      }
-
-      const auxiliaryData = await response.json();
-
-      // Dispatch to Redux store
-      dispatch(setAuxiliaryJsonData(auxiliaryData));
       return true;
     } catch (error) {
       console.error("Failed to load JSON auxiliary data:", error);
       dispatch(clearAuxiliaryData());
+      return false;
+    }
+  }, [dispatch]);
+
+  const loadJsonHistoricalGroundTruthData = useCallback(async () => {
+    try {
+      const response = await fetch("/data/app_data_historical.json");
+      if (!response.ok) {
+        throw new Error(`Failed to fetch historical ground truth JSON: ${response.status}`);
+      }
+      const historicalGroundTruthData = await response.json();
+      dispatch(setHistoricalGroundTruthJsonData(historicalGroundTruthData));
+      return true;
+    } catch (error) {
+      console.error("Failed to load JSON historical ground truth data:", error);
+      dispatch(clearHistoricalGroundTruthData());
       return false;
     }
   }, [dispatch]);
@@ -227,8 +235,12 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Load all JSON files in parallel for better performance
       const [jsonCoreLoaded, jsonEvaluationLoaded, jsonAuxiliaryLoaded] = await Promise.allSettled([
         loadJsonCoreData(),
-        loadJsonEvaluationData(),
         loadJsonAuxiliaryData(),
+        // TODO: Make these two lazy-loaded
+        // Evaluations should be loaded when loading /evaluations pages
+        // Historical Ground Truth data should be fetched when user toggles on Historical ground truth data mode
+        loadJsonEvaluationData(),
+        loadJsonHistoricalGroundTruthData(),
       ]);
 
       // Check results and handle any failures gracefully
@@ -257,7 +269,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (error) {
       console.error("Error in fetchAndProcessData:", error);
     }
-  }, [loadJsonEvaluationData, loadJsonCoreData, loadJsonAuxiliaryData, updateLoadingState]);
+  }, [loadJsonCoreData, loadJsonAuxiliaryData, loadJsonEvaluationData, loadJsonHistoricalGroundTruthData, updateLoadingState]);
 
   useEffect(() => {
     fetchAndProcessData();

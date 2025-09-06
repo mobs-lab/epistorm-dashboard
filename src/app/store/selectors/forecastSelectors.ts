@@ -85,7 +85,7 @@ export const selectNowcastTrendsForModelAndDate = createSelector(
 export const selectGroundTruthInRange = createSelector(
   [
     (state: RootState) => state.coreData.mainData?.groundTruthData,
-    (state: RootState) => state.coreData.metadata?.seasons,
+    (state: RootState) => state.auxiliaryData.metadata?.seasons,
     (state: RootState, startDate: Date, endDate: Date) => ({ startDate, endDate }),
     (state: RootState, startDate: Date, endDate: Date, stateNum: string) => stateNum,
   ],
@@ -143,7 +143,7 @@ export const selectGroundTruthInRange = createSelector(
 export const selectExtendedGroundTruthInRange = createSelector(
   [
     (state: RootState) => state.coreData.mainData?.groundTruthData,
-    (state: RootState) => state.coreData.metadata?.seasons,
+    (state: RootState) => state.auxiliaryData.metadata?.seasons,
     (state: RootState, startDate: Date, endDate: Date, horizon: number) => ({ startDate, endDate, horizon }),
     (state: RootState, startDate: Date, endDate: Date, horizon: number, stateNum: string) => stateNum,
   ],
@@ -207,7 +207,7 @@ export const selectExtendedGroundTruthInRange = createSelector(
 // Selector for historical ground truth data for a specific week
 export const selectHistoricalDataForWeek = createSelector(
   [
-    (state: RootState) => state.auxiliaryData?.historicalDataMap,
+    (state: RootState) => state.historicalGroundTruthData?.historicalDataMap,
     (state: RootState, userSelectedWeek: Date) => userSelectedWeek,
     (state: RootState, userSelectedWeek: Date, stateNum: string) => stateNum,
   ],
@@ -254,7 +254,7 @@ export const selectHistoricalDataForWeek = createSelector(
 export const selectPredictionsForMultipleModels = createSelector(
   [
     (state: RootState) => state.coreData.mainData?.predictionData,
-    (state: RootState) => state.coreData.metadata?.seasons,
+    (state: RootState) => state.auxiliaryData.metadata?.seasons,
     (state: RootState, modelNames: string[], stateNum: string, referenceDate: Date, horizon: number) => ({
       modelNames,
       stateNum,
@@ -278,20 +278,20 @@ export const selectPredictionsForMultipleModels = createSelector(
       if (!modelData) return;
 
       for (const partitionName of ["full-forecast", "forecast-tail"]) {
-        const partition = modelData.partitions[partitionName];
+        const partition = modelData.partitions[partitionName as keyof typeof modelData.partitions];
         if (!partition || !partition[dateISO]) continue;
 
         const stateData = partition[dateISO][stateNum];
         if (stateData?.predictions) {
           // Container to put all horizon-matching final single-prediction-points, keyed by targetDateISO
-          const filteredPredictions = {};
+          const filteredPredictions: { [targetDateISO: string]: any } = {};
           Object.entries(stateData.predictions).forEach(([targetDateISO, pred]) => {
             if (pred.horizon <= horizon) {
               filteredPredictions[targetDateISO] = pred;
             }
           });
           if (Object.keys(filteredPredictions).length > 0) {
-            predictions[modelName] = filteredPredictions;
+            (predictions as any)[modelName] = filteredPredictions;
           }
           break;
         }
@@ -306,7 +306,7 @@ export const selectPredictionsForMultipleModels = createSelector(
 export const selectPredictionsForModelAndWeek = createSelector(
   [
     (state: RootState) => state.coreData.mainData?.predictionData,
-    (state: RootState) => state.coreData.metadata?.seasons,
+    (state: RootState) => state.auxiliaryData.metadata?.seasons,
     (state: RootState, modelName: string) => modelName,
     (state: RootState, modelName: string, stateNum: string) => stateNum,
     (state: RootState, modelName: string, stateNum: string, referenceDate: Date) => referenceDate,
@@ -334,7 +334,7 @@ export const selectPredictionsForModelAndWeek = createSelector(
 
     // Check each partition for this date
     for (const partitionName of ["full-forecast", "forecast-tail"]) {
-      const partition = modelData.partitions[partitionName];
+      const partition = modelData.partitions[partitionName as keyof typeof modelData.partitions];
       if (!partition || !partition[dateISO]) continue;
 
       const stateData = partition[dateISO][stateNum];
@@ -391,7 +391,7 @@ function findSeasonForDate(seasons: any, date: Date): string | null {
 }
 
 // Selector for date constraints from metadata
-export const selectDateConstraints = createSelector([(state: RootState) => state.coreData.metadata?.seasons], (seasons) => {
+export const selectDateConstraints = createSelector([(state: RootState) => state.auxiliaryData.metadata?.seasons], (seasons) => {
   if (!seasons?.fullRangeSeasons || seasons.fullRangeSeasons.length === 0) {
     // Fallback to hardcoded dates if no metadata
     return {
@@ -404,7 +404,7 @@ export const selectDateConstraints = createSelector([(state: RootState) => state
   let earliestDate = new Date(seasons.fullRangeSeasons[0].startDate);
   let latestDate = new Date(seasons.fullRangeSeasons[0].endDate);
 
-  seasons.fullRangeSeasons.forEach((season) => {
+  seasons.fullRangeSeasons.forEach((season: any) => {
     const seasonStart = new Date(season.startDate);
     const seasonEnd = new Date(season.endDate);
 
