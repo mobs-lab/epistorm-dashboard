@@ -14,12 +14,12 @@ import {
   updateYScale,
 } from "@/store/data-slices/settings/SettingsSliceForecastNowcast";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { selectDateConstraints, selectLocationData, selectGroundTruthInRange } from "@/store/selectors/forecastSelectors";
+import { selectDateConstraints, selectLocationData } from "@/store/selectors/forecastSelectors";
 import { Radio, Typography } from "@/styles/material-tailwind-wrapper";
 import { modelColorMap, modelNames } from "@/types/common";
 import { SeasonOption } from "@/types/domains/forecasting";
 import Image from "next/image";
-import React, { useMemo } from "react";
+import React from "react";
 import { horizonSelectorsInfo } from "types/infobutton-content";
 import SettingsStyledDatePicker from "./SettingsStyledDatePicker";
 
@@ -278,7 +278,7 @@ const SettingsPanel: React.FC = () => {
       </div>
 
       <div className='mt-auto p-2 border-t border-gray-700'>
-        <Image src='/epistorm-logo.png' width={300} height={120} alt='Epistorm Logo' priority/>
+        <Image src='/epistorm-logo.png' width={300} height={120} alt='Epistorm Logo' priority />
       </div>
     </div>
   );

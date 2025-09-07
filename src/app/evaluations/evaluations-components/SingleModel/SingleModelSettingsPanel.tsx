@@ -8,6 +8,7 @@ import { SeasonOption } from "@/types/domains/forecasting";
 import SettingsStateMap from "@/shared-components/SettingsStateMap";
 
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { selectLocationData } from "@/store/selectors";
 
 import {
   updateEvaluationScores,
@@ -15,8 +16,8 @@ import {
   updateEvaluationSingleModelViewDateStart,
   updateEvaluationSingleModelViewHorizon,
   updateEvaluationSingleModelViewSelectedState,
-  updateEvaluationsSingleModelViewDateRange,
   updateEvaluationsSingleModelViewModel,
+  updateEvaluationsSingleModelViewSeasonId,
 } from "@/store/data-slices/settings/SettingsSliceEvaluationSingleModel";
 
 import { Radio, Typography } from "@/styles/material-tailwind-wrapper";
@@ -37,7 +38,9 @@ const SingleModelSettingsPanel: React.FC = () => {
     evaluationsSingleModelViewModel,
     evaluationSingleModelViewHorizon,
     evaluationSingleModelViewScoresOption,
-    evaluationsSingleModelViewDateRange,
+    evaluationsSingleModelViewDateStart,
+    evaluationSingleModelViewDateEnd,
+    evaluationsSingleModelViewSeasonId, // <-- Use seasonId from state
     evaluationSingleModelViewSeasonOptions,
   } = useAppSelector((state) => state.evaluationsSingleModelSettings);
 
@@ -67,10 +70,14 @@ const SingleModelSettingsPanel: React.FC = () => {
   };
 
   // Season selection handler (shared with forecast)
-  const onSeasonSelectionChange = (timeValue: string) => {
-    const selectedOption = evaluationSingleModelViewSeasonOptions.find((option) => option.timeValue === timeValue);
+  const onSeasonSelectionChange = (seasonIdentifier: string) => {
+    // The identifier could be a seasonId (for full range) or a label (for dynamic)
+    const selectedOption = evaluationSingleModelViewSeasonOptions.find(
+      (option) => option.seasonId === seasonIdentifier || option.timeValue === seasonIdentifier
+    );
+
     if (selectedOption) {
-      dispatch(updateEvaluationsSingleModelViewDateRange(timeValue));
+      dispatch(updateEvaluationsSingleModelViewSeasonId(selectedOption.seasonId)); // <-- Dispatch seasonId
       dispatch(updateEvaluationSingleModelViewDateStart(selectedOption.startDate));
       dispatch(updateEvaluationSingleModelViewDateEnd(selectedOption.endDate));
     }
@@ -154,11 +161,14 @@ const SingleModelSettingsPanel: React.FC = () => {
             Season
           </Typography>
           <select
-            value={evaluationsSingleModelViewDateRange}
+            id={"settings-panel-season-select"}
+            value={evaluationsSingleModelViewSeasonId} // <-- Bind value to seasonId
             onChange={(e) => onSeasonSelectionChange(e.target.value)}
-            className='text-white border-[#5d636a] border-2 flex-wrap bg-mobs-lab-color-filterspane rounded-md w-full py-2 px-2 overflow-ellipsis'>
+            className={
+              "text-white border-[#5d636a] border-2 flex-wrap bg-mobs-lab-color-filterspane rounded-md w-full py-2 px-2 overflow-ellipsis"
+            }>
             {evaluationSingleModelViewSeasonOptions.map((option: SeasonOption) => (
-              <option key={option.index} value={option.timeValue}>
+              <option key={option.index} value={option.seasonId}>
                 {option.displayString}
               </option>
             ))}

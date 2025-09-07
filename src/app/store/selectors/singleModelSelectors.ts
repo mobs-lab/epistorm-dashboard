@@ -31,28 +31,15 @@ export const selectSingleModelTimeSeriesData = createSelector(
     (state: RootState) => state.coreData.isLoaded,
     (state: RootState) => state.coreData.mainData?.predictionData,
     (state: RootState) => state.coreData.mainData?.groundTruthData,
-    (state: RootState) => state.evaluationsSingleModelSettings.evaluationsSingleModelViewDateRange,
+    (state: RootState) => state.evaluationsSingleModelSettings.evaluationsSingleModelViewSeasonId, // <-- Use seasonId
     (state: RootState) => state.evaluationsSingleModelSettings.evaluationsSingleModelViewModel,
     (state: RootState) => state.evaluationsSingleModelSettings.evaluationsSingleModelViewSelectedStateCode,
     (state: RootState) => state.evaluationsSingleModelSettings.evaluationSingleModelViewHorizon,
   ],
-  (isLoaded, predictionData, groundTruthData, dateRange, modelName, stateCode, horizon) => {
-    if (!isLoaded || !predictionData || !groundTruthData || !dateRange || !modelName) {
-      return {
-        data: [],
-        metadata: {
-          firstPredRefDate: null,
-          lastPredRefDate: null,
-          lastPredTargetDate: null,
-          displayStartDate: new Date(),
-          displayEndDate: new Date(),
-        },
-      };
-    }
-
-    const seasonId = mapDateRangeToSeasonId(dateRange);
-    if (!seasonId) {
-      console.warn("Could not map date range to season ID:", dateRange);
+  (isLoaded, predictionData, groundTruthData, seasonId, modelName, stateCode, horizon) => {
+    // <-- Use seasonId
+    if (!isLoaded || !predictionData || !groundTruthData || !seasonId || !modelName) {
+      // <-- Use seasonId
       return {
         data: [],
         metadata: {
@@ -139,20 +126,21 @@ export const selectSingleModelScoreDataFromJSON = createSelector(
   [
     (state: RootState) => state.evaluationData.rawScores,
     (state: RootState) => state.coreData.mainData?.predictionData,
-    (state: RootState) => state.evaluationsSingleModelSettings.evaluationsSingleModelViewDateRange,
+    (state: RootState) => state.evaluationsSingleModelSettings.evaluationsSingleModelViewSeasonId, // <-- Use seasonId
     (state: RootState) => state.evaluationsSingleModelSettings.evaluationsSingleModelViewModel,
     (state: RootState) => state.evaluationsSingleModelSettings.evaluationsSingleModelViewSelectedStateCode,
     (state: RootState) => state.evaluationsSingleModelSettings.evaluationSingleModelViewHorizon,
     (state: RootState) => state.evaluationsSingleModelSettings.evaluationSingleModelViewScoresOption,
   ],
-  (rawScores, timeSeriesData, dateRange, modelName, stateCode, horizon, scoreOption) => {
-    if (!rawScores || !timeSeriesData || !dateRange || !modelName) {
+  (rawScores, timeSeriesData, seasonId, modelName, stateCode, horizon, scoreOption) => {
+    // <-- Use seasonId
+    if (!rawScores || !timeSeriesData || !seasonId || !modelName) {
+      // <-- Use seasonId
       console.debug("Missing required data for score selector");
       return [];
     }
 
-    const seasonId = mapDateRangeToSeasonId(dateRange);
-    if (!seasonId || !rawScores[seasonId]) {
+    if (!rawScores[seasonId]) {
       console.debug("No score data for season:", seasonId);
       return [];
     }
@@ -205,33 +193,6 @@ export const selectSingleModelScoreDataFromJSON = createSelector(
     }));
   }
 );
-
-// Corrected helper function to map date range to season ID
-function mapDateRangeToSeasonId(dateRange: string): string | null {
-  // Handle dynamic periods first
-  if (dateRange.includes("last") || dateRange.includes("week")) {
-    // Extract the number of weeks from the date range
-    if (dateRange.includes("2") || dateRange.includes("two")) return "last-2-weeks";
-    if (dateRange.includes("4") || dateRange.includes("four")) return "last-4-weeks";
-    if (dateRange.includes("8") || dateRange.includes("eight")) return "last-8-weeks";
-  }
-
-  // Parse static season from date range
-  const [startStr] = dateRange.split("/");
-  if (!startStr) return null;
-
-  const startYear = parseInt(startStr.substring(0, 4));
-  const startMonth = parseInt(startStr.substring(5, 7));
-
-  if (isNaN(startYear) || isNaN(startMonth)) return null;
-
-  // Determine season based on start month
-  if (startMonth >= 8) {
-    return `season-${startYear}-${startYear + 1}`;
-  } else {
-    return `season-${startYear - 1}-${startYear}`;
-  }
-}
 
 // Fixed function to combine full-forecast partition with needed forecast-tail weeks
 function combinePartitionsForStateAndHorizon(
