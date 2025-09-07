@@ -366,8 +366,12 @@ function findRelevantSeasons(seasons: any, startDate: Date, endDate: Date): stri
 
       // Check if date ranges overlap
       if (!(endDate < seasonStart || startDate > seasonEnd)) {
-        const seasonId = `season-${seasonStart.getFullYear()}-${seasonEnd.getFullYear()}`;
-        relevantSeasons.push(seasonId);
+        // Use the definitive seasonId from the metadata object
+        if (season.seasonId) {
+          relevantSeasons.push(season.seasonId);
+        } else {
+          console.warn("Season object is missing a seasonId:", season);
+        }
       }
     });
   }
@@ -383,7 +387,8 @@ function findSeasonForDate(seasons: any, date: Date): string | null {
     const seasonEnd = new Date(season.endDate);
 
     if (date >= seasonStart && date <= seasonEnd) {
-      return `season-${seasonStart.getFullYear()}-${seasonEnd.getFullYear()}`;
+      // FIX: Use the definitive seasonId from the metadata object
+      return season.seasonId || null;
     }
   }
 

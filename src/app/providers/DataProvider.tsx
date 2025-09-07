@@ -16,15 +16,9 @@ import {
 } from "@/store/data-slices/settings/SettingsSliceForecastNowcast";
 import { useAppDispatch } from "@/store/hooks";
 
-// Evaluations Actions and Reducers
-import { clearEvaluationJsonData, setEvaluationJsonData } from "@/store/data-slices/domains/evaluationDataSlice"; // Stores pre-aggregated JSON per DataContract
-
+// Core data Actions and Reducers (evaluations and historical data moved to lazy loading hooks)
 import { clearAuxiliaryData, setAuxiliaryJsonData } from "@/store/data-slices/domains/auxiliaryDataSlice";
 import { clearCoreData, setCoreJsonData } from "@/store/data-slices/domains/coreDataSlice";
-import {
-  clearHistoricalGroundTruthData,
-  setHistoricalGroundTruthJsonData,
-} from "@/store/data-slices/domains/historicalGroundTruthDataSlice";
 
 // Evaluation Single Model Settings Slice
 import { updateEvaluationSeasonOverviewTimeRangeOptions } from "@/store/data-slices/settings/SettingsSliceEvaluationSeasonOverview";
@@ -32,7 +26,7 @@ import {
   updateEvaluationSingleModelViewDateEnd,
   updateEvaluationSingleModelViewDateStart,
   updateEvaluationSingleModelViewSeasonOptions,
-  updateEvaluationsSingleModelViewDateRange,
+  updateEvaluationsSingleModelViewSeasonId,
 } from "@/store/data-slices/settings/SettingsSliceEvaluationSingleModel";
 import { EvaluationSeasonOverviewTimeRangeOption } from "@/types/domains/evaluations";
 import { SeasonOption } from "@/types/domains/forecasting";
@@ -40,6 +34,7 @@ import { SeasonOption } from "@/types/domains/forecasting";
 interface DataContextType {
   loadingStates: LoadingStates;
   isFullyLoaded: boolean;
+  updateLoadingState: (key: keyof LoadingStates, value: boolean) => void;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -49,15 +44,15 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const dataFetchStartedRef = useRef(false); // Use ref instead of state
 
   const [loadingStates, setLoadingStates] = useState<LoadingStates>({
-    evaluationScores: true,
+    evaluationScores: false, // Managed by EvaluationsPage lazy loading
     groundTruth: true,
     predictions: true,
     locations: true,
     nowcastTrends: true,
     thresholds: true,
-    historicalGroundTruth: true,
+    historicalGroundTruth: false, // Will be managed by HistoricalDataLoader lazy loading
     seasonOptions: true,
-    evaluationDetailedCoverage: true,
+    evaluationDetailedCoverage: false, // Managed by EvaluationsPage lazy loading
   });
 
   // Remove updateLoadingState from inside component to avoid recreating
@@ -65,27 +60,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setLoadingStates((prev) => ({ ...prev, [key]: value }));
   }, []);
 
-  // Fetch app_data_evaluations.json and populate the new evaluationData slice.
-  const loadJsonEvaluationData = useCallback(async () => {
-    try {
-      console.log("Loading JSON evaluation data...");
-      const response = await fetch("/data/app_data_evaluations.json");
-
-      if (!response.ok) {
-        throw new Error(`Failed to fetch evaluation JSON: ${response.status}`);
-      }
-
-      const evalData = await response.json();
-
-      // Dispatch to Redux store
-      dispatch(setEvaluationJsonData(evalData));
-      return true;
-    } catch (error) {
-      console.warn("Failed to load JSON evaluation data, falling back to CSV:", error);
-      dispatch(clearEvaluationJsonData());
-      return false;
-    }
-  }, [dispatch]);
+  // Note: loadJsonEvaluationData has been moved to useEvaluationsData hook for lazy loading
 
   const loadJsonCoreData = useCallback(async () => {
     try {
@@ -129,7 +104,14 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Process season options for forecast and single-model page
         if (auxiliaryData.metadata.seasons?.fullRangeSeasons) {
           const seasonOptions = auxiliaryData.metadata.seasons.fullRangeSeasons.map(
-            (season: { index: number; displayString: string; timeValue: string; startDate: string; endDate: string }) => ({
+            (season: {
+              index: number;
+              seasonId: string;
+              displayString: string;
+              timeValue: string;
+              startDate: string;
+              endDate: string;
+            }) => ({
               ...season,
               startDate: parseISO(season.startDate),
               endDate: parseISO(season.endDate),
@@ -140,13 +122,14 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
           // Process full range season options for season overview page, into EvaluationSeasonOverviewTimeRangeOption, filling some fields with placeholder values
           const fullRangeSeasonOptionsForEvalSO: EvaluationSeasonOverviewTimeRangeOption[] = seasonOptions.map((season: SeasonOption) => ({
-            // "name" for full range season need to be in the shape of "season-{year}-{year}", so we need to parse it using available fields
-            name: `season-${season.startDate.getFullYear()}-${season.endDate.getFullYear()}`,
-            displayString: season.displayString,
-            isDynamic: false,
-            startDate: season.startDate,
-            endDate: season.endDate,
-            subDisplayValue: undefined,
+              // FIX: Use the definitive seasonId from the backend as the 'name'.
+              // This makes 'name' the reliable key for data lookups and fixes the bug for partial seasons.
+              name: season.seasonId,
+              displayString: season.displayString,
+              isDynamic: false,
+              startDate: season.startDate,
+              endDate: season.endDate,
+              subDisplayValue: undefined,
           }));
           // Add these full season options to the final list for season overview page
           evalSOTimeRangeOptions = [...evalSOTimeRangeOptions, ...fullRangeSeasonOptionsForEvalSO];
@@ -191,7 +174,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             dispatch(updateDateStart(parseISO(defaultOption.startDate)));
             dispatch(updateDateEnd(parseISO(defaultOption.endDate)));
 
-            dispatch(updateEvaluationsSingleModelViewDateRange(defaultOption.timeValue));
+            // FIX: Dispatch the definitive seasonId instead of the ambiguous date range string
+            dispatch(updateEvaluationsSingleModelViewSeasonId(defaultOption.seasonId));
             dispatch(updateEvaluationSingleModelViewDateStart(parseISO(defaultOption.startDate)));
             dispatch(updateEvaluationSingleModelViewDateEnd(parseISO(defaultOption.endDate)));
           }
@@ -205,21 +189,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [dispatch]);
 
-  const loadJsonHistoricalGroundTruthData = useCallback(async () => {
-    try {
-      const response = await fetch("/data/app_data_historical.json");
-      if (!response.ok) {
-        throw new Error(`Failed to fetch historical ground truth JSON: ${response.status}`);
-      }
-      const historicalGroundTruthData = await response.json();
-      dispatch(setHistoricalGroundTruthJsonData(historicalGroundTruthData));
-      return true;
-    } catch (error) {
-      console.error("Failed to load JSON historical ground truth data:", error);
-      dispatch(clearHistoricalGroundTruthData());
-      return false;
-    }
-  }, [dispatch]);
+  // Note: loadJsonHistoricalGroundTruthData has been moved to useHistoricalGroundTruthData hook for lazy loading
 
   const fetchAndProcessData = useCallback(async () => {
     // Use ref to prevent multiple runs
@@ -232,20 +202,12 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     console.log("DataProvider: Starting data fetch process");
 
     try {
-      // Load all JSON files in parallel for better performance
-      const [jsonCoreLoaded, jsonEvaluationLoaded, jsonAuxiliaryLoaded] = await Promise.allSettled([
-        loadJsonCoreData(),
-        loadJsonAuxiliaryData(),
-        // TODO: Make these two lazy-loaded
-        // Evaluations should be loaded when loading /evaluations pages
-        // Historical Ground Truth data should be fetched when user toggles on Historical ground truth data mode
-        loadJsonEvaluationData(),
-        loadJsonHistoricalGroundTruthData(),
-      ]);
+      // Load core JSON files in parallel for better performance
+      // Historical and evaluations data are now lazy-loaded
+      const [jsonCoreLoaded, jsonAuxiliaryLoaded] = await Promise.allSettled([loadJsonCoreData(), loadJsonAuxiliaryData()]);
 
       // Check results and handle any failures gracefully
       const coreSuccess = jsonCoreLoaded.status === "fulfilled" && jsonCoreLoaded.value;
-      const evalSuccess = jsonEvaluationLoaded.status === "fulfilled" && jsonEvaluationLoaded.value;
       const auxiliarySuccess = jsonAuxiliaryLoaded.status === "fulfilled" && jsonAuxiliaryLoaded.value;
 
       // Update loading states based on what was successfully loaded
@@ -259,17 +221,12 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (auxiliarySuccess) {
         updateLoadingState("locations", false);
         updateLoadingState("thresholds", false);
-        updateLoadingState("historicalGroundTruth", false);
-      }
-
-      if (evalSuccess) {
-        updateLoadingState("evaluationScores", false);
-        updateLoadingState("evaluationDetailedCoverage", false);
+        // Note: historicalGroundTruth and evaluations loading states are now managed by their respective lazy loaders
       }
     } catch (error) {
       console.error("Error in fetchAndProcessData:", error);
     }
-  }, [loadJsonCoreData, loadJsonAuxiliaryData, loadJsonEvaluationData, loadJsonHistoricalGroundTruthData, updateLoadingState]);
+  }, [loadJsonCoreData, loadJsonAuxiliaryData, updateLoadingState]);
 
   useEffect(() => {
     fetchAndProcessData();
@@ -277,7 +234,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const isFullyLoaded = Object.values(loadingStates).every((state) => !state);
 
-  return <DataContext.Provider value={{ loadingStates, isFullyLoaded }}>{children}</DataContext.Provider>;
+  return <DataContext.Provider value={{ loadingStates, isFullyLoaded, updateLoadingState }}>{children}</DataContext.Provider>;
 };
 
 export const useDataContext = () => {

@@ -28,6 +28,7 @@ export interface PredictionDataGroupedByModel {
 
 export interface SeasonOption {
   index: number;
+  seasonId: string;
   displayString: string;
   timeValue: string;
   startDate: Date;
