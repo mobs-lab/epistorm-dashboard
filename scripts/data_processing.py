@@ -336,8 +336,8 @@ def main():
     all_gt_dates = gt_df["date"]
     all_pred_dates = pd.concat([all_preds_df["reference_date"], all_preds_df["target_end_date"]])
 
-    earliest_date = min(all_gt_dates.min(), all_pred_dates.min())
-    latest_date = max(all_gt_dates.max(), all_pred_dates.max())
+    earliest_date = all_gt_dates.min()
+    latest_date = all_pred_dates.max()
 
     print(f"   - Overall date range: {earliest_date.strftime('%Y-%m-%d')} to {latest_date.strftime('%Y-%m-%d')}")
 
@@ -381,6 +381,14 @@ def main():
 
     while season_end >= earliest_date:
         season_start = pd.Timestamp(year=current_year - 1, month=8, day=1)
+        # SPECIAL CASE: If theoretical August 1st start is before our actual data,
+        # use the earliest available data date instead (for the first partial season)
+        if season_start < earliest_date:
+            print(
+                f"   - Adjusting season {current_year - 1}-{current_year} start from {season_start.strftime('%Y-%m-%d')} to {earliest_date.strftime('%Y-%m-%d')}"
+            )
+            season_start = earliest_date
+
         season_id = f"season-{current_year - 1}-{current_year}"
 
         # Store for time series processing (only full range seasons)
@@ -389,27 +397,33 @@ def main():
         # Also add to evaluation seasons
         all_seasons_for_evaluation[season_id] = {"start": season_start, "end": season_end}
 
-        # Create SeasonOption for metadata (matching CustomDataInterface.md)
+        # Create SeasonOption for metadata
         is_ongoing = latest_date <= season_end
-        is_partial = season_start < earliest_date
+
+        theoretical_august_start = pd.Timestamp(year=current_year - 1, month=8, day=1)
+        is_partial = theoretical_august_start < earliest_date
 
         display_string = f"{current_year - 1}-{current_year}"
         if is_ongoing:
-            display_string += " (Ongoing)"
+            display_string += " (Ongoing)"  # Don't forget the space blank
         elif is_partial:
             display_string = f"Partial {display_string}"
 
         time_value = f"{season_start.strftime('%Y-%m-%d')}/{season_end.strftime('%Y-%m-%d')}"
 
-        full_range_season_options.append(
-            {
-                "index": season_index,
-                "displayString": display_string,
-                "timeValue": time_value,
-                "startDate": season_start,
-                "endDate": season_end,
-            }
-        )
+        result_season_option = {
+            "index": season_index,
+            "seasonId": season_id,
+            "displayString": display_string,
+            "timeValue": time_value,
+            "startDate": season_start,
+            "endDate": season_end,
+        }
+
+        # DEBUG
+        print(f"Parsing new season option: {result_season_option}")
+
+        full_range_season_options.append(result_season_option)
 
         season_index += 1
         current_year -= 1
@@ -663,30 +677,6 @@ def main():
                     pass
 
     print(f"   - Ground truth data processed for {len(ground_truth_data)} seasons")
-    # Debug: Print some sample ground truth data
-    if ground_truth_data:
-        sample_season = list(ground_truth_data.keys())[0]
-        sample_dates = list(ground_truth_data[sample_season].keys())[:3]
-        print(f"   - Sample ground truth data for {sample_season}:")
-        for date in sample_dates:
-            state_count = len(ground_truth_data[sample_season][date])
-            print(f"     {date}: {state_count} states with data")
-
-    # ===================================================
-    # Debug: Print a sample of the final nested prediction data structure
-    try:
-        if time_series_data:
-            sample_season = list(time_series_data.keys())[0]
-            sample_model = list(time_series_data[sample_season].keys())
-            if sample_model and sample_model[0] in model_names:
-                sample_model = sample_model[0]
-                sample_partition = time_series_data[sample_season][sample_model]["partitions"]["full-forecast"]
-                if sample_partition:
-                    sample_date = list(sample_partition.keys())[0]
-                    sample_state = list(sample_partition[sample_date].keys())[0]
-                    print(f"   - Sample structure: {sample_season}/{sample_model}/{sample_date}/{sample_state}")
-    except (KeyError, IndexError) as e:
-        print(f"   - Could not create sample output: {e}")
 
     # ===== 6. Aggregate Evaluation Data =====
     print("Step 6: Pre-aggregating evaluation data...")
@@ -935,11 +925,6 @@ def main():
     # Assemble app_data_core.json according to DataContract.md (without historical data)
     print("   - Assembling core data JSON...")
     app_data_core_json = {
-        "metadata": {
-            "seasons": seasons_metadata,  # Contains both fullRangeSeasons and dynamicTimePeriod
-            "modelNames": model_names,
-            "defaultSeasonTimeValue": default_season_tv,
-        },
         "mainData": {
             "nowcastTrends": nowcast_dict,
             "groundTruthData": ground_truth_data,
@@ -950,10 +935,17 @@ def main():
     # Assemble app_data_auxiliary.json
     print("   - Assembling auxiliary data JSON...")
     app_data_auxiliary_json = {
+        "metadata": {
+            "seasons": seasons_metadata,  # Contains both fullRangeSeasons and dynamicTimePeriod
+            "modelNames": model_names,
+            "defaultSeasonTimeValue": default_season_tv,
+        },
         "locations": locations_list,
         "thresholds": thresholds_dict,
-        "historicalDataMap": historical_data_map,
     }
+
+    print("   - Assembling Historical Ground Truth data JSON...")
+    app_data_historical_json = {"historicalDataMap": historical_data_map}
 
     # Assemble app_data_evaluations.json
     print("   - Assembling evaluations data JSON...")
@@ -971,31 +963,30 @@ def main():
     core_output_path = public_data_dir / "app_data_core.json"
     auxiliary_output_path = public_data_dir / "app_data_auxiliary.json"
     eval_output_path = public_data_dir / "app_data_evaluations.json"
+    historical_output_path = public_data_dir / "app_data_historical.json"
 
     try:
-        with open(core_output_path, "w") as f:
-            json.dump(app_data_core_json, f, cls=NpEncoder)
-        print(f"   - Successfully wrote app_data_core.json ({core_output_path.stat().st_size / 1e6:.2f} MB)")
-
         with open(auxiliary_output_path, "w") as f:
             json.dump(app_data_auxiliary_json, f, cls=NpEncoder)
         print(f"   - Successfully wrote app_data_auxiliary.json ({auxiliary_output_path.stat().st_size / 1e6:.2f} MB)")
 
+        with open(core_output_path, "w") as f:
+            json.dump(app_data_core_json, f, cls=NpEncoder)
+        print(f"   - Successfully wrote app_data_core.json ({core_output_path.stat().st_size / 1e6:.2f} MB)")
+
         with open(eval_output_path, "w") as f:
             json.dump(app_data_evaluations_json, f, cls=NpEncoder)
         print(f"   - Successfully wrote app_data_evaluations.json ({eval_output_path.stat().st_size / 1e6:.2f} MB)")
+
+        with open(historical_output_path, "w") as f:
+            json.dump(app_data_historical_json, f, cls=NpEncoder)
+        print(f"   - Successfully wrote app_data_historical.json ({historical_output_path.stat().st_size / 1e6:.2f} MB)")
 
     except Exception as e:
         print(f"ERROR: Failed to write JSON files: {e}")
         return
 
     print("\n=== Data Processing Complete ===")
-    print("Summary:")
-    print(f"- Processed {len(model_names)} models")
-    print(f"- Generated {len(full_range_season_options)} full range seasons")
-    print(f"- Generated {len(dynamic_season_options)} dynamic time periods")
-    print(f"- Partitioned time series data for {len(time_series_data)} seasons")
-    print("- Pre-aggregated evaluation data for all seasons and periods")
 
 
 if __name__ == "__main__":

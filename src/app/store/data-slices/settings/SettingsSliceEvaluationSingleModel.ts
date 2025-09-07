@@ -16,7 +16,7 @@ interface EvaluationsSettingsState {
     /* Time Range Related */
     evaluationsSingleModelViewDateStart: Date;
     evaluationSingleModelViewDateEnd: Date;
-    evaluationsSingleModelViewDateRange: string;
+    evaluationsSingleModelViewSeasonId: string;
     evaluationSingleModelViewSeasonOptions: SeasonOption[];
 }
 
@@ -31,7 +31,7 @@ const initialState: EvaluationsSettingsState = {
     evaluationSingleModelViewScoresOption: "MAPE",
 
     /* Time Range Defaults*/
-    evaluationsSingleModelViewDateRange: "2023-08-01/2024-05-18",
+    evaluationsSingleModelViewSeasonId: "", // <-- Changed from dateRange, will be set by DataProvider
     evaluationsSingleModelViewDateStart: parseISO("2023-08-01T12:00:00Z"),
     evaluationSingleModelViewDateEnd: parseISO("2024-05-04T12:00:00Z"),
     evaluationSingleModelViewSeasonOptions: [],
@@ -63,9 +63,8 @@ const evaluationsSingleModelSettingsSlice = createSlice({
         updateEvaluationSingleModelViewDateEnd: (state, action: PayloadAction<Date>) => {
             state.evaluationSingleModelViewDateEnd = action.payload;
         },
-        updateEvaluationsSingleModelViewDateRange: (state, action: PayloadAction<string>) => {
-
-            state.evaluationsSingleModelViewDateRange = action.payload;
+        updateEvaluationsSingleModelViewSeasonId: (state, action: PayloadAction<string>) => { // <-- Renamed from updateEvaluationsSingleModelViewDateRange
+            state.evaluationsSingleModelViewSeasonId = action.payload;
         },
 
         /*TODO: Implement reducer for scores once discussed*/
@@ -83,7 +82,7 @@ export const {
     updateEvaluationSingleModelViewSelectedState,
     updateEvaluationSingleModelViewDateStart,
     updateEvaluationSingleModelViewDateEnd,
-    updateEvaluationsSingleModelViewDateRange,
+    updateEvaluationsSingleModelViewSeasonId, // <-- Renamed
     /* TODO: uncomment this after scores options are implemented */
     updateEvaluationScores
 } = evaluationsSingleModelSettingsSlice.actions;

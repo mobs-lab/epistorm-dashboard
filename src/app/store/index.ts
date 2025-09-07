@@ -7,7 +7,8 @@ import {
   evaluationsSingleModelSettingsReducer,
   evaluationDataReducer,
   coreDataReducer,
-  auxiliaryDataReducer
+  auxiliaryDataReducer,
+  historicalGroundTruthDataReducer,
 } from "./data-slices";
 
 const store = configureStore({
@@ -15,6 +16,7 @@ const store = configureStore({
     coreData: coreDataReducer,
     evaluationData: evaluationDataReducer,
     auxiliaryData: auxiliaryDataReducer,
+    historicalGroundTruthData: historicalGroundTruthDataReducer,
     forecastSettings: forecastSettingsReducer,
     evaluationsSeasonOverviewSettings: evaluationsSeasonOverviewSettingsReducer,
     evaluationsSingleModelSettings: evaluationsSingleModelSettingsReducer,
