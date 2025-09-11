@@ -362,7 +362,7 @@ def main():
 
     # Separate containers for different purposes:
     # 1. Full range seasons - used for both time series processing AND evaluation aggregation
-    full_range_seasons = {}
+    full_range_seasons_info_for_processing = {}
     # 2. Dynamic periods - used ONLY for evaluation aggregation and metadata
     dynamic_periods = {}
     # 3. All seasons combined - used ONLY for evaluation aggregation
@@ -379,6 +379,7 @@ def main():
 
     print(f"   - Generating full range seasons starting from {current_year}...")
 
+    most_current_season_tracker = True
     while season_end >= earliest_date:
         season_start = pd.Timestamp(year=current_year - 1, month=8, day=1)
         # SPECIAL CASE: If theoretical August 1st start is before our actual data,
@@ -392,7 +393,11 @@ def main():
         season_id = f"season-{current_year - 1}-{current_year}"
 
         # Store for time series processing (only full range seasons)
-        full_range_seasons[season_id] = {"start": season_start, "end": season_end}
+        full_range_seasons_info_for_processing[season_id] = {"start": season_start, "end": season_end, "mostCurrent": most_current_season_tracker}
+
+        # Turn off the most current season marker after first run
+        if most_current_season_tracker:
+            most_current_season_tracker = False
 
         # Also add to evaluation seasons
         all_seasons_for_evaluation[season_id] = {"start": season_start, "end": season_end}
@@ -491,7 +496,43 @@ def main():
 
     print("   - Season metadata structure prepared")
 
-    # ===== 5a. Partition Time-Series Data by Season =====
+    # ===== 5. Partition Time-Series Data by Season =====
+
+    # Process Nowcast Trends by season
+    print("     - Partitioning Nowcast trends by season...")
+    nowcast_trends_by_season = {}
+    if not all_nowcasts_df.empty:
+        # Process each full range season for nowcast trends
+        for season_id, dates in full_range_seasons_info_for_processing.items():
+            print(f"   - Processing nowcast trends for season: {season_id}")
+            
+            # Filter nowcast data for this season
+            season_nowcast_df = all_nowcasts_df[
+                (all_nowcasts_df["reference_date"] >= dates["start"]) & 
+                (all_nowcasts_df["reference_date"] <= dates["end"])
+            ].copy()
+            
+            if season_nowcast_df.empty:
+                nowcast_trends_by_season[season_id] = {}
+                continue
+                
+            # Convert to nested dictionary structure for this season
+            season_nowcast_dict = {}
+            for _, row in season_nowcast_df.iterrows():
+                model = row["model"]
+                date_iso = row["reference_date"].strftime("%Y-%m-%d")
+                location = row["location"]
+
+                season_nowcast_dict.setdefault(model, {}).setdefault(date_iso, {})[location] = {
+                    "decrease": float(row["decrease"]),
+                    "increase": float(row["increase"]),
+                    "stable": float(row["stable"]),
+                }
+            
+            nowcast_trends_by_season[season_id] = season_nowcast_dict
+
+    print(f"   - Nowcast trends partitioned for {len(nowcast_trends_by_season)} seasons")
+
     print("Step 5: Partitioning time-series data by season...")
     time_series_data = {}
 
@@ -503,7 +544,7 @@ def main():
 
     # IMPORTANT: Only process full range seasons for time series partitioning
     # Dynamic periods are NOT included here as per requirements
-    for season_id, dates in full_range_seasons.items():
+    for season_id, dates in full_range_seasons_info_for_processing.items():
         print(f"   - Processing time series for season: {season_id}")
 
         # Filter predictions for this season
@@ -651,7 +692,7 @@ def main():
     ground_truth_data = {}
 
     # Process each full range season for ground truth
-    for season_id, dates in full_range_seasons.items():
+    for season_id, dates in full_range_seasons_info_for_processing.items():
         print(f"   - Processing ground truth for season: {season_id}")
 
         ground_truth_data[season_id] = {}
@@ -736,7 +777,7 @@ def main():
     print("   - Evaluation score files cleaned and standardized")
 
     # Combine all seasons for comprehensive assignment
-    all_seasons_combined = {**full_range_seasons, **dynamic_periods}
+    all_seasons_combined = {**full_range_seasons_info_for_processing, **dynamic_periods}
 
     # Create season-specific evaluation datasets
     print("\n   - Creating season-specific evaluation datasets...")
@@ -861,7 +902,7 @@ def main():
     raw_scores_data = {}
 
     # Process each season for raw scores
-    for season_id, season_dates in full_range_seasons.items():
+    for season_id, season_dates in full_range_seasons_info_for_processing.items():
         # Filter evaluation data for this specific season
         season_eval_df = eval_scores_df[
             (eval_scores_df["reference_date"] >= season_dates["start"]) & (eval_scores_df["target_end_date"] <= season_dates["end"])
@@ -896,97 +937,121 @@ def main():
 
     print(f"   - Raw scores stored for {len(raw_scores_data)} seasons")
 
-    # ===== 7. Compile and Output Final JSON Files =====
-    print("Step 7: Compiling and writing final JSON files...")
+    # ===== 7. Write Split JSON Files =====
+    print("Step 7: Writing split JSON files...")
 
-    # Process thresholds data for auxiliary JSON using imported function
+    # Create directory structure
+    auxiliary_dir = public_data_dir / "auxiliary"
+    auxiliary_dir.mkdir(exist_ok=True, parents=True)
+
+    dynamic_dir = public_data_dir / "dynamic-time-periods"
+    dynamic_dir.mkdir(exist_ok=True, parents=True)
+
+    historical_dir = public_data_dir / "historical-ground-truth-data"
+    historical_dir.mkdir(exist_ok=True, parents=True)
+
+    # ===== 7A. Process & Write Auxiliary Data =====
+    # Process thresholds data using imported function
     print("   - Processing thresholds data...")
     thresholds_dict = process_thresholds(thresholds_df)
 
-    # Process nowcast trends data for core JSON
-    print("   - Processing nowcast trends data...")
-    nowcast_dict = {}
-    if not all_nowcasts_df.empty:
-        for _, row in all_nowcasts_df.iterrows():
-            model = row["model"]
-            date_iso = row["reference_date"].strftime("%Y-%m-%d")
-            location = row["location"]
-
-            nowcast_dict.setdefault(model, {}).setdefault(date_iso, {})[location] = {
-                "decrease": float(row["decrease"]),
-                "increase": float(row["increase"]),
-                "stable": float(row["stable"]),
-            }
-
-    # Process locations data for auxiliary JSON using imported function
+    # Process locations data using imported function
     print("   - Processing locations data...")
     locations_list = process_locations(locations_df)
 
-    # Assemble app_data_core.json according to DataContract.md (without historical data)
-    print("   - Assembling core data JSON...")
-    app_data_core_json = {
-        "mainData": {
-            "nowcastTrends": nowcast_dict,
-            "groundTruthData": ground_truth_data,
-            "predictionData": time_series_data,  # Only contains full range seasons
-        },
+    print("   - Writing auxiliary data files...")
+
+    # Write locations data
+    with open(auxiliary_dir / "locationsData.json", "w") as f:
+        json.dump(locations_list, f, cls=NpEncoder, separators=(",", ":"))
+
+    # Write thresholds data
+    with open(auxiliary_dir / "thresholdsData.json", "w") as f:
+        json.dump(thresholds_dict, f, cls=NpEncoder, separators=(",", ":"))
+
+    # Write season metadata
+    season_metadata = {
+        "fullRangeSeasons": full_range_season_options,
+        "dynamicTimePeriod": dynamic_season_options,
+        "modelNames": model_names,
+        "defaultSeasonTimeValue": default_season_tv,
     }
+    with open(auxiliary_dir / "seasonMetadata.json", "w") as f:
+        json.dump(season_metadata, f, cls=NpEncoder, separators=(",", ":"))
 
-    # Assemble app_data_auxiliary.json
-    print("   - Assembling auxiliary data JSON...")
-    app_data_auxiliary_json = {
-        "metadata": {
-            "seasons": seasons_metadata,  # Contains both fullRangeSeasons and dynamicTimePeriod
-            "modelNames": model_names,
-            "defaultSeasonTimeValue": default_season_tv,
-        },
-        "locations": locations_list,
-        "thresholds": thresholds_dict,
-    }
+    print(f"   - Written auxiliary data: locations ({len(locations_list)} entries), thresholds ({len(thresholds_dict)} entries), metadata")
 
-    print("   - Assembling Historical Ground Truth data JSON...")
-    app_data_historical_json = {"historicalDataMap": historical_data_map}
+    # ===== 7B. Write Historical Ground Truth Data =====
+    print("   - Writing historical ground truth data...")
+    with open(historical_dir / "historical-ground-truth-data.json", "w") as f:
+        json.dump(historical_data_map, f, cls=NpEncoder, separators=(",", ":"))
 
-    # Assemble app_data_evaluations.json
-    print("   - Assembling evaluations data JSON...")
-    app_data_evaluations_json = {
-        "precalculated": {
-            "iqr": iqr_data,  # Includes both full range seasons and dynamic periods
-            "stateMap_aggregates": state_map_data,  # Includes both full range seasons and dynamic periods
-            "detailedCoverage_aggregates": coverage_data,  # Includes both full range seasons and dynamic periods
-        },
-        "rawScores": raw_scores_data,
-    }
+    print(f"   - Written historical data: {len(historical_data_map)} snapshots")
 
-    # Write files to disk
-    print("   - Writing JSON files to disk...")
-    core_output_path = public_data_dir / "app_data_core.json"
-    auxiliary_output_path = public_data_dir / "app_data_auxiliary.json"
-    eval_output_path = public_data_dir / "app_data_evaluations.json"
-    historical_output_path = public_data_dir / "app_data_historical.json"
+    # ===== 7C. Write Full Range Season Data =====
+    print("   - Writing full range season data...")
 
-    try:
-        with open(auxiliary_output_path, "w") as f:
-            json.dump(app_data_auxiliary_json, f, cls=NpEncoder)
-        print(f"   - Successfully wrote app_data_auxiliary.json ({auxiliary_output_path.stat().st_size / 1e6:.2f} MB)")
+    for season_id, season_info in full_range_seasons_info_for_processing.items():
+        # Conditionally assign "current_" to the current season, marked by a special field
+        if season_info["mostCurrent"]:
+            folder_name = f"current_{season_id}"
+        else:
+            folder_name = season_id
 
-        with open(core_output_path, "w") as f:
-            json.dump(app_data_core_json, f, cls=NpEncoder)
-        print(f"   - Successfully wrote app_data_core.json ({core_output_path.stat().st_size / 1e6:.2f} MB)")
+        season_dir = public_data_dir / folder_name
+        season_dir.mkdir(exist_ok=True, parents=True)
 
-        with open(eval_output_path, "w") as f:
-            json.dump(app_data_evaluations_json, f, cls=NpEncoder)
-        print(f"   - Successfully wrote app_data_evaluations.json ({eval_output_path.stat().st_size / 1e6:.2f} MB)")
+        print(f"   - Writing data for {season_id} -> {folder_name}/")
 
-        with open(historical_output_path, "w") as f:
-            json.dump(app_data_historical_json, f, cls=NpEncoder)
-        print(f"   - Successfully wrote app_data_historical.json ({historical_output_path.stat().st_size / 1e6:.2f} MB)")
+        # Write ground truth data for this season
+        season_ground_truth = ground_truth_data.get(season_id, {})
+        with open(season_dir / "groundTruthData.json", "w") as f:
+            json.dump(season_ground_truth, f, cls=NpEncoder, separators=(",", ":"))
 
-    except Exception as e:
-        print(f"ERROR: Failed to write JSON files: {e}")
-        return
+        # Write prediction data for this season
+        season_predictions = time_series_data.get(season_id, {})
+        with open(season_dir / "predictionsData.json", "w") as f:
+            json.dump(season_predictions, f, cls=NpEncoder, separators=(",", ":"))
 
-    print("\n=== Data Processing Complete ===")
+        # Write nowcast trends data for this season
+        season_nowcast = nowcast_trends_by_season.get(season_id, {})
+        with open(season_dir / "nowcastTrendsData.json", "w") as f:
+            json.dump(season_nowcast, f, cls=NpEncoder, separators=(",", ":"))
+
+        # Write evaluations data for this season (precalculated + raw scores)
+        season_evaluations = {
+            "precalculated": {
+                "iqr": iqr_data.get(season_id, {}),
+                "stateMap_aggregates": state_map_data.get(season_id, {}),
+                "detailedCoverage_aggregates": coverage_data.get(season_id, {}),
+            },
+            "rawScores": raw_scores_data.get(season_id, {}),
+        }
+        with open(season_dir / "evaluationsData.json", "w") as f:
+            json.dump(season_evaluations, f, cls=NpEncoder, separators=(",", ":"))
+
+        print(f"     - Written 4 files for {season_id}")
+
+    # ===== 7D. Write Dynamic Time Period Data =====
+    print("   - Writing dynamic time period data...")
+
+    for period_id in dynamic_periods.keys():
+        # Each dynamic period gets its own JSON file containing only evaluation data
+        period_evaluations = {
+            "precalculated": {
+                "iqr": iqr_data.get(period_id, {}),
+                "stateMap_aggregates": state_map_data.get(period_id, {}),
+                "detailedCoverage_aggregates": coverage_data.get(period_id, {}),
+            }
+            # Note: No raw scores for dynamic periods as per documentation
+        }
+
+        with open(dynamic_dir / f"{period_id}.json", "w") as f:
+            json.dump(period_evaluations, f, cls=NpEncoder, separators=(",", ":"))
+
+        print(f"   - Written {period_id}.json")
+
+    print("Step 7: All JSON files written successfully!")
 
 
 if __name__ == "__main__":

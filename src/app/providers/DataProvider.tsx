@@ -60,8 +60,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setLoadingStates((prev) => ({ ...prev, [key]: value }));
   }, []);
 
-  // Note: loadJsonEvaluationData has been moved to useEvaluationsData hook for lazy loading
-
   const loadJsonCoreData = useCallback(async () => {
     try {
       console.log("Loading JSON core data...");
@@ -122,14 +120,14 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
           // Process full range season options for season overview page, into EvaluationSeasonOverviewTimeRangeOption, filling some fields with placeholder values
           const fullRangeSeasonOptionsForEvalSO: EvaluationSeasonOverviewTimeRangeOption[] = seasonOptions.map((season: SeasonOption) => ({
-              // FIX: Use the definitive seasonId from the backend as the 'name'.
-              // This makes 'name' the reliable key for data lookups and fixes the bug for partial seasons.
-              name: season.seasonId,
-              displayString: season.displayString,
-              isDynamic: false,
-              startDate: season.startDate,
-              endDate: season.endDate,
-              subDisplayValue: undefined,
+            // FIX: Use the definitive seasonId from the backend as the 'name'.
+            // This makes 'name' the reliable key for data lookups and fixes the bug for partial seasons.
+            name: season.seasonId,
+            displayString: season.displayString,
+            isDynamic: false,
+            startDate: season.startDate,
+            endDate: season.endDate,
+            subDisplayValue: undefined,
           }));
           // Add these full season options to the final list for season overview page
           evalSOTimeRangeOptions = [...evalSOTimeRangeOptions, ...fullRangeSeasonOptionsForEvalSO];
@@ -174,7 +172,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             dispatch(updateDateStart(parseISO(defaultOption.startDate)));
             dispatch(updateDateEnd(parseISO(defaultOption.endDate)));
 
-            // FIX: Dispatch the definitive seasonId instead of the ambiguous date range string
+            // Dispatch the definitive seasonId instead of the ambiguous date range string
             dispatch(updateEvaluationsSingleModelViewSeasonId(defaultOption.seasonId));
             dispatch(updateEvaluationSingleModelViewDateStart(parseISO(defaultOption.startDate)));
             dispatch(updateEvaluationSingleModelViewDateEnd(parseISO(defaultOption.endDate)));
