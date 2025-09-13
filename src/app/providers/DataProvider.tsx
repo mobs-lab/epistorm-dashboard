@@ -13,12 +13,16 @@ import {
   updateDateEnd,
   updateDateRange,
   updateDateStart,
+  updateUserSelectedWeek,
 } from "@/store/data-slices/settings/SettingsSliceForecastNowcast";
 import { useAppDispatch } from "@/store/hooks";
 
 // Core data Actions and Reducers (evaluations and historical data moved to lazy loading hooks)
 import { clearAuxiliaryData, setAuxiliaryJsonData } from "@/store/data-slices/domains/auxiliaryDataSlice";
-import { clearCoreData, setCoreJsonData } from "@/store/data-slices/domains/coreDataSlice";
+import { clearCoreData, addSeasonData } from "@/store/data-slices/domains/coreDataSlice";
+
+// Import optimized data loader utilities
+import { fetchAuxiliaryData, fetchSeasonData } from "@/utils/dataLoader";
 
 // Evaluation Single Model Settings Slice
 import { updateEvaluationSeasonOverviewTimeRangeOptions } from "@/store/data-slices/settings/SettingsSliceEvaluationSeasonOverview";
@@ -35,6 +39,8 @@ interface DataContextType {
   loadingStates: LoadingStates;
   isFullyLoaded: boolean;
   updateLoadingState: (key: keyof LoadingStates, value: boolean) => void;
+  loadBackgroundSeasons: () => Promise<void>;
+  currentSeasonId: string | null;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -42,6 +48,8 @@ const DataContext = createContext<DataContextType | undefined>(undefined);
 export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const dispatch = useAppDispatch();
   const dataFetchStartedRef = useRef(false); // Use ref instead of state
+  const [currentSeasonId, setCurrentSeasonId] = useState<string | null>(null);
+  const backgroundLoadingRef = useRef(false);
 
   const [loadingStates, setLoadingStates] = useState<LoadingStates>({
     evaluationScores: false, // Managed by EvaluationsPage lazy loading
@@ -60,38 +68,57 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setLoadingStates((prev) => ({ ...prev, [key]: value }));
   }, []);
 
-  const loadJsonCoreData = useCallback(async () => {
-    try {
-      console.log("Loading JSON core data...");
-      const response = await fetch("/data/app_data_core.json");
-
-      if (!response.ok) {
-        throw new Error(`Failed to fetch core JSON: ${response.status}`);
-      }
-
-      const coreData = await response.json();
-
-      // Store the entire core data structure
-      dispatch(setCoreJsonData(coreData));
-
-      return true;
-    } catch (error) {
-      console.error("Failed to load JSON core data:", error);
-      dispatch(clearCoreData());
-      return false;
+  // Load background seasons (called after initial load)
+  const loadBackgroundSeasons = useCallback(async () => {
+    if (backgroundLoadingRef.current || !currentSeasonId) {
+      return;
     }
-  }, [dispatch]);
+    
+    backgroundLoadingRef.current = true;
+    console.log("Starting background loading of previous seasons...");
+    
+    try {
+      // Get season metadata from auxiliary data (should be loaded already)
+      const auxiliaryData = await fetchAuxiliaryData();
+      
+      if (auxiliaryData.metadata?.seasons?.fullRangeSeasons) {
+        const allSeasons = auxiliaryData.metadata.seasons.fullRangeSeasons;
+        
+        // Filter out the current season (already loaded)
+        const previousSeasons = allSeasons.filter((s: any) => s.seasonId !== currentSeasonId);
+        
+        // Load previous seasons one by one (could also batch)
+        for (const season of previousSeasons) {
+          try {
+            console.log(`Background loading season: ${season.seasonId}`);
+            const seasonData = await fetchSeasonData(
+              season.seasonId,
+              false,
+              ["groundTruthData", "predictionsData", "nowcastTrendsData"]
+            );
+            
+            dispatch(addSeasonData({
+              seasonId: season.seasonId,
+              ...seasonData,
+            }));
+          } catch (error) {
+            console.warn(`Failed to background load season ${season.seasonId}:`, error);
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Error in background season loading:", error);
+    } finally {
+      backgroundLoadingRef.current = false;
+      console.log("Background season loading completed");
+    }
+  }, [dispatch, currentSeasonId]);
 
   const loadJsonAuxiliaryData = useCallback(async () => {
     try {
-      console.log("Loading JSON auxiliary data...");
-      const response = await fetch("/data/app_data_auxiliary.json");
-
-      if (!response.ok) {
-        throw new Error(`Failed to fetch auxiliary JSON: ${response.status}`);
-      }
-
-      const auxiliaryData = await response.json();
+      console.log("Loading auxiliary data with caching...");
+      const auxiliaryData = await fetchAuxiliaryData();
+      
       // Dispatch to Redux store
       dispatch(setAuxiliaryJsonData(auxiliaryData));
       // Extract and process metadata
@@ -99,6 +126,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Initialize the list of time range options for season overview page
         let evalSOTimeRangeOptions: EvaluationSeasonOverviewTimeRangeOption[] = [];
         let numOfFullRangeSeasons = 0;
+        let mostCurrentSeasonId: string | null = null;
+        
         // Process season options for forecast and single-model page
         if (auxiliaryData.metadata.seasons?.fullRangeSeasons) {
           const seasonOptions = auxiliaryData.metadata.seasons.fullRangeSeasons.map(
@@ -109,12 +138,23 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
               timeValue: string;
               startDate: string;
               endDate: string;
-            }) => ({
-              ...season,
-              startDate: parseISO(season.startDate),
-              endDate: parseISO(season.endDate),
-            })
+            }) => {
+              // Check if this is the ongoing/current season
+              if (season.displayString.includes("Ongoing")) {
+                mostCurrentSeasonId = season.seasonId;
+              }
+              return {
+                ...season,
+                startDate: parseISO(season.startDate),
+                endDate: parseISO(season.endDate),
+              };
+            }
           );
+          
+          // Store the current season ID for later use
+          if (mostCurrentSeasonId) {
+            setCurrentSeasonId(mostCurrentSeasonId);
+          }
           dispatch(setSeasonOptions(seasonOptions));
           dispatch(updateEvaluationSingleModelViewSeasonOptions(seasonOptions));
 
@@ -178,6 +218,13 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             dispatch(updateEvaluationSingleModelViewDateEnd(parseISO(defaultOption.endDate)));
           }
         }
+
+        // Set default selected week of `Forecast` page if provided
+        if (auxiliaryData.metadata.defaultSelectedDate) {
+          const defaultPredDate = parseISO(auxiliaryData.metadata.defaultSelectedDate);
+          dispatch(updateUserSelectedWeek(defaultPredDate));
+          console.log("Set default selected week for `ForecastChart`: ", defaultPredDate);
+        }
       }
       return true;
     } catch (error) {
@@ -187,7 +234,34 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [dispatch]);
 
-  // Note: loadJsonHistoricalGroundTruthData has been moved to useHistoricalGroundTruthData hook for lazy loading
+  // Load current season data for Forecast page
+  const loadCurrentSeasonData = useCallback(async (seasonId: string) => {
+    try {
+      console.log(`Loading current season data: ${seasonId}`);
+      
+      const seasonData = await fetchSeasonData(
+        seasonId,
+        true, // It's the current season, use "current_" prefix
+        ["groundTruthData", "predictionsData", "nowcastTrendsData"]
+      );
+      
+      // Dispatch to Redux
+      dispatch(addSeasonData({
+        seasonId,
+        ...seasonData,
+      }));
+      
+      // Update loading states
+      updateLoadingState("groundTruth", false);
+      updateLoadingState("predictions", false);
+      updateLoadingState("nowcastTrends", false);
+      
+      return true;
+    } catch (error) {
+      console.error("Failed to load current season data:", error);
+      return false;
+    }
+  }, [dispatch, updateLoadingState]);
 
   const fetchAndProcessData = useCallback(async () => {
     // Use ref to prevent multiple runs
@@ -197,34 +271,34 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
     dataFetchStartedRef.current = true;
 
-    console.log("DataProvider: Starting data fetch process");
+    console.log("DataProvider: Starting optimized data fetch process");
 
     try {
-      // Load core JSON files in parallel for better performance
-      // Historical and evaluations data are now lazy-loaded
-      const [jsonCoreLoaded, jsonAuxiliaryLoaded] = await Promise.allSettled([loadJsonCoreData(), loadJsonAuxiliaryData()]);
-
-      // Check results and handle any failures gracefully
-      const coreSuccess = jsonCoreLoaded.status === "fulfilled" && jsonCoreLoaded.value;
-      const auxiliarySuccess = jsonAuxiliaryLoaded.status === "fulfilled" && jsonAuxiliaryLoaded.value;
-
-      // Update loading states based on what was successfully loaded
-      if (coreSuccess) {
-        updateLoadingState("groundTruth", false);
-        updateLoadingState("predictions", false);
-        updateLoadingState("nowcastTrends", false);
-        updateLoadingState("seasonOptions", false);
-      }
-
+      // Step 1: Load auxiliary data (with caching)
+      const auxiliarySuccess = await loadJsonAuxiliaryData();
+      
       if (auxiliarySuccess) {
         updateLoadingState("locations", false);
         updateLoadingState("thresholds", false);
-        // Note: historicalGroundTruth and evaluations loading states are now managed by their respective lazy loaders
+        updateLoadingState("seasonOptions", false);
+        
+        // Step 2: Load current season data if we identified it
+        if (currentSeasonId) {
+          const currentSeasonSuccess = await loadCurrentSeasonData(currentSeasonId);
+          
+          if (currentSeasonSuccess) {
+            // Step 3: Start background loading of previous seasons
+            // This runs asynchronously without blocking
+            setTimeout(() => {
+              loadBackgroundSeasons();
+            }, 1000); // Small delay to ensure page is interactive first
+          }
+        }
       }
     } catch (error) {
       console.error("Error in fetchAndProcessData:", error);
     }
-  }, [loadJsonCoreData, loadJsonAuxiliaryData, updateLoadingState]);
+  }, [loadJsonAuxiliaryData, currentSeasonId, loadCurrentSeasonData, loadBackgroundSeasons, updateLoadingState]);
 
   useEffect(() => {
     fetchAndProcessData();
@@ -232,7 +306,11 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const isFullyLoaded = Object.values(loadingStates).every((state) => !state);
 
-  return <DataContext.Provider value={{ loadingStates, isFullyLoaded, updateLoadingState }}>{children}</DataContext.Provider>;
+  return (
+    <DataContext.Provider value={{ loadingStates, isFullyLoaded, updateLoadingState, loadBackgroundSeasons, currentSeasonId }}>
+      {children}
+    </DataContext.Provider>
+  );
 };
 
 export const useDataContext = () => {

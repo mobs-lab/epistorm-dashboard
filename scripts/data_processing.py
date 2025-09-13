@@ -450,6 +450,9 @@ def main():
     last_valid_ref_date = all_preds_df["reference_date"].max()
     print(f"   - Last valid reference date for dynamic periods: {last_valid_ref_date.strftime('%Y-%m-%d')}")
 
+    # Put the latest valid reference date also into metadata, to become the default selected date
+    default_selected_date = last_valid_ref_date
+
     dynamic_period_definitions = [
         ("last-2-weeks", "Last 2 Weeks", 1),
         ("last-4-weeks", "Last 4 Weeks", 3),
@@ -488,14 +491,6 @@ def main():
 
     print(f"   - Generated {len(dynamic_season_options)} dynamic time periods")
 
-    # Prepare seasons metadata structure (matching DataContract.md)
-    seasons_metadata = {
-        "fullRangeSeasons": full_range_season_options,
-        "dynamicTimePeriod": dynamic_season_options,
-    }
-
-    print("   - Season metadata structure prepared")
-
     # ===== 5. Partition Time-Series Data by Season =====
 
     # Process Nowcast Trends by season
@@ -505,17 +500,16 @@ def main():
         # Process each full range season for nowcast trends
         for season_id, dates in full_range_seasons_info_for_processing.items():
             print(f"   - Processing nowcast trends for season: {season_id}")
-            
+
             # Filter nowcast data for this season
             season_nowcast_df = all_nowcasts_df[
-                (all_nowcasts_df["reference_date"] >= dates["start"]) & 
-                (all_nowcasts_df["reference_date"] <= dates["end"])
+                (all_nowcasts_df["reference_date"] >= dates["start"]) & (all_nowcasts_df["reference_date"] <= dates["end"])
             ].copy()
-            
+
             if season_nowcast_df.empty:
                 nowcast_trends_by_season[season_id] = {}
                 continue
-                
+
             # Convert to nested dictionary structure for this season
             season_nowcast_dict = {}
             for _, row in season_nowcast_df.iterrows():
@@ -528,7 +522,7 @@ def main():
                     "increase": float(row["increase"]),
                     "stable": float(row["stable"]),
                 }
-            
+
             nowcast_trends_by_season[season_id] = season_nowcast_dict
 
     print(f"   - Nowcast trends partitioned for {len(nowcast_trends_by_season)} seasons")
@@ -975,6 +969,7 @@ def main():
         "dynamicTimePeriod": dynamic_season_options,
         "modelNames": model_names,
         "defaultSeasonTimeValue": default_season_tv,
+        "defaultSelectedDate": default_selected_date,  # This will go into settings and decide which day is selected by default
     }
     with open(auxiliary_dir / "seasonMetadata.json", "w") as f:
         json.dump(season_metadata, f, cls=NpEncoder, separators=(",", ":"))
@@ -1019,16 +1014,21 @@ def main():
             json.dump(season_nowcast, f, cls=NpEncoder, separators=(",", ":"))
 
         # Write evaluations data for this season (precalculated + raw scores)
-        season_evaluations = {
+        season_evaluations_precalculated = {
             "precalculated": {
                 "iqr": iqr_data.get(season_id, {}),
                 "stateMap_aggregates": state_map_data.get(season_id, {}),
                 "detailedCoverage_aggregates": coverage_data.get(season_id, {}),
             },
+        }
+        season_evaluations_raw_scores = {
             "rawScores": raw_scores_data.get(season_id, {}),
         }
-        with open(season_dir / "evaluationsData.json", "w") as f:
-            json.dump(season_evaluations, f, cls=NpEncoder, separators=(",", ":"))
+        with open(season_dir / "evaluationsPrecalculatedData.json", "w") as f:
+            json.dump(season_evaluations_precalculated, f, cls=NpEncoder, separators=(",", ":"))
+
+        with open(season_dir / "evaluationsRawScoresData.json", "w") as f:
+            json.dump(season_evaluations_raw_scores, f, cls=NpEncoder, separators=(",", ":"))
 
         print(f"     - Written 4 files for {season_id}")
 

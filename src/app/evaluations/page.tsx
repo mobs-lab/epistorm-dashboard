@@ -11,7 +11,7 @@ import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { Card } from "@/styles/material-tailwind-wrapper";
 import { isFeatureEnabled } from "@/utils/featureFlag";
 import { useEvaluationsData } from "@/hooks/useEvaluationsData";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 
 import SeasonOverviewLocationAggregatedScoreChart from "./evaluations-components/SeasonOverview/SeasonOverviewLocationAggregatedScoreChart";
 import SeasonOverviewPIChart from "./evaluations-components/SeasonOverview/SeasonOverviewPIChart";
@@ -98,10 +98,36 @@ const SeasonOverviewContent: React.FC = () => {
 };
 
 const SingleModelContent = () => {
-  const { loadingStates } = useDataContext();
-  const { evaluationsSingleModelViewSelectedStateName, evaluationSingleModelViewScoresOption } = useAppSelector(
+  const { loadingStates, currentSeasonId } = useDataContext();
+  const { loadSingleModelData } = useEvaluationsData();
+  const { 
+    evaluationsSingleModelViewSelectedStateName, 
+    evaluationSingleModelViewScoresOption,
+    evaluationsSingleModelViewSeasonId 
+  } = useAppSelector(
     (state) => state.evaluationsSingleModelSettings
   );
+  const hasLoadedRef = useRef(false);
+
+  useEffect(() => {
+    // Load raw scores when Single Model tab is first accessed
+    if (!hasLoadedRef.current && evaluationsSingleModelViewSeasonId) {
+      hasLoadedRef.current = true;
+      // Use the currently selected season, or default to current season
+      const seasonToLoad = evaluationsSingleModelViewSeasonId || currentSeasonId;
+      if (seasonToLoad) {
+        console.log(`Loading Single Model raw scores for season: ${seasonToLoad}`);
+        loadSingleModelData(seasonToLoad);
+      }
+    }
+  }, [evaluationsSingleModelViewSeasonId, currentSeasonId, loadSingleModelData]);
+
+  // Also load raw scores when season changes
+  useEffect(() => {
+    if (hasLoadedRef.current && evaluationsSingleModelViewSeasonId) {
+      loadSingleModelData(evaluationsSingleModelViewSeasonId);
+    }
+  }, [evaluationsSingleModelViewSeasonId, loadSingleModelData]);
 
   if (loadingStates.groundTruth || loadingStates.predictions) {
     return (
