@@ -42,8 +42,8 @@ export const useEvaluationsData = (): UseEvaluationsDataReturn => {
     try {
       const auxiliaryData = await fetchAuxiliaryData();
       
-      if (auxiliaryData.metadata?.seasons?.fullRangeSeasons) {
-        for (const season of auxiliaryData.metadata.seasons.fullRangeSeasons) {
+      if (auxiliaryData.metadata?.fullRangeSeasons) {
+        for (const season of auxiliaryData.metadata.fullRangeSeasons) {
           // Skip if already loaded
           if (loadedPeriods.includes(season.seasonId)) continue;
           
@@ -168,8 +168,8 @@ export const useEvaluationsData = (): UseEvaluationsDataReturn => {
         setTimeout(async () => {
           const auxiliaryData = await fetchAuxiliaryData();
           
-          if (auxiliaryData.metadata?.seasons?.fullRangeSeasons) {
-            for (const season of auxiliaryData.metadata.seasons.fullRangeSeasons) {
+          if (auxiliaryData.metadata?.fullRangeSeasons) {
+            for (const season of auxiliaryData.metadata.fullRangeSeasons) {
               if (season.seasonId !== seasonId && !loadedRawScoreSeasons.includes(season.seasonId)) {
                 try {
                   const otherSeasonData = await fetchSeasonRawScores(season.seasonId, false);
