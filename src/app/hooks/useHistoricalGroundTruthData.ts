@@ -6,6 +6,7 @@ import {
   setHistoricalGroundTruthJsonData, 
   clearHistoricalGroundTruthData 
 } from "@/store/data-slices/domains/historicalGroundTruthDataSlice";
+import { fetchHistoricalGroundTruthData } from "@/utils/dataLoader";
 
 interface UseHistoricalGroundTruthDataReturn {
   isLoading: boolean;
@@ -34,14 +35,11 @@ export const useHistoricalGroundTruthData = (): UseHistoricalGroundTruthDataRetu
 
     try {
       console.log("Loading historical ground truth data...");
-      const response = await fetch("/data/app_data_historical.json");
+      const historicalData = await fetchHistoricalGroundTruthData();
       
-      if (!response.ok) {
-        throw new Error(`Failed to fetch historical ground truth JSON: ${response.status}`);
-      }
-      
-      const historicalGroundTruthData = await response.json();
-      dispatch(setHistoricalGroundTruthJsonData(historicalGroundTruthData));
+      dispatch(setHistoricalGroundTruthJsonData({
+        historicalDataMap: historicalData,
+      }));
       updateLoadingState("historicalGroundTruth", false);
       console.log("Historical ground truth data loaded successfully");
     } catch (error) {

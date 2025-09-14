@@ -6,12 +6,11 @@ interface AuxiliaryDataState {
   locations: LocationData[];
   thresholds: StateThresholdsDict;
   metadata: {
-    seasons?: {
-      fullRangeSeasons: SeasonOption[];
-      dynamicTimePeriod: SeasonOption[];
-    };
+    fullRangeSeasons?: SeasonOption[];
+    dynamicTimePeriod?: SeasonOption[];
     modelNames?: string[];
     defaultSeasonTimeValue?: string;
+    defaultSelectedDate?: string;
   };
 }
 
