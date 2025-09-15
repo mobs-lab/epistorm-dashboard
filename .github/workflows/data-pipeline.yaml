@@ -41,13 +41,13 @@ jobs:
 
       # Set up python and run transform_data.py ONLY WHEN new prediction data is copied
       - name: Setup Python
-        if: ${{ env.NEW_PREDICTION_DATA_COPIED == 'true' || env.NEW_SURVEILLANCE_DATA_COPIED == 'true'}}
+        if: ${{ env.NEW_PREDICTION_DATA_COPIED == 'true' || env.NEW_SURVEILLANCE_DATA_COPIED == 'true' || env.NEW_SURVEILLANCE_ARCHIVE_DATA_COPIED == 'true' || env.NEW_EVALUATIONS_DATA_COPIED == 'true' }}
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
       - name: Install Python Dependencies
-        if: ${{ env.NEW_PREDICTION_DATA_COPIED == 'true' || env.NEW_SURVEILLANCE_DATA_COPIED == 'true'}}
+        if: ${{ env.NEW_PREDICTION_DATA_COPIED == 'true' || env.NEW_SURVEILLANCE_DATA_COPIED == 'true' || env.NEW_SURVEILLANCE_ARCHIVE_DATA_COPIED == 'true' || env.NEW_EVALUATIONS_DATA_COPIED == 'true' }}
         run: |
           python -m pip install --upgrade pip
           pip install numpy pandas glob2
@@ -124,7 +124,7 @@ jobs:
           git checkout production
 
           # Merge the release branch into production with --no-ff for clean history
-          # The [skip ci] is just in case GitHub decides to change workflow-calling restriction
+          # The [skip ci] string is for safety, making sure no side effects are run
           if ! git merge --no-ff "${RELEASE_BRANCH}" -m "Release data update ${TIMESTAMP} [skip ci]"; then
             echo "Merge conflict detected. Attempting resolution strategy..."
             
