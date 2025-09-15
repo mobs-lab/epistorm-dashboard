@@ -1,19 +1,7 @@
 "use client";
 
-import { LoadingStates } from "@/types/app";
-import { parseISO } from "date-fns";
-import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
-import { useAppDispatch } from "@/store/hooks";
-import {
-  setSeasonOptions,
-  updateDateEnd,
-  updateDateRange,
-  updateDateStart,
-  updateUserSelectedWeek,
-} from "@/store/data-slices/settings/SettingsSliceForecastNowcast";
 import { clearAuxiliaryData, setAuxiliaryJsonData } from "@/store/data-slices/domains/auxiliaryDataSlice";
-import { clearCoreData, addSeasonData } from "@/store/data-slices/domains/coreDataSlice";
-import { fetchAuxiliaryData, fetchSeasonData, determineCurrentSeasonId } from "@/utils/dataLoader";
+import { addSeasonData, clearCoreData } from "@/store/data-slices/domains/coreDataSlice";
 import { updateEvaluationSeasonOverviewTimeRangeOptions } from "@/store/data-slices/settings/SettingsSliceEvaluationSeasonOverview";
 import {
   updateEvaluationSingleModelViewDateEnd,
@@ -21,8 +9,21 @@ import {
   updateEvaluationSingleModelViewSeasonOptions,
   updateEvaluationsSingleModelViewSeasonId,
 } from "@/store/data-slices/settings/SettingsSliceEvaluationSingleModel";
+import {
+  setSeasonOptions,
+  updateDateEnd,
+  updateDateRange,
+  updateDateStart,
+  updateUserSelectedWeek,
+} from "@/store/data-slices/settings/SettingsSliceForecastNowcast";
+import { useAppDispatch } from "@/store/hooks";
+import { LoadingStates } from "@/types/app";
 import { EvaluationSeasonOverviewTimeRangeOption } from "@/types/domains/evaluations";
 import { SeasonOption } from "@/types/domains/forecasting";
+import { determineCurrentSeasonId, fetchAuxiliaryData, fetchSeasonData } from "@/utils/dataLoader";
+import { loadUSMapData } from "@/utils/mapDataLoader";
+import { parseISO } from "date-fns";
+import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 
 interface DataContextType {
   loadingStates: LoadingStates;
@@ -30,6 +31,7 @@ interface DataContextType {
   updateLoadingState: (key: keyof LoadingStates, value: boolean) => void;
   currentSeasonId: string | null;
   initializationError: string | null;
+  mapData: any | null;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -40,22 +42,42 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [initializationError, setInitializationError] = useState<string | null>(null);
   const initStartedRef = useRef(false);
   const backgroundLoadStartedRef = useRef(false);
+  const [mapData, setMapData] = useState<any | null>(null);
 
   const [loadingStates, setLoadingStates] = useState<LoadingStates>({
-    evaluationScores: false,
+    // Auxiliary Data States
+    seasonOptions: true,
+    locations: true,
+    thresholds: true,
+    mapData: true,
+
+    // Default current season states
     groundTruth: true,
     predictions: true,
-    locations: true,
     nowcastTrends: true,
-    thresholds: true,
-    historicalGroundTruth: false,
-    seasonOptions: true,
+
+    // These are lazy-loaded
+    evaluationScores: false,
     evaluationDetailedCoverage: false,
+    historicalGroundTruth: false,
   });
 
   const updateLoadingState = useCallback((key: keyof LoadingStates, value: boolean) => {
     setLoadingStates((prev) => ({ ...prev, [key]: value }));
   }, []);
+
+  const loadMapData = useCallback(async () => {
+    try {
+      console.log("Loading US map data...");
+      const data = await loadUSMapData();
+      setMapData(data);
+      updateLoadingState("mapData", false);
+      console.log("US map data loaded successfully");
+    } catch (error) {
+      console.error("Failed to load US map data:", error);
+      updateLoadingState("mapData", false); // Still set to false to not block UI
+    }
+  }, [updateLoadingState]);
 
   // Background loading function
   const loadBackgroundSeasons = useCallback(
@@ -180,12 +202,16 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       updateLoadingState("thresholds", false);
       updateLoadingState("seasonOptions", false);
 
-      // Step 4: Load current season data
-      const seasonData = await fetchSeasonData(
+      // Step 4: Load current season data AND us states map data in parallel
+      const seasonDataPromise = fetchSeasonData(
         detectedSeasonId,
         true, // It's the current season
         ["groundTruthData", "predictionsData", "nowcastTrendsData"]
       );
+
+      loadMapData();
+
+      const seasonData = await seasonDataPromise;
 
       dispatch(
         addSeasonData({
@@ -214,7 +240,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         updateLoadingState(key as keyof LoadingStates, false);
       });
     }
-  }, [dispatch, updateLoadingState, loadBackgroundSeasons, loadingStates]);
+  }, [dispatch, updateLoadingState, loadMapData, loadBackgroundSeasons, loadingStates]);
 
   // Single initialization effect
   useEffect(() => {
@@ -231,6 +257,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         updateLoadingState,
         currentSeasonId,
         initializationError,
+        mapData,
       }}>
       {initializationError ? (
         <div className='flex items-center justify-center h-screen text-white'>

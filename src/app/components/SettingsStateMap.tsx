@@ -1,49 +1,34 @@
+import { useDataContext } from "@/providers/DataProvider";
 import { updateEvaluationSingleModelViewSelectedState } from "@/store/data-slices/settings/SettingsSliceEvaluationSingleModel";
 import { updateSelectedState } from "@/store/data-slices/settings/SettingsSliceForecastNowcast";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { selectLocationData } from "@/store/selectors/forecastSelectors";
+import { useResponsiveSVG } from "@/utils/responsiveSVG";
 import * as d3 from "d3";
 import { zoom, ZoomBehavior, zoomIdentity } from "d3-zoom";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import * as topojson from "topojson-client";
-import { useResponsiveSVG } from "@/utils/responsiveSVG";
 
 interface SettingsStateMapProps {
   pageSelected: string;
 }
-
-const usStateData = "/states-10m.json";
 
 const SettingsStateMap: React.FC<SettingsStateMapProps> = ({ pageSelected }) => {
   const { containerRef, dimensions } = useResponsiveSVG();
   const svgRef = useRef<SVGSVGElement>(null);
   const gRef = useRef<SVGGElement>(null);
 
+  const { mapData } = useDataContext();
+
   const zoomBehaviorRef = useRef<ZoomBehavior<SVGSVGElement, unknown> | null>(null);
   const initialTransformRef = useRef<d3.ZoomTransform | null>(null);
 
   const [isMapReady, setIsMapReady] = useState(false);
 
-  //Store fetched TopoJSON data to avoid unnecessary re-fetching
-  const [usTopoJsonData, setUsTopoJsonData] = useState<any>(null);
-
   const dispatch = useAppDispatch();
   const { selectedStateName } = useAppSelector((state) => state.forecastSettings);
   const { evaluationsSingleModelViewSelectedStateName } = useAppSelector((state) => state.evaluationsSingleModelSettings);
   const locationData = useAppSelector(selectLocationData);
-
-  /* OPTIMIZATION: fetch TopoJSON only once when component mounts */
-  useEffect(() => {
-    const loadTopoData = async () => {
-      try {
-        const us: any = await d3.json(usStateData);
-        setUsTopoJsonData(us);
-      } catch (error) {
-        console.error("Error loading US map data:", error);
-      }
-    };
-    loadTopoData();
-  }, []); // Empty dependency array ensures this runs only once
 
   const initializeZoom = useCallback(() => {
     if (!svgRef.current || !gRef.current) return;
@@ -105,7 +90,7 @@ const SettingsStateMap: React.FC<SettingsStateMapProps> = ({ pageSelected }) => 
   );
 
   const renderMap = useCallback(() => {
-    if (!svgRef.current || !gRef.current || !usTopoJsonData) return;
+    if (!svgRef.current || !gRef.current || !mapData) return;
     setIsMapReady(false);
 
     const svg = d3
@@ -121,7 +106,7 @@ const SettingsStateMap: React.FC<SettingsStateMapProps> = ({ pageSelected }) => 
 
     initializeZoom();
 
-    const us = usTopoJsonData;
+    const us = mapData;
     const states = g
       .selectAll("path")
       .data(topojson.feature(us, us.objects.states).features)
@@ -151,13 +136,13 @@ const SettingsStateMap: React.FC<SettingsStateMapProps> = ({ pageSelected }) => 
       svg.call(zoomBehaviorRef.current.transform, newInitialTransform);
     }
     setIsMapReady(true);
-  }, [dimensions, initializeZoom, usTopoJsonData, handleClick]);
+  }, [dimensions, initializeZoom, mapData, handleClick]);
 
   useEffect(() => {
-    if (locationData.length > 0 && dimensions.width > 0 && dimensions.height > 0 && usTopoJsonData) {
+    if (locationData.length > 0 && dimensions.width > 0 && dimensions.height > 0 && mapData) {
       renderMap();
     }
-  }, [locationData, dimensions, renderMap, usTopoJsonData]);
+  }, [locationData, dimensions, renderMap, mapData]);
 
   // Highlight the corresponding page's state selection when the page loads
   const highlightSelectedState = useCallback(() => {
