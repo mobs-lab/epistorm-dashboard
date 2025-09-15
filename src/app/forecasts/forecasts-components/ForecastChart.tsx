@@ -454,7 +454,7 @@ const ForecastChart: React.FC = () => {
         .attr("fill", "#FFA500")
         .attr("transform", `translate(${marginLeft}, ${marginTop})`);
     },
-    [userSelectedWeek, dateStart, USStateNum]
+    [dateStart, USStateNum]
   );
 
   function renderPredictionData(

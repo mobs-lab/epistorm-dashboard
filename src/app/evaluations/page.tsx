@@ -10,7 +10,8 @@ import { useDataContext } from "@/providers/DataProvider";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { Card } from "@/styles/material-tailwind-wrapper";
 import { isFeatureEnabled } from "@/utils/featureFlag";
-import React, { useState } from "react";
+import { useEvaluationsData } from "@/hooks/useEvaluationsData";
+import React, { useEffect, useState, useRef } from "react";
 
 import SeasonOverviewLocationAggregatedScoreChart from "./evaluations-components/SeasonOverview/SeasonOverviewLocationAggregatedScoreChart";
 import SeasonOverviewPIChart from "./evaluations-components/SeasonOverview/SeasonOverviewPIChart";
@@ -97,10 +98,36 @@ const SeasonOverviewContent: React.FC = () => {
 };
 
 const SingleModelContent = () => {
-  const { loadingStates } = useDataContext();
-  const { evaluationsSingleModelViewSelectedStateName, evaluationSingleModelViewScoresOption } = useAppSelector(
+  const { loadingStates, currentSeasonId } = useDataContext();
+  const { loadSingleModelData } = useEvaluationsData();
+  const { 
+    evaluationsSingleModelViewSelectedStateName, 
+    evaluationSingleModelViewScoresOption,
+    evaluationsSingleModelViewSeasonId 
+  } = useAppSelector(
     (state) => state.evaluationsSingleModelSettings
   );
+  const hasLoadedRef = useRef(false);
+
+  useEffect(() => {
+    // Load raw scores when Single Model tab is first accessed
+    if (!hasLoadedRef.current && evaluationsSingleModelViewSeasonId) {
+      hasLoadedRef.current = true;
+      // Use the currently selected season, or default to current season
+      const seasonToLoad = evaluationsSingleModelViewSeasonId || currentSeasonId;
+      if (seasonToLoad) {
+        console.log(`Loading Single Model raw scores for season: ${seasonToLoad}`);
+        loadSingleModelData(seasonToLoad);
+      }
+    }
+  }, [evaluationsSingleModelViewSeasonId, currentSeasonId, loadSingleModelData]);
+
+  // Also load raw scores when season changes
+  useEffect(() => {
+    if (hasLoadedRef.current && evaluationsSingleModelViewSeasonId) {
+      loadSingleModelData(evaluationsSingleModelViewSeasonId);
+    }
+  }, [evaluationsSingleModelViewSeasonId, loadSingleModelData]);
 
   if (loadingStates.groundTruth || loadingStates.predictions) {
     return (
@@ -126,7 +153,9 @@ const SingleModelContent = () => {
         <SingleModelHorizonPlot />
       </div>
       <div className='min-h-0 w-full h-full'>
-        <div className='p-[0.05rem] border-b border-gray-700 flex justify-between items-center'>{evaluationSingleModelViewScoresOption}</div>
+        <div className='p-[0.05rem] border-b border-gray-700 flex justify-between items-center'>
+          {evaluationSingleModelViewScoresOption}
+        </div>
         <SingleModelScoreLineChart />
       </div>
     </div>
@@ -142,11 +171,36 @@ const EvaluationsPage = () => {
   const [activeTab, setActiveTab] = useState(defaultTab);
   const { loadingStates, isFullyLoaded } = useDataContext();
 
+  // Initialize lazy loading for evaluations data
+  const {
+    isLoading: isEvaluationsLoading,
+    isLoaded: isEvaluationsLoaded,
+    error: evaluationsError,
+    loadData: loadEvaluationsData,
+  } = useEvaluationsData();
+
+  // Load evaluations data when the page mounts
+  useEffect(() => {
+    if (!isEvaluationsLoaded && !isEvaluationsLoading) {
+      loadEvaluationsData();
+    }
+  }, [isEvaluationsLoaded, isEvaluationsLoading, loadEvaluationsData]);
+
   // Determine which data-slices is needed for each tab
   const seasonOverviewReady = !loadingStates.evaluationDetailedCoverage && !loadingStates.evaluationScores;
   const singleModelReady = !loadingStates.groundTruth && !loadingStates.predictions && !loadingStates.evaluationScores;
 
   const renderContent = () => {
+    // Show loading if evaluations data is still being fetched
+    if (isEvaluationsLoading) {
+      return <div className='text-white p-4'>Loading evaluations data...</div>;
+    }
+
+    // Show error if evaluations data failed to load
+    if (evaluationsError) {
+      return <div className='text-white p-4'>Error loading evaluations data: {evaluationsError}</div>;
+    }
+
     if (activeTab === "season-overview") {
       if (!seasonOverviewReady) {
         return <div className='text-white p-4'>Loading season overview data...</div>;

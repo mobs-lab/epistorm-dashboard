@@ -26,7 +26,8 @@
       "@/styles/*": ["css/*"],
       "@/evaluations/*": ["evaluations/*"],
       "@/forecasts/*": ["forecasts/*"],
-      "@/utils/*": ["utils/*"]
+      "@/utils/*": ["utils/*"],
+      "@/hooks/*": ["hooks/*"]
     }
   },
   "include": ["next-env.d.ts", ".next/types/**/*.ts", "**/*.ts", "**/*.tsx"],

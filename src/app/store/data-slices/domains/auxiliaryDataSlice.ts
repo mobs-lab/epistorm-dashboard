@@ -1,18 +1,24 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
-import { LocationData, StateThresholdsDict, HistoricalDataMap } from "@/types/domains/forecasting";
+import { LocationData, StateThresholdsDict, HistoricalDataMap, SeasonOption } from "@/types/domains/forecasting";
 
 interface AuxiliaryDataState {
   isLoaded: boolean;
   locations: LocationData[];
   thresholds: StateThresholdsDict;
-  historicalDataMap: HistoricalDataMap;
+  metadata: {
+    fullRangeSeasons?: SeasonOption[];
+    dynamicTimePeriod?: SeasonOption[];
+    modelNames?: string[];
+    defaultSeasonTimeValue?: string;
+    defaultSelectedDate?: string;
+  };
 }
 
 const initialState: AuxiliaryDataState = {
   isLoaded: false,
   locations: [],
   thresholds: {},
-  historicalDataMap: {},
+  metadata: {},
 };
 
 const auxiliaryDataSlice = createSlice({
@@ -22,13 +28,13 @@ const auxiliaryDataSlice = createSlice({
     setAuxiliaryJsonData: (state, action: PayloadAction<any>) => {
       state.locations = action.payload.locations || [];
       state.thresholds = action.payload.thresholds || {};
-      state.historicalDataMap = action.payload.historicalDataMap || {};
+      state.metadata = action.payload.metadata || {};
       state.isLoaded = true;
     },
     clearAuxiliaryData: (state) => {
       state.locations = [];
       state.thresholds = {};
-      state.historicalDataMap = {};
+      state.metadata = {};
       state.isLoaded = false;
     },
   },
