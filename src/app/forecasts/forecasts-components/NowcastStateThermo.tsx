@@ -14,8 +14,7 @@ import { format, subDays } from "date-fns";
 import { FeatureCollection } from "geojson";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import * as topojson from "topojson-client";
-
-const shapeFile = "/states-10m.json";
+import { useDataContext } from "@/providers/DataProvider";
 
 /* Color legend boxes */
 const ThermoLegendBoxes: React.FC = () => {
@@ -133,6 +132,8 @@ const NowcastStateThermo: React.FC = () => {
   const thermometerSvgRef = useRef<SVGSVGElement>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
 
+  const { mapData } = useDataContext();
+
   const { selectedStateName, USStateNum, userSelectedRiskLevelModel, userSelectedWeek } = useAppSelector((state) => state.forecastSettings);
 
   const [currentWeek, setCurrentWeek] = useState("");
@@ -166,8 +167,9 @@ const NowcastStateThermo: React.FC = () => {
   // Main UseEffect for listening to change in resized dimension, or user-selected different weeks, trigger drawing of the mini state map
   useEffect(() => {
     const drawMap = async () => {
+      if (!mapData) return;
       try {
-        const us: any = await d3.json(shapeFile);
+        const us: any = mapData;
         const statesTopoData = topojson.feature(us, us.objects.states) as unknown as FeatureCollection;
 
         const svg = d3.select(mapSvgRef.current);
@@ -212,7 +214,7 @@ const NowcastStateThermo: React.FC = () => {
     };
 
     drawMap();
-  }, [dimensions, selectedStateName, riskColor, USStateNum]);
+  }, [dimensions, selectedStateName, riskColor, USStateNum, mapData]);
 
   /* NOTE: useEffect that draws the Thermometer */
   useEffect(() => {

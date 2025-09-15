@@ -1,13 +1,14 @@
 // Updated SeasonOverviewUSStateMap.tsx
 "use client";
 
-import React, { useEffect, useRef, useState, useMemo, useCallback } from "react";
-import * as d3 from "d3";
-import * as topojson from "topojson-client";
-import { useResponsiveSVG } from "@/utils/responsiveSVG";
+import { useDataContext } from "@/providers/DataProvider";
 import { useAppSelector } from "@/store/hooks";
-import { selectSeasonOverviewData, selectShouldUseJsonData } from "@/store/selectors/evaluationSelectors";
 import { selectLocationData } from "@/store/selectors";
+import { selectSeasonOverviewData, selectShouldUseJsonData } from "@/store/selectors/evaluationSelectors";
+import { useResponsiveSVG } from "@/utils/responsiveSVG";
+import * as d3 from "d3";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import * as topojson from "topojson-client";
 import MapSelectorPanel from "./MapSelectorPanel";
 
 // Define color constants
@@ -19,7 +20,7 @@ const NO_DATA_COLOR = "#363b43"; // Color for states with no data
 const SeasonOverviewUSStateMap: React.FC = () => {
   const { containerRef, dimensions, isResizing } = useResponsiveSVG();
   const svgRef = useRef<SVGSVGElement>(null);
-  const [mapData, setMapData] = useState<any>(null);
+  const { mapData } = useDataContext();
 
   // Get data from selectors
   const shouldUseJsonData = useAppSelector(selectShouldUseJsonData);
@@ -30,20 +31,6 @@ const SeasonOverviewUSStateMap: React.FC = () => {
   const { mapSelectedModel, mapSelectedScoringOption, useLogColorScale } = useAppSelector(
     (state) => state.evaluationsSeasonOverviewSettings
   );
-
-  // Load US map data
-  useEffect(() => {
-    const fetchMapData = async () => {
-      try {
-        const data = await d3.json("/states-10m.json");
-        setMapData(data);
-      } catch (error) {
-        console.error("Error loading map data:", error);
-      }
-    };
-
-    fetchMapData();
-  }, []);
 
   // Calculate state performance data based on selected criteria
   const modelPerformanceData = useMemo(() => {
@@ -623,7 +610,7 @@ const SeasonOverviewUSStateMap: React.FC = () => {
       .attr("dy", "0.05em") // Slight vertical adjustment
       .style("pointer-events", "none") // Prevent text from blocking circle hover
       .text("DC");
-  }, [dimensions, mapData, mapSelectedScoringOption, modelPerformanceData, updateTooltip, useLogColorScale]);
+  }, [dimensions, locationData, mapData, mapSelectedScoringOption, modelPerformanceData, updateTooltip, useLogColorScale]);
 
   // Render map when dimensions or data change
   useEffect(() => {
