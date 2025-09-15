@@ -226,7 +226,6 @@ export async function fetchHistoricalGroundTruthData() {
 }
 
 export function determineCurrentSeasonId(metadata: any): string | null {
-
   if (!metadata?.fullRangeSeasons) return null;
 
   const seasons = metadata.fullRangeSeasons;
@@ -239,32 +238,32 @@ export function determineCurrentSeasonId(metadata: any): string | null {
   if (ongoingSeason) {
     console.log(`Found ongoing season: ${ongoingSeason.seasonId}`);
     return ongoingSeason.seasonId;
-  }
+  } else {
+    // Fallback: Find season that contains current date
+    const currentSeason = seasons.find((s: any) => {
+      const start = new Date(s.startDate);
+      const end = new Date(s.endDate);
+      return now >= start && now <= end;
+    });
+    if (currentSeason) {
+      console.log(`Found current season by date: ${currentSeason.seasonId}`);
+      return currentSeason.seasonId;
+    }
 
-  // Method 2: Find season that contains current date
-  const currentSeason = seasons.find((s: any) => {
-    const start = new Date(s.startDate);
-    const end = new Date(s.endDate);
-    return now >= start && now <= end;
-  });
-  if (currentSeason) {
-    console.log(`Found current season by date: ${currentSeason.seasonId}`);
-    return currentSeason.seasonId;
-  }
+    // Fallback 2: Get the most recent season (highest index or latest endDate)
+    const sortedSeasons = [...seasons].sort((a, b) => new Date(b.endDate).getTime() - new Date(a.endDate).getTime());
 
-  // Method 3: Get the most recent season (highest index or latest endDate)
-  const sortedSeasons = [...seasons].sort((a, b) => new Date(b.endDate).getTime() - new Date(a.endDate).getTime());
-
-  if (sortedSeasons[0]) {
-    console.log(`Using most recent season as fallback: ${sortedSeasons[0].seasonId}`);
-    return sortedSeasons[0].seasonId;
+    if (sortedSeasons[0]) {
+      console.log(`Using most recent season as fallback: ${sortedSeasons[0].seasonId}`);
+      return sortedSeasons[0].seasonId;
+    }
   }
 
   return null;
 }
 
 /**
- * Clear all caches (useful for testing or forced refresh)
+ * Debugging utility: Clear all caches
  */
 export function clearAllCaches() {
   auxiliaryDataCache = null;

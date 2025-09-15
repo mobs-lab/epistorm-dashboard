@@ -8,6 +8,7 @@ export interface LoadingStates {
   seasonOptions: boolean;
   evaluationScores: boolean;
   evaluationDetailedCoverage: boolean;
+  mapData: boolean;
 }
 
 
