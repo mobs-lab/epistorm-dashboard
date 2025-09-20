@@ -208,10 +208,10 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         true, // It's the current season
         ["groundTruthData", "predictionsData", "nowcastTrendsData"]
       );
+      
+      const seasonData = await seasonDataPromise;
 
       loadMapData();
-
-      const seasonData = await seasonDataPromise;
 
       dispatch(
         addSeasonData({
@@ -225,12 +225,12 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       updateLoadingState("predictions", false);
       updateLoadingState("nowcastTrends", false);
 
-      console.log("Initial data load complete");
+      console.log("Initial Critical data load complete");
 
       // Step 5: Start background loading of other seasons
       setTimeout(() => {
         loadBackgroundSeasons(detectedSeasonId, auxiliaryData.metadata);
-      }, 1000);
+      }, 1);
     } catch (error) {
       console.error("Failed to initialize data:", error);
       setInitializationError(error instanceof Error ? error.message : "Unknown error");

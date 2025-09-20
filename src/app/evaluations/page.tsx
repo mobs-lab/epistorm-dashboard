@@ -6,21 +6,19 @@
 
 "use client";
 
+import { useEvaluationsData } from "@/hooks/useEvaluationsData";
 import { useDataContext } from "@/providers/DataProvider";
+import InfoButton from "@/shared-components/InfoButton";
+import { setMapeChartScaleType, setWisChartScaleType } from "@/store/data-slices/settings/SettingsSliceEvaluationSeasonOverview";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { Card } from "@/styles/material-tailwind-wrapper";
 import { isFeatureEnabled } from "@/utils/featureFlag";
-import { useEvaluationsData } from "@/hooks/useEvaluationsData";
-import React, { useEffect, useState, useRef } from "react";
-
+import React, { useEffect, useRef, useState } from "react";
+import { seasonOverviewInfo, singleModelInfo } from "types/infobutton-content";
 import SeasonOverviewLocationAggregatedScoreChart from "./evaluations-components/SeasonOverview/SeasonOverviewLocationAggregatedScoreChart";
 import SeasonOverviewPIChart from "./evaluations-components/SeasonOverview/SeasonOverviewPIChart";
 import { SeasonOverviewSettings } from "./evaluations-components/SeasonOverview/SeasonOverviewSettingsPanel";
 import SeasonOverviewUSStateMap from "./evaluations-components/SeasonOverview/SeasonOverviewUSStateMap";
-
-import InfoButton from "@/shared-components/InfoButton";
-import { setMapeChartScaleType, setWisChartScaleType } from "@/store/data-slices/settings/SettingsSliceEvaluationSeasonOverview";
-import { seasonOverviewInfo, singleModelInfo } from "types/infobutton-content";
 import SingleModelHorizonPlot from "./evaluations-components/SingleModel/SingleModelHorizonPlot";
 import SingleModelScoreLineChart from "./evaluations-components/SingleModel/SingleModelScoreLineChart";
 import SingleModelSettingsPanel from "./evaluations-components/SingleModel/SingleModelSettingsPanel";
@@ -73,7 +71,6 @@ const SeasonOverviewContent: React.FC = () => {
           </div>
         </Card>
 
-        {/* TODO: Use updated InfoButton implementation in the form of a rectangle button here */}
         <Card className='bg-mobs-lab-color text-white overflow-hidden'>
           <div className='p-1 border-b border-gray-700 flex-row flex-nowrap align-end justify-center items-center'>
             <h3 className='text-lg font-medium flex-shrink'>Coverage</h3>
@@ -100,13 +97,8 @@ const SeasonOverviewContent: React.FC = () => {
 const SingleModelContent = () => {
   const { loadingStates, currentSeasonId } = useDataContext();
   const { loadSingleModelData } = useEvaluationsData();
-  const { 
-    evaluationsSingleModelViewSelectedStateName, 
-    evaluationSingleModelViewScoresOption,
-    evaluationsSingleModelViewSeasonId 
-  } = useAppSelector(
-    (state) => state.evaluationsSingleModelSettings
-  );
+  const { evaluationsSingleModelViewSelectedStateName, evaluationSingleModelViewScoresOption, evaluationsSingleModelViewSeasonId } =
+    useAppSelector((state) => state.evaluationsSingleModelSettings);
   const hasLoadedRef = useRef(false);
 
   useEffect(() => {

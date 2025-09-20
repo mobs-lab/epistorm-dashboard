@@ -310,7 +310,6 @@ const ForecastChart: React.FC = () => {
           ticks.push(2.5 * base);
           ticks.push(5 * base);
         }
-
       }
       ticks = ticks.filter((tick) => tick >= minValue && tick <= maxValue);
       // if (ticks.length > desiredTickCount) {
@@ -417,7 +416,6 @@ const ForecastChart: React.FC = () => {
       marginLeft: number,
       marginTop: number
     ) => {
-
       if (!historicalData || historicalData.length === 0) {
         console.debug("DEBUG: No historical data available for the selected week.");
         return;
@@ -1055,6 +1053,8 @@ const ForecastChart: React.FC = () => {
   /* Bubble the `userSelectedWeek` to Redux so sibling Nowcast components can also use this information in filtering*/
   const bubbleUserSelectedWeek = useCallback(
     (date: Date) => {
+      const utcDate = new Date(date.toISOString());
+      console.debug("ForecastChart bubbleUserSelectedWeek: Dispatching standardized UTC date:", utcDate.toISOString());
       dispatch(updateUserSelectedWeek(new Date(date.toISOString()))); // Ensure UTC
     },
     [dispatch]
@@ -1128,6 +1128,9 @@ const ForecastChart: React.FC = () => {
         const [mouseX] = d3.pointer(event);
         const date = xScale.invert(mouseX - marginLeft);
         const closestData = findNearestDataPoint(combinedData, date);
+
+        console.debug("ForecastChart handleClick: Raw inverted date from chart:", date.toISOString());
+        console.debug("ForecastChart handleClick: Snapped to closest data point date:", closestData.date.toISOString());
 
         bubbleUserSelectedWeek(closestData.date);
         updateVerticalIndicator(closestData.date, xScale, marginLeft, chartWidth, verticalIndicatorGroup, lineTooltip);

@@ -1,18 +1,18 @@
 // Custom hook for lazy loading evaluations data
-import { useCallback, useRef, useState, useEffect } from "react";
-import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { useDataContext } from "@/providers/DataProvider";
-import { 
+import {
   addPrecalculatedData,
   addRawScores,
-  clearEvaluationJsonData 
+  clearEvaluationJsonData
 } from "@/store/data-slices/domains/evaluationDataSlice";
-import { 
-  fetchDynamicTimePeriodData, 
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import {
+  fetchAuxiliaryData,
+  fetchDynamicTimePeriodData,
   fetchSeasonEvaluationData,
-  fetchSeasonRawScores,
-  fetchAuxiliaryData
+  fetchSeasonRawScores
 } from "@/utils/dataLoader";
+import { useCallback, useRef, useState } from "react";
 
 interface UseEvaluationsDataReturn {
   isLoading: boolean;
