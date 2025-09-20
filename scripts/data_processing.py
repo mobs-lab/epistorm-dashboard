@@ -167,6 +167,15 @@ def main():
 
         archive_df = pd.concat(archive_dfs, ignore_index=True) if archive_dfs else pd.DataFrame()
 
+        # For archive predictions data only, need to shift all "forecast_date" column values to 2 days back for all rows, since the convention changed from Friday-Saturday to Saturday-Saturday)
+        archive_df["forecast_date"] = pd.to_datetime(archive_df["forecast_date"])
+
+        archive_df["forecast_date"] = archive_df["forecast_date"] - pd.Timedelta(days=2)
+
+        archive_df["forecast_date"] = archive_df["forecast_date"].dt.strftime("%Y-%m-%d")
+
+        print(archive_df.head())
+
         print(f"   - Loaded {len(unprocessed_df)} rows from 'unprocessed' files")
         print(f"   - Loaded {len(archive_df)} rows from 'archive' files")
 

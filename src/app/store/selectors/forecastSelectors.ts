@@ -264,6 +264,7 @@ export const selectPredictionsForMultipleModels = createSelector(
     }),
   ],
   (predictionData, metadata, { modelNames, stateNum, referenceDate, horizon }) => {
+    console.debug("DEBUG: selectPredictionsForMultipleModels: referenceDate", referenceDate);
     if (!predictionData || !metadata) {
       return {};
     }
@@ -271,16 +272,28 @@ export const selectPredictionsForMultipleModels = createSelector(
     const dateISO = referenceDate.toISOString().split("T")[0];
     const seasonId = findSeasonForDate(metadata.fullRangeSeasons || [], referenceDate);
     if (!seasonId) return {};
+    console.debug("selectPredictionsForMultipleModels: Using dateISO key", dateISO, "in season", seasonId);
 
     const predictions: {} = {};
 
     modelNames.forEach((modelName) => {
+      console.debug("DEBUG: selectPredictionsForMultipleModels: Model name", modelName);
       const modelData = predictionData[seasonId]?.[modelName];
       if (!modelData) return;
 
       for (const partitionName of ["full-forecast", "forecast-tail"]) {
         const partition = modelData.partitions[partitionName as keyof typeof modelData.partitions];
-        if (!partition || !partition[dateISO]) continue;
+        if (!partition) continue;
+        if (!partition[dateISO]) {
+          if (partitionName === "full-forecast") {
+            // Log only for the main partition to avoid noise
+            console.debug(
+              `selectPredictionsForMultipleModels: Key ${dateISO} not found in partition ${partitionName} for model ${modelName}. Available keys (sample):`,
+              Object.keys(partition).slice(0, 20)
+            );
+          }
+          continue;
+        }
 
         const stateData = partition[dateISO][stateNum];
         if (stateData?.predictions) {
@@ -298,7 +311,6 @@ export const selectPredictionsForMultipleModels = createSelector(
         }
       }
     });
-
     return predictions;
   }
 );
