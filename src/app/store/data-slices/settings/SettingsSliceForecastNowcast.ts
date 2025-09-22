@@ -6,7 +6,7 @@ import { parseISO } from "date-fns";
 interface ForecastSettingsState {
   selectedStateName: string;
   USStateNum: string;
-  forecastModel: string[];
+  selectedForecastModels: string[];
   numOfWeeksAhead: number;
   dateStart: Date;
   dateEnd: Date;
@@ -26,7 +26,7 @@ interface ForecastSettingsState {
 const initialState: ForecastSettingsState = {
   selectedStateName: "United States",
   USStateNum: "US",
-  forecastModel: [
+  selectedForecastModels: [
     "MOBS-GLEAM_FLUH",
     "MIGHTE-Nsemble",
     "MIGHTE-Joint",
@@ -56,8 +56,8 @@ const forecastSettingsSlice = createSlice({
       state.selectedStateName = action.payload.stateName;
       state.USStateNum = action.payload.stateNum;
     },
-    updateForecastModel: (state, action: PayloadAction<string[]>) => {
-      state.forecastModel = action.payload;
+    updateSelectedForecastModels: (state, action: PayloadAction<string[]>) => {
+      state.selectedForecastModels = action.payload;
     },
     updateNumOfWeeksAhead: (state, action: PayloadAction<number>) => {
       state.numOfWeeksAhead = action.payload;
@@ -94,7 +94,7 @@ const forecastSettingsSlice = createSlice({
 
 export const {
   updateSelectedState,
-  updateForecastModel,
+  updateSelectedForecastModels,
   updateNumOfWeeksAhead,
   updateDateStart,
   updateDateEnd,
