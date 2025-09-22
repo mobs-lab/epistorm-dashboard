@@ -8,7 +8,7 @@ import {
   updateDateEnd,
   updateDateRange,
   updateDateStart,
-  updateForecastModel,
+  updateSelectedForecastModels,
   updateNumOfWeeksAhead,
   updateSelectedState,
   updateYScale,
@@ -30,7 +30,7 @@ const SettingsPanel: React.FC = () => {
   const locationData = useAppSelector(selectLocationData);
   const { earliestDate, latestDate } = useAppSelector(selectDateConstraints);
 
-  const { USStateNum, forecastModel, dateStart, dateEnd, dateRange, confidenceInterval, seasonOptions } = useAppSelector(
+  const { USStateNum, selectedForecastModels: forecastModel, dateStart, dateEnd, dateRange, confidenceInterval, seasonOptions } = useAppSelector(
     (state) => state.forecastSettings
   );
 
@@ -48,9 +48,9 @@ const SettingsPanel: React.FC = () => {
 
   const onModelSelectionChange = (modelName: string, checked: boolean) => {
     if (checked) {
-      dispatch(updateForecastModel([...forecastModel, modelName]));
+      dispatch(updateSelectedForecastModels([...forecastModel, modelName]));
     } else {
-      dispatch(updateForecastModel(forecastModel.filter((model) => model !== modelName)));
+      dispatch(updateSelectedForecastModels(forecastModel.filter((model) => model !== modelName)));
     }
   };
 
@@ -103,7 +103,7 @@ const SettingsPanel: React.FC = () => {
   };
 
   const handleShowAllModels = () => {
-    dispatch(updateForecastModel(modelNames));
+    dispatch(updateSelectedForecastModels(modelNames));
   };
 
   return (
