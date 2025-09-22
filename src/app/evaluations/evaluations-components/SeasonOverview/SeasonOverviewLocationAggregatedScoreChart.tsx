@@ -1,13 +1,16 @@
 // File: /src/app/evaluations/evaluations-components/SeasonOverview/QuantileStatisticsChartExtended.tsx
 "use client";
 
-import React, { useEffect, useRef, useMemo, useCallback } from "react";
-import * as d3 from "d3";
 import { useAppSelector } from "@/store/hooks";
 import { modelColorMap, modelNames } from "@/types/common";
 import { useResponsiveSVG } from "@/utils/responsiveSVG";
+import * as d3 from "d3";
+import React, { useCallback, useEffect, useMemo, useRef } from "react";
 
-import { selectSeasonOverviewData, selectShouldUseJsonData } from "@/store/selectors/evaluationSelectors";
+import {
+  selectSeasonOverviewData,
+  selectShouldUseJsonData,
+} from "@/store/selectors/evaluationSelectors";
 import { BoxplotStats } from "@/types/domains/evaluations";
 
 // Options for controlling to which direction tooltip appears relative to the mouse pointer
@@ -34,7 +37,9 @@ interface IQRData {
   count: number; // show number of data points in tooltip
 }
 
-const SeasonOverviewLocationAggregatedScoreChart: React.FC<SeasonOverviewLocationAggregatedScoreChartAltProps> = ({ type }) => {
+const SeasonOverviewLocationAggregatedScoreChart: React.FC<
+  SeasonOverviewLocationAggregatedScoreChartAltProps
+> = ({ type }) => {
   const { containerRef, dimensions, isResizing } = useResponsiveSVG({
     debounceMs: 300,
     throttleMs: 150,
@@ -45,7 +50,9 @@ const SeasonOverviewLocationAggregatedScoreChart: React.FC<SeasonOverviewLocatio
   const shouldUseJsonData = useAppSelector(selectShouldUseJsonData);
   const seasonOverviewData = useAppSelector(selectSeasonOverviewData);
 
-  const { wisChartScaleType, mapeChartScaleType } = useAppSelector((state) => state.evaluationsSeasonOverviewSettings);
+  const { wisChartScaleType, mapeChartScaleType } = useAppSelector(
+    (state) => state.evaluationsSeasonOverviewSettings,
+  );
 
   // Process evaluation score data based on selected criteria, enhanced with memoization
   // Process data using JSON when available, otherwise fall back to CSV processing
@@ -67,8 +74,12 @@ const SeasonOverviewLocationAggregatedScoreChart: React.FC<SeasonOverviewLocatio
 
       // Final processed data output should be grouped by model
       // Combine data across selected horizons for each model
-      for (const modelName of modelNames.filter((m) => seasonOverviewData.selectedModels.includes(m))) {
-        const iqrData = (seasonOverviewData.iqrData as any)[metric]?.[modelName];
+      for (const modelName of modelNames.filter((m) =>
+        seasonOverviewData.selectedModels.includes(m),
+      )) {
+        const iqrData = (seasonOverviewData.iqrData as any)[metric]?.[
+          modelName
+        ];
         if (!iqrData) continue;
 
         const finalDataForModel: BoxplotStats = iqrData?.[horizonKey];
@@ -85,7 +96,7 @@ const SeasonOverviewLocationAggregatedScoreChart: React.FC<SeasonOverviewLocatio
           });
         } else {
           console.warn(
-            `DEBUG: Seaon Overview/LocationAggregationBoxPlot/processedData()/No pre-calculated IQR data for ${modelName} matching horizons: ${horizonKey}.`
+            `DEBUG: Seaon Overview/LocationAggregationBoxPlot/processedData()/No pre-calculated IQR data for ${modelName} matching horizons: ${horizonKey}.`,
           );
         }
       }
@@ -95,8 +106,14 @@ const SeasonOverviewLocationAggregatedScoreChart: React.FC<SeasonOverviewLocatio
   }, [shouldUseJsonData, seasonOverviewData, type]);
 
   // Create tooltip element with initial hidden state
-  const createTooltip = (svg: d3.Selection<SVGSVGElement, unknown, null, undefined>) => {
-    return svg.append("g").attr("class", "iqr-tooltip").style("opacity", 0).style("pointer-events", "none");
+  const createTooltip = (
+    svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
+  ) => {
+    return svg
+      .append("g")
+      .attr("class", "iqr-tooltip")
+      .style("opacity", 0)
+      .style("pointer-events", "none");
   };
 
   // Update tooltip with IQR data and positioning
@@ -105,7 +122,7 @@ const SeasonOverviewLocationAggregatedScoreChart: React.FC<SeasonOverviewLocatio
       tooltip: d3.Selection<SVGGElement, unknown, null, undefined>,
       data: IQRData,
       position: [number, number],
-      direction: TooltipDirection
+      direction: TooltipDirection,
     ) => {
       return () => {
         tooltip.selectAll("*").remove();
@@ -260,13 +277,23 @@ const SeasonOverviewLocationAggregatedScoreChart: React.FC<SeasonOverviewLocatio
         }
 
         // Apply the calculated offsets
-        tooltip.attr("transform", `translate(${position[0] + xOffset},${position[1] + yOffset})`).style("opacity", 1);
+        tooltip
+          .attr(
+            "transform",
+            `translate(${position[0] + xOffset},${position[1] + yOffset})`,
+          )
+          .style("opacity", 1);
       };
     },
-    [type]
+    [dimensions.height, dimensions.width, type],
   );
 
-  const generateEvenlySpacedTicks = (scale: d3.ScaleSymLog<number, number, never>, pixelWidth: number, numTicks = 8, isWis = false) => {
+  const generateEvenlySpacedTicks = (
+    scale: d3.ScaleSymLog<number, number, never>,
+    pixelWidth: number,
+    numTicks = 8,
+    isWis = false,
+  ) => {
     if (isWis) {
       // For WIS/Baseline data, trying a specialized approach
       const maxValue = scale.domain()[1];
@@ -301,7 +328,9 @@ const SeasonOverviewLocationAggregatedScoreChart: React.FC<SeasonOverviewLocatio
         return Math.round(value);
       });
 
-      const uniqueValues = Array.from(new Set([0, ...dataValues])).sort((a, b) => a - b);
+      const uniqueValues = Array.from(new Set([0, ...dataValues])).sort(
+        (a, b) => a - b,
+      );
       return uniqueValues;
     }
   };
@@ -320,7 +349,9 @@ const SeasonOverviewLocationAggregatedScoreChart: React.FC<SeasonOverviewLocatio
     const innerHeight = height - margin.top - margin.bottom;
 
     // Chart group
-    const g = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
+    const g = svg
+      .append("g")
+      .attr("transform", `translate(${margin.left},${margin.top})`);
 
     // Check if we have data to display
     if (processedData.length === 0) {
@@ -341,7 +372,10 @@ const SeasonOverviewLocationAggregatedScoreChart: React.FC<SeasonOverviewLocatio
     // Calculate dynamic padding based on number of models
     const modelCount = data.length;
     // Formula: fewer models = more padding (inversely proportional)
-    const dynamicPadding = Math.min(0.8, Math.max(0.1, 0.8 - modelCount * 0.09));
+    const dynamicPadding = Math.min(
+      0.8,
+      Math.max(0.1, 0.8 - modelCount * 0.09),
+    );
 
     // Y scale - models
     const yScale = d3
@@ -358,7 +392,9 @@ const SeasonOverviewLocationAggregatedScoreChart: React.FC<SeasonOverviewLocatio
     const dataRange = {
       min: Math.min(...data.map((d) => d.q05)),
       max: Math.max(...data.map((d) => d.q95)),
-      median: d3.median(data, (d) => d.median) || Math.min(...data.map((d) => d.median)),
+      median:
+        d3.median(data, (d) => d.median) ||
+        Math.min(...data.map((d) => d.median)),
     };
 
     // Calculate a good constant based on data characteristics
@@ -386,7 +422,11 @@ const SeasonOverviewLocationAggregatedScoreChart: React.FC<SeasonOverviewLocatio
     let xScale;
     if (scaleType === "log") {
       const constant = calculateConstant();
-      xScale = d3.scaleSymlog().domain([0, maxValue]).constant(constant).range([0, innerWidth]);
+      xScale = d3
+        .scaleSymlog()
+        .domain([0, maxValue])
+        .constant(constant)
+        .range([0, innerWidth]);
     } else {
       xScale = d3.scaleLinear().domain([0, maxValue]).range([0, innerWidth]);
     }
@@ -397,7 +437,12 @@ const SeasonOverviewLocationAggregatedScoreChart: React.FC<SeasonOverviewLocatio
       .call((g) => g.selectAll(".tick text").remove())
       .call((g) => g.select(".domain").attr("stroke", "white"));
 
-    const customTicks = generateEvenlySpacedTicks(xScale as any, innerWidth, 8, type === "wis");
+    const customTicks = generateEvenlySpacedTicks(
+      xScale as any,
+      innerWidth,
+      8,
+      type === "wis",
+    );
 
     // X axis with proper decimal formatting
     g.append("g")
@@ -416,14 +461,17 @@ const SeasonOverviewLocationAggregatedScoreChart: React.FC<SeasonOverviewLocatio
               // For MAPE, use integers
               return d3.format("d")(d);
             }
-          })
+          }),
       )
       .selectAll("text")
       .attr("fill", "white")
       .style("font-size", "11px");
 
     // X axis label beneath the ticks
-    g.append("g").attr("transform", `translate(${innerWidth / 2}, ${innerHeight + 10})`);
+    g.append("g").attr(
+      "transform",
+      `translate(${innerWidth / 2}, ${innerHeight + 10})`,
+    );
 
     if (type == "wis") {
       g.append("text")
@@ -444,7 +492,12 @@ const SeasonOverviewLocationAggregatedScoreChart: React.FC<SeasonOverviewLocatio
     }
 
     // Invisible overlay for better hover detection
-    const boxGroups = g.selectAll(".model-box-group").data(data).enter().append("g").attr("class", "model-box-group");
+    const boxGroups = g
+      .selectAll(".model-box-group")
+      .data(data)
+      .enter()
+      .append("g")
+      .attr("class", "model-box-group");
 
     // Render boxplots with interactive elements
     data.forEach((d, i) => {
@@ -495,7 +548,9 @@ const SeasonOverviewLocationAggregatedScoreChart: React.FC<SeasonOverviewLocatio
           const [mouseX, mouseY] = d3.pointer(event, svg.node());
 
           // Create tooltip if it doesn't exist
-          let tooltip: d3.Selection<SVGGElement, unknown, null, undefined> | d3.Selection<d3.BaseType, unknown, null, undefined> =
+          let tooltip:
+            | d3.Selection<SVGGElement, unknown, null, undefined>
+            | d3.Selection<d3.BaseType, unknown, null, undefined> =
             svg.select(".iqr-tooltip");
           if (tooltip.empty()) {
             tooltip = createTooltip(svg);
@@ -506,9 +561,17 @@ const SeasonOverviewLocationAggregatedScoreChart: React.FC<SeasonOverviewLocatio
           // Bottom half of models: show tooltip above (TOP)
           const modelIndex = data.indexOf(d);
           const totalModels = data.length;
-          const direction = modelIndex < Math.floor(totalModels / 2) ? TooltipDirection.BOTTOM : TooltipDirection.TOP;
+          const direction =
+            modelIndex < Math.floor(totalModels / 2)
+              ? TooltipDirection.BOTTOM
+              : TooltipDirection.TOP;
 
-          updateTooltip(tooltip as d3.Selection<SVGGElement, unknown, null, undefined>, d, [mouseX, mouseY], direction);
+          updateTooltip(
+            tooltip as d3.Selection<SVGGElement, unknown, null, undefined>,
+            d,
+            [mouseX, mouseY],
+            direction,
+          );
           tooltip.raise(); // Ensure tooltip is on top of all other elements
 
           // Highlight the active box
@@ -521,9 +584,22 @@ const SeasonOverviewLocationAggregatedScoreChart: React.FC<SeasonOverviewLocatio
           // Maintain same dynamic direction logic on mousemove
           const modelIndex = data.indexOf(d);
           const totalModels = data.length;
-          const direction = modelIndex < Math.floor(totalModels / 2) ? TooltipDirection.BOTTOM : TooltipDirection.TOP;
+          const direction =
+            modelIndex < Math.floor(totalModels / 2)
+              ? TooltipDirection.BOTTOM
+              : TooltipDirection.TOP;
 
-          updateTooltip(tooltip as unknown as d3.Selection<SVGGElement, unknown, null, undefined>, d, [mouseX, mouseY], direction);
+          updateTooltip(
+            tooltip as unknown as d3.Selection<
+              SVGGElement,
+              unknown,
+              null,
+              undefined
+            >,
+            d,
+            [mouseX, mouseY],
+            direction,
+          );
           tooltip.raise(); // Ensure tooltip stays on top during movement
         })
         .on("mouseout", function () {
@@ -560,26 +636,46 @@ const SeasonOverviewLocationAggregatedScoreChart: React.FC<SeasonOverviewLocatio
 
     // Create tooltip at the end to ensure it's on top of all elements
     const tooltip = createTooltip(svg);
-  }, [dimensions.height, dimensions.width, mapeChartScaleType, processedData, type, updateTooltip, wisChartScaleType]);
+  }, [
+    dimensions.height,
+    dimensions.width,
+    mapeChartScaleType,
+    processedData,
+    type,
+    updateTooltip,
+    wisChartScaleType,
+  ]);
 
   useEffect(() => {
-    if (!isResizing && dimensions.width > 0 && dimensions.height > 0 && chartRef.current) {
+    if (
+      !isResizing &&
+      dimensions.width > 0 &&
+      dimensions.height > 0 &&
+      chartRef.current
+    ) {
       renderChart();
     }
-  }, [dimensions, isResizing, processedData, wisChartScaleType, mapeChartScaleType, renderChart]);
+  }, [
+    dimensions,
+    isResizing,
+    processedData,
+    wisChartScaleType,
+    mapeChartScaleType,
+    renderChart,
+  ]);
 
   return (
-    <div ref={containerRef} className='w-full h-full relative'>
+    <div ref={containerRef} className="w-full h-full relative">
       <svg
         ref={chartRef}
-        width='100%'
-        height='100%'
+        width="100%"
+        height="100%"
         /* style={{
           fontFamily: "var(--font-dm-sans)",
           opacity: isResizing ? 0.5 : 1,
           transition: "opacity 0.2s ease",
         }} */
-        preserveAspectRatio='xMidYMid meet'
+        preserveAspectRatio="xMidYMid meet"
       />
     </div>
   );

@@ -37,7 +37,7 @@ const ForecastChart: React.FC = () => {
   const {
     userSelectedWeek,
     USStateNum,
-    forecastModel,
+    selectedForecastModels: forecastModel,
     numOfWeeksAhead,
     dateStart,
     dateEnd,
