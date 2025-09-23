@@ -5,7 +5,7 @@ from pathlib import Path
 from datetime import timedelta
 
 # Import new auxiliary data processing functions
-from process_auxiliary_data import process_locations, process_thresholds, process_historical_ground_truth
+from process_auxiliary_data import process_locations, process_thresholds, process_historical_ground_truth  # pyright: ignore[reportImplicitRelativeImport]
 
 
 # ========================
@@ -150,7 +150,7 @@ def main():
 
         # Load "archive" (old format) prediction files
         archive_dfs = []
-        for model in model_names:
+        for model in ["CEPH-Rtrend_fluH", "FluSight-ensemble", "MIGHTE-Nsemble", "MOBS-GLEAM_FLUH"]:
             archive_path = raw_data_dir / f"archive/{model}"
             csv_files = list(archive_path.glob("*.csv"))
             if not csv_files:
@@ -162,19 +162,15 @@ def main():
                 (pd.read_csv(f, low_memory=False, dtype={"location": str}) for f in csv_files),
                 ignore_index=True,
             )
-            model_df["model"] = model
+
+            # Archive files should already have the 'model' column from pre-processing
+            # But add it if missing for safety
+            if 'model' not in model_df.columns:
+                model_df['model'] = model
+
             archive_dfs.append(model_df)
 
         archive_df = pd.concat(archive_dfs, ignore_index=True) if archive_dfs else pd.DataFrame()
-
-        # For archive predictions data only, need to shift all "forecast_date" column values to 2 days back for all rows, since the convention changed from Friday-Saturday to Saturday-Saturday)
-        archive_df["forecast_date"] = pd.to_datetime(archive_df["forecast_date"])
-
-        archive_df["forecast_date"] = archive_df["forecast_date"] - pd.Timedelta(days=2)
-
-        archive_df["forecast_date"] = archive_df["forecast_date"].dt.strftime("%Y-%m-%d")
-
-        print(archive_df.head())
 
         print(f"   - Loaded {len(unprocessed_df)} rows from 'unprocessed' files")
         print(f"   - Loaded {len(archive_df)} rows from 'archive' files")
@@ -263,23 +259,12 @@ def main():
     processed_archive_preds_df = pd.DataFrame()
 
     if not archive_df.empty:
-        # Clean up column names and standardize
-        archive_clean_df = archive_df.copy()
-        archive_clean_df.columns = archive_clean_df.columns.str.strip().str.strip('"')
+        # Archive data should already be in the correct format after pre-processing
 
-        # Rename columns to match new format
-        archive_clean_df.rename(
-            columns={
-                "forecast_date": "reference_date",
-                "type": "output_type",
-                "quantile": "output_type_id",
-            },
-            inplace=True,
-        )
+        # Filter for hospitalization predictions
+        hosp_archive_df = archive_df[archive_df["target"] == "wk inc flu hosp"].copy()
 
-        # Filter for hospitalization predictions (may have different target strings in archive)
-        hosp_archive_df = archive_clean_df[archive_clean_df["target"].str.contains("inc flu hosp", na=False)].copy()
-
+        # Ensure output_type_id is string
         hosp_archive_df["output_type_id"] = hosp_archive_df["output_type_id"].astype(str)
 
         # Keep only desired quantiles
