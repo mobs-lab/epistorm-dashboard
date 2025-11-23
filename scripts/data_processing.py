@@ -980,11 +980,7 @@ def main():
     print("   - Writing full range season data...")
 
     for season_id, season_info in full_range_seasons_info_for_processing.items():
-        # Conditionally assign "current_" to the current season, marked by a special field
-        if season_info["mostCurrent"]:
-            folder_name = f"current_{season_id}"
-        else:
-            folder_name = season_id
+        folder_name = season_id
 
         season_dir = public_data_dir / folder_name
         season_dir.mkdir(exist_ok=True, parents=True)
