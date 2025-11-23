@@ -267,10 +267,9 @@ function combinePartitionsForStateAndHorizon(
                 targetDate: targetDate,
                 horizon: predDataTyped.horizon,
                 median: predDataTyped.median,
-                q05: predDataTyped.q05,
-                q25: predDataTyped.q25,
-                q75: predDataTyped.q75,
-                q95: predDataTyped.q95,
+                PI50: predDataTyped.PI50,
+                PI90: predDataTyped.PI90,
+                PI95: predDataTyped.PI95,
               },
             };
 

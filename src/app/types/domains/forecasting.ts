@@ -6,26 +6,6 @@ export interface SurveillanceSingleWeekDataPoint {
   weeklyRate: number;
 }
 
-export interface PredictionSingleWeekDataPoint {
-  referenceDate: Date;
-  targetEndDate: Date;
-  stateNum: string;
-  confidence025: number;
-  confidence050: number;
-  confidence250: number;
-  confidence500: number;
-  confidence750: number;
-  confidence950: number;
-  confidence975: number;
-  confidence_low: number;
-  confidence_high: number;
-}
-
-export interface PredictionDataGroupedByModel {
-  modelName: string;
-  predictionData: PredictionSingleWeekDataPoint[];
-}
-
 export interface SeasonOption {
   index: number;
   seasonId: string;
@@ -33,11 +13,6 @@ export interface SeasonOption {
   timeValue: string;
   startDate: Date;
   endDate: Date;
-}
-
-export interface HistoricalDataCollectionByDate {
-  associatedDate: Date;
-  historicalData: SurveillanceSingleWeekDataPoint[];
 }
 
 export interface LocationData {
@@ -101,10 +76,9 @@ export interface TimeSeriesPartition {
         [targetEndDateISO: string]: {
           horizon: number;
           median: number;
-          q25: number;
-          q75: number;
-          q05: number;
-          q95: number;
+          PI50: { low: number; high: number };
+          PI90: { low: number; high: number };
+          PI95: { low: number; high: number };
         };
       };
     };

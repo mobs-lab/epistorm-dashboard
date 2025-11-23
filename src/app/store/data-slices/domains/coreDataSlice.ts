@@ -1,5 +1,5 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
-import { GroundTruthData, PredictionData, NowcastTrendsData, SeasonOption } from "@/types/domains/forecasting";
+import { GroundTruthData, PredictionData, NowcastTrendsData } from "@/types/domains/forecasting";
 
 interface CoreDataState {
   isLoaded: boolean;
@@ -36,24 +36,27 @@ const coreDataSlice = createSlice({
       state.isLoaded = true;
     },
     // New reducer for incremental season loading
-    addSeasonData: (state, action: PayloadAction<{
-      seasonId: string;
-      groundTruthData?: any;
-      predictionsData?: any;
-      nowcastTrendsData?: any;
-    }>) => {
+    addSeasonData: (
+      state,
+      action: PayloadAction<{
+        seasonId: string;
+        groundTruthData?: any;
+        predictionsData?: any;
+        nowcastTrendsData?: any;
+      }>
+    ) => {
       const { seasonId, groundTruthData, predictionsData, nowcastTrendsData } = action.payload;
-      
+
       // Add ground truth data for this season
       if (groundTruthData) {
         state.mainData.groundTruthData[seasonId] = groundTruthData;
       }
-      
+
       // Add predictions data for this season
       if (predictionsData) {
         state.mainData.predictionData[seasonId] = predictionsData;
       }
-      
+
       // Merge nowcast trends (they're keyed by model, not season)
       if (nowcastTrendsData) {
         Object.entries(nowcastTrendsData).forEach(([modelName, modelData]) => {
@@ -63,12 +66,12 @@ const coreDataSlice = createSlice({
           Object.assign(state.mainData.nowcastTrends[modelName], modelData);
         });
       }
-      
+
       // Track that this season has been loaded
       if (!state.loadedSeasons.includes(seasonId)) {
         state.loadedSeasons.push(seasonId);
       }
-      
+
       // Mark as loaded if at least one season is loaded
       if (state.loadedSeasons.length > 0) {
         state.isLoaded = true;
