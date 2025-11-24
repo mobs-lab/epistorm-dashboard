@@ -91,11 +91,17 @@ const SingleModelHorizonPlot: React.FC = () => {
         }
       });
 
-    const allValues = visualData.flatMap((d) => [d.quantile05, d.quantile25, d.median, d.quantile75, d.quantile95]);
+    const allValues = visualData.flatMap((d) => [
+      d.PI90?.low,
+      d.PI50?.low,
+      d.median,
+      d.PI50?.high,
+      d.PI90?.high,
+    ]).filter((v) => v !== undefined && v !== null); // Filter out undefined/nulls
 
     const allValuesFromSurveillanceData = groundTruthData.flatMap((d) => d.admissions);
 
-    const maxPredictionValue = d3.max(allValues);
+    const maxPredictionValue = d3.max(allValues) || 0;
     const maxSurveillanceValue = d3.max(allValuesFromSurveillanceData) || 1;
 
     const maxValue = maxPredictionValue > maxSurveillanceValue ? maxPredictionValue : maxSurveillanceValue;
@@ -107,8 +113,8 @@ const SingleModelHorizonPlot: React.FC = () => {
 
     const yAxis = d3.axisLeft(yScale).tickFormat((d) => {
       const val = d.valueOf();
-      if (val >= 10000) return d3.format(".2s")(val);
-      if (val >= 1000) return d3.format(".2s")(val);
+      if (val >= 10000) return d3.format(".2~s")(val);
+      if (val >= 1000) return d3.format(".3~s")(val);
       if (val >= 100) return d3.format(".0f")(val);
       return d3.format(".0f")(val);
     });
@@ -173,10 +179,9 @@ const SingleModelHorizonPlot: React.FC = () => {
         date: normalizeToUTCMidDay(d.referenceDate),
         targetDate: normalizeToUTCMidDay(d.prediction.targetDate),
         median: d.prediction.median,
-        quantile05: d.prediction.q05,
-        quantile25: d.prediction.q25,
-        quantile75: d.prediction.q75,
-        quantile95: d.prediction.q95,
+        PI50: d.prediction.PI50,
+        PI90: d.prediction.PI90,
+        PI95: d.prediction.PI95,
       }));
 
     if (groundTruthPoints.length === 0 && predictionPoints.length === 0) {
@@ -276,10 +281,9 @@ const SingleModelHorizonPlot: React.FC = () => {
         groundTruthValue: gt.admissions >= 0 ? gt.admissions : undefined,
         // Initialize prediction values as undefined
         median: undefined,
-        quantile05: undefined,
-        quantile25: undefined,
-        quantile75: undefined,
-        quantile95: undefined,
+        PI50: undefined,
+        PI90: undefined,
+        PI95: undefined,
       });
     });
 
@@ -291,10 +295,9 @@ const SingleModelHorizonPlot: React.FC = () => {
       combinedDataMap.set(dateKey, {
         ...existing,
         median: pd.median,
-        quantile05: pd.quantile05,
-        quantile25: pd.quantile25,
-        quantile75: pd.quantile75,
-        quantile95: pd.quantile95,
+        PI50: pd.PI50,
+        PI90: pd.PI90,
+        PI95: pd.PI95,
       });
     });
 
@@ -325,34 +328,40 @@ const SingleModelHorizonPlot: React.FC = () => {
       if (x === undefined) return;
 
       // 90% interval box
-      boxesGroup
-        .append("rect")
-        .attr("x", x)
-        .attr("y", yScale(pd.quantile95))
-        .attr("width", xScale.bandwidth())
-        .attr("height", yScale(pd.quantile05) - yScale(pd.quantile95))
-        .attr("fill", modelColorMap[evaluationsSingleModelViewModel])
-        .attr("opacity", 0.3);
+      if (pd.PI90) {
+        boxesGroup
+          .append("rect")
+          .attr("x", x)
+          .attr("y", yScale(pd.PI90.high))
+          .attr("width", xScale.bandwidth())
+          .attr("height", Math.abs(yScale(pd.PI90.low) - yScale(pd.PI90.high)))
+          .attr("fill", modelColorMap[evaluationsSingleModelViewModel])
+          .attr("opacity", 0.3);
+      }
 
       // 50% interval box
-      boxesGroup
-        .append("rect")
-        .attr("x", x)
-        .attr("y", yScale(pd.quantile75))
-        .attr("width", xScale.bandwidth())
-        .attr("height", yScale(pd.quantile25) - yScale(pd.quantile75))
-        .attr("fill", modelColorMap[evaluationsSingleModelViewModel])
-        .attr("opacity", 0.6);
+      if (pd.PI50) {
+        boxesGroup
+          .append("rect")
+          .attr("x", x)
+          .attr("y", yScale(pd.PI50.high))
+          .attr("width", xScale.bandwidth())
+          .attr("height", Math.abs(yScale(pd.PI50.low) - yScale(pd.PI50.high)))
+          .attr("fill", modelColorMap[evaluationsSingleModelViewModel])
+          .attr("opacity", 0.6);
+      }
 
       // Median line
-      linesGroup
-        .append("line")
-        .attr("x1", x)
-        .attr("x2", x + xScale.bandwidth())
-        .attr("y1", yScale(pd.median))
-        .attr("y2", yScale(pd.median))
-        .attr("stroke", modelColorMap[evaluationsSingleModelViewModel])
-        .attr("stroke-width", 2);
+      if (pd.median !== undefined) {
+        linesGroup
+          .append("line")
+          .attr("x1", x)
+          .attr("x2", x + xScale.bandwidth())
+          .attr("y1", yScale(pd.median))
+          .attr("y2", yScale(pd.median))
+          .attr("stroke", modelColorMap[evaluationsSingleModelViewModel])
+          .attr("stroke-width", 2);
+      }
     });
 
     // Create hover areas for all dates in the combined dataset
@@ -393,8 +402,8 @@ const SingleModelHorizonPlot: React.FC = () => {
           // Add prediction data to tooltip if available
           if (d.median !== undefined) {
             items.push([`Median: ${d.median.toFixed(1)}`, false]);
-            items.push([`90% PI: [${d.quantile05.toFixed(1)}, ${d.quantile95.toFixed(1)}]`, false]);
-            items.push([`50% PI: [${d.quantile25.toFixed(1)}, ${d.quantile75.toFixed(1)}]`, false]);
+            if (d.PI90) items.push([`90% PI: [${d.PI90.low.toFixed(1)}, ${d.PI90.high.toFixed(1)}]`, false]);
+            if (d.PI50) items.push([`50% PI: [${d.PI50.low.toFixed(1)}, ${d.PI50.high.toFixed(1)}]`, false]);
           } else {
             items.push(["No prediction data for this date", false]);
           }
