@@ -56,7 +56,6 @@ export async function fetchAuxiliaryData() {
  */
 export async function fetchSeasonData(
   seasonId: string,
-  isCurrentSeason: boolean = false,
   dataTypes: string[] = ["groundTruthData", "predictionsData", "nowcastTrendsData"]
 ) {
   const cacheKey = `${seasonId}-${dataTypes.join("-")}`;
@@ -66,7 +65,7 @@ export async function fetchSeasonData(
     return seasonDataCache.get(cacheKey);
   }
 
-  const folderName = isCurrentSeason ? `current_${seasonId}` : seasonId;
+  const folderName = seasonId;
   console.log(`Fetching ${dataTypes.join(", ")} for ${folderName}...`);
 
   try {
@@ -229,44 +228,11 @@ export function determineCurrentSeasonId(metadata: any): string | null {
   if (!metadata?.fullRangeSeasons) return null;
 
   const seasons = metadata.fullRangeSeasons;
-  const now = new Date();
 
-  // Method 1: Check for "Ongoing" in displayString
-  const ongoingSeason = seasons.find(
-    (s: any) => s.displayString?.toLowerCase().includes("ongoing") || s.displayString?.toLowerCase().includes("current")
-  );
+  const ongoingSeason = seasons.find((s: any) => s.displayString?.toLowerCase().includes("ongoing"));
   if (ongoingSeason) {
-    console.log(`Found ongoing season: ${ongoingSeason.seasonId}`);
     return ongoingSeason.seasonId;
-  } else {
-    // Fallback: Find season that contains current date
-    const currentSeason = seasons.find((s: any) => {
-      const start = new Date(s.startDate);
-      const end = new Date(s.endDate);
-      return now >= start && now <= end;
-    });
-    if (currentSeason) {
-      console.log(`Found current season by date: ${currentSeason.seasonId}`);
-      return currentSeason.seasonId;
-    }
-
-    // Fallback 2: Get the most recent season (highest index or latest endDate)
-    const sortedSeasons = [...seasons].sort((a, b) => new Date(b.endDate).getTime() - new Date(a.endDate).getTime());
-
-    if (sortedSeasons[0]) {
-      console.log(`Using most recent season as fallback: ${sortedSeasons[0].seasonId}`);
-      return sortedSeasons[0].seasonId;
-    }
   }
 
   return null;
-}
-
-/**
- * Debugging utility: Clear all caches
- */
-export function clearAllCaches() {
-  auxiliaryDataCache = null;
-  seasonDataCache.clear();
-  console.log("All data caches cleared");
 }

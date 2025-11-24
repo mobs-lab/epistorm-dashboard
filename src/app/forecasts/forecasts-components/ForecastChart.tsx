@@ -19,6 +19,7 @@ import {
   selectHistoricalDataForWeek,
   selectLocationData,
   selectPredictionsForMultipleModels,
+  selectAnyPredictionDataInRange,
 } from "@/store/selectors";
 
 interface ConfidenceIntervalData {
@@ -56,6 +57,11 @@ const ForecastChart: React.FC = () => {
     selectPredictionsForMultipleModels(state, forecastModel, USStateNum, userSelectedWeek, numOfWeeksAhead)
   );
 
+  // Check if ANY prediction data exists in the current view range (for "No data" message logic)
+  const anyPredictionsInRange = useAppSelector((state) =>
+    selectAnyPredictionDataInRange(state, dateStart, dateEnd, forecastModel, USStateNum)
+  );
+
   // Get historical ground truth data
   const historicalGroundTruthData = useAppSelector((state) => selectHistoricalDataForWeek(state, userSelectedWeek, USStateNum));
 
@@ -70,20 +76,17 @@ const ForecastChart: React.FC = () => {
           return;
         }
 
-        // Convert the new structure to the old format for compatibility
+        // Convert to intermediate format with new PI structure
         const convertedData = Object.entries(modelPredictions).map(([targetDateISO, pred]: [string, any]) => ({
           referenceDate: userSelectedWeek,
           targetEndDate: new Date(targetDateISO),
           stateNum: USStateNum,
-          confidence025: pred.q05,
-          confidence050: pred.q05,
-          confidence250: pred.q25,
-          confidence500: pred.median,
-          confidence750: pred.q75,
-          confidence950: pred.q95,
-          confidence975: pred.q95,
-          confidence_low: 0, // Will be set below
-          confidence_high: 0, // Will be set below
+          median: pred.median,
+          PI50: pred.PI50,
+          PI90: pred.PI90,
+          PI95: pred.PI95,
+          confidence_low: 0, // Will be set based on interval
+          confidence_high: 0, // Will be set based on interval
         }));
 
         // Create confidence interval data
@@ -92,21 +95,21 @@ const ForecastChart: React.FC = () => {
         if (confidenceInterval.includes("50")) {
           confidenceIntervalData.push({
             interval: "50",
-            data: convertedData.map((d) => ({ ...d, confidence_low: d.confidence250, confidence_high: d.confidence750 })),
+            data: convertedData.map((d) => ({ ...d, confidence_low: d.PI50?.low ?? d.median, confidence_high: d.PI50?.high ?? d.median })),
           });
         }
 
         if (confidenceInterval.includes("90")) {
           confidenceIntervalData.push({
             interval: "90",
-            data: convertedData.map((d) => ({ ...d, confidence_low: d.confidence050, confidence_high: d.confidence950 })),
+            data: convertedData.map((d) => ({ ...d, confidence_low: d.PI90?.low ?? d.median, confidence_high: d.PI90?.high ?? d.median })),
           });
         }
 
         if (confidenceInterval.includes("95")) {
           confidenceIntervalData.push({
             interval: "95",
-            data: convertedData.map((d) => ({ ...d, confidence_low: d.confidence025, confidence_high: d.confidence975 })),
+            data: convertedData.map((d) => ({ ...d, confidence_low: d.PI95?.low ?? d.median, confidence_high: d.PI95?.high ?? d.median })),
           });
         }
 
@@ -224,17 +227,17 @@ const ForecastChart: React.FC = () => {
       // Update yScale
       let yScale: d3.ScaleSymLog<number, number> | d3.ScaleLinear<number, number>;
 
-      const maxGroundTruthValue = d3.max(
-        ground.filter((d) => d.admissions !== -1),
-        (d) => d.admissions
-      ) as number;
+      // Safe calculation for maxGroundTruthValue: filter out placeholders (-1)
+      const validGroundTruth = ground.filter((d) => d.admissions !== -1);
+      const maxGroundTruthValue = validGroundTruth.length > 0 ? (d3.max(validGroundTruth, (d) => d.admissions) as number) : 0;
 
       let maxPredictionValue = 0;
       if (predictions && Object.keys(predictions).length > 0) {
         Object.values(predictions).forEach((modelData: any) => {
           modelData.forEach((intervalData: any) => {
             intervalData.data.forEach((dataPoint: any) => {
-              const highValue = dataPoint.confidence_high || dataPoint.confidence950 || dataPoint.confidence750;
+              // Use confidence_high if available (for PIs), otherwise median
+              const highValue = dataPoint.confidence_high || dataPoint.median;
               if (highValue > maxPredictionValue) {
                 maxPredictionValue = highValue;
               }
@@ -243,13 +246,17 @@ const ForecastChart: React.FC = () => {
         });
       }
 
-      let maxValue = Math.max(maxGroundTruthValue || 0, maxPredictionValue);
+      let maxValue = Math.max(maxGroundTruthValue, maxPredictionValue);
 
-      let minValue = d3.min(
-        ground.filter((d) => d.admissions !== -1),
-        (d) => d.admissions
-      ) as number;
+      // Safe calculation for minValue
+      let minValue =
+        validGroundTruth.length > 0
+          ? (d3.min(validGroundTruth, (d) => d.admissions) as number)
+          : maxPredictionValue > 0
+            ? 0
+            : 0;
 
+      // Logic to prevent flat line if min == max
       if (maxValue === minValue) {
         maxValue = maxValue + 1;
         minValue = Math.max(0, minValue - 1);
@@ -280,7 +287,7 @@ const ForecastChart: React.FC = () => {
           const val = d.valueOf();
           if (val === 0) return "0";
           if (val >= 10000) return d3.format(".2~s")(val);
-          if (val >= 1000) return d3.format(".2~s")(val);
+          if (val >= 1000) return d3.format(".3~s")(val);
           if (val >= 100) return d3.format(".0f")(val);
           if (val >= 10) return d3.format(".0f")(val);
           if (val >= 1) return d3.format(".0f")(val);
@@ -482,7 +489,7 @@ const ForecastChart: React.FC = () => {
           const line = d3
             .line<any>()
             .x((d) => xScale(new Date(d.targetEndDate)))
-            .y((d) => yScale(d.confidence500));
+            .y((d) => yScale(d.median));
 
           if (isGroundTruthDataPlaceHolderOnly) {
             // If there is only a placeholder data-slices point, render the prediction data-slices as its own branch
@@ -515,7 +522,7 @@ const ForecastChart: React.FC = () => {
               .append("circle")
               .attr("class", `prediction-dot prediction-dot-${index}`)
               .attr("cx", (d: any) => xScale(new Date(d.targetEndDate)))
-              .attr("cy", (d: any) => yScale(d.confidence500))
+              .attr("cy", (d: any) => yScale(d.median))
               .attr("r", 3)
               .attr("fill", modelColor)
               .attr("transform", `translate(${marginLeft}, ${marginTop})`);
@@ -688,10 +695,11 @@ const ForecastChart: React.FC = () => {
       };
       // --- 2. PREPARE DATA ---
       const currentPredictions = findPredictionsForDate(predictionData, data.date);
-      const ciOptions: { label: string; low: string; high: string }[] = [];
-      if (confidenceInterval.includes("50")) ciOptions.push({ label: "50% PI", low: "confidence250", high: "confidence750" });
-      if (confidenceInterval.includes("90")) ciOptions.push({ label: "90% PI", low: "confidence050", high: "confidence950" });
-      if (confidenceInterval.includes("95")) ciOptions.push({ label: "95% PI", low: "confidence025", high: "confidence975" });
+      // Map to PI fields
+      const ciOptions: { label: string; piField: string }[] = [];
+      if (confidenceInterval.includes("50")) ciOptions.push({ label: "50% PI", piField: "PI50" });
+      if (confidenceInterval.includes("90")) ciOptions.push({ label: "90% PI", piField: "PI90" });
+      if (confidenceInterval.includes("95")) ciOptions.push({ label: "95% PI", piField: "PI95" });
 
       let maxWidth = 0;
       let currentY = layout.padding + 8;
@@ -791,7 +799,7 @@ const ForecastChart: React.FC = () => {
 
           valueRow
             .append("text")
-            .text(formatNumber(modelData.confidence500))
+            .text(formatNumber(modelData.median))
             .attr("x", 0)
             .attr("fill", layout.fontColor)
             .style("font-family", layout.fontFamily)
@@ -799,7 +807,8 @@ const ForecastChart: React.FC = () => {
             .attr("font-weight", "bold");
 
           ciOptions.forEach((ci, i) => {
-            const ciText = `[${formatNumber(modelData[ci.low])}, ${formatNumber(modelData[ci.high])}]`;
+            const piData = modelData[ci.piField];
+            const ciText = piData ? `[${formatNumber(piData.low)}, ${formatNumber(piData.high)}]` : "[N/A, N/A]";
             valueRow
               .append("text")
               .text(ciText)
@@ -1208,9 +1217,15 @@ const ForecastChart: React.FC = () => {
       let marginTop = margins.top;
       let marginBottom = margins.bottom;
 
+      // Process prediction data first to check for existence
+      const processedPredictionData = convertPredictionsToRenderFormat(allModelPredictions);
+      
+
+      // Check if all ground truth data are placeholders
       const allPlaceholders = groundTruthData.every((d) => d.admissions === -1);
 
-      if (allPlaceholders) {
+      // Only show message if no ground truth AND no predictions anywhere in range
+      if (allPlaceholders && !anyPredictionsInRange) {
         renderMessage(svg as any, "Not enough data, please extend date range.", chartWidth, chartHeight, marginLeft, marginTop);
         return;
       }
@@ -1225,9 +1240,6 @@ const ForecastChart: React.FC = () => {
         adjustedUserSelectedWeek = new Date(groundTruthData[0].date);
         dispatch(updateUserSelectedWeek(adjustedUserSelectedWeek));
       }
-
-      // Process prediction data
-      const processedPredictionData = convertPredictionsToRenderFormat(allModelPredictions);
 
       const { xScale, yScale, xAxis, yAxis } = createScalesAndAxes(
         groundTruthData,
@@ -1287,6 +1299,7 @@ const ForecastChart: React.FC = () => {
     updateVerticalIndicator,
     convertPredictionsToRenderFormat,
     renderHistoricalData,
+    anyPredictionsInRange,
   ]);
 
   // Return the SVG object using reference

@@ -1,7 +1,7 @@
 "use client";
 
-import { clearAuxiliaryData, setAuxiliaryJsonData } from "@/store/data-slices/domains/auxiliaryDataSlice";
-import { addSeasonData, clearCoreData } from "@/store/data-slices/domains/coreDataSlice";
+import { setAuxiliaryJsonData } from "@/store/data-slices/domains/auxiliaryDataSlice";
+import { addSeasonData } from "@/store/data-slices/domains/coreDataSlice";
 import { updateEvaluationSeasonOverviewTimeRangeOptions } from "@/store/data-slices/settings/SettingsSliceEvaluationSeasonOverview";
 import {
   updateEvaluationSingleModelViewDateEnd,
@@ -93,7 +93,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
           for (const season of previousSeasons) {
             try {
-              const seasonData = await fetchSeasonData(season.seasonId, false, ["groundTruthData", "predictionsData", "nowcastTrendsData"]);
+              const seasonData = await fetchSeasonData(season.seasonId, ["groundTruthData", "predictionsData", "nowcastTrendsData"]);
 
               dispatch(
                 addSeasonData({
@@ -203,12 +203,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       updateLoadingState("seasonOptions", false);
 
       // Step 4: Load current season data AND us states map data in parallel
-      const seasonDataPromise = fetchSeasonData(
-        detectedSeasonId,
-        true, // It's the current season
-        ["groundTruthData", "predictionsData", "nowcastTrendsData"]
-      );
-      
+      const seasonDataPromise = fetchSeasonData(detectedSeasonId, ["groundTruthData", "predictionsData", "nowcastTrendsData"]);
+
       const seasonData = await seasonDataPromise;
 
       loadMapData();
