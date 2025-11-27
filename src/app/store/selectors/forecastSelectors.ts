@@ -140,6 +140,59 @@ export const selectGroundTruthInRange = createSelector(
   }
 );
 
+// Check if ANY prediction data exists for the selected models within the given date range
+// This is used to determine if we should show the "No data" message when ground truth is all placeholders
+export const selectAnyPredictionDataInRange = createSelector(
+  [
+    (state: RootState) => state.coreData.mainData?.predictionData,
+    (state: RootState) => state.auxiliaryData.metadata,
+    (state: RootState, startDate: Date, endDate: Date, modelNames: string[], stateNum: string) => ({
+      startDate,
+      endDate,
+      modelNames,
+      stateNum,
+    }),
+  ],
+  (predictionData, metadata, { startDate, endDate, modelNames, stateNum }) => {
+    if (!predictionData || !metadata?.fullRangeSeasons) return false;
+
+    // Find relevant seasons to narrow down search
+    const relevantSeasons = findRelevantSeasons(metadata.fullRangeSeasons, startDate, endDate);
+    if (relevantSeasons.length === 0) return false;
+
+    // Iterate through seasons, models, and partitions to find ANY valid prediction
+    for (const seasonId of relevantSeasons) {
+      const seasonData = predictionData[seasonId];
+      if (!seasonData) continue;
+
+      for (const modelName of modelNames) {
+        const modelData = seasonData[modelName];
+        if (!modelData) continue;
+
+        for (const partitionName of ["full-forecast", "forecast-tail"]) {
+          const partition = modelData.partitions[partitionName as keyof typeof modelData.partitions];
+          if (!partition) continue;
+
+          // Check keys (dates) in this partition
+          for (const dateISO of Object.keys(partition)) {
+            const date = new Date(dateISO);
+            // If the reference date is within our view range
+            if (date >= startDate && date <= endDate) {
+              const stateData = partition[dateISO][stateNum];
+              // And we have predictions for this state
+              if (stateData?.predictions && Object.keys(stateData.predictions).length > 0) {
+                return true; // Found at least one!
+              }
+            }
+          }
+        }
+      }
+    }
+
+    return false;
+  }
+);
+
 // Extended ground truth selector that includes prediction horizons for tooltip display
 export const selectExtendedGroundTruthInRange = createSelector(
   [

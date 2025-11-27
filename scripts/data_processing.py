@@ -165,8 +165,8 @@ def main():
 
             # Archive files should already have the 'model' column from pre-processing
             # But add it if missing for safety
-            if 'model' not in model_df.columns:
-                model_df['model'] = model
+            if "model" not in model_df.columns:
+                model_df["model"] = model
 
             archive_dfs.append(model_df)
 
@@ -376,6 +376,10 @@ def main():
     most_current_season_tracker = True
     while season_end >= earliest_date:
         season_start = pd.Timestamp(year=current_year - 1, month=8, day=1)
+        # SPECIAL CASE: Correctly pull back the end bound for ongoing season
+        if (season_end > latest_date) and (current_year == latest_date.year + 1):
+            print(f"   - Adjusting season {current_year - 1}-{current_year} end from {season_end.strftime('%Y-%m-%d')} to {latest_date.strftime('%Y-%m-%d')}")
+            season_end = latest_date
         # SPECIAL CASE: If theoretical August 1st start is before our actual data,
         # use the earliest available data date instead (for the first partial season)
         if season_start < earliest_date:
@@ -526,7 +530,6 @@ def main():
 
     print("   - Creating fast lookup indexes for dataframes...")
     # Create indexed dataframes for efficient lookups
-    gt_df_indexed = gt_df_fixed.set_index(["date", "stateNum"]).sort_index()
     preds_df_indexed = all_preds_df.set_index(["reference_date", "location", "model"]).sort_index()
     all_locations = locations_df["location"].unique()
 
@@ -631,18 +634,6 @@ def main():
 
                         entry = partition_data[ref_date_iso][state_num]
 
-                        # No longer storing duplicate ground truth inside model
-                        """ # Add ground truth data if available
-                        try:
-                            gt_row = gt_df_indexed.loc[(ref_date, state_num)]
-                            if pd.notna(gt_row["admissions"]) and gt_row["admissions"] >= 0:
-                                entry["groundTruth"] = {
-                                    "admissions": float(gt_row["admissions"]),
-                                    "weeklyRate": float(gt_row["weeklyRate"]),
-                                }
-                        except KeyError:
-                            pass  # No ground truth data for this date/location """
-
                         # Add prediction data for this specific model
                         try:
                             preds_on_date = preds_df_indexed.loc[(ref_date, state_num, model_name)]
@@ -659,10 +650,18 @@ def main():
                                     predictions_dict[target_date_iso] = {
                                         "horizon": int(pred_row["horizon"]),
                                         "median": float(pred_row["0.5"]) if pd.notna(pred_row["0.5"]) else 0.0,
-                                        "q25": float(pred_row["0.25"]) if pd.notna(pred_row["0.25"]) else 0.0,
-                                        "q75": float(pred_row["0.75"]) if pd.notna(pred_row["0.75"]) else 0.0,
-                                        "q05": float(pred_row["0.025"]) if pd.notna(pred_row["0.025"]) else 0.0,
-                                        "q95": float(pred_row["0.95"]) if pd.notna(pred_row["0.95"]) else 0.0,
+                                        "PI50": {
+                                            "low": float(pred_row["0.25"]) if pd.notna(pred_row["0.25"]) else 0.0,
+                                            "high": float(pred_row["0.75"]) if pd.notna(pred_row["0.75"]) else 0.0,
+                                        },
+                                        "PI90": {
+                                            "low": float(pred_row["0.05"]) if pd.notna(pred_row["0.025"]) else 0.0,
+                                            "high": float(pred_row["0.95"]) if pd.notna(pred_row["0.95"]) else 0.0,
+                                        },
+                                        "PI95": {
+                                            "low": float(pred_row["0.025"]) if pd.notna(pred_row["0.025"]) else 0.0,
+                                            "high": float(pred_row["0.975"]) if pd.notna(pred_row["0.95"]) else 0.0,
+                                        },
                                     }
 
                                 if predictions_dict:
@@ -696,7 +695,7 @@ def main():
             for state_num in all_locations:
                 try:
                     gt_row = gt_df_fixed[(gt_df_fixed["date"] == ref_date) & (gt_df_fixed["stateNum"] == state_num)]
-                    if not gt_row.empty and pd.notna(gt_row.iloc[0]["admissions"]) and gt_row.iloc[0]["admissions"] >= 0:
+                    if not gt_row.empty and pd.notna(gt_row.iloc[0]["admissions"]) and gt_row.iloc[0]["admissions"] >= -1:
                         ground_truth_data[season_id][ref_date_iso][state_num] = {
                             "admissions": float(gt_row.iloc[0]["admissions"]),
                             "weeklyRate": float(gt_row.iloc[0]["weeklyRate"]),
@@ -981,11 +980,7 @@ def main():
     print("   - Writing full range season data...")
 
     for season_id, season_info in full_range_seasons_info_for_processing.items():
-        # Conditionally assign "current_" to the current season, marked by a special field
-        if season_info["mostCurrent"]:
-            folder_name = f"current_{season_id}"
-        else:
-            folder_name = season_id
+        folder_name = season_id
 
         season_dir = public_data_dir / folder_name
         season_dir.mkdir(exist_ok=True, parents=True)
