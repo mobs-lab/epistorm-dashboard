@@ -7,10 +7,7 @@ import { useResponsiveSVG } from "@/utils/responsiveSVG";
 import * as d3 from "d3";
 import React, { useCallback, useEffect, useMemo, useRef } from "react";
 
-import {
-  selectSeasonOverviewData,
-  selectShouldUseJsonData,
-} from "@/store/selectors/evaluationSelectors";
+import { selectSeasonOverviewData, selectShouldUseJsonData } from "@/store/selectors/evaluationSelectors";
 import { BoxplotStats } from "@/types/domains/evaluations";
 
 // Options for controlling to which direction tooltip appears relative to the mouse pointer
@@ -37,9 +34,7 @@ interface IQRData {
   count: number; // show number of data points in tooltip
 }
 
-const SeasonOverviewLocationAggregatedScoreChart: React.FC<
-  SeasonOverviewLocationAggregatedScoreChartAltProps
-> = ({ type }) => {
+const SeasonOverviewLocationAggregatedScoreChart: React.FC<SeasonOverviewLocationAggregatedScoreChartAltProps> = ({ type }) => {
   const { containerRef, dimensions, isResizing } = useResponsiveSVG({
     debounceMs: 300,
     throttleMs: 150,
@@ -50,9 +45,7 @@ const SeasonOverviewLocationAggregatedScoreChart: React.FC<
   const shouldUseJsonData = useAppSelector(selectShouldUseJsonData);
   const seasonOverviewData = useAppSelector(selectSeasonOverviewData);
 
-  const { wisChartScaleType, mapeChartScaleType } = useAppSelector(
-    (state) => state.evaluationsSeasonOverviewSettings,
-  );
+  const { wisChartScaleType, mapeChartScaleType } = useAppSelector((state) => state.evaluationsSeasonOverviewSettings);
 
   // Process evaluation score data based on selected criteria, enhanced with memoization
   // Process data using JSON when available, otherwise fall back to CSV processing
@@ -74,12 +67,8 @@ const SeasonOverviewLocationAggregatedScoreChart: React.FC<
 
       // Final processed data output should be grouped by model
       // Combine data across selected horizons for each model
-      for (const modelName of modelNames.filter((m) =>
-        seasonOverviewData.selectedModels.includes(m),
-      )) {
-        const iqrData = (seasonOverviewData.iqrData as any)[metric]?.[
-          modelName
-        ];
+      for (const modelName of modelNames.filter((m) => seasonOverviewData.selectedModels.includes(m))) {
+        const iqrData = (seasonOverviewData.iqrData as any)[metric]?.[modelName];
         if (!iqrData) continue;
 
         const finalDataForModel: BoxplotStats = iqrData?.[horizonKey];
@@ -96,7 +85,7 @@ const SeasonOverviewLocationAggregatedScoreChart: React.FC<
           });
         } else {
           console.warn(
-            `DEBUG: Seaon Overview/LocationAggregationBoxPlot/processedData()/No pre-calculated IQR data for ${modelName} matching horizons: ${horizonKey}.`,
+            `DEBUG: Seaon Overview/LocationAggregationBoxPlot/processedData()/No pre-calculated IQR data for ${modelName} matching horizons: ${horizonKey}.`
           );
         }
       }
@@ -106,14 +95,8 @@ const SeasonOverviewLocationAggregatedScoreChart: React.FC<
   }, [shouldUseJsonData, seasonOverviewData, type]);
 
   // Create tooltip element with initial hidden state
-  const createTooltip = (
-    svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
-  ) => {
-    return svg
-      .append("g")
-      .attr("class", "iqr-tooltip")
-      .style("opacity", 0)
-      .style("pointer-events", "none");
+  const createTooltip = (svg: d3.Selection<SVGSVGElement, unknown, null, undefined>) => {
+    return svg.append("g").attr("class", "iqr-tooltip").style("opacity", 0).style("pointer-events", "none");
   };
 
   // Update tooltip with IQR data and positioning
@@ -122,178 +105,167 @@ const SeasonOverviewLocationAggregatedScoreChart: React.FC<
       tooltip: d3.Selection<SVGGElement, unknown, null, undefined>,
       data: IQRData,
       position: [number, number],
-      direction: TooltipDirection,
+      direction: TooltipDirection
     ) => {
-      return () => {
-        tooltip.selectAll("*").remove();
+      console.log("Box Plot: updateTooltip called. Detail: ", data);
+      tooltip.selectAll("*").remove();
 
-        const padding = 12;
-        const headerHeight = 24;
-        const rowHeight = 20;
-        const colWidth = 90;
+      const padding = 12;
+      const headerHeight = 24;
+      const rowHeight = 20;
+      const colWidth = 90;
 
-        // Format values based on chart type
-        const formatValue = (value: number) => {
-          if (type === "mape") {
-            return `${value.toFixed(1)}%`;
-          }
-          return value.toFixed(3);
-        };
+      // Format values based on chart type
+      const formatValue = (value: number) => {
+        if (type === "mape") {
+          return `${value.toFixed(1)}%`;
+        }
+        return value.toFixed(3);
+      };
 
-        // Create the tooltip container
-        const background = tooltip
-          .append("rect")
-          .attr("fill", "#323944")
-          .attr("rx", 8)
-          .attr("ry", 8)
-          .attr("opacity", 0.95)
-          .attr("stroke", "#555")
-          .attr("stroke-width", 1);
+      // Create the tooltip container
+      const background = tooltip
+        .append("rect")
+        .attr("fill", "#323944")
+        .attr("rx", 8)
+        .attr("ry", 8)
+        .attr("opacity", 0.95)
+        .attr("stroke", "#555")
+        .attr("stroke-width", 1);
 
-        // Add model name header
+      // Add model name header
+      tooltip
+        .append("text")
+        .attr("x", padding)
+        .attr("y", padding + 16)
+        .attr("fill", "white")
+        .attr("font-weight", "bold")
+        .style("font-family", "var(--font-dm-sans)")
+        .style("font-size", "12px")
+        .text(data.model);
+
+      // Define table structure
+      const metrics = ["5%", "25%", "Median", "75%", "95%"];
+      const values = [data.q05, data.q25, data.median, data.q75, data.q95];
+
+      // Add header for metric column
+      tooltip
+        .append("text")
+        .attr("x", padding)
+        .attr("y", padding + headerHeight + rowHeight - 4)
+        .attr("fill", "#aaa")
+        .attr("font-size", "10px")
+        .style("font-family", "var(--font-dm-sans)")
+        .text("Percentile");
+
+      // Add header for value column
+      tooltip
+        .append("text")
+        .attr("x", padding + colWidth + 10)
+        .attr("y", padding + headerHeight + rowHeight - 4)
+        .attr("fill", "#aaa")
+        .attr("font-size", "12px")
+        .style("font-family", "var(--font-dm-sans)")
+        .text("Value");
+
+      // Draw separator line
+      tooltip
+        .append("line")
+        .attr("x1", padding)
+        .attr("x2", padding + colWidth * 2)
+        .attr("y1", padding + headerHeight + rowHeight + 2)
+        .attr("y2", padding + headerHeight + rowHeight + 2)
+        .attr("stroke", "#555")
+        .attr("stroke-width", 1);
+
+      // Add metric labels
+      metrics.forEach((metric, i) => {
         tooltip
           .append("text")
           .attr("x", padding)
-          .attr("y", padding + 16)
+          .attr("y", padding + headerHeight + (i + 2) * rowHeight)
           .attr("fill", "white")
-          .attr("font-weight", "bold")
+          .attr("font-size", "12px")
           .style("font-family", "var(--font-dm-sans)")
-          .style("font-size", "12px")
-          .text(data.model);
+          .text(metric);
+      });
 
-        // Define table structure
-        const metrics = ["5%", "25%", "Median", "75%", "95%"];
-        const values = [data.q05, data.q25, data.median, data.q75, data.q95];
-
-        // Add header for metric column
-        tooltip
-          .append("text")
-          .attr("x", padding)
-          .attr("y", padding + headerHeight + rowHeight - 4)
-          .attr("fill", "#aaa")
-          .attr("font-size", "10px")
-          .style("font-family", "var(--font-dm-sans)")
-          .text("Percentile");
-
-        // Add header for value column
+      // Add values
+      values.forEach((value, i) => {
         tooltip
           .append("text")
           .attr("x", padding + colWidth + 10)
-          .attr("y", padding + headerHeight + rowHeight - 4)
-          .attr("fill", "#aaa")
+          .attr("y", padding + headerHeight + (i + 2) * rowHeight)
+          .attr("fill", "white")
           .attr("font-size", "12px")
           .style("font-family", "var(--font-dm-sans)")
-          .text("Value");
+          .text(formatValue(value));
+      });
 
-        // Draw separator line
-        tooltip
-          .append("line")
-          .attr("x1", padding)
-          .attr("x2", padding + colWidth * 2)
-          .attr("y1", padding + headerHeight + rowHeight + 2)
-          .attr("y2", padding + headerHeight + rowHeight + 2)
-          .attr("stroke", "#555")
-          .attr("stroke-width", 1);
+      // Size the tooltip background
+      const tooltipWidth = colWidth * 2 + padding * 2;
+      const tooltipHeight = headerHeight + (metrics.length + 2) * rowHeight;
 
-        // Add metric labels
-        metrics.forEach((metric, i) => {
-          tooltip
-            .append("text")
-            .attr("x", padding)
-            .attr("y", padding + headerHeight + (i + 2) * rowHeight)
-            .attr("fill", "white")
-            .attr("font-size", "12px")
-            .style("font-family", "var(--font-dm-sans)")
-            .text(metric);
-        });
+      background.attr("width", tooltipWidth).attr("height", tooltipHeight);
 
-        // Add values
-        values.forEach((value, i) => {
-          tooltip
-            .append("text")
-            .attr("x", padding + colWidth + 10)
-            .attr("y", padding + headerHeight + (i + 2) * rowHeight)
-            .attr("fill", "white")
-            .attr("font-size", "12px")
-            .style("font-family", "var(--font-dm-sans)")
-            .text(formatValue(value));
-        });
+      // Get SVG dimensions by getting the parent of the tooltip
+      // This works because the tooltip is a child of the SVG element
+      const tooltipParent = tooltip.node()?.parentNode as SVGSVGElement;
+      const svgWidth = tooltipParent?.clientWidth || dimensions.width;
+      const svgHeight = tooltipParent?.clientHeight || dimensions.height;
 
-        // Size the tooltip background
-        const tooltipWidth = colWidth * 2 + padding * 2;
-        const tooltipHeight = headerHeight + (metrics.length + 2) * rowHeight;
+      // Detect proximity to edges
+      const leftProximity = position[0];
+      const rightProximity = svgWidth - position[0];
+      const topProximity = position[1];
+      const bottomProximity = svgHeight - position[1];
 
-        background.attr("width", tooltipWidth).attr("height", tooltipHeight);
+      // Use a consistent buffer distance for all edges
+      const edgeBuffer = 20;
 
-        // Get SVG dimensions by getting the parent of the tooltip
-        // This works because the tooltip is a child of the SVG element
-        const tooltipParent = tooltip.node()?.parentNode as SVGSVGElement;
-        const svgWidth = tooltipParent?.clientWidth || dimensions.width;
-        const svgHeight = tooltipParent?.clientHeight || dimensions.height;
+      // Calculate the default centered offset (tooltip centered on mouse)
+      const defaultXOffset = -tooltipWidth / 2;
 
-        // Detect proximity to edges
-        const leftProximity = position[0];
-        const rightProximity = svgWidth - position[0];
-        const topProximity = position[1];
-        const bottomProximity = svgHeight - position[1];
+      // Determine horizontal positioning with symmetric logic
+      let xOffset: number;
 
-        // Use a consistent buffer distance for all edges
-        const edgeBuffer = 20;
+      // Using truly symmetric conditions for left and right edges
+      if (rightProximity < tooltipWidth / 2 + edgeBuffer) {
+        // Too close to right edge, position fully to the left
+        xOffset = -tooltipWidth - edgeBuffer;
+      } else if (leftProximity < tooltipWidth / 2 + edgeBuffer) {
+        // Too close to left edge, position fully to the right
+        xOffset = edgeBuffer;
+      } else {
+        // Enough space on both sides, center the tooltip horizontally
+        xOffset = defaultXOffset;
+      }
 
-        // Calculate the default centered offset (tooltip centered on mouse)
-        const defaultXOffset = -tooltipWidth / 2;
+      // Similar symmetric logic for vertical positioning
+      let yOffset: number;
+      if (bottomProximity < tooltipHeight / 2 + edgeBuffer) {
+        // Too close to bottom edge, position above
+        yOffset = -tooltipHeight - edgeBuffer;
+      } else if (topProximity < tooltipHeight / 2 + edgeBuffer) {
+        // Too close to top edge, position below
+        yOffset = edgeBuffer;
+      } else {
+        // Default based on original direction with fallback to above
+        yOffset =
+          direction === TooltipDirection.TOP
+            ? -tooltipHeight - edgeBuffer
+            : direction === TooltipDirection.BOTTOM
+              ? edgeBuffer
+              : -tooltipHeight - edgeBuffer;
+      }
 
-        // Determine horizontal positioning with symmetric logic
-        let xOffset: number;
-
-        // Using truly symmetric conditions for left and right edges
-        if (rightProximity < tooltipWidth / 2 + edgeBuffer) {
-          // Too close to right edge, position fully to the left
-          xOffset = -tooltipWidth - edgeBuffer;
-        } else if (leftProximity < tooltipWidth / 2 + edgeBuffer) {
-          // Too close to left edge, position fully to the right
-          xOffset = edgeBuffer;
-        } else {
-          // Enough space on both sides, center the tooltip horizontally
-          xOffset = defaultXOffset;
-        }
-
-        // Similar symmetric logic for vertical positioning
-        let yOffset: number;
-        if (bottomProximity < tooltipHeight / 2 + edgeBuffer) {
-          // Too close to bottom edge, position above
-          yOffset = -tooltipHeight - edgeBuffer;
-        } else if (topProximity < tooltipHeight / 2 + edgeBuffer) {
-          // Too close to top edge, position below
-          yOffset = edgeBuffer;
-        } else {
-          // Default based on original direction with fallback to above
-          yOffset =
-            direction === TooltipDirection.TOP
-              ? -tooltipHeight - edgeBuffer
-              : direction === TooltipDirection.BOTTOM
-                ? edgeBuffer
-                : -tooltipHeight - edgeBuffer;
-        }
-
-        // Apply the calculated offsets
-        tooltip
-          .attr(
-            "transform",
-            `translate(${position[0] + xOffset},${position[1] + yOffset})`,
-          )
-          .style("opacity", 1);
-      };
+      // Apply the calculated offsets
+      tooltip.attr("transform", `translate(${position[0] + xOffset},${position[1] + yOffset})`).style("opacity", 1);
     },
-    [dimensions.height, dimensions.width, type],
+    [dimensions.height, dimensions.width, type]
   );
 
-  const generateEvenlySpacedTicks = (
-    scale: d3.ScaleSymLog<number, number, never>,
-    pixelWidth: number,
-    numTicks = 8,
-    isWis = false,
-  ) => {
+  const generateEvenlySpacedTicks = (scale: d3.ScaleSymLog<number, number, never>, pixelWidth: number, numTicks = 8, isWis = false) => {
     if (isWis) {
       // For WIS/Baseline data, trying a specialized approach
       const maxValue = scale.domain()[1];
@@ -328,9 +300,7 @@ const SeasonOverviewLocationAggregatedScoreChart: React.FC<
         return Math.round(value);
       });
 
-      const uniqueValues = Array.from(new Set([0, ...dataValues])).sort(
-        (a, b) => a - b,
-      );
+      const uniqueValues = Array.from(new Set([0, ...dataValues])).sort((a, b) => a - b);
       return uniqueValues;
     }
   };
@@ -349,9 +319,7 @@ const SeasonOverviewLocationAggregatedScoreChart: React.FC<
     const innerHeight = height - margin.top - margin.bottom;
 
     // Chart group
-    const g = svg
-      .append("g")
-      .attr("transform", `translate(${margin.left},${margin.top})`);
+    const g = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
 
     // Check if we have data to display
     if (processedData.length === 0) {
@@ -372,10 +340,7 @@ const SeasonOverviewLocationAggregatedScoreChart: React.FC<
     // Calculate dynamic padding based on number of models
     const modelCount = data.length;
     // Formula: fewer models = more padding (inversely proportional)
-    const dynamicPadding = Math.min(
-      0.8,
-      Math.max(0.1, 0.8 - modelCount * 0.09),
-    );
+    const dynamicPadding = Math.min(0.8, Math.max(0.1, 0.8 - modelCount * 0.09));
 
     // Y scale - models
     const yScale = d3
@@ -392,9 +357,7 @@ const SeasonOverviewLocationAggregatedScoreChart: React.FC<
     const dataRange = {
       min: Math.min(...data.map((d) => d.q05)),
       max: Math.max(...data.map((d) => d.q95)),
-      median:
-        d3.median(data, (d) => d.median) ||
-        Math.min(...data.map((d) => d.median)),
+      median: d3.median(data, (d) => d.median) || Math.min(...data.map((d) => d.median)),
     };
 
     // Calculate a good constant based on data characteristics
@@ -422,11 +385,7 @@ const SeasonOverviewLocationAggregatedScoreChart: React.FC<
     let xScale;
     if (scaleType === "log") {
       const constant = calculateConstant();
-      xScale = d3
-        .scaleSymlog()
-        .domain([0, maxValue])
-        .constant(constant)
-        .range([0, innerWidth]);
+      xScale = d3.scaleSymlog().domain([0, maxValue]).constant(constant).range([0, innerWidth]);
     } else {
       xScale = d3.scaleLinear().domain([0, maxValue]).range([0, innerWidth]);
     }
@@ -437,12 +396,7 @@ const SeasonOverviewLocationAggregatedScoreChart: React.FC<
       .call((g) => g.selectAll(".tick text").remove())
       .call((g) => g.select(".domain").attr("stroke", "white"));
 
-    const customTicks = generateEvenlySpacedTicks(
-      xScale as any,
-      innerWidth,
-      8,
-      type === "wis",
-    );
+    const customTicks = generateEvenlySpacedTicks(xScale as any, innerWidth, 8, type === "wis");
 
     // X axis with proper decimal formatting
     g.append("g")
@@ -461,17 +415,14 @@ const SeasonOverviewLocationAggregatedScoreChart: React.FC<
               // For MAPE, use integers
               return d3.format("d")(d);
             }
-          }),
+          })
       )
       .selectAll("text")
       .attr("fill", "white")
       .style("font-size", "11px");
 
     // X axis label beneath the ticks
-    g.append("g").attr(
-      "transform",
-      `translate(${innerWidth / 2}, ${innerHeight + 10})`,
-    );
+    g.append("g").attr("transform", `translate(${innerWidth / 2}, ${innerHeight + 10})`);
 
     if (type == "wis") {
       g.append("text")
@@ -492,12 +443,7 @@ const SeasonOverviewLocationAggregatedScoreChart: React.FC<
     }
 
     // Invisible overlay for better hover detection
-    const boxGroups = g
-      .selectAll(".model-box-group")
-      .data(data)
-      .enter()
-      .append("g")
-      .attr("class", "model-box-group");
+    const boxGroups = g.selectAll(".model-box-group").data(data).enter().append("g").attr("class", "model-box-group");
 
     // Render boxplots with interactive elements
     data.forEach((d, i) => {
@@ -548,9 +494,7 @@ const SeasonOverviewLocationAggregatedScoreChart: React.FC<
           const [mouseX, mouseY] = d3.pointer(event, svg.node());
 
           // Create tooltip if it doesn't exist
-          let tooltip:
-            | d3.Selection<SVGGElement, unknown, null, undefined>
-            | d3.Selection<d3.BaseType, unknown, null, undefined> =
+          let tooltip: d3.Selection<SVGGElement, unknown, null, undefined> | d3.Selection<d3.BaseType, unknown, null, undefined> =
             svg.select(".iqr-tooltip");
           if (tooltip.empty()) {
             tooltip = createTooltip(svg);
@@ -561,17 +505,9 @@ const SeasonOverviewLocationAggregatedScoreChart: React.FC<
           // Bottom half of models: show tooltip above (TOP)
           const modelIndex = data.indexOf(d);
           const totalModels = data.length;
-          const direction =
-            modelIndex < Math.floor(totalModels / 2)
-              ? TooltipDirection.BOTTOM
-              : TooltipDirection.TOP;
+          const direction = modelIndex < Math.floor(totalModels / 2) ? TooltipDirection.BOTTOM : TooltipDirection.TOP;
 
-          updateTooltip(
-            tooltip as d3.Selection<SVGGElement, unknown, null, undefined>,
-            d,
-            [mouseX, mouseY],
-            direction,
-          );
+          updateTooltip(tooltip as d3.Selection<SVGGElement, unknown, null, undefined>, d, [mouseX, mouseY], direction);
           tooltip.raise(); // Ensure tooltip is on top of all other elements
 
           // Highlight the active box
@@ -584,22 +520,9 @@ const SeasonOverviewLocationAggregatedScoreChart: React.FC<
           // Maintain same dynamic direction logic on mousemove
           const modelIndex = data.indexOf(d);
           const totalModels = data.length;
-          const direction =
-            modelIndex < Math.floor(totalModels / 2)
-              ? TooltipDirection.BOTTOM
-              : TooltipDirection.TOP;
+          const direction = modelIndex < Math.floor(totalModels / 2) ? TooltipDirection.BOTTOM : TooltipDirection.TOP;
 
-          updateTooltip(
-            tooltip as unknown as d3.Selection<
-              SVGGElement,
-              unknown,
-              null,
-              undefined
-            >,
-            d,
-            [mouseX, mouseY],
-            direction,
-          );
+          updateTooltip(tooltip as unknown as d3.Selection<SVGGElement, unknown, null, undefined>, d, [mouseX, mouseY], direction);
           tooltip.raise(); // Ensure tooltip stays on top during movement
         })
         .on("mouseout", function () {
@@ -636,46 +559,26 @@ const SeasonOverviewLocationAggregatedScoreChart: React.FC<
 
     // Create tooltip at the end to ensure it's on top of all elements
     const tooltip = createTooltip(svg);
-  }, [
-    dimensions.height,
-    dimensions.width,
-    mapeChartScaleType,
-    processedData,
-    type,
-    updateTooltip,
-    wisChartScaleType,
-  ]);
+  }, [dimensions.height, dimensions.width, mapeChartScaleType, processedData, type, updateTooltip, wisChartScaleType]);
 
   useEffect(() => {
-    if (
-      !isResizing &&
-      dimensions.width > 0 &&
-      dimensions.height > 0 &&
-      chartRef.current
-    ) {
+    if (!isResizing && dimensions.width > 0 && dimensions.height > 0 && chartRef.current) {
       renderChart();
     }
-  }, [
-    dimensions,
-    isResizing,
-    processedData,
-    wisChartScaleType,
-    mapeChartScaleType,
-    renderChart,
-  ]);
+  }, [dimensions, isResizing, processedData, wisChartScaleType, mapeChartScaleType, renderChart]);
 
   return (
-    <div ref={containerRef} className="w-full h-full relative">
+    <div ref={containerRef} className='w-full h-full relative'>
       <svg
         ref={chartRef}
-        width="100%"
-        height="100%"
+        width='100%'
+        height='100%'
         /* style={{
           fontFamily: "var(--font-dm-sans)",
           opacity: isResizing ? 0.5 : 1,
           transition: "opacity 0.2s ease",
         }} */
-        preserveAspectRatio="xMidYMid meet"
+        preserveAspectRatio='xMidYMid meet'
       />
     </div>
   );
