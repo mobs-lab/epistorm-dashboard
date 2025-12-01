@@ -54,10 +54,7 @@ export async function fetchAuxiliaryData() {
  * @param isCurrentSeason - Whether this is the current season (uses "current_" prefix)
  * @param dataTypes - Array of data types to fetch (e.g., ["groundTruthData", "predictionsData"])
  */
-export async function fetchSeasonData(
-  seasonId: string,
-  dataTypes: string[] = ["groundTruthData", "predictionsData", "nowcastTrendsData"]
-) {
+export async function fetchSeasonData(seasonId: string, dataTypes: string[] = ["groundTruthData", "predictionsData", "nowcastTrendsData"]) {
   const cacheKey = `${seasonId}-${dataTypes.join("-")}`;
 
   if (seasonDataCache.has(cacheKey)) {
@@ -138,7 +135,7 @@ export async function fetchSeasonEvaluationData(seasonId: string, isCurrentSeaso
 /**
  * Fetch raw scores for Single Model view
  */
-export async function fetchSeasonRawScores(seasonId: string, isCurrentSeason: boolean = false) {
+export async function fetchSeasonRawScores(seasonId: string) {
   const cacheKey = `${seasonId}-rawScores`;
 
   if (seasonDataCache.has(cacheKey)) {
@@ -146,7 +143,7 @@ export async function fetchSeasonRawScores(seasonId: string, isCurrentSeason: bo
     return seasonDataCache.get(cacheKey);
   }
 
-  const folderName = isCurrentSeason ? `current_${seasonId}` : seasonId;
+  const folderName = seasonId;
   console.log(`Fetching raw scores for ${folderName}...`);
 
   try {

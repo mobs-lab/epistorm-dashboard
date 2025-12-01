@@ -25,7 +25,7 @@ export const metadata: Metadata = {
   authors: [
     { name: "Jessica Davis", url: "https://www.networkscienceinstitute.org/people/jessica-davis" },
     { name: "Remy LeWinter", url: "https://www.networkscienceinstitute.org/people/remy-lewinter" },
-    { name: "Bote Wang", url: "https://porterwang.com" },
+    { name: "Bote Wang", url: "https://github.com/porter-wang" },
   ],
   creator: "MOBs Lab",
   publisher: "MOBs Lab",
@@ -41,24 +41,6 @@ export const metadata: Metadata = {
       "max-snippet": -1,
     },
   },
-
-  /* TODO: Add in the future */
-  /* openGraph: {
-    type: 'website',
-    locale: 'en_US',
-    url: 'https://fluforecast.epistorm.org',
-    title: 'Epistorm - Flu Forecast Dashboard',
-    description: 'Weekly flu predictions and evaluations. US influenza forecasts and surveillance dashboard provided by Epistorm.',
-    siteName: 'Epistorm',
-    images: [
-      {
-        url: 'https://fluforecast.epistorm.org/og-image.jpg',
-        width: 1200,
-        height: 630,
-        alt: 'Epistorm Flu Forecast Dashboard',
-      },
-    ],
-  }, */
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
