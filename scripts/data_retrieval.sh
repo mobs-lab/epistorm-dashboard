@@ -1,5 +1,5 @@
 # Model Names Listed Here
-team_names=("MOBS-GLEAM_FLUH" "MIGHTE-Nsemble" "MIGHTE-Joint" "NU_UCSD-GLEAM_AI_FLUH" "CEPH-Rtrend_fluH" "NEU_ISI-FluBcast" "NEU_ISI-AdaptiveEnsemble" "FluSight-ensemble")
+team_names=("MOBS-GLEAM_FLUH" "MIGHTE-Nsemble" "MIGHTE-Joint" "NU_UCSD-GLEAM_AI_FLUH" "CEPH-Rtrend_fluH" "NEU_ISI-FluBcast" "NEU_ISI-AdaptiveEnsemble" "FluSight-ensemble" "MOBS-GLEAM_RL_FLUH" "MOBS-EpyStrain_Flu")
 
 NEW_PREDICTION_DATA_COPIED=false
 NEW_SURVEILLANCE_DATA_COPIED=false
@@ -44,10 +44,7 @@ copy_new_changed() {
 #region Check if new model predictions are available, and copy them over if yes
 for team in "${team_names[@]}"; do
   echo "Checking for new files from $team..."
-
-# Make sure each model has a subdirectory
   if [ -d "$PREDICTION_DATA_SOURCE_LOCATION/$team" ]; then
-    mkdir -p "$PREDICTION_DATA_TARGET_LOCATION/$team"
 
     # File extensions patterns to look for
     file_patterns=("*.csv" "*.gz" "*.zip" "*.csv.zip" "*.csv.gz" "*.parquet" "*.pq")
@@ -81,7 +78,7 @@ if [ ! -d "$SURVEILLANCE_DATA_TARGET_LOCATION" ]; then
     mkdir -p "$SURVEILLANCE_DATA_TARGET_LOCATION"
 fi
 
-# NOTE: This set up should only run during initialization of project
+# Automatically grab surveillance data file if not exist OR if the there is a new one
 if [ ! -f "$SURVEILLANCE_DATA_TARGET_LOCATION/$SURVEILLANCE_DATA_FILE_NAME" ]; then
   echo "Missing required surveillance data file, copying newest one over..."
   cp "$SURVEILLANCE_DATA_SOURCE_LOCATION/$SURVEILLANCE_DATA_FILE_NAME" "$SURVEILLANCE_DATA_TARGET_LOCATION/$SURVEILLANCE_DATA_FILE_NAME"

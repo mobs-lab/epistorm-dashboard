@@ -113,7 +113,7 @@ def main():
         mape_df = pd.read_csv(eval_score_dir / "MAPE.csv", dtype={"Location": str, "horizon": int})
         coverage_df = pd.read_csv(eval_score_dir / "coverage.csv", dtype={"location": str, "horizon": int})
 
-        # Define model names (should match epistorm-constants.ts)
+        # Define model names so processor knows which ones to process
         model_names = [
             "MOBS-GLEAM_FLUH",
             "MIGHTE-Nsemble",
@@ -123,6 +123,8 @@ def main():
             "NEU_ISI-FluBcast",
             "NEU_ISI-AdaptiveEnsemble",
             "FluSight-ensemble",
+            "MOBS-GLEAM_RL_FLUH",
+            "MOBS-EpyStrain_Flu",
         ]
 
         # ====== Load Prediction Data =====
