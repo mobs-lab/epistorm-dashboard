@@ -10,7 +10,7 @@ PREDICTION_DATA_SOURCE_LOCATION='FluSight-forecast-hub/model-output'
 PREDICTION_DATA_TARGET_LOCATION='data_processing_dir/raw/unprocessed'
 
 SURVEILLANCE_DATA_SOURCE_LOCATION='FluSight-forecast-hub/target-data'
-SURVEILLANCE_DATA_TARGET_LOCATION='data_processing_dir/raw/ground-truth/compare' #NOTE: Added "compare" so this script does not compare new ones with cleaned up ones (which will always be different)
+SURVEILLANCE_DATA_TARGET_LOCATION='data_processing_dir/raw/ground-truth' #NOTE: Added "compare" so this script does not compare new ones with cleaned up ones (which will always be different)
 SURVEILLANCE_DATA_FILE_NAME='target-hospital-admissions.csv'
 
 SURVEILLANCE_ARCHIVE_DATA_SOURCE_LOCATION='FluSight-forecast-hub/auxiliary-data/target-data-archive'
@@ -92,7 +92,7 @@ else
     echo "Detected new version of $SURVEILLANCE_DATA_FILE_NAME in source, copying into compare area..."
     rm "$SURVEILLANCE_DATA_TARGET_LOCATION/$SURVEILLANCE_DATA_FILE_NAME" # Remove the old file
     cp "$SURVEILLANCE_DATA_SOURCE_LOCATION/$SURVEILLANCE_DATA_FILE_NAME" "$SURVEILLANCE_DATA_TARGET_LOCATION/$SURVEILLANCE_DATA_FILE_NAME" # Copy the new file over
-    echo "Copied $SURVEILLANCE_DATA_FILE_NAME into our $SURVEILLANCE_DATA_TARGET_LOCATION, awaiting cleanup of NA rows..."
+    echo "Copied $SURVEILLANCE_DATA_FILE_NAME into $SURVEILLANCE_DATA_TARGET_LOCATION"
     NEW_SURVEILLANCE_DATA_COPIED=true
   fi
 fi
