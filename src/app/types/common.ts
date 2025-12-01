@@ -14,6 +14,8 @@ export const modelColorMap: Record<string, string> = {
   "NEU_ISI-FluBcast": "#7BB1FF",
   "NEU_ISI-AdaptiveEnsemble": "#5F5FD6",
   "FluSight-ensemble": "#D36F54",
+  "MOBS-GLEAM_RL_FLUH": "#FFA500",
+  "MOBS-EpyStrain_Flu": "#FF4500",
 };
 
 // Model Names Full List
@@ -26,6 +28,8 @@ export const modelNames: string[] = [
   "NEU_ISI-FluBcast",
   "NEU_ISI-AdaptiveEnsemble",
   "FluSight-ensemble",
+  "MOBS-GLEAM_RL_FLUH",
+  "MOBS-EpyStrain_Flu",
 ];
 
 // Models with nowcast production

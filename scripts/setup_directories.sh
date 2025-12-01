@@ -8,6 +8,8 @@ mkdir -p data_processing_dir/processed/FluSight-ensemble
 mkdir -p data_processing_dir/processed/MIGHTE-Joint
 mkdir -p data_processing_dir/processed/NEU_ISI-AdaptiveEnsemble
 mkdir -p data_processing_dir/processed/NEU_ISI-FluBcast
+mkdir -p data_processing_dir/processed/MOBS-EpyStrain_Flu
+mkdir -p data_processing_dir/processed/MOBS-GLEAM_RL_FLUH
 
 # For historical ground truth
 mkdir -p data_processing_dir/raw/ground-truth/historical-data

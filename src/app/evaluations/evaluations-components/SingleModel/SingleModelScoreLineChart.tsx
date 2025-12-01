@@ -9,12 +9,6 @@ import { modelColorMap } from "@/types/common";
 import { useResponsiveSVG } from "@/utils/responsiveSVG";
 import { normalizeToUTCMidDay } from "@/utils/date";
 
-interface ScoreDataPoint {
-  referenceDate: Date;
-  score: number;
-  horizon: number;
-}
-
 interface ProcessedScoreDataPoint {
   targetDate: Date;
   referenceDate: Date;
