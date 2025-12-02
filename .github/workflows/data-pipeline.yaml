@@ -28,10 +28,6 @@ jobs:
           git pull origin main
           git submodule update --remote
 
-      - name: Create subdirectory for all target locations for all data
-        run: |
-          ./scripts/setup_directories.sh
-
       - name: Check and Copy New Files
         id: check-copy
         run: |
