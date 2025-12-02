@@ -43,6 +43,7 @@ copy_new_changed() {
 
 #region Check if new model predictions are available, and copy them over if yes
 for team in "${team_names[@]}"; do
+  mkdir -p "$PREDICTION_DATA_TARGET_LOCATION/$team"
   echo "Checking for new files from $team..."
   if [ -d "$PREDICTION_DATA_SOURCE_LOCATION/$team" ]; then
 
