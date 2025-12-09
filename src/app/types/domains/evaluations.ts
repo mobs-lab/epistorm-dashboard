@@ -53,7 +53,7 @@ export interface BoxplotStats {
   max: number;
   mean: number;
   count: number;
-  scores: number[];
+  source_scores: number[];
 }
 
 export interface AppDataEvaluationsPrecalculated {

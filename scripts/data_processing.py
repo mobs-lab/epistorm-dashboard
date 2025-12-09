@@ -454,20 +454,21 @@ def main():
     default_selected_date = last_valid_ref_date
 
     dynamic_period_definitions = [
-        ("last-2-weeks", "Last 2 Weeks", 1),
-        ("last-4-weeks", "Last 4 Weeks", 3),
-        ("last-8-weeks", "Last 8 Weeks", 7),
+        ("last-2-weeks", "Last 2 Weeks", 2),
+        ("last-4-weeks", "Last 4 Weeks", 4),
+        ("last-8-weeks", "Last 8 Weeks", 8),
     ]
 
     dynamic_season_options = []
     for i, (period_id, display_string, weeks_back) in enumerate(dynamic_period_definitions):
         # Real period: start is exactly N weeks before the latest reference date
         start_date = last_valid_ref_date - timedelta(weeks=weeks_back)
+
+        # Note: remember to use this as EXCLUSIVE right-bound of time when parsing evaluations data
         end_date = last_valid_ref_date
 
-        # Display should start on the immediate next Sunday after the real start date
-        next_sunday_offset = (6 - start_date.weekday()) % 7
-        display_start_date = start_date + timedelta(days=next_sunday_offset)
+        # Start date should be a Saturday, 
+        display_start_date = start_date + timedelta(days=1)
 
         # Format for Season Overview display: (MM dd, YYYY - MM dd, YYYY)
         sub_display_value = f"({display_start_date.strftime('%b %d, %Y')} - {end_date.strftime('%b %d, %Y')})"
@@ -774,7 +775,7 @@ def main():
     state_map_data = {}
     coverage_data = {}
 
-    # Process each season independently
+    # Process & Aggregate full-length season evaluations
     for season_id, season_dates in all_seasons_combined.items():
         print(f"\n   - Processing evaluation data for season: {season_id}")
         print(f"     Date range: {season_dates['start'].strftime('%Y-%m-%d')} to {season_dates['end'].strftime('%Y-%m-%d')}")
@@ -821,7 +822,6 @@ def main():
                     "count": int(row["count"]),
                 }
 
-        # Build state averages from the state_map_data we just calculated
         # Sanity Check using season_id
         if season_id in state_map_data:
             # Dynamically get all available horizons for this season (to accomodate dynamic periods)
@@ -878,8 +878,7 @@ def main():
                             if stats:
                                 # Update stats with state-level information
                                 stats["count"] = len(state_averages)
-                                stats["stateAverages"] = state_averages
-                                stats["scores"] = state_averages  # Replace with state averages
+                                stats["source_scores"] = state_averages
 
                                 # Store using horizon key
                                 iqr_data.setdefault(season_id, {}).setdefault(metric, {}).setdefault(model, {})[horizon_key] = stats

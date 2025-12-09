@@ -153,7 +153,6 @@ export const useEvaluationsData = (): UseEvaluationsDataReturn => {
       
       const rawScoresData = await fetchSeasonRawScores(
         seasonId,
-        seasonId === currentSeasonId
       );
       
       if (rawScoresData) {
