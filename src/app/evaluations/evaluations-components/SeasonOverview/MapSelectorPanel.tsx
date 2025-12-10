@@ -1,7 +1,11 @@
 import React from "react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { modelNames, modelColorMap } from "@/types/common";
-import { setMapSelectedModel, setMapSelectedScoringOption, setUseLogColorScale } from "@/store/data-slices/settings/SettingsSliceEvaluationSeasonOverview";
+import { selectModelNames } from "@/store/selectors";
+import {
+  setMapSelectedModel,
+  setMapSelectedScoringOption,
+  setUseLogColorScale,
+} from "@/store/data-slices/settings/SettingsSliceEvaluationSeasonOverview";
 
 interface MapSelectorPanelProps {
   className?: string;
@@ -12,6 +16,7 @@ const MapSelectorPanel: React.FC<MapSelectorPanelProps> = ({ className }) => {
   const { mapSelectedModel, mapSelectedScoringOption, useLogColorScale } = useAppSelector(
     (state) => state.evaluationsSeasonOverviewSettings
   );
+  const modelNames = useAppSelector(selectModelNames);
 
   const scoringOptions = [
     { id: "WIS/Baseline", label: "WIS/Baseline" },

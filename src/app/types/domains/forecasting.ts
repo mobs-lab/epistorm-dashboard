@@ -1,3 +1,5 @@
+import { ModelName } from "../common";
+
 export interface SurveillanceSingleWeekDataPoint {
   date: Date;
   stateNum: string;
@@ -65,7 +67,7 @@ export interface PredictionData {
     lastPredRefDate?: string;
     lastPredTargetDate?: string;
   } & {
-    [modelName: string]: ModelPredictionData;
+    [modelName: ModelName]: ModelPredictionData;
   };
 }
 

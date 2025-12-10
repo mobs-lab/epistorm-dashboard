@@ -15,7 +15,9 @@ import {
   updateDateRange,
   updateDateStart,
   updateUserSelectedWeek,
+  initializeModelsFromMetadata,
 } from "@/store/data-slices/settings/SettingsSliceForecastNowcast";
+import { initializeModelsFromMetadata as initializeEvalModelsFromMetadata } from "@/store/data-slices/settings/SettingsSliceEvaluationSeasonOverview";
 import { useAppDispatch } from "@/store/hooks";
 import { LoadingStates } from "@/types/app";
 import { EvaluationSeasonOverviewTimeRangeOption } from "@/types/domains/evaluations";
@@ -171,6 +173,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
               subDisplayValue: tp.subDisplayValue,
               startDate: parseISO(tp.startDate),
               endDate: parseISO(tp.endDate),
+              isValid: tp.isValid,
+              invalidReason: tp.invalidReason,
             })) || []),
           ];
 
@@ -194,6 +198,12 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Set default selected week
         if (metadata.defaultSelectedDate) {
           dispatch(updateUserSelectedWeek(new Date(metadata.defaultSelectedDate)));
+        }
+
+        // Initialize model selections from metadata
+        if (metadata.modelNames && metadata.modelNames.length > 0) {
+          dispatch(initializeModelsFromMetadata(metadata.modelNames));
+          dispatch(initializeEvalModelsFromMetadata(metadata.modelNames));
         }
       }
 

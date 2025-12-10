@@ -2,12 +2,12 @@
 "use client";
 
 import { useAppSelector } from "@/store/hooks";
-import { modelColorMap, modelNames } from "@/types/common";
+import { selectModelNames, selectModelColorMap } from "@/store/selectors";
 import { useResponsiveSVG } from "@/utils/responsiveSVG";
 import * as d3 from "d3";
 import React, { useCallback, useEffect, useMemo, useRef } from "react";
 
-import { selectSeasonOverviewData, selectShouldUseJsonData } from "@/store/selectors/evaluationSelectors";
+import { selectSeasonOverviewData } from "@/store/selectors/evaluationSelectors";
 import { BoxplotStats } from "@/types/domains/evaluations";
 
 // Options for controlling to which direction tooltip appears relative to the mouse pointer
@@ -42,15 +42,15 @@ const SeasonOverviewLocationAggregatedScoreChart: React.FC<SeasonOverviewLocatio
   const chartRef = useRef<SVGSVGElement>(null);
 
   // Get data from selectors
-  const shouldUseJsonData = useAppSelector(selectShouldUseJsonData);
   const seasonOverviewData = useAppSelector(selectSeasonOverviewData);
+  const modelNames = useAppSelector(selectModelNames);
+  const modelColorMap = useAppSelector(selectModelColorMap);
 
   const { wisChartScaleType, mapeChartScaleType } = useAppSelector((state) => state.evaluationsSeasonOverviewSettings);
 
   // Process evaluation score data based on selected criteria, enhanced with memoization
-  // Process data using JSON when available, otherwise fall back to CSV processing
   const processedData = useMemo(() => {
-    if (shouldUseJsonData && seasonOverviewData) {
+    if (seasonOverviewData) {
       // Use JSON data
       const metric = type === "wis" ? "WIS/Baseline" : "MAPE";
       const results: IQRData[] = [];
@@ -92,7 +92,7 @@ const SeasonOverviewLocationAggregatedScoreChart: React.FC<SeasonOverviewLocatio
       return results;
     }
     return [];
-  }, [shouldUseJsonData, seasonOverviewData, type]);
+  }, [seasonOverviewData, type, modelNames]);
 
   // Create tooltip element with initial hidden state
   const createTooltip = (svg: d3.Selection<SVGSVGElement, unknown, null, undefined>) => {
@@ -487,7 +487,7 @@ const SeasonOverviewLocationAggregatedScoreChart: React.FC<SeasonOverviewLocatio
         .attr("width", xScale(d.q75) - xScale(d.q25))
         .attr("y", y)
         .attr("height", boxHeight)
-        .attr("fill", modelColorMap[d.model])
+        .attr("fill", modelColorMap[d.model] || "#808080")
         .attr("opacity", 0.995)
         .style("cursor", "pointer")
         .on("mouseover", function (event) {

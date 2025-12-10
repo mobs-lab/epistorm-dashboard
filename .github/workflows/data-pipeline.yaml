@@ -28,6 +28,11 @@ jobs:
           git pull origin main
           git submodule update --remote
 
+      - name: Install jq (for reading model config)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq
+
       - name: Check and Copy New Files
         id: check-copy
         run: |

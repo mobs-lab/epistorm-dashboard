@@ -6,8 +6,8 @@ import * as d3 from "d3";
 
 import { useAppSelector } from "@/store/hooks";
 import { useResponsiveSVG } from "@/utils/responsiveSVG";
-import { modelColorMap, modelNames } from "@/types/common";
-import { selectSeasonOverviewData, selectShouldUseJsonData } from "@/store/selectors/evaluationSelectors";
+import { selectModelNames, selectModelColorMap } from "@/store/selectors";
+import { selectSeasonOverviewData } from "@/store/selectors/evaluationSelectors";
 
 // Interface for processed data structure
 interface ProcessedCoverageData {
@@ -23,12 +23,13 @@ const SeasonOverviewPIChart: React.FC = () => {
   const chartRef = useRef<SVGSVGElement>(null);
 
   // Get data from selectors
-  const shouldUseJsonData = useAppSelector(selectShouldUseJsonData);
   const seasonOverviewData = useAppSelector(selectSeasonOverviewData);
+  const modelNames = useAppSelector(selectModelNames);
+  const modelColorMap = useAppSelector(selectModelColorMap);
 
-  // Process the detailed coverage data using JSON when available, otherwise CSV fallback
+  // Process the detailed coverage data
   const processedData = useMemo(() => {
-    if (shouldUseJsonData && seasonOverviewData) {
+    if (seasonOverviewData) {
       // Use JSON data structure
       const coverageData = seasonOverviewData.coverageData;
       const results: ProcessedCoverageData[] = [];
@@ -75,7 +76,7 @@ const SeasonOverviewPIChart: React.FC = () => {
       return results;
     }
     return [];
-  }, [shouldUseJsonData, seasonOverviewData]);
+  }, [seasonOverviewData, modelNames]);
 
   const renderChart = useCallback(() => {
     if (!chartRef.current) return;
@@ -214,7 +215,7 @@ const SeasonOverviewPIChart: React.FC = () => {
     });
 
     sortedData.forEach((model) => {
-      const color = modelColorMap[model.modelName];
+      const color = modelColorMap[model.modelName] || "#808080";
 
       // Draw area with gradient opacity
       // g.append("path").datum(model.coveragePoints).attr("fill", color).attr("fill-opacity", 0.3).attr("d", area);

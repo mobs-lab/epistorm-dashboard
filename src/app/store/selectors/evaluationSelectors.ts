@@ -54,10 +54,7 @@ export const selectSeasonOverviewData = createSelector(
   }
 );
 
-// Helper selector for checking if we should use JSON or fall back to CSV
-export const selectShouldUseJsonData = createSelector([selectIsJsonDataLoaded], (isLoaded) => {
-  return isLoaded;
-});
+
 
 // Selector for checking if season overview has valid data structure
 export const selectHasSeasonOverviewData = createSelector([selectSeasonOverviewData], (seasonOverviewData) => {

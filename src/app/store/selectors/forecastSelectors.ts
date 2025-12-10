@@ -482,3 +482,70 @@ export const selectDateConstraints = createSelector([(state: RootState) => state
 
   return { earliestDate, latestDate };
 });
+
+// Selector to get models that have NO prediction data in the selected date range
+// This is used by the forecast page to dynamically disable models in the UI
+export const selectUnavailableModelsInDateRange = createSelector(
+  [
+    (state: RootState) => state.coreData.mainData?.predictionData,
+    (state: RootState) => state.auxiliaryData.metadata,
+    (state: RootState, startDate: Date, endDate: Date, stateNum: string) => ({
+      startDate,
+      endDate,
+      stateNum,
+    }),
+  ],
+  (predictionData, metadata, { startDate, endDate, stateNum }) => {
+    if (!predictionData || !metadata?.modelNames || !metadata?.fullRangeSeasons) {
+      return [];
+    }
+
+    const allModelNames = metadata.modelNames;
+    const modelsWithData = new Set<string>();
+
+    // Find relevant seasons to narrow down search
+    const relevantSeasons = findRelevantSeasons(metadata.fullRangeSeasons, startDate, endDate);
+    if (relevantSeasons.length === 0) {
+      // No seasons cover this date range, so all models are unavailable
+      return allModelNames;
+    }
+
+    // Check each season, model, and partition to find which models have ANY data
+    for (const seasonId of relevantSeasons) {
+      const seasonData = predictionData[seasonId];
+      if (!seasonData) continue;
+
+      for (const modelName of allModelNames) {
+        // Skip if we already know this model has data
+        if (modelsWithData.has(modelName)) continue;
+
+        const modelData = seasonData[modelName];
+        if (!modelData) continue;
+
+        // Check all partitions for any data in the date range
+        for (const partitionName of ["full-forecast", "forecast-tail"]) {
+          const partition = modelData.partitions[partitionName as keyof typeof modelData.partitions];
+          if (!partition) continue;
+
+          // Check if there's any data for this state in the date range
+          for (const dateISO of Object.keys(partition)) {
+            const date = new Date(dateISO);
+            if (date >= startDate && date <= endDate) {
+              const stateData = partition[dateISO][stateNum];
+              if (stateData?.predictions && Object.keys(stateData.predictions).length > 0) {
+                modelsWithData.add(modelName);
+                break; // Found data for this model, move on to next model
+              }
+            }
+          }
+
+          if (modelsWithData.has(modelName)) break;
+        }
+      }
+    }
+
+    // Return models that have NO data
+    const unavailableModels = allModelNames.filter((model) => !modelsWithData.has(model));
+    return unavailableModels;
+  }
+);
