@@ -4,8 +4,7 @@ import React, { useCallback, useEffect, useRef } from "react";
 import { useAppSelector } from "@/store/hooks";
 import { selectSingleModelScoreDataFromJSON } from "@/store/selectors/index";
 import { selectSingleModelTimeSeriesData } from "@/store/selectors/singleModelSelectors";
-
-import { modelColorMap } from "@/types/common";
+import { selectModelColorMap } from "@/store/selectors";
 import { useResponsiveSVG } from "@/utils/responsiveSVG";
 import { normalizeToUTCMidDay } from "@/utils/date";
 
@@ -23,6 +22,7 @@ const SingleModelScoreLineChart: React.FC = () => {
   const scoreDataFromJSON = useAppSelector(selectSingleModelScoreDataFromJSON);
 
   const timeSeriesData = useAppSelector(selectSingleModelTimeSeriesData);
+  const modelColorMap = useAppSelector(selectModelColorMap);
 
   const {
     evaluationsSingleModelViewModel,
@@ -300,7 +300,8 @@ const SingleModelScoreLineChart: React.FC = () => {
     xScale: d3.ScaleBand<string>,
     yScale: d3.ScaleLinear<number, number>,
     modelName: string,
-    scoreOption: string
+    scoreOption: string,
+    modelColorMap: Record<string, string>
   ) {
     // Draw reference line at y = 1 for WIS_ratio
     if (scoreOption === "WIS/Baseline") {
@@ -335,7 +336,7 @@ const SingleModelScoreLineChart: React.FC = () => {
       .append("path")
       .datum(processedData)
       .attr("fill", "none")
-      .attr("stroke", modelColorMap[modelName])
+      .attr("stroke", modelColorMap[modelName] || "#808080")
       .attr("stroke-width", 2)
       .attr("d", line);
 
@@ -348,7 +349,7 @@ const SingleModelScoreLineChart: React.FC = () => {
       .attr("cx", (d) => (xScale(d.targetDate.toISOString()) || 0) + xScale.bandwidth() / 2)
       .attr("cy", (d) => yScale(d.score))
       .attr("r", 4)
-      .attr("fill", modelColorMap[modelName]);
+      .attr("fill", modelColorMap[modelName] || "#808080");
   }
 
   /**
@@ -500,7 +501,7 @@ const SingleModelScoreLineChart: React.FC = () => {
     const chart = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
 
     // Render visual elements
-    renderVisualElements(chart, processedData, xScale, yScale, evaluationsSingleModelViewModel, evaluationSingleModelViewScoresOption);
+    renderVisualElements(chart, processedData, xScale, yScale, evaluationsSingleModelViewModel, evaluationSingleModelViewScoresOption, modelColorMap);
 
     // Add axes with styling
     chart
@@ -580,15 +581,7 @@ const SingleModelScoreLineChart: React.FC = () => {
 
     // Ensure tooltip is always on top
     cornerTooltip.raise();
-  }, [
-    dimensions.width,
-    dimensions.height,
-    scoreDataFromJSON,
-    timeSeriesData,
-    evaluationSingleModelViewScoresOption,
-    evaluationsSingleModelViewModel,
-    updateVisuals,
-  ]);
+  }, [dimensions.width, dimensions.height, scoreDataFromJSON, timeSeriesData, evaluationSingleModelViewScoresOption, evaluationsSingleModelViewModel, modelColorMap, updateVisuals]);
 
   useEffect(() => {
     if (!isResizing && dimensions.width > 0 && dimensions.height > 0) {

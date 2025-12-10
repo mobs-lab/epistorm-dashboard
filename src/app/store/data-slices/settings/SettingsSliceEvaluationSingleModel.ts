@@ -26,7 +26,7 @@ const initialState: EvaluationsSettingsState = {
     evaluationsSingleModelViewSelectedStateCode: "US",
 
     /* Model Defaults*/
-    evaluationsSingleModelViewModel: "MOBS-GLEAM_FLUH",
+    evaluationsSingleModelViewModel: "MOBS-EpyStrain_Flu",
     evaluationSingleModelViewHorizon: 0,
     evaluationSingleModelViewScoresOption: "MAPE",
 

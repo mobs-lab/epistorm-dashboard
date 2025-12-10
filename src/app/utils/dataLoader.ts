@@ -112,7 +112,7 @@ export async function fetchSeasonEvaluationData(seasonId: string, isCurrentSeaso
     return seasonDataCache.get(cacheKey);
   }
 
-  const folderName = isCurrentSeason ? `current_${seasonId}` : seasonId;
+  const folderName = seasonId;
   console.log(`Fetching evaluation data for ${folderName}...`);
 
   try {

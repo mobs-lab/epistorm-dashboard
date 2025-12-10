@@ -40,6 +40,8 @@ export interface EvaluationSeasonOverviewTimeRangeOption {
   subDisplayValue?: string; // For Season Overview Settings Panel's display, smaller text after each dynamic option
   startDate: Date;
   endDate: Date;
+  isValid?: boolean; // Whether this time period is valid (only for dynamic periods that might extend beyond available data)
+  invalidReason?: string; // Reason why this period is invalid (only applies to invalid dynamic periods)
 }
 
 // Centralized data contract for pre-aggregated evaluation JSON
@@ -53,7 +55,7 @@ export interface BoxplotStats {
   max: number;
   mean: number;
   count: number;
-  scores: number[];
+  source_scores: number[];
 }
 
 export interface AppDataEvaluationsPrecalculated {
