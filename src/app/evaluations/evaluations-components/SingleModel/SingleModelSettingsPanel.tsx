@@ -38,15 +38,26 @@ const SingleModelSettingsPanel: React.FC = () => {
     evaluationsSingleModelViewModel,
     evaluationSingleModelViewHorizon,
     evaluationSingleModelViewScoresOption,
-    evaluationsSingleModelViewDateStart,
-    evaluationSingleModelViewDateEnd,
-    evaluationsSingleModelViewSeasonId, // <-- Use seasonId from state
+
+    evaluationsSingleModelViewSeasonId, // Use seasonId from state
     evaluationSingleModelViewSeasonOptions,
   } = useAppSelector((state) => state.evaluationsSingleModelSettings);
 
   const locationData = useAppSelector((state) => state.auxiliaryData["locations"]);
   const modelNames = useAppSelector(selectModelNames);
   const modelColorMap = useAppSelector(selectModelColorMap);
+
+  // Get model availability info from metadata
+  const modelAvailabilityByPeriod = useAppSelector((state) => state.auxiliaryData.metadata?.modelAvailabilityByPeriod);
+
+  // Get unavailable models for the selected season
+  const unavailableModels = React.useMemo(() => {
+    if (!modelAvailabilityByPeriod || !evaluationsSingleModelViewSeasonId) {
+      return new Set<string>();
+    }
+    const periodData = modelAvailabilityByPeriod[evaluationsSingleModelViewSeasonId];
+    return new Set(periodData?.unavailableModels || []);
+  }, [modelAvailabilityByPeriod, evaluationsSingleModelViewSeasonId]);
 
   // State selection handlers (reused from forecast)
   const onStateSelectionChange = (stateNum: string) => {
@@ -63,7 +74,16 @@ const SingleModelSettingsPanel: React.FC = () => {
 
   // Model selection handler (single model only)
   const onModelSelectionChange = (modelName: string) => {
+    // Don't allow selecting unavailable models
+    if (unavailableModels.has(modelName)) {
+      return;
+    }
     dispatch(updateEvaluationsSingleModelViewModel(modelName));
+  };
+
+  // Check if a model should be disabled
+  const isModelDisabled = (modelName: string) => {
+    return unavailableModels.has(modelName);
   };
 
   // Horizon handler
@@ -79,10 +99,20 @@ const SingleModelSettingsPanel: React.FC = () => {
     );
 
     if (selectedOption) {
+      // Don't allow selecting invalid seasons
+      if (selectedOption.isValid === false) {
+        return;
+      }
+
       dispatch(updateEvaluationsSingleModelViewSeasonId(selectedOption.seasonId)); // <-- Dispatch seasonId
       dispatch(updateEvaluationSingleModelViewDateStart(selectedOption.startDate));
       dispatch(updateEvaluationSingleModelViewDateEnd(selectedOption.endDate));
     }
+  };
+
+  // Check if a season should be disabled
+  const isSeasonDisabled = (option: SeasonOption) => {
+    return option.isValid === false;
   };
 
   // Add handler
@@ -115,24 +145,34 @@ const SingleModelSettingsPanel: React.FC = () => {
             Models
           </Typography>
           <div className='space-y-2 h-full overflow-y-auto pr-1'>
-            {modelNames.map((model) => (
-              <label key={model} className='inline-flex items-center text-white hover:bg-gray-700 rounded cursor-pointer w-full'>
-                <span
-                  className='w-[1em] h-[1em] border-2 rounded-sm mr-2'
-                  style={{
-                    backgroundColor: evaluationsSingleModelViewModel === model ? (modelColorMap[model] || "#808080") : "transparent",
-                    borderColor: modelColorMap[model] || "#808080",
-                  }}
-                />
-                <input
-                  type='radio'
-                  className='sr-only'
-                  checked={evaluationsSingleModelViewModel === model}
-                  onChange={() => onModelSelectionChange(model)}
-                />
-                <span className='ml-2 xs:text-sm'>{model}</span>
-              </label>
-            ))}
+            {modelNames.map((model) => {
+              const disabled = isModelDisabled(model);
+              return (
+                <label
+                  key={model}
+                  className={`inline-flex items-center text-white rounded w-full ${
+                    disabled ? "opacity-40 cursor-not-allowed" : "hover:bg-gray-700 cursor-pointer"
+                  }`}
+                  title={disabled ? `${model} has no evaluation data in the selected season` : undefined}>
+                  <span
+                    className='w-[1em] h-[1em] border-2 rounded-sm mr-2'
+                    style={{
+                      backgroundColor: evaluationsSingleModelViewModel === model ? modelColorMap[model] || "#808080" : "transparent",
+                      borderColor: modelColorMap[model] || "#808080",
+                      opacity: disabled ? 0.4 : 1,
+                    }}
+                  />
+                  <input
+                    type='radio'
+                    className='sr-only'
+                    checked={evaluationsSingleModelViewModel === model}
+                    onChange={() => onModelSelectionChange(model)}
+                    disabled={disabled}
+                  />
+                  <span className='ml-2 xs:text-sm'>{model}</span>
+                </label>
+              );
+            })}
           </div>
         </div>
 
@@ -169,11 +209,19 @@ const SingleModelSettingsPanel: React.FC = () => {
             className={
               "text-white border-[#5d636a] border-2 flex-wrap bg-mobs-lab-color-filterspane rounded-md w-full py-2 px-2 overflow-ellipsis"
             }>
-            {evaluationSingleModelViewSeasonOptions.map((option: SeasonOption) => (
-              <option key={option.index} value={option.seasonId}>
-                {option.displayString}
-              </option>
-            ))}
+            {evaluationSingleModelViewSeasonOptions.map((option: SeasonOption) => {
+              const disabled = isSeasonDisabled(option);
+              return (
+                <option
+                  key={option.index}
+                  value={option.seasonId}
+                  disabled={disabled}
+                  title={disabled && option.invalidReason ? option.invalidReason : undefined}>
+                  {option.displayString}
+                  {disabled ? " (Invalid)" : ""}
+                </option>
+              );
+            })}
           </select>
         </div>
         <div className='w-full justify-stretch items-stretch mb-2'>
@@ -194,7 +242,7 @@ const SingleModelSettingsPanel: React.FC = () => {
       </div>
 
       <div className='mt-auto p-2 border-t border-gray-700'>
-        <Image src='/epistorm-logo.png' width={300} height={120} alt='Epistorm Logo' className='mx-auto' priority/>
+        <Image src='/epistorm-logo.png' width={300} height={120} alt='Epistorm Logo' className='mx-auto' priority />
       </div>
     </div>
   );

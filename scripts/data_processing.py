@@ -460,6 +460,9 @@ def main():
         ("last-8-weeks", "Last 8 Weeks", 8),
     ]
 
+    # NOTE: We will compute first_valid_eval_ref_date AFTER loading evaluation data
+    # because we need to know the actual earliest reference date in WIS/MAPE scores
+    # For now, create placeholder dynamic periods without validation
     dynamic_season_options = []
     for i, (period_id, display_string, weeks_back) in enumerate(dynamic_period_definitions):
         # Real period: start is exactly N weeks before the latest reference date
@@ -478,7 +481,7 @@ def main():
         dynamic_periods[period_id] = {"start": start_date, "end": end_date}
         all_seasons_for_evaluation[period_id] = {"start": start_date, "end": end_date}
 
-        # Create DynamicSeasonOption for metadata (matching CustomDataInterface.md)
+        # Create DynamicSeasonOption for metadata (will validate later after loading evaluation data)
         dynamic_season_options.append(
             {
                 "index": i,
@@ -488,6 +491,8 @@ def main():
                 "subDisplayValue": sub_display_value,
                 "startDate": start_date,
                 "endDate": end_date,
+                "isValid": True,  # Will be updated after checking evaluation data
+                "invalidReason": None,
             }
         )
 
@@ -767,6 +772,55 @@ def main():
 
     print("   - Evaluation score files cleaned and standardized")
 
+    # Validate dynamic time periods using actual evaluation data from the ongoing season
+    # Dynamic periods should only look back within the ongoing season, not across all seasons
+    if not eval_scores_df.empty:
+        # Find the ongoing season (the one with mostCurrent=True)
+        ongoing_season_id = None
+        ongoing_season_dates = None
+        for season_id, dates in full_range_seasons_info_for_processing.items():
+            if dates.get("mostCurrent", False):
+                ongoing_season_id = season_id
+                ongoing_season_dates = dates
+                break
+        
+        if ongoing_season_id and ongoing_season_dates:
+            print(f"\n   - Ongoing season: {ongoing_season_id} ({ongoing_season_dates['start'].strftime('%Y-%m-%d')} to {ongoing_season_dates['end'].strftime('%Y-%m-%d')})")
+            
+            # Filter evaluation data to ONLY the ongoing season
+            ongoing_season_eval = eval_scores_df[
+                (eval_scores_df["reference_date"] >= ongoing_season_dates["start"]) & 
+                (eval_scores_df["reference_date"] <= ongoing_season_dates["end"])
+            ]
+            
+            if not ongoing_season_eval.empty:
+                # Get the earliest reference date in the ONGOING SEASON's evaluation data
+                first_valid_eval_ref_date = ongoing_season_eval["reference_date"].min()
+                print(f"   - First valid evaluation reference date in ongoing season: {first_valid_eval_ref_date.strftime('%Y-%m-%d')}")
+                
+                # Validate each dynamic period against the ongoing season's earliest eval date
+                print("   - Validating dynamic time periods against ongoing season evaluation data...")
+                for dynamic_option in dynamic_season_options:
+                    period_id = dynamic_option["label"]
+                    start_date = dynamic_option["startDate"]
+                    
+                    print(f"     Checking '{period_id}': start={start_date.strftime('%Y-%m-%d')}, ongoing_season_first_valid={first_valid_eval_ref_date.strftime('%Y-%m-%d')}")
+                    
+                    if start_date < first_valid_eval_ref_date:
+                        dynamic_option["isValid"] = False
+                        dynamic_option["invalidReason"] = f"Period starts {start_date.strftime('%Y-%m-%d')} before ongoing season's first valid evaluation date {first_valid_eval_ref_date.strftime('%Y-%m-%d')}"
+                        print(f"    - INVALID: {dynamic_option['invalidReason']}")
+                    else:
+                        dynamic_option["isValid"] = True
+                        dynamic_option["invalidReason"] = None
+                        print(f"       ✓ Valid")
+            else:
+                print(f"   - WARNING: No evaluation data found for ongoing season {ongoing_season_id}, marking all dynamic periods as valid (fallback)")
+        else:
+            print("   - WARNING: Could not identify ongoing season, marking all dynamic periods as valid (fallback)")
+    else:
+        print("   - WARNING: No evaluation data available, cannot validate dynamic periods")
+
     # Combine all seasons for comprehensive assignment
     all_seasons_combined = {**full_range_seasons_info_for_processing, **dynamic_periods}
 
@@ -775,6 +829,9 @@ def main():
     iqr_data = {}
     state_map_data = {}
     coverage_data = {}
+    
+    # Track model availability for each time period (for frontend to disable unavailable models)
+    model_availability_by_period = {}
 
     # Process & Aggregate full-length season evaluations
     for season_id, season_dates in all_seasons_combined.items():
@@ -793,8 +850,11 @@ def main():
         print(f"     Evaluation entries: {len(season_eval_df)}")
         print(f"     Coverage entries: {len(season_coverage_df)}")
 
+        # Track model availability for this period
+        models_with_data = set()
         if len(season_eval_df) > 0:
-            print(f"     Models in eval data: {sorted(season_eval_df['model'].unique())}")
+            models_with_data = set(season_eval_df['model'].unique())
+            print(f"     Models in eval data: {sorted(models_with_data)}")
             print(f"     Metrics in eval data: {sorted(season_eval_df['metric'].unique())}")
             print(f"     Horizons in eval data: {sorted(season_eval_df['horizon'].unique())}")
             print(
@@ -803,6 +863,16 @@ def main():
             print(
                 f"     Target date range: {season_eval_df['target_end_date'].min().strftime('%Y-%m-%d')} to {season_eval_df['target_end_date'].max().strftime('%Y-%m-%d')}"
             )
+        
+        # Identify models with NO data for this period
+        unavailable_models = [m for m in model_names if m not in models_with_data]
+        model_availability_by_period[season_id] = {
+            "unavailableModels": unavailable_models,
+            "availableModels": list(models_with_data),
+        }
+        
+        if unavailable_models:
+            print(f"     WARNING: Models with NO evaluation data in this period: {unavailable_models}")
 
         # State map aggregations
         if len(season_eval_df) > 0:
@@ -976,6 +1046,7 @@ def main():
         "modelMetadata": model_metadata,
         "defaultSeasonTimeValue": default_season_tv,
         "defaultSelectedDate": default_selected_date,  # This will go into settings and decide which day is selected by default
+        "modelAvailabilityByPeriod": model_availability_by_period,  # Track which models are unavailable for each time period
     }
     with open(auxiliary_dir / "seasonMetadata.json", "w") as f:
         json.dump(season_metadata, f, cls=NpEncoder, separators=(",", ":"))

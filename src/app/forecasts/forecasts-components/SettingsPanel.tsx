@@ -14,12 +14,12 @@ import {
   updateYScale,
 } from "@/store/data-slices/settings/SettingsSliceForecastNowcast";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { selectDateConstraints, selectLocationData } from "@/store/selectors/forecastSelectors";
+import { selectDateConstraints, selectLocationData, selectUnavailableModelsInDateRange } from "@/store/selectors/forecastSelectors";
 import { selectModelNames, selectModelColorMap } from "@/store/selectors";
 import { Radio, Typography } from "@/styles/material-tailwind-wrapper";
 import { SeasonOption } from "@/types/domains/forecasting";
 import Image from "next/image";
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { horizonSelectorsInfo } from "types/infobutton-content";
 import SettingsStyledDatePicker from "./SettingsStyledDatePicker";
 
@@ -43,6 +43,14 @@ const SettingsPanel: React.FC = () => {
     seasonOptions,
   } = useAppSelector((state) => state.forecastSettings);
 
+  // Get models that have no data in the selected date range
+  const unavailableModels = useAppSelector((state) => 
+    selectUnavailableModelsInDateRange(state, dateStart, dateEnd, USStateNum)
+  );
+
+  // Create a Set for fast lookup
+  const unavailableModelsSet = useMemo(() => new Set(unavailableModels), [unavailableModels]);
+
   const onStateSelectionChange = (stateNum: string) => {
     const selectedState = locationData.find((state) => state.stateNum === stateNum);
     if (selectedState) {
@@ -56,6 +64,11 @@ const SettingsPanel: React.FC = () => {
   };
 
   const onModelSelectionChange = (modelName: string, checked: boolean) => {
+    // Don't allow selecting unavailable models
+    if (unavailableModelsSet.has(modelName) && checked) {
+      return;
+    }
+    
     if (checked) {
       dispatch(updateSelectedForecastModels([...forecastModel, modelName]));
     } else {
@@ -114,12 +127,19 @@ const SettingsPanel: React.FC = () => {
 
   const handleShowAllModels = () => {
     if (!showingAllModels) {
-      dispatch(updateSelectedForecastModels(modelNames));
+      // Only select models that have data in the current date range
+      const availableModels = modelNames.filter(m => !unavailableModelsSet.has(m));
+      dispatch(updateSelectedForecastModels(availableModels));
       setShowingAllModels(true);
     } else {
       dispatch(updateSelectedForecastModels([]));
       setShowingAllModels(false);
     }
+  };
+
+  // Check if a model should be disabled
+  const isModelDisabled = (modelName: string) => {
+    return unavailableModelsSet.has(modelName);
   };
 
   return (
@@ -152,24 +172,35 @@ const SettingsPanel: React.FC = () => {
             Models
           </Typography>
           <div className='space-y-2 h-full overflow-y-auto pr-1'>
-            {modelNames.map((model) => (
-              <label key={model} className='inline-flex items-center text-white hover:bg-gray-700 rounded cursor-pointer w-full'>
-                <span
-                  className='w-[1em] h-[1em] border-2 rounded-sm mr-2'
-                  style={{
-                    backgroundColor: forecastModel.includes(model) ? (modelColorMap[model] || "#808080") : "transparent",
-                    borderColor: modelColorMap[model] || "#808080",
-                  }}
-                />
-                <input
-                  type='checkbox'
-                  className='sr-only'
-                  checked={forecastModel.includes(model)}
-                  onChange={(e) => onModelSelectionChange(model, e.target.checked)}
-                />
-                <span className='ml-2 xs:text-sm '>{model}</span>
-              </label>
-            ))}
+            {modelNames.map((model) => {
+              const disabled = isModelDisabled(model);
+              return (
+                <label 
+                  key={model} 
+                  className={`inline-flex items-center text-white rounded w-full ${
+                    disabled ? 'opacity-40 cursor-not-allowed' : 'hover:bg-gray-700 cursor-pointer'
+                  }`}
+                  title={disabled ? `${model} has no data in the selected date range` : undefined}
+                >
+                  <span
+                    className='w-[1em] h-[1em] border-2 rounded-sm mr-2'
+                    style={{
+                      backgroundColor: forecastModel.includes(model) ? (modelColorMap[model] || "#808080") : "transparent",
+                      borderColor: modelColorMap[model] || "#808080",
+                      opacity: disabled ? 0.4 : 1,
+                    }}
+                  />
+                  <input
+                    type='checkbox'
+                    className='sr-only'
+                    checked={forecastModel.includes(model)}
+                    onChange={(e) => onModelSelectionChange(model, e.target.checked)}
+                    disabled={disabled}
+                  />
+                  <span className='ml-2 xs:text-sm'>{model}</span>
+                </label>
+              );
+            })}
           </div>
           <button className='w-full mt-2 bg-[#5d636a] hover:bg-blue-600 text-white py-1 px-2 rounded text-sm' onClick={handleShowAllModels}>
             {showingAllModels ? "Hide All Models" : "Show All Models"}
