@@ -4,6 +4,8 @@ import { LocationData, StateThresholdsDict, HistoricalDataMap, SeasonOption } fr
 interface ModelAvailabilityInfo {
   unavailableModels: string[];
   availableModels: string[];
+  unavailableHorizons: number[];
+  availableHorizons: number[];
 }
 
 interface AuxiliaryDataState {
@@ -19,9 +21,9 @@ interface AuxiliaryDataState {
       hasNowcast: boolean;
       color: string;
     }>;
+    modelAvailabilityByPeriod?: Record<string, ModelAvailabilityInfo>; // Track which models are unavailable for each time period
     defaultSeasonTimeValue?: string;
     defaultSelectedDate?: string;
-    modelAvailabilityByPeriod?: Record<string, ModelAvailabilityInfo>; // Track which models are unavailable for each time period
   };
 }
 

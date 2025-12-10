@@ -165,8 +165,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
               startDate: season.startDate,
               endDate: season.endDate,
               subDisplayValue: undefined,
-              // isValid: season.isValid,
-              // invalidReason: season.invalidReason,
             })),
             ...(metadata.dynamicTimePeriod?.map((tp: any) => ({
               name: tp.label,

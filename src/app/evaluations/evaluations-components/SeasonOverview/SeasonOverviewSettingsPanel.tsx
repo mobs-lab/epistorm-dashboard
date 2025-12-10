@@ -38,6 +38,15 @@ export const SeasonOverviewSettings = () => {
     return new Set(periodData?.unavailableModels || []);
   }, [modelAvailabilityByPeriod, selectedDynamicTimePeriod]);
 
+  // Get unavailable horizons for the selected time period
+  const unavailableHorizons = React.useMemo(() => {
+    if (!modelAvailabilityByPeriod || !selectedDynamicTimePeriod) {
+      return new Set<number>();
+    }
+    const periodData = modelAvailabilityByPeriod[selectedDynamicTimePeriod];
+    return new Set(periodData?.unavailableHorizons || []);
+  }, [modelAvailabilityByPeriod, selectedDynamicTimePeriod]);
+
   // Check if "Last 2 Weeks" is selected
   const isLastTwoWeeksSelected = selectedDynamicTimePeriod === "last-2-weeks";
 
@@ -68,13 +77,18 @@ export const SeasonOverviewSettings = () => {
   const onHorizonChange = (selected: number, checked: boolean) => {
     let newHorizons: number[] = [];
     if (checked) {
-      // Adding a horizon
+      // Adding a horizon - check if it's disabled
+      if (isHorizonDisabled(selected)) {
+        console.debug(`Cannot select horizon ${selected} - it is disabled`);
+        return; // Prevent selection
+      }
+      
+      // Legacy check for "Last 2 Weeks" incompatibility (already covered by isHorizonDisabled)
       if (selected >= 2 && isLastTwoWeeksSelected) {
-        // If trying to select horizon 2 or 3 while "Last 2 Weeks" is selected,
-        // show a warning or notification to user (or handle silently)
         console.debug("Cannot select horizon 2 or 3 with Last 2 Weeks period");
         return; // Prevent selection
       }
+      
       newHorizons = [...evaluationSeasonOverviewHorizon, selected];
     } else {
       // Removing a horizon
@@ -90,11 +104,23 @@ export const SeasonOverviewSettings = () => {
       return;
     }
     
+    // Check if the new period has unavailable horizons that are currently selected
+    const newPeriodData = modelAvailabilityByPeriod?.[tpName];
+    const newPeriodUnavailableHorizons = new Set(newPeriodData?.unavailableHorizons || []);
+    
+    // Auto-deselect any horizons that are unavailable in the new period
+    const validHorizonsForNewPeriod = evaluationSeasonOverviewHorizon.filter(
+      (h) => !newPeriodUnavailableHorizons.has(h)
+    );
+    
     // If selecting "Last 2 Weeks" but incompatible horizons are selected
     if (tpName === "last-2-weeks" && hasIncompatibleHorizonsSelected) {
-      // Either show a warning to the user or automatically remove the incompatible horizons
-      const compatibleHorizons = evaluationSeasonOverviewHorizon.filter((h) => h < 2);
+      // Remove horizons 2 and 3 as they're incompatible with Last 2 Weeks
+      const compatibleHorizons = validHorizonsForNewPeriod.filter((h) => h < 2);
       dispatch(setEvaluationSeasonOverviewHorizon(compatibleHorizons));
+    } else if (validHorizonsForNewPeriod.length !== evaluationSeasonOverviewHorizon.length) {
+      // Some horizons were filtered out - update selection
+      dispatch(setEvaluationSeasonOverviewHorizon(validHorizonsForNewPeriod));
     }
 
     dispatch(updateSelectedDynamicTimePeriod(tpName));
@@ -124,7 +150,17 @@ export const SeasonOverviewSettings = () => {
 
   // Determine if a horizon should be disabled
   const isHorizonDisabled = (horizon: number) => {
-    return horizon >= 2 && isLastTwoWeeksSelected;
+    // Disable if incompatible with "Last 2 Weeks" period
+    if (horizon >= 2 && isLastTwoWeeksSelected) {
+      return true;
+    }
+    
+    // Disable if this horizon has no data for the selected time period
+    if (unavailableHorizons.has(horizon)) {
+      return true;
+    }
+    
+    return false;
   };
 
   const handleShowAllHorizons = () => {
@@ -191,21 +227,35 @@ export const SeasonOverviewSettings = () => {
             <InfoButton content={horizonSelectorsInfo} title={"Forecast Horizons"}></InfoButton>
           </div>
           <div className='flex flex-row justify-start items-center'>
-            {[0, 1, 2, 3].map((hrzn) => (
-              <label
-                key={hrzn}
-                className={`mr-6 flex items-center text-white ${isHorizonDisabled(hrzn) ? "opacity-50 cursor-not-allowed" : ""}`}>
-                <input
-                  type='checkbox'
-                  className='form-checkbox text-blue-600 mr-1'
-                  defaultChecked={false}
-                  checked={evaluationSeasonOverviewHorizon.includes(hrzn)}
-                  onChange={(e) => onHorizonChange(hrzn, e.target.checked)}
-                  disabled={isHorizonDisabled(hrzn)}
-                />
-                <span>{hrzn}</span>
-              </label>
-            ))}
+            {[0, 1, 2, 3].map((hrzn) => {
+              const disabled = isHorizonDisabled(hrzn);
+              const isUnavailable = unavailableHorizons.has(hrzn);
+              const isIncompatible = hrzn >= 2 && isLastTwoWeeksSelected;
+              
+              let tooltipText = undefined;
+              if (isUnavailable) {
+                tooltipText = `Horizon ${hrzn} has no evaluation data in the selected time period`;
+              } else if (isIncompatible) {
+                tooltipText = `Horizon ${hrzn} is incompatible with Last 2 Weeks period`;
+              }
+              
+              return (
+                <label
+                  key={hrzn}
+                  className={`mr-6 flex items-center text-white ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
+                  title={tooltipText}>
+                  <input
+                    type='checkbox'
+                    className='form-checkbox text-blue-600 mr-1'
+                    defaultChecked={false}
+                    checked={evaluationSeasonOverviewHorizon.includes(hrzn)}
+                    onChange={(e) => onHorizonChange(hrzn, e.target.checked)}
+                    disabled={disabled}
+                  />
+                  <span>{hrzn}</span>
+                </label>
+              );
+            })}
             <button onClick={handleShowAllHorizons} className='text-xs bg-blue-500 hover:bg-blue-600 text-white py-1 px-2 rounded'>
               Show All
             </button>

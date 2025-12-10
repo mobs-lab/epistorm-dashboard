@@ -783,32 +783,37 @@ def main():
                 ongoing_season_id = season_id
                 ongoing_season_dates = dates
                 break
-        
+
         if ongoing_season_id and ongoing_season_dates:
-            print(f"\n   - Ongoing season: {ongoing_season_id} ({ongoing_season_dates['start'].strftime('%Y-%m-%d')} to {ongoing_season_dates['end'].strftime('%Y-%m-%d')})")
-            
+            print(
+                f"\n   - Ongoing season: {ongoing_season_id} ({ongoing_season_dates['start'].strftime('%Y-%m-%d')} to {ongoing_season_dates['end'].strftime('%Y-%m-%d')})"
+            )
+
             # Filter evaluation data to ONLY the ongoing season
             ongoing_season_eval = eval_scores_df[
-                (eval_scores_df["reference_date"] >= ongoing_season_dates["start"]) & 
-                (eval_scores_df["reference_date"] <= ongoing_season_dates["end"])
+                (eval_scores_df["reference_date"] >= ongoing_season_dates["start"]) & (eval_scores_df["reference_date"] <= ongoing_season_dates["end"])
             ]
-            
+
             if not ongoing_season_eval.empty:
                 # Get the earliest reference date in the ONGOING SEASON's evaluation data
                 first_valid_eval_ref_date = ongoing_season_eval["reference_date"].min()
                 print(f"   - First valid evaluation reference date in ongoing season: {first_valid_eval_ref_date.strftime('%Y-%m-%d')}")
-                
+
                 # Validate each dynamic period against the ongoing season's earliest eval date
                 print("   - Validating dynamic time periods against ongoing season evaluation data...")
                 for dynamic_option in dynamic_season_options:
                     period_id = dynamic_option["label"]
                     start_date = dynamic_option["startDate"]
-                    
-                    print(f"     Checking '{period_id}': start={start_date.strftime('%Y-%m-%d')}, ongoing_season_first_valid={first_valid_eval_ref_date.strftime('%Y-%m-%d')}")
-                    
+
+                    print(
+                        f"     Checking '{period_id}': start={start_date.strftime('%Y-%m-%d')}, ongoing_season_first_valid={first_valid_eval_ref_date.strftime('%Y-%m-%d')}"
+                    )
+
                     if start_date < first_valid_eval_ref_date:
                         dynamic_option["isValid"] = False
-                        dynamic_option["invalidReason"] = f"Period starts {start_date.strftime('%Y-%m-%d')} before ongoing season's first valid evaluation date {first_valid_eval_ref_date.strftime('%Y-%m-%d')}"
+                        dynamic_option["invalidReason"] = (
+                            f"Period starts {start_date.strftime('%Y-%m-%d')} before ongoing season's first valid evaluation date {first_valid_eval_ref_date.strftime('%Y-%m-%d')}"
+                        )
                         print(f"    - INVALID: {dynamic_option['invalidReason']}")
                     else:
                         dynamic_option["isValid"] = True
@@ -829,7 +834,7 @@ def main():
     iqr_data = {}
     state_map_data = {}
     coverage_data = {}
-    
+
     # Track model availability for each time period (for frontend to disable unavailable models)
     model_availability_by_period = {}
 
@@ -853,7 +858,7 @@ def main():
         # Track model availability for this period
         models_with_data = set()
         if len(season_eval_df) > 0:
-            models_with_data = set(season_eval_df['model'].unique())
+            models_with_data = set(season_eval_df["model"].unique())
             print(f"     Models in eval data: {sorted(models_with_data)}")
             print(f"     Metrics in eval data: {sorted(season_eval_df['metric'].unique())}")
             print(f"     Horizons in eval data: {sorted(season_eval_df['horizon'].unique())}")
@@ -863,14 +868,18 @@ def main():
             print(
                 f"     Target date range: {season_eval_df['target_end_date'].min().strftime('%Y-%m-%d')} to {season_eval_df['target_end_date'].max().strftime('%Y-%m-%d')}"
             )
-        
+
         # Identify models with NO data for this period
         unavailable_models = [m for m in model_names if m not in models_with_data]
+        
+        # Initialize availability tracking for this period
         model_availability_by_period[season_id] = {
             "unavailableModels": unavailable_models,
             "availableModels": list(models_with_data),
+            "unavailableHorizons": [],  # Will be populated later when we know available horizons
+            "availableHorizons": [],
         }
-        
+
         if unavailable_models:
             print(f"     WARNING: Models with NO evaluation data in this period: {unavailable_models}")
 
@@ -893,7 +902,7 @@ def main():
                     "count": int(row["count"]),
                 }
 
-        # Sanity Check using season_id
+        # Process horizon availability and IQR calculations
         if season_id in state_map_data:
             # Dynamically get all available horizons for this season (to accomodate dynamic periods)
             available_horizons = set()
@@ -903,6 +912,18 @@ def main():
                         available_horizons.update(state_data.keys())
 
             available_horizons = sorted(list(available_horizons))
+
+            # Track unavailable horizons (horizons with NO data for this period)
+            all_possible_horizons = [0, 1, 2, 3]
+            unavailable_horizons = sorted([h for h in all_possible_horizons if h not in available_horizons])
+            
+            # Store horizon availability in the model_availability_by_period dict
+            model_availability_by_period[season_id]["availableHorizons"] = available_horizons
+            model_availability_by_period[season_id]["unavailableHorizons"] = unavailable_horizons
+            
+            if unavailable_horizons:
+                print(f"     Horizons with NO evaluation data in this period: {unavailable_horizons}")
+
             horizon_combinations = generate_horizon_combinations(available_horizons)
 
             print(f"     Calculating IQR for {len(horizon_combinations)} horizon combinations: {horizon_combinations}")
@@ -953,6 +974,12 @@ def main():
 
                                 # Store using horizon key
                                 iqr_data.setdefault(season_id, {}).setdefault(metric, {}).setdefault(model, {})[horizon_key] = stats
+        else:
+            # No evaluation data for this period - all horizons are unavailable
+            if season_id in model_availability_by_period:
+                model_availability_by_period[season_id]["availableHorizons"] = []
+                model_availability_by_period[season_id]["unavailableHorizons"] = [0, 1, 2, 3]
+                print(f"     No evaluation data - all horizons unavailable")
 
     print("IQR data calculated for all horizon combinations")
 
