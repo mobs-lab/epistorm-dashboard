@@ -61,7 +61,7 @@ def calculate_boxplot_stats(series):
         "max": clean_series.max(),
         "mean": clean_series.mean(),
         "count": len(clean_series),
-        "scores": clean_series.tolist(),
+        "source_scores": clean_series.tolist(),
     }
 
 
@@ -871,7 +871,7 @@ def main():
 
         # Identify models with NO data for this period
         unavailable_models = [m for m in model_names if m not in models_with_data]
-        
+
         # Initialize availability tracking for this period
         model_availability_by_period[season_id] = {
             "unavailableModels": unavailable_models,
@@ -916,11 +916,11 @@ def main():
             # Track unavailable horizons (horizons with NO data for this period)
             all_possible_horizons = [0, 1, 2, 3]
             unavailable_horizons = sorted([h for h in all_possible_horizons if h not in available_horizons])
-            
+
             # Store horizon availability in the model_availability_by_period dict
             model_availability_by_period[season_id]["availableHorizons"] = available_horizons
             model_availability_by_period[season_id]["unavailableHorizons"] = unavailable_horizons
-            
+
             if unavailable_horizons:
                 print(f"     Horizons with NO evaluation data in this period: {unavailable_horizons}")
 
@@ -970,7 +970,6 @@ def main():
                             if stats:
                                 # Update stats with state-level information
                                 stats["count"] = len(state_averages)
-                                stats["source_scores"] = state_averages
 
                                 # Store using horizon key
                                 iqr_data.setdefault(season_id, {}).setdefault(metric, {}).setdefault(model, {})[horizon_key] = stats
