@@ -9,6 +9,11 @@ interface AuxiliaryDataState {
     fullRangeSeasons?: SeasonOption[];
     dynamicTimePeriod?: SeasonOption[];
     modelNames?: string[];
+    nowcastModelNames?: string[];
+    modelMetadata?: Record<string, {
+      hasNowcast: boolean;
+      color: string;
+    }>;
     defaultSeasonTimeValue?: string;
     defaultSelectedDate?: string;
   };

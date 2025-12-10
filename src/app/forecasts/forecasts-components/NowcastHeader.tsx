@@ -1,15 +1,18 @@
+"use client";
 import { updateUserSelectedRiskLevelModel } from "@/store/data-slices/settings/SettingsSliceForecastNowcast";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { selectNowcastModelNames } from "@/store/selectors";
 import { selectLocationData } from "@/store/selectors/forecastSelectors";
-import { modelNames } from "@/types/common";
 import React from "react";
 import { activityLevelsInfo } from "types/infobutton-content";
 import InfoButton from "../../components/InfoButton";
+import { ClientOnly } from "@/shared-components/ClientOnly";
 
 const NowcastHeader: React.FC = () => {
   const dispatch = useAppDispatch();
   const { USStateNum, userSelectedRiskLevelModel } = useAppSelector((state) => state.forecastSettings);
   const locationData = useAppSelector(selectLocationData);
+  const nowcastModelNames = useAppSelector(selectNowcastModelNames);
 
   const selectedState = locationData.find((location) => location.stateNum === USStateNum);
   const stateName = selectedState
@@ -37,23 +40,27 @@ const NowcastHeader: React.FC = () => {
           <h2 className='util-responsive-text font-bold mr-2'>Hospitalization Activity Forecast</h2>
           <InfoButton title='State Map Information' content={activityLevelsInfo} dialogSize='lg' />
         </div>
-        <div className='flex items-center justify-between'>
-          <div>
-            <span className='text-base'>Change model:</span>
-          </div>
-          <div>
-            <select
-              value={userSelectedRiskLevelModel}
-              onChange={handleModelChange}
-              className='bg-mobs-lab-color text-white text-sm font-light border-[#5d636a] border-2 rounded-md my-1 ml-1 px-1 py-1'>
-              {modelNames.map((model) => (
-                <option key={model} value={model}>
-                  {model}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
+        <ClientOnly fallback={<div className='h-8 w-32 bg-gray-700 animate-pulse rounded' />}>
+          {nowcastModelNames.length > 0 && (
+            <div className='flex items-center justify-between'>
+              <div>
+                <span className='text-base'>Change model:</span>
+              </div>
+              <div>
+                <select
+                  value={userSelectedRiskLevelModel}
+                  onChange={handleModelChange}
+                  className='bg-mobs-lab-color text-white text-sm font-light border-[#5d636a] border-2 rounded-md my-1 ml-1 px-1 py-1'>
+                  {nowcastModelNames.map((model) => (
+                    <option key={model} value={model}>
+                      {model}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          )}
+        </ClientOnly>
       </div>
     </div>
   );

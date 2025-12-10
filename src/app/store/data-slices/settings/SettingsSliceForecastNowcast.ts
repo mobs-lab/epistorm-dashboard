@@ -26,16 +26,7 @@ interface ForecastSettingsState {
 const initialState: ForecastSettingsState = {
   selectedStateName: "United States",
   USStateNum: "US",
-  selectedForecastModels: [
-    "MOBS-GLEAM_FLUH",
-    "MIGHTE-Nsemble",
-    "MIGHTE-Joint",
-    "NU_UCSD-GLEAM_AI_FLUH",
-    "CEPH-Rtrend_fluH",
-    "NEU_ISI-FluBcast",
-    "NEU_ISI-AdaptiveEnsemble",
-    "FluSight-ensemble",
-  ],
+  selectedForecastModels: [], // Will be initialized from metadata by DataProvider
   numOfWeeksAhead: 3,
   dateRange: "2023-08-01/2024-05-18",
   dateStart: parseISO("2023-08-01T12:00:00Z"),
@@ -44,7 +35,7 @@ const initialState: ForecastSettingsState = {
   confidenceInterval: ["90"],
   historicalDataMode: false,
   seasonOptions: [],
-  userSelectedRiskLevelModel: "MOBS-GLEAM_FLUH",
+  userSelectedRiskLevelModel: "", // Will be initialized from metadata
   userSelectedWeek: parseISO("2024-05-04"),
 };
 
@@ -89,6 +80,16 @@ const forecastSettingsSlice = createSlice({
     updateUserSelectedWeek: (state, action: PayloadAction<Date>) => {
       state.userSelectedWeek = action.payload;
     },
+    // Initialize models from metadata (only sets if not already initialized)
+    initializeModelsFromMetadata: (state, action: PayloadAction<string[]>) => {
+      if (state.selectedForecastModels.length === 0) {
+        state.selectedForecastModels = action.payload;
+        // Set default risk level model to first model if not set
+        if (!state.userSelectedRiskLevelModel && action.payload.length > 0) {
+          state.userSelectedRiskLevelModel = action.payload[0];
+        }
+      }
+    },
   },
 });
 
@@ -105,6 +106,7 @@ export const {
   setSeasonOptions,
   updateUserSelectedRiskLevelModel,
   updateUserSelectedWeek,
+  initializeModelsFromMetadata,
 } = forecastSettingsSlice.actions;
 
 export default forecastSettingsSlice.reducer;

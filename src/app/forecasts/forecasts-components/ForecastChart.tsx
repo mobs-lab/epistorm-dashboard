@@ -5,8 +5,8 @@ import * as d3 from "d3";
 import { Axis, NumberValue } from "d3";
 import React, { useCallback, useEffect, useRef } from "react";
 
-import { modelColorMap } from "@/types/common";
 import { SurveillanceSingleWeekDataPoint } from "@/types/domains/forecasting";
+import { selectModelColorMap } from "@/store/selectors";
 import { useChartMargins } from "@/utils/chart-margin-utils";
 import { isUTCDateEqual } from "@/utils/date";
 import { useResponsiveSVG } from "@/utils/responsiveSVG";
@@ -46,6 +46,8 @@ const ForecastChart: React.FC = () => {
     confidenceInterval,
     historicalDataMode,
   } = useAppSelector((state) => state.forecastSettings);
+
+  const modelColorMap = useAppSelector(selectModelColorMap);
 
   // Get data using new selectors
   const locationData = useAppSelector(selectLocationData);
@@ -462,16 +464,17 @@ const ForecastChart: React.FC = () => {
     [dateStart, USStateNum]
   );
 
-  function renderPredictionData(
-    svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
-    predictionData: PredictionDataForRender,
-    xScale: d3.ScaleTime<number, number, never>,
-    yScale: d3.ScaleLinear<number, number, never>,
-    marginLeft: number,
-    marginTop: number,
-    confidenceInterval: string[],
-    isGroundTruthDataPlaceHolderOnly: boolean
-  ) {
+  const renderPredictionData = useCallback(
+    (
+      svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
+      predictionData: PredictionDataForRender,
+      xScale: d3.ScaleTime<number, number, never>,
+      yScale: d3.ScaleLinear<number, number, never>,
+      marginLeft: number,
+      marginTop: number,
+      confidenceInterval: string[],
+      isGroundTruthDataPlaceHolderOnly: boolean
+    ) => {
     // Remove existing prediction data-slices paths and circles
     svg.selectAll(".prediction-path, .prediction-dot, .confidence-area").remove();
 
@@ -568,7 +571,7 @@ const ForecastChart: React.FC = () => {
         }
       });
     }
-  }
+  }, [modelColorMap]);
 
   function createVerticalIndicator(
     svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
@@ -849,7 +852,7 @@ const ForecastChart: React.FC = () => {
       // Apply the final position and make it visible
       cornerTooltip.attr("transform", `translate(${tooltipX}, ${marginTop})`).style("opacity", 1);
     },
-    [confidenceInterval]
+    [confidenceInterval, modelColorMap]
   );
 
   function formatNumber(value: number, isAdmission: boolean = false): string {
@@ -1275,32 +1278,7 @@ const ForecastChart: React.FC = () => {
 
       updateVerticalIndicator(adjustedUserSelectedWeek, xScale, marginLeft, chartWidth, verticalIndicatorGroup, lineTooltip);
     }
-  }, [
-    dimensions,
-    isResizing,
-    margins,
-    groundTruthData,
-    extendedGroundTruthData,
-    allModelPredictions,
-    USStateNum,
-    forecastModel,
-    numOfWeeksAhead,
-    dateStart,
-    dateEnd,
-    yAxisScale,
-    confidenceInterval,
-    userSelectedWeek,
-    locationData,
-    dispatch,
-    createScalesAndAxes,
-    historicalDataMode,
-    renderChartComponents,
-    historicalGroundTruthData,
-    updateVerticalIndicator,
-    convertPredictionsToRenderFormat,
-    renderHistoricalData,
-    anyPredictionsInRange,
-  ]);
+  }, [dimensions, isResizing, margins, groundTruthData, extendedGroundTruthData, allModelPredictions, USStateNum, forecastModel, numOfWeeksAhead, dateStart, dateEnd, yAxisScale, confidenceInterval, userSelectedWeek, locationData, dispatch, createScalesAndAxes, historicalDataMode, renderChartComponents, historicalGroundTruthData, updateVerticalIndicator, convertPredictionsToRenderFormat, renderHistoricalData, anyPredictionsInRange, renderPredictionData]);
 
   // Return the SVG object using reference
   return (

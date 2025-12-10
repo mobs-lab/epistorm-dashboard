@@ -2,7 +2,7 @@
 
 import React from "react";
 
-import { modelColorMap, modelNames } from "@/types/common";
+import { selectModelNames, selectModelColorMap } from "@/store/selectors";
 
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import {
@@ -23,6 +23,8 @@ export const SeasonOverviewSettings = () => {
   const dispatch = useAppDispatch();
   const { evaluationSeasonOverviewHorizon, selectedDynamicTimePeriod, evalSOTimeRangeOptions, evaluationSeasonOverviewSelectedModels } =
     useAppSelector((state) => state.evaluationsSeasonOverviewSettings);
+  const modelNames = useAppSelector(selectModelNames);
+  const modelColorMap = useAppSelector(selectModelColorMap);
 
   // Check if "Last 2 Weeks" is selected
   const isLastTwoWeeksSelected = selectedDynamicTimePeriod === "last-2-weeks";
@@ -35,7 +37,7 @@ export const SeasonOverviewSettings = () => {
   };
 
   const handleSelectAllModels = () => {
-    dispatch(selectAllModels());
+    dispatch(selectAllModels(modelNames));
   };
 
   // Horizon handler
@@ -102,8 +104,8 @@ export const SeasonOverviewSettings = () => {
                 <span
                   className='w-[1em] h-[1em] border-2 rounded-sm mr-2'
                   style={{
-                    backgroundColor: evaluationSeasonOverviewSelectedModels.includes(model) ? modelColorMap[model] : "transparent",
-                    borderColor: modelColorMap[model],
+                    backgroundColor: evaluationSeasonOverviewSelectedModels.includes(model) ? (modelColorMap[model] || "#808080") : "transparent",
+                    borderColor: modelColorMap[model] || "#808080",
                   }}
                 />
                 <input

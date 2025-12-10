@@ -2,7 +2,7 @@
 "use client";
 
 import { useAppSelector } from "@/store/hooks";
-import { modelColorMap, modelNames } from "@/types/common";
+import { selectModelNames, selectModelColorMap } from "@/store/selectors";
 import { useResponsiveSVG } from "@/utils/responsiveSVG";
 import * as d3 from "d3";
 import React, { useCallback, useEffect, useMemo, useRef } from "react";
@@ -44,6 +44,8 @@ const SeasonOverviewLocationAggregatedScoreChart: React.FC<SeasonOverviewLocatio
   // Get data from selectors
   const shouldUseJsonData = useAppSelector(selectShouldUseJsonData);
   const seasonOverviewData = useAppSelector(selectSeasonOverviewData);
+  const modelNames = useAppSelector(selectModelNames);
+  const modelColorMap = useAppSelector(selectModelColorMap);
 
   const { wisChartScaleType, mapeChartScaleType } = useAppSelector((state) => state.evaluationsSeasonOverviewSettings);
 
@@ -487,7 +489,7 @@ const SeasonOverviewLocationAggregatedScoreChart: React.FC<SeasonOverviewLocatio
         .attr("width", xScale(d.q75) - xScale(d.q25))
         .attr("y", y)
         .attr("height", boxHeight)
-        .attr("fill", modelColorMap[d.model])
+        .attr("fill", modelColorMap[d.model] || "#808080")
         .attr("opacity", 0.995)
         .style("cursor", "pointer")
         .on("mouseover", function (event) {

@@ -1,5 +1,18 @@
-# Model Names Listed Here
-team_names=("MOBS-GLEAM_FLUH" "MIGHTE-Nsemble" "MIGHTE-Joint" "NU_UCSD-GLEAM_AI_FLUH" "CEPH-Rtrend_fluH" "NEU_ISI-FluBcast" "NEU_ISI-AdaptiveEnsemble" "FluSight-ensemble" "MOBS-GLEAM_RL_FLUH" "MOBS-EpyStrain_Flu")
+# Load list of needed team model from json file
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+CONFIG_FILE="${SCRIPT_DIR}/model_config.json"
+
+# Check if jq is available, otherwise use Python
+if command -v jq &> /dev/null; then
+    # Extract model names from JSON config using jq
+    team_names=($(jq -r '.models[].name' "$CONFIG_FILE"))
+
+else
+    echo "Error: jq is not installed. Cannot read model config."
+    exit 1
+fi
+
+echo "Loaded ${#team_names[@]} models from config: ${team_names[*]}"
 
 NEW_PREDICTION_DATA_COPIED=false
 NEW_SURVEILLANCE_DATA_COPIED=false
@@ -10,7 +23,9 @@ PREDICTION_DATA_SOURCE_LOCATION='FluSight-forecast-hub/model-output'
 PREDICTION_DATA_TARGET_LOCATION='data_processing_dir/raw/unprocessed'
 
 SURVEILLANCE_DATA_SOURCE_LOCATION='FluSight-forecast-hub/target-data'
-SURVEILLANCE_DATA_TARGET_LOCATION='data_processing_dir/raw/ground-truth' #NOTE: Added "compare" so this script does not compare new ones with cleaned up ones (which will always be different)
+SURVEILLANCE_DATA_TARGET_LOCATION='data_processing_dir/raw/ground-truth'
+
+# NOTE: Added "compare" so this script does not compare new ones with cleaned up ones (which will always be different)
 SURVEILLANCE_DATA_FILE_NAME='target-hospital-admissions.csv'
 
 SURVEILLANCE_ARCHIVE_DATA_SOURCE_LOCATION='FluSight-forecast-hub/auxiliary-data/target-data-archive'

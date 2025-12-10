@@ -6,7 +6,7 @@ import * as d3 from "d3";
 
 import { useAppSelector } from "@/store/hooks";
 import { useResponsiveSVG } from "@/utils/responsiveSVG";
-import { modelColorMap, modelNames } from "@/types/common";
+import { selectModelNames, selectModelColorMap } from "@/store/selectors";
 import { selectSeasonOverviewData, selectShouldUseJsonData } from "@/store/selectors/evaluationSelectors";
 
 // Interface for processed data structure
@@ -25,6 +25,8 @@ const SeasonOverviewPIChart: React.FC = () => {
   // Get data from selectors
   const shouldUseJsonData = useAppSelector(selectShouldUseJsonData);
   const seasonOverviewData = useAppSelector(selectSeasonOverviewData);
+  const modelNames = useAppSelector(selectModelNames);
+  const modelColorMap = useAppSelector(selectModelColorMap);
 
   // Process the detailed coverage data using JSON when available, otherwise CSV fallback
   const processedData = useMemo(() => {
@@ -214,7 +216,7 @@ const SeasonOverviewPIChart: React.FC = () => {
     });
 
     sortedData.forEach((model) => {
-      const color = modelColorMap[model.modelName];
+      const color = modelColorMap[model.modelName] || "#808080";
 
       // Draw area with gradient opacity
       // g.append("path").datum(model.coveragePoints).attr("fill", color).attr("fill-opacity", 0.3).attr("d", area);

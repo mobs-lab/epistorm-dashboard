@@ -113,19 +113,17 @@ def main():
         mape_df = pd.read_csv(eval_score_dir / "MAPE.csv", dtype={"Location": str, "horizon": int})
         coverage_df = pd.read_csv(eval_score_dir / "coverage.csv", dtype={"location": str, "horizon": int})
 
-        # Define model names so processor knows which ones to process
-        model_names = [
-            "MOBS-GLEAM_FLUH",
-            "MIGHTE-Nsemble",
-            "MIGHTE-Joint",
-            "NU_UCSD-GLEAM_AI_FLUH",
-            "CEPH-Rtrend_fluH",
-            "NEU_ISI-FluBcast",
-            "NEU_ISI-AdaptiveEnsemble",
-            "FluSight-ensemble",
-            "MOBS-GLEAM_RL_FLUH",
-            "MOBS-EpyStrain_Flu",
-        ]
+        # Load model configuration from centralized config file
+        config_path = get_project_root() / "scripts" / "model_config.json"
+        with open(config_path, "r") as f:
+            model_config = json.load(f)
+
+        # Extract model names and colors from config
+        model_names = [model["name"] for model in model_config["models"]]
+        model_color_map = {model["name"]: model["color"] for model in model_config["models"]}
+        archive_models = model_config.get("archiveModels", [])
+
+        print(f"   - Loaded {len(model_names)} models from config: {', '.join(model_names)}")
 
         # ====== Load Prediction Data =====
         # Note: New format (unprocessed) vs Archive format have different headers
@@ -152,7 +150,7 @@ def main():
 
         # Load "archive" (old format) prediction files
         archive_dfs = []
-        for model in ["CEPH-Rtrend_fluH", "FluSight-ensemble", "MIGHTE-Nsemble", "MOBS-GLEAM_FLUH"]:
+        for model in archive_models:
             archive_path = raw_data_dir / f"archive/{model}"
             csv_files = list(archive_path.glob("*.csv"))
             if not csv_files:
@@ -187,20 +185,23 @@ def main():
     # ===== 2. Extract Nowcasts & Process Predictions =====
     print("Step 2: Processing data by source type...")
 
+    # Initialize nowcast_models list (will be populated dynamically)
+    nowcast_models = []
+
     # --- A) Extract Nowcast Trends from UNPROCESSED data ONLY ---
     print("   - Extracting and processing nowcast trends...")
     all_nowcasts_df = pd.DataFrame()
 
     if not unprocessed_df.empty:
-        # Define which models provide nowcast data (rate change predictions)
-        nowcast_models = [
-            "MOBS-GLEAM_FLUH",
-            "MIGHTE-Nsemble",
-            "CEPH-Rtrend_fluH",
-            "FluSight-ensemble",
-            "NU_UCSD-GLEAM_AI_FLUH",
-            "MIGHTE-Joint",
-        ]
+        # Dynamically discover which models have nowcast data (rate change predictions)
+        # by scanning the actual data for "wk flu hosp rate change" target
+        if "target" in unprocessed_df.columns and "model" in unprocessed_df.columns:
+            models_with_nowcast = unprocessed_df[unprocessed_df["target"] == "wk flu hosp rate change"]["model"].unique().tolist()
+            nowcast_models = [m for m in models_with_nowcast if m in model_names]
+            nowcast_models.sort()  # Sort for consistency
+            print(f"INFO: Discovered {len(nowcast_models)} models with nowcast capability: {', '.join(nowcast_models)}")
+        else:
+            print("Warning: No Nowcast models found.")
 
         # Filter for nowcast data: rate change target where target_end_date == reference_date
         nowcast_trends_df = unprocessed_df[(unprocessed_df["target"] == "wk flu hosp rate change") & (unprocessed_df["model"].isin(nowcast_models))].copy()
@@ -467,7 +468,7 @@ def main():
         # Note: remember to use this as EXCLUSIVE right-bound of time when parsing evaluations data
         end_date = last_valid_ref_date
 
-        # Start date should be a Saturday, 
+        # Start date should be a Saturday,
         display_start_date = start_date + timedelta(days=1)
 
         # Format for Season Overview display: (MM dd, YYYY - MM dd, YYYY)
@@ -958,10 +959,21 @@ def main():
         json.dump(thresholds_dict, f, cls=NpEncoder, separators=(",", ":"))
 
     # Write season metadata
+    # Build model metadata dictionary with color and nowcast capability
+    model_metadata = {
+        model: {
+            "hasNowcast": model in nowcast_models,
+            "color": model_color_map.get(model, "#808080"),  # Default gray if not found
+        }
+        for model in model_names
+    }
+
     season_metadata = {
         "fullRangeSeasons": full_range_season_options,
         "dynamicTimePeriod": dynamic_season_options,
         "modelNames": model_names,
+        "nowcastModelNames": nowcast_models,
+        "modelMetadata": model_metadata,
         "defaultSeasonTimeValue": default_season_tv,
         "defaultSelectedDate": default_selected_date,  # This will go into settings and decide which day is selected by default
     }

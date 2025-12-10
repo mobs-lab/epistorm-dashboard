@@ -2,7 +2,7 @@
 
 import { useAppSelector } from "@/store/hooks";
 import { selectIsCoreDataLoaded, selectSingleModelTimeSeriesData } from "@/store/selectors/singleModelSelectors";
-import { modelColorMap } from "@/types/common";
+import { selectModelColorMap } from "@/store/selectors";
 import { normalizeToUTCMidDay } from "@/utils/date";
 import { useResponsiveSVG } from "@/utils/responsiveSVG";
 import * as d3 from "d3";
@@ -15,6 +15,7 @@ const SingleModelHorizonPlot: React.FC = () => {
   // New selector for using new Core App Data
   const timeSeriesData = useAppSelector(selectSingleModelTimeSeriesData);
   const isCoreDataLoaded = useAppSelector(selectIsCoreDataLoaded);
+  const modelColorMap = useAppSelector(selectModelColorMap);
 
   const { evaluationsSingleModelViewSelectedStateCode, evaluationsSingleModelViewModel, evaluationSingleModelViewHorizon } = useAppSelector(
     (state) => state.evaluationsSingleModelSettings
@@ -318,7 +319,7 @@ const SingleModelHorizonPlot: React.FC = () => {
         .attr("cy", yScale(groundTruthPoint.admissions))
         .attr("r", 4)
         .attr("fill", "white")
-        .attr("stroke", modelColorMap[evaluationsSingleModelViewModel])
+        .attr("stroke", modelColorMap[evaluationsSingleModelViewModel] || "#808080")
         .attr("stroke-width", 1);
     });
 
@@ -335,7 +336,7 @@ const SingleModelHorizonPlot: React.FC = () => {
           .attr("y", yScale(pd.PI90.high))
           .attr("width", xScale.bandwidth())
           .attr("height", Math.abs(yScale(pd.PI90.low) - yScale(pd.PI90.high)))
-          .attr("fill", modelColorMap[evaluationsSingleModelViewModel])
+          .attr("fill", modelColorMap[evaluationsSingleModelViewModel] || "#808080")
           .attr("opacity", 0.3);
       }
 
@@ -347,7 +348,7 @@ const SingleModelHorizonPlot: React.FC = () => {
           .attr("y", yScale(pd.PI50.high))
           .attr("width", xScale.bandwidth())
           .attr("height", Math.abs(yScale(pd.PI50.low) - yScale(pd.PI50.high)))
-          .attr("fill", modelColorMap[evaluationsSingleModelViewModel])
+          .attr("fill", modelColorMap[evaluationsSingleModelViewModel] || "#808080")
           .attr("opacity", 0.6);
       }
 
@@ -359,7 +360,7 @@ const SingleModelHorizonPlot: React.FC = () => {
           .attr("x2", x + xScale.bandwidth())
           .attr("y1", yScale(pd.median))
           .attr("y2", yScale(pd.median))
-          .attr("stroke", modelColorMap[evaluationsSingleModelViewModel])
+          .attr("stroke", modelColorMap[evaluationsSingleModelViewModel] || "#808080")
           .attr("stroke-width", 2);
       }
     });

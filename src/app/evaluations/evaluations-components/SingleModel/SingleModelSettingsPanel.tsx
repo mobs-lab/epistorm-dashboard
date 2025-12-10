@@ -2,8 +2,8 @@
 
 import React, { useState } from "react";
 
-import { modelColorMap, modelNames } from "@/types/common";
 import { SeasonOption } from "@/types/domains/forecasting";
+import { selectModelNames, selectModelColorMap } from "@/store/selectors";
 
 import SettingsStateMap from "@/shared-components/SettingsStateMap";
 
@@ -45,6 +45,8 @@ const SingleModelSettingsPanel: React.FC = () => {
   } = useAppSelector((state) => state.evaluationsSingleModelSettings);
 
   const locationData = useAppSelector((state) => state.auxiliaryData["locations"]);
+  const modelNames = useAppSelector(selectModelNames);
+  const modelColorMap = useAppSelector(selectModelColorMap);
 
   // State selection handlers (reused from forecast)
   const onStateSelectionChange = (stateNum: string) => {
@@ -118,8 +120,8 @@ const SingleModelSettingsPanel: React.FC = () => {
                 <span
                   className='w-[1em] h-[1em] border-2 rounded-sm mr-2'
                   style={{
-                    backgroundColor: evaluationsSingleModelViewModel === model ? modelColorMap[model] : "transparent",
-                    borderColor: modelColorMap[model],
+                    backgroundColor: evaluationsSingleModelViewModel === model ? (modelColorMap[model] || "#808080") : "transparent",
+                    borderColor: modelColorMap[model] || "#808080",
                   }}
                 />
                 <input

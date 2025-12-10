@@ -8,31 +8,40 @@ import {
   updateDateEnd,
   updateDateRange,
   updateDateStart,
-  updateSelectedForecastModels,
   updateNumOfWeeksAhead,
+  updateSelectedForecastModels,
   updateSelectedState,
   updateYScale,
 } from "@/store/data-slices/settings/SettingsSliceForecastNowcast";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { selectDateConstraints, selectLocationData } from "@/store/selectors/forecastSelectors";
+import { selectModelNames, selectModelColorMap } from "@/store/selectors";
 import { Radio, Typography } from "@/styles/material-tailwind-wrapper";
-import { modelColorMap, modelNames } from "@/types/common";
 import { SeasonOption } from "@/types/domains/forecasting";
 import Image from "next/image";
-import React from "react";
+import React, { useState } from "react";
 import { horizonSelectorsInfo } from "types/infobutton-content";
 import SettingsStyledDatePicker from "./SettingsStyledDatePicker";
 
 const SettingsPanel: React.FC = () => {
   /* Redux-Managed State Variables */
   const dispatch = useAppDispatch();
+  const [showingAllModels, setShowingAllModels] = useState(true);
 
   const locationData = useAppSelector(selectLocationData);
   const { earliestDate, latestDate } = useAppSelector(selectDateConstraints);
+  const modelNames = useAppSelector(selectModelNames);
+  const modelColorMap = useAppSelector(selectModelColorMap);
 
-  const { USStateNum, selectedForecastModels: forecastModel, dateStart, dateEnd, dateRange, confidenceInterval, seasonOptions } = useAppSelector(
-    (state) => state.forecastSettings
-  );
+  const {
+    USStateNum,
+    selectedForecastModels: forecastModel,
+    dateStart,
+    dateEnd,
+    dateRange,
+    confidenceInterval,
+    seasonOptions,
+  } = useAppSelector((state) => state.forecastSettings);
 
   const onStateSelectionChange = (stateNum: string) => {
     const selectedState = locationData.find((state) => state.stateNum === stateNum);
@@ -51,6 +60,7 @@ const SettingsPanel: React.FC = () => {
       dispatch(updateSelectedForecastModels([...forecastModel, modelName]));
     } else {
       dispatch(updateSelectedForecastModels(forecastModel.filter((model) => model !== modelName)));
+      setShowingAllModels(false);
     }
   };
 
@@ -103,7 +113,13 @@ const SettingsPanel: React.FC = () => {
   };
 
   const handleShowAllModels = () => {
-    dispatch(updateSelectedForecastModels(modelNames));
+    if (!showingAllModels) {
+      dispatch(updateSelectedForecastModels(modelNames));
+      setShowingAllModels(true);
+    } else {
+      dispatch(updateSelectedForecastModels([]));
+      setShowingAllModels(false);
+    }
   };
 
   return (
@@ -141,8 +157,8 @@ const SettingsPanel: React.FC = () => {
                 <span
                   className='w-[1em] h-[1em] border-2 rounded-sm mr-2'
                   style={{
-                    backgroundColor: forecastModel.includes(model) ? modelColorMap[model] : "transparent",
-                    borderColor: modelColorMap[model],
+                    backgroundColor: forecastModel.includes(model) ? (modelColorMap[model] || "#808080") : "transparent",
+                    borderColor: modelColorMap[model] || "#808080",
                   }}
                 />
                 <input
@@ -156,7 +172,7 @@ const SettingsPanel: React.FC = () => {
             ))}
           </div>
           <button className='w-full mt-2 bg-[#5d636a] hover:bg-blue-600 text-white py-1 px-2 rounded text-sm' onClick={handleShowAllModels}>
-            Show All Models
+            {showingAllModels ? "Hide All Models" : "Show All Models"}
           </button>
         </div>
 

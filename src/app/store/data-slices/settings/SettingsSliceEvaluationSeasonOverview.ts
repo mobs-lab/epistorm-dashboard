@@ -1,7 +1,6 @@
 // src/app/store/forecastSettingsSlice.ts
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { EvaluationSeasonOverviewTimeRangeOption } from "@/types/domains/evaluations";
-import { modelNames } from "@/types/common";
 
 interface EvaluationsSeasonOverviewSettingsState {
   /* Model Related*/
@@ -25,13 +24,13 @@ interface EvaluationsSeasonOverviewSettingsState {
 const initialState: EvaluationsSeasonOverviewSettingsState = {
   /* Model Defaults*/
   evaluationSeasonOverviewHorizon: [0, 1],
-  evaluationSeasonOverviewSelectedModels: [...modelNames],
+  evaluationSeasonOverviewSelectedModels: [], // Will be initialized from metadata
 
   /* Time Range Defaults*/
   evalSOTimeRangeOptions: [],
   selectedDynamicTimePeriod: "last-2-weeks",
 
-  mapSelectedModel: modelNames[0], // Set default to first model
+  mapSelectedModel: "", // Will be initialized from metadata
   mapSelectedScoringOption: "WIS/Baseline", // Default scoring option
   useLogColorScale: false,
 
@@ -72,8 +71,18 @@ const evaluationsSeasonOverviewSettingsSlice = createSlice({
         state.evaluationSeasonOverviewSelectedModels.splice(index, 1);
       }
     },
-    selectAllModels: (state) => {
-      state.evaluationSeasonOverviewSelectedModels = [...modelNames];
+    selectAllModels: (state, action: PayloadAction<string[]>) => {
+      state.evaluationSeasonOverviewSelectedModels = [...action.payload];
+    },
+    // Initialize models from metadata (only sets if not already initialized)
+    initializeModelsFromMetadata: (state, action: PayloadAction<string[]>) => {
+      if (state.evaluationSeasonOverviewSelectedModels.length === 0) {
+        state.evaluationSeasonOverviewSelectedModels = action.payload;
+        // Set default map selected model to first model if not set
+        if (!state.mapSelectedModel && action.payload.length > 0) {
+          state.mapSelectedModel = action.payload[0];
+        }
+      }
     },
     setWisChartScaleType: (state, action: PayloadAction<"linear" | "log">) => {
       state.wisChartScaleType = action.payload;
@@ -95,6 +104,7 @@ export const {
   selectAllModels,
   setWisChartScaleType,
   setMapeChartScaleType,
+  initializeModelsFromMetadata,
 } = evaluationsSeasonOverviewSettingsSlice.actions;
 
 export default evaluationsSeasonOverviewSettingsSlice.reducer;
