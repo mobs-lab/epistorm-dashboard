@@ -61,7 +61,7 @@ def calculate_boxplot_stats(series):
         "max": clean_series.max(),
         "mean": clean_series.mean(),
         "count": len(clean_series),
-        "scores": clean_series.tolist(),
+        "source_scores": clean_series.tolist(),
     }
 
 
@@ -113,19 +113,17 @@ def main():
         mape_df = pd.read_csv(eval_score_dir / "MAPE.csv", dtype={"Location": str, "horizon": int})
         coverage_df = pd.read_csv(eval_score_dir / "coverage.csv", dtype={"location": str, "horizon": int})
 
-        # Define model names so processor knows which ones to process
-        model_names = [
-            "MOBS-GLEAM_FLUH",
-            "MIGHTE-Nsemble",
-            "MIGHTE-Joint",
-            "NU_UCSD-GLEAM_AI_FLUH",
-            "CEPH-Rtrend_fluH",
-            "NEU_ISI-FluBcast",
-            "NEU_ISI-AdaptiveEnsemble",
-            "FluSight-ensemble",
-            "MOBS-GLEAM_RL_FLUH",
-            "MOBS-EpyStrain_Flu",
-        ]
+        # Load model configuration from centralized config file
+        config_path = get_project_root() / "scripts" / "model_config.json"
+        with open(config_path, "r") as f:
+            model_config = json.load(f)
+
+        # Extract model names and colors from config
+        model_names = [model["name"] for model in model_config["models"]]
+        model_color_map = {model["name"]: model["color"] for model in model_config["models"]}
+        archive_models = model_config.get("archiveModels", [])
+
+        print(f"   - Loaded {len(model_names)} models from config: {', '.join(model_names)}")
 
         # ====== Load Prediction Data =====
         # Note: New format (unprocessed) vs Archive format have different headers
@@ -152,7 +150,7 @@ def main():
 
         # Load "archive" (old format) prediction files
         archive_dfs = []
-        for model in ["CEPH-Rtrend_fluH", "FluSight-ensemble", "MIGHTE-Nsemble", "MOBS-GLEAM_FLUH"]:
+        for model in archive_models:
             archive_path = raw_data_dir / f"archive/{model}"
             csv_files = list(archive_path.glob("*.csv"))
             if not csv_files:
@@ -187,20 +185,23 @@ def main():
     # ===== 2. Extract Nowcasts & Process Predictions =====
     print("Step 2: Processing data by source type...")
 
+    # Initialize nowcast_models list (will be populated dynamically)
+    nowcast_models = []
+
     # --- A) Extract Nowcast Trends from UNPROCESSED data ONLY ---
     print("   - Extracting and processing nowcast trends...")
     all_nowcasts_df = pd.DataFrame()
 
     if not unprocessed_df.empty:
-        # Define which models provide nowcast data (rate change predictions)
-        nowcast_models = [
-            "MOBS-GLEAM_FLUH",
-            "MIGHTE-Nsemble",
-            "CEPH-Rtrend_fluH",
-            "FluSight-ensemble",
-            "NU_UCSD-GLEAM_AI_FLUH",
-            "MIGHTE-Joint",
-        ]
+        # Dynamically discover which models have nowcast data (rate change predictions)
+        # by scanning the actual data for "wk flu hosp rate change" target
+        if "target" in unprocessed_df.columns and "model" in unprocessed_df.columns:
+            models_with_nowcast = unprocessed_df[unprocessed_df["target"] == "wk flu hosp rate change"]["model"].unique().tolist()
+            nowcast_models = [m for m in models_with_nowcast if m in model_names]
+            nowcast_models.sort()  # Sort for consistency
+            print(f"INFO: Discovered {len(nowcast_models)} models with nowcast capability: {', '.join(nowcast_models)}")
+        else:
+            print("Warning: No Nowcast models found.")
 
         # Filter for nowcast data: rate change target where target_end_date == reference_date
         nowcast_trends_df = unprocessed_df[(unprocessed_df["target"] == "wk flu hosp rate change") & (unprocessed_df["model"].isin(nowcast_models))].copy()
@@ -454,20 +455,24 @@ def main():
     default_selected_date = last_valid_ref_date
 
     dynamic_period_definitions = [
-        ("last-2-weeks", "Last 2 Weeks", 1),
-        ("last-4-weeks", "Last 4 Weeks", 3),
-        ("last-8-weeks", "Last 8 Weeks", 7),
+        ("last-2-weeks", "Last 2 Weeks", 2),
+        ("last-4-weeks", "Last 4 Weeks", 4),
+        ("last-8-weeks", "Last 8 Weeks", 8),
     ]
 
+    # NOTE: We will compute first_valid_eval_ref_date AFTER loading evaluation data
+    # because we need to know the actual earliest reference date in WIS/MAPE scores
+    # For now, create placeholder dynamic periods without validation
     dynamic_season_options = []
     for i, (period_id, display_string, weeks_back) in enumerate(dynamic_period_definitions):
         # Real period: start is exactly N weeks before the latest reference date
         start_date = last_valid_ref_date - timedelta(weeks=weeks_back)
+
+        # Note: remember to use this as EXCLUSIVE right-bound of time when parsing evaluations data
         end_date = last_valid_ref_date
 
-        # Display should start on the immediate next Sunday after the real start date
-        next_sunday_offset = (6 - start_date.weekday()) % 7
-        display_start_date = start_date + timedelta(days=next_sunday_offset)
+        # Start date should be a Saturday,
+        display_start_date = start_date + timedelta(days=1)
 
         # Format for Season Overview display: (MM dd, YYYY - MM dd, YYYY)
         sub_display_value = f"({display_start_date.strftime('%b %d, %Y')} - {end_date.strftime('%b %d, %Y')})"
@@ -476,7 +481,7 @@ def main():
         dynamic_periods[period_id] = {"start": start_date, "end": end_date}
         all_seasons_for_evaluation[period_id] = {"start": start_date, "end": end_date}
 
-        # Create DynamicSeasonOption for metadata (matching CustomDataInterface.md)
+        # Create DynamicSeasonOption for metadata (will validate later after loading evaluation data)
         dynamic_season_options.append(
             {
                 "index": i,
@@ -486,6 +491,8 @@ def main():
                 "subDisplayValue": sub_display_value,
                 "startDate": start_date,
                 "endDate": end_date,
+                "isValid": True,  # Will be updated after checking evaluation data
+                "invalidReason": None,
             }
         )
 
@@ -765,6 +772,60 @@ def main():
 
     print("   - Evaluation score files cleaned and standardized")
 
+    # Validate dynamic time periods using actual evaluation data from the ongoing season
+    # Dynamic periods should only look back within the ongoing season, not across all seasons
+    if not eval_scores_df.empty:
+        # Find the ongoing season (the one with mostCurrent=True)
+        ongoing_season_id = None
+        ongoing_season_dates = None
+        for season_id, dates in full_range_seasons_info_for_processing.items():
+            if dates.get("mostCurrent", False):
+                ongoing_season_id = season_id
+                ongoing_season_dates = dates
+                break
+
+        if ongoing_season_id and ongoing_season_dates:
+            print(
+                f"\n   - Ongoing season: {ongoing_season_id} ({ongoing_season_dates['start'].strftime('%Y-%m-%d')} to {ongoing_season_dates['end'].strftime('%Y-%m-%d')})"
+            )
+
+            # Filter evaluation data to ONLY the ongoing season
+            ongoing_season_eval = eval_scores_df[
+                (eval_scores_df["reference_date"] >= ongoing_season_dates["start"]) & (eval_scores_df["reference_date"] <= ongoing_season_dates["end"])
+            ]
+
+            if not ongoing_season_eval.empty:
+                # Get the earliest reference date in the ONGOING SEASON's evaluation data
+                first_valid_eval_ref_date = ongoing_season_eval["reference_date"].min()
+                print(f"   - First valid evaluation reference date in ongoing season: {first_valid_eval_ref_date.strftime('%Y-%m-%d')}")
+
+                # Validate each dynamic period against the ongoing season's earliest eval date
+                print("   - Validating dynamic time periods against ongoing season evaluation data...")
+                for dynamic_option in dynamic_season_options:
+                    period_id = dynamic_option["label"]
+                    start_date = dynamic_option["startDate"]
+
+                    print(
+                        f"     Checking '{period_id}': start={start_date.strftime('%Y-%m-%d')}, ongoing_season_first_valid={first_valid_eval_ref_date.strftime('%Y-%m-%d')}"
+                    )
+
+                    if start_date < first_valid_eval_ref_date:
+                        dynamic_option["isValid"] = False
+                        dynamic_option["invalidReason"] = (
+                            f"Period starts {start_date.strftime('%Y-%m-%d')} before ongoing season's first valid evaluation date {first_valid_eval_ref_date.strftime('%Y-%m-%d')}"
+                        )
+                        print(f"    - INVALID: {dynamic_option['invalidReason']}")
+                    else:
+                        dynamic_option["isValid"] = True
+                        dynamic_option["invalidReason"] = None
+                        print(f"       ✓ Valid")
+            else:
+                print(f"   - WARNING: No evaluation data found for ongoing season {ongoing_season_id}, marking all dynamic periods as valid (fallback)")
+        else:
+            print("   - WARNING: Could not identify ongoing season, marking all dynamic periods as valid (fallback)")
+    else:
+        print("   - WARNING: No evaluation data available, cannot validate dynamic periods")
+
     # Combine all seasons for comprehensive assignment
     all_seasons_combined = {**full_range_seasons_info_for_processing, **dynamic_periods}
 
@@ -774,7 +835,10 @@ def main():
     state_map_data = {}
     coverage_data = {}
 
-    # Process each season independently
+    # Track model availability for each time period (for frontend to disable unavailable models)
+    model_availability_by_period = {}
+
+    # Process & Aggregate full-length season evaluations
     for season_id, season_dates in all_seasons_combined.items():
         print(f"\n   - Processing evaluation data for season: {season_id}")
         print(f"     Date range: {season_dates['start'].strftime('%Y-%m-%d')} to {season_dates['end'].strftime('%Y-%m-%d')}")
@@ -791,8 +855,11 @@ def main():
         print(f"     Evaluation entries: {len(season_eval_df)}")
         print(f"     Coverage entries: {len(season_coverage_df)}")
 
+        # Track model availability for this period
+        models_with_data = set()
         if len(season_eval_df) > 0:
-            print(f"     Models in eval data: {sorted(season_eval_df['model'].unique())}")
+            models_with_data = set(season_eval_df["model"].unique())
+            print(f"     Models in eval data: {sorted(models_with_data)}")
             print(f"     Metrics in eval data: {sorted(season_eval_df['metric'].unique())}")
             print(f"     Horizons in eval data: {sorted(season_eval_df['horizon'].unique())}")
             print(
@@ -801,6 +868,20 @@ def main():
             print(
                 f"     Target date range: {season_eval_df['target_end_date'].min().strftime('%Y-%m-%d')} to {season_eval_df['target_end_date'].max().strftime('%Y-%m-%d')}"
             )
+
+        # Identify models with NO data for this period
+        unavailable_models = [m for m in model_names if m not in models_with_data]
+
+        # Initialize availability tracking for this period
+        model_availability_by_period[season_id] = {
+            "unavailableModels": unavailable_models,
+            "availableModels": list(models_with_data),
+            "unavailableHorizons": [],  # Will be populated later when we know available horizons
+            "availableHorizons": [],
+        }
+
+        if unavailable_models:
+            print(f"     WARNING: Models with NO evaluation data in this period: {unavailable_models}")
 
         # State map aggregations
         if len(season_eval_df) > 0:
@@ -821,8 +902,7 @@ def main():
                     "count": int(row["count"]),
                 }
 
-        # Build state averages from the state_map_data we just calculated
-        # Sanity Check using season_id
+        # Process horizon availability and IQR calculations
         if season_id in state_map_data:
             # Dynamically get all available horizons for this season (to accomodate dynamic periods)
             available_horizons = set()
@@ -832,6 +912,18 @@ def main():
                         available_horizons.update(state_data.keys())
 
             available_horizons = sorted(list(available_horizons))
+
+            # Track unavailable horizons (horizons with NO data for this period)
+            all_possible_horizons = [0, 1, 2, 3]
+            unavailable_horizons = sorted([h for h in all_possible_horizons if h not in available_horizons])
+
+            # Store horizon availability in the model_availability_by_period dict
+            model_availability_by_period[season_id]["availableHorizons"] = available_horizons
+            model_availability_by_period[season_id]["unavailableHorizons"] = unavailable_horizons
+
+            if unavailable_horizons:
+                print(f"     Horizons with NO evaluation data in this period: {unavailable_horizons}")
+
             horizon_combinations = generate_horizon_combinations(available_horizons)
 
             print(f"     Calculating IQR for {len(horizon_combinations)} horizon combinations: {horizon_combinations}")
@@ -878,11 +970,15 @@ def main():
                             if stats:
                                 # Update stats with state-level information
                                 stats["count"] = len(state_averages)
-                                stats["stateAverages"] = state_averages
-                                stats["scores"] = state_averages  # Replace with state averages
 
                                 # Store using horizon key
                                 iqr_data.setdefault(season_id, {}).setdefault(metric, {}).setdefault(model, {})[horizon_key] = stats
+        else:
+            # No evaluation data for this period - all horizons are unavailable
+            if season_id in model_availability_by_period:
+                model_availability_by_period[season_id]["availableHorizons"] = []
+                model_availability_by_period[season_id]["unavailableHorizons"] = [0, 1, 2, 3]
+                print(f"     No evaluation data - all horizons unavailable")
 
     print("IQR data calculated for all horizon combinations")
 
@@ -959,12 +1055,24 @@ def main():
         json.dump(thresholds_dict, f, cls=NpEncoder, separators=(",", ":"))
 
     # Write season metadata
+    # Build model metadata dictionary with color and nowcast capability
+    model_metadata = {
+        model: {
+            "hasNowcast": model in nowcast_models,
+            "color": model_color_map.get(model, "#808080"),  # Default gray if not found
+        }
+        for model in model_names
+    }
+
     season_metadata = {
         "fullRangeSeasons": full_range_season_options,
         "dynamicTimePeriod": dynamic_season_options,
         "modelNames": model_names,
+        "nowcastModelNames": nowcast_models,
+        "modelMetadata": model_metadata,
         "defaultSeasonTimeValue": default_season_tv,
         "defaultSelectedDate": default_selected_date,  # This will go into settings and decide which day is selected by default
+        "modelAvailabilityByPeriod": model_availability_by_period,  # Track which models are unavailable for each time period
     }
     with open(auxiliary_dir / "seasonMetadata.json", "w") as f:
         json.dump(season_metadata, f, cls=NpEncoder, separators=(",", ":"))

@@ -1,6 +1,13 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { LocationData, StateThresholdsDict, HistoricalDataMap, SeasonOption } from "@/types/domains/forecasting";
 
+interface ModelAvailabilityInfo {
+  unavailableModels: string[];
+  availableModels: string[];
+  unavailableHorizons: number[];
+  availableHorizons: number[];
+}
+
 interface AuxiliaryDataState {
   isLoaded: boolean;
   locations: LocationData[];
@@ -9,6 +16,12 @@ interface AuxiliaryDataState {
     fullRangeSeasons?: SeasonOption[];
     dynamicTimePeriod?: SeasonOption[];
     modelNames?: string[];
+    nowcastModelNames?: string[];
+    modelMetadata?: Record<string, {
+      hasNowcast: boolean;
+      color: string;
+    }>;
+    modelAvailabilityByPeriod?: Record<string, ModelAvailabilityInfo>; // Track which models are unavailable for each time period
     defaultSeasonTimeValue?: string;
     defaultSelectedDate?: string;
   };
