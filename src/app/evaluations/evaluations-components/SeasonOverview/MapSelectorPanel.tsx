@@ -1,6 +1,6 @@
 import React from "react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { selectModelNames } from "@/store/selectors";
+import { selectModelNames, sortModelsWithDisabledAtBottom } from "@/store/selectors";
 import {
   setMapSelectedModel,
   setMapSelectedScoringOption,
@@ -13,10 +13,27 @@ interface MapSelectorPanelProps {
 
 const MapSelectorPanel: React.FC<MapSelectorPanelProps> = ({ className }) => {
   const dispatch = useAppDispatch();
-  const { mapSelectedModel, mapSelectedScoringOption, useLogColorScale } = useAppSelector(
+  const { mapSelectedModel, mapSelectedScoringOption, useLogColorScale, selectedDynamicTimePeriod } = useAppSelector(
     (state) => state.evaluationsSeasonOverviewSettings
   );
   const modelNames = useAppSelector(selectModelNames);
+
+  // Get model availability info from metadata
+  const modelAvailabilityByPeriod = useAppSelector((state) => state.auxiliaryData.metadata?.modelAvailabilityByPeriod);
+
+  // Get unavailable models for the selected time period
+  const unavailableModels = React.useMemo(() => {
+    if (!modelAvailabilityByPeriod || !selectedDynamicTimePeriod) {
+      return new Set<string>();
+    }
+    const periodData = modelAvailabilityByPeriod[selectedDynamicTimePeriod];
+    return new Set(periodData?.unavailableModels || []);
+  }, [modelAvailabilityByPeriod, selectedDynamicTimePeriod]);
+
+  // Sort models with disabled ones at the bottom
+  const sortedModelNames = React.useMemo(() => {
+    return sortModelsWithDisabledAtBottom(modelNames, unavailableModels);
+  }, [modelNames, unavailableModels]);
 
   const scoringOptions = [
     { id: "WIS/Baseline", label: "WIS/Baseline" },
@@ -25,7 +42,16 @@ const MapSelectorPanel: React.FC<MapSelectorPanelProps> = ({ className }) => {
   ];
 
   const handleModelChange = (modelName: string) => {
+    // Don't allow selecting unavailable models
+    if (unavailableModels.has(modelName)) {
+      return;
+    }
     dispatch(setMapSelectedModel(modelName));
+  };
+
+  // Check if a model should be disabled
+  const isModelDisabled = (modelName: string) => {
+    return unavailableModels.has(modelName);
   };
 
   const handleScoringOptionChange = (option: "WIS/Baseline" | "MAPE" | "Coverage") => {
@@ -72,21 +98,28 @@ const MapSelectorPanel: React.FC<MapSelectorPanelProps> = ({ className }) => {
       <div>
         <h3 className='text-sm font-semibold mb-2'>Model</h3>
         <div className='space-y-1 max-h-40 overflow-y-auto pr-1'>
-          {modelNames.map((model) => (
-            <div
-              key={model}
-              className='flex items-center p-1 hover:bg-gray-700 rounded cursor-pointer'
-              onClick={() => handleModelChange(model)}>
+          {sortedModelNames.map((model) => {
+            const disabled = isModelDisabled(model);
+            return (
               <div
-                className='w-4 h-4 rounded-sm mr-2 flex-shrink-0 border border-solid'
-                style={{
-                  backgroundColor: mapSelectedModel === model ? "silver" : "transparent",
-                  borderColor: "silver",
-                }}
-              />
-              <span className='text-xs cursor-pointer truncate'>{model}</span>
-            </div>
-          ))}
+                key={model}
+                className={`flex items-center p-1 rounded ${
+                  disabled ? "opacity-40 cursor-not-allowed" : "hover:bg-gray-700 cursor-pointer"
+                }`}
+                onClick={() => handleModelChange(model)}
+                title={disabled ? `${model} has no evaluation data in the selected time period` : undefined}>
+                <div
+                  className='w-4 h-4 rounded-sm mr-2 flex-shrink-0 border border-solid'
+                  style={{
+                    backgroundColor: mapSelectedModel === model ? "silver" : "transparent",
+                    borderColor: "silver",
+                    opacity: disabled ? 0.4 : 1,
+                  }}
+                />
+                <span className='text-xs cursor-pointer truncate'>{model}</span>
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>

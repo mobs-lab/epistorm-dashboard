@@ -15,7 +15,7 @@ import {
 } from "@/store/data-slices/settings/SettingsSliceForecastNowcast";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { selectDateConstraints, selectLocationData, selectUnavailableModelsInDateRange } from "@/store/selectors/forecastSelectors";
-import { selectModelNames, selectModelColorMap } from "@/store/selectors";
+import { selectModelNames, selectModelColorMap, sortModelsWithDisabledAtBottom } from "@/store/selectors";
 import { Radio, Typography } from "@/styles/material-tailwind-wrapper";
 import { SeasonOption } from "@/types/domains/forecasting";
 import Image from "next/image";
@@ -50,6 +50,11 @@ const SettingsPanel: React.FC = () => {
 
   // Create a Set for fast lookup
   const unavailableModelsSet = useMemo(() => new Set(unavailableModels), [unavailableModels]);
+
+  // Sort models with disabled ones at the bottom
+  const sortedModelNames = useMemo(() => {
+    return sortModelsWithDisabledAtBottom(modelNames, unavailableModelsSet);
+  }, [modelNames, unavailableModelsSet]);
 
   const onStateSelectionChange = (stateNum: string) => {
     const selectedState = locationData.find((state) => state.stateNum === stateNum);
@@ -172,7 +177,7 @@ const SettingsPanel: React.FC = () => {
             Models
           </Typography>
           <div className='space-y-2 h-full overflow-y-auto pr-1'>
-            {modelNames.map((model) => {
+            {sortedModelNames.map((model) => {
               const disabled = isModelDisabled(model);
               return (
                 <label 
