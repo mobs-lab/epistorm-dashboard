@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 
 import { SeasonOption } from "@/types/domains/forecasting";
-import { selectModelNames, selectModelColorMap } from "@/store/selectors";
+import { selectModelNames, selectModelColorMap, sortModelsWithDisabledAtBottom } from "@/store/selectors";
 
 import SettingsStateMap from "@/shared-components/SettingsStateMap";
 
@@ -59,6 +59,11 @@ const SingleModelSettingsPanel: React.FC = () => {
     return new Set(periodData?.unavailableModels || []);
   }, [modelAvailabilityByPeriod, evaluationsSingleModelViewSeasonId]);
 
+  // Sort models with disabled ones at the bottom
+  const sortedModelNames = React.useMemo(() => {
+    return sortModelsWithDisabledAtBottom(modelNames, unavailableModels);
+  }, [modelNames, unavailableModels]);
+
   // State selection handlers (reused from forecast)
   const onStateSelectionChange = (stateNum: string) => {
     const selectedState = locationData.find((state) => state.stateNum === stateNum);
@@ -99,20 +104,10 @@ const SingleModelSettingsPanel: React.FC = () => {
     );
 
     if (selectedOption) {
-      // Don't allow selecting invalid seasons
-      if (selectedOption.isValid === false) {
-        return;
-      }
-
       dispatch(updateEvaluationsSingleModelViewSeasonId(selectedOption.seasonId)); // <-- Dispatch seasonId
       dispatch(updateEvaluationSingleModelViewDateStart(selectedOption.startDate));
       dispatch(updateEvaluationSingleModelViewDateEnd(selectedOption.endDate));
     }
-  };
-
-  // Check if a season should be disabled
-  const isSeasonDisabled = (option: SeasonOption) => {
-    return option.isValid === false;
   };
 
   // Add handler
@@ -124,7 +119,7 @@ const SingleModelSettingsPanel: React.FC = () => {
     <div className='bg-mobs-lab-color-filterspane text-white fill-white flex flex-col h-full rounded-md overflow-hidden util-responsive-text-settings'>
       <div className='flex-grow nowrap overflow-y-auto p-4 util-no-sb-length'>
         <div className='mb-4 w-full overflow-ellipsis'>
-          <h2>Select Location</h2>
+          <Typography variant='h6' className='text-white' placeholder=''>Select Location</Typography>
           <div className='w-full'>
             <SettingsStateMap pageSelected='evaluations' />
           </div>
@@ -141,11 +136,11 @@ const SingleModelSettingsPanel: React.FC = () => {
         </div>
 
         <div className='mb-2 w-full overflow-ellipsis'>
-          <Typography variant='h6' className='text-white mb-2'>
+          <Typography variant='h6' className='text-white mb-2' placeholder=''>
             Models
           </Typography>
           <div className='space-y-2 h-full overflow-y-auto pr-1'>
-            {modelNames.map((model) => {
+            {sortedModelNames.map((model) => {
               const disabled = isModelDisabled(model);
               return (
                 <label
@@ -178,7 +173,7 @@ const SingleModelSettingsPanel: React.FC = () => {
 
         <div className='mb-2 w-full'>
           <div className='flex flex-row flex-nowrap justify-start items-center gap-1'>
-            <Typography variant='h6' className='text-white flex-shrink'>
+            <Typography variant='h6' className='text-white flex-shrink' placeholder=''>
               Horizon
             </Typography>
 
@@ -194,12 +189,13 @@ const SingleModelSettingsPanel: React.FC = () => {
               className='text-white'
               labelProps={{ className: "text-white" }}
               checked={evaluationSingleModelViewHorizon === value}
+              crossOrigin=''
             />
           ))}
         </div>
 
         <div className='w-full mb-2'>
-          <Typography variant='h6' className='text-white'>
+          <Typography variant='h6' className='text-white' placeholder=''>
             Season
           </Typography>
           <select
@@ -210,22 +206,16 @@ const SingleModelSettingsPanel: React.FC = () => {
               "text-white border-[#5d636a] border-2 flex-wrap bg-mobs-lab-color-filterspane rounded-md w-full py-2 px-2 overflow-ellipsis"
             }>
             {evaluationSingleModelViewSeasonOptions.map((option: SeasonOption) => {
-              const disabled = isSeasonDisabled(option);
               return (
-                <option
-                  key={option.index}
-                  value={option.seasonId}
-                  disabled={disabled}
-                  title={disabled && option.invalidReason ? option.invalidReason : undefined}>
+                <option key={option.index} value={option.seasonId}>
                   {option.displayString}
-                  {disabled ? " (Invalid)" : ""}
                 </option>
               );
             })}
           </select>
         </div>
         <div className='w-full justify-stretch items-stretch mb-2'>
-          <Typography variant='h6' className='text-white'>
+          <Typography variant='h6' className='text-white' placeholder=''>
             Score
           </Typography>
           <select
