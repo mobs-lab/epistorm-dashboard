@@ -1,6 +1,7 @@
-# Load list of needed team model from json file
+# Load list of needed team model from json file (at project root)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-CONFIG_FILE="${SCRIPT_DIR}/model_config.json"
+PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+CONFIG_FILE="${PROJECT_ROOT}/model_config.json"
 
 # Check if jq is available, otherwise use Python
 if command -v jq &> /dev/null; then

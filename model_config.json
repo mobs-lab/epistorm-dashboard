@@ -1,0 +1,45 @@
+{
+  "models": [
+    {
+      "name": "MOBS-EpyStrain_Flu",
+      "color": "#5096EA"
+    },
+    {
+      "name": "MOBS-GLEAM_RL_FLUH",
+      "color": "#6EDDFF"
+    },
+    {
+      "name": "MOBS-GLEAM_FLUH",
+      "color": "#50CCB4"
+    },
+    {
+      "name": "FluSight-ensemble",
+      "color": "#A3EA96"
+    },
+    {
+      "name": "MIGHTE-Nsemble",
+      "color": "#EAE775"
+    },
+    {
+      "name": "MIGHTE-Joint",
+      "color": "#E8AC5D"
+    },
+    {
+      "name": "NU_UCSD-GLEAM_AI_FLUH",
+      "color": "#E28F71"
+    },
+    {
+      "name": "NEU_ISI-FluBcast",
+      "color": "#D3BAD0"
+    },
+    {
+      "name": "NEU_ISI-AdaptiveEnsemble",
+      "color": "#5F5FD6"
+    },
+    {
+      "name": "CEPH-Rtrend_fluH",
+      "color": "#0292D1"
+    }
+  ],
+  "archiveModels": ["CEPH-Rtrend_fluH", "FluSight-ensemble", "MIGHTE-Nsemble", "MOBS-GLEAM_FLUH"]
+}
