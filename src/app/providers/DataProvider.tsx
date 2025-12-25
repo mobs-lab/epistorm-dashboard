@@ -8,6 +8,7 @@ import {
   updateEvaluationSingleModelViewDateStart,
   updateEvaluationSingleModelViewSeasonOptions,
   updateEvaluationsSingleModelViewSeasonId,
+  updateEvaluationsSingleModelViewModel,
 } from "@/store/data-slices/settings/SettingsSliceEvaluationSingleModel";
 import {
   setSeasonOptions,
@@ -17,7 +18,7 @@ import {
   updateUserSelectedWeek,
   initializeModelsFromMetadata,
 } from "@/store/data-slices/settings/SettingsSliceForecastNowcast";
-import { initializeModelsFromMetadata as initializeEvalModelsFromMetadata } from "@/store/data-slices/settings/SettingsSliceEvaluationSeasonOverview";
+import { initializeModelsFromMetadata as initializeEvalSeasonOverviewModels } from "@/store/data-slices/settings/SettingsSliceEvaluationSeasonOverview";
 import { useAppDispatch } from "@/store/hooks";
 import { LoadingStates } from "@/types/app";
 import { EvaluationSeasonOverviewTimeRangeOption } from "@/types/domains/evaluations";
@@ -202,8 +203,48 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         // Initialize model selections from metadata
         if (metadata.modelNames && metadata.modelNames.length > 0) {
-          dispatch(initializeModelsFromMetadata(metadata.modelNames));
-          dispatch(initializeEvalModelsFromMetadata(metadata.modelNames));
+          // === FORECAST PAGE MODEL INITIALIZATION ===
+          // Filter models based on default date range (full season)
+          let availableForecastModels = metadata.modelNames;
+          
+          if (metadata.modelAvailabilityByPeriod) {
+            // Get the default season ID for forecast page
+            const defaultSeasonId = metadata.defaultSeasonTimeValue 
+              ? metadata.fullRangeSeasons?.find((s: any) => s.timeValue === metadata.defaultSeasonTimeValue)?.seasonId
+              : null;
+            
+            if (defaultSeasonId && metadata.modelAvailabilityByPeriod[defaultSeasonId]) {
+              const defaultSeasonPeriod = metadata.modelAvailabilityByPeriod[defaultSeasonId];
+              if (defaultSeasonPeriod.unavailableModels) {
+                const unavailableSet = new Set(defaultSeasonPeriod.unavailableModels);
+                availableForecastModels = metadata.modelNames.filter((m: string) => !unavailableSet.has(m));
+              }
+            }
+          }
+          
+          // Initialize forecast page models (also sets default risk level model)
+          dispatch(initializeModelsFromMetadata(availableForecastModels));
+          
+          // === EVALUATION SEASON OVERVIEW MODEL INITIALIZATION ===
+          // Filter models based on default dynamic time period (last-2-weeks)
+          let availableSeasonOverviewModels = metadata.modelNames;
+          
+          if (metadata.modelAvailabilityByPeriod) {
+            const defaultEvalPeriod = metadata.modelAvailabilityByPeriod["last-2-weeks"];
+            if (defaultEvalPeriod && defaultEvalPeriod.unavailableModels) {
+              const unavailableSet = new Set(defaultEvalPeriod.unavailableModels);
+              availableSeasonOverviewModels = metadata.modelNames.filter((m: string) => !unavailableSet.has(m));
+            }
+          }
+          
+          // Initialize evaluation season overview models (also sets default map model)
+          dispatch(initializeEvalSeasonOverviewModels(availableSeasonOverviewModels));
+          
+          // === EVALUATION SINGLE MODEL VIEW INITIALIZATION ===
+          // Use first available model from season overview as default for single model view
+          if (availableSeasonOverviewModels.length > 0) {
+            dispatch(updateEvaluationsSingleModelViewModel(availableSeasonOverviewModels[0]));
+          }
         }
       }
 

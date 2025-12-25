@@ -113,8 +113,8 @@ def main():
         mape_df = pd.read_csv(eval_score_dir / "MAPE.csv", dtype={"Location": str, "horizon": int})
         coverage_df = pd.read_csv(eval_score_dir / "coverage.csv", dtype={"location": str, "horizon": int})
 
-        # Load model configuration from centralized config file
-        config_path = get_project_root() / "scripts" / "model_config.json"
+        # Load model configuration from centralized config file (at project root)
+        config_path = get_project_root() / "model_config.json"
         with open(config_path, "r") as f:
             model_config = json.load(f)
 
