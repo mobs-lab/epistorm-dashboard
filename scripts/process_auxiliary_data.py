@@ -42,6 +42,15 @@ def process_historical_ground_truth(historical_gt_path: Path):
             # Extract date from filename like 'target-hospital-admissions_2023-09-23.csv'
             snapshot_date_iso = csv_file.stem.split("_")[-1]
 
+            # If we have already seen the date and the historical data map has been populated for that date, skip this redundant file (likely a useless file)
+            # If we have seen the date but data is empty, then go on as normal
+            # If we have not seen, only then we add a empty collection for that date
+            if historical_data_map.get(snapshot_date_iso) is None or historical_data_map.get(snapshot_date_iso) == {}:
+                pass
+            else:
+                print(f"Date {snapshot_date_iso} has already been processed and used to populate historical data records. Skipping...")
+                continue
+
             # Initialize the structure for this snapshot date
             historical_data_map[snapshot_date_iso] = {}
 
@@ -56,14 +65,14 @@ def process_historical_ground_truth(historical_gt_path: Path):
 
             # Clean the data: remove rows with missing or invalid values
             df = df.dropna(subset=["value", "weekly_rate"])
-            
+
             # Remove rows with invalid numeric values (negative admissions, etc.)
             df = df[df["value"] >= 0]
             df = df[df["weekly_rate"] >= 0]
-            
+
             # Convert location to string and ensure it's properly formatted
             df["location"] = df["location"].astype(str).str.zfill(2)
-            
+
             # Convert dates to datetime for validation
             df["date"] = pd.to_datetime(df["date"], errors="coerce")
             df = df.dropna(subset=["date"])  # Remove rows with invalid dates
