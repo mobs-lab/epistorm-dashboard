@@ -2,10 +2,24 @@
 runtime: nodejs20
 service: default
 
+instance_class: F1
+
+automatic_scaling:
+  min_idle_instances: 1
+  max_idle_instances: 2
+  target_cpu_utilization: 0.7
+
+inbound_services:
+  - warmup
+
 env_variables:
   NEXT_PUBLIC_GAE_SERVICE: "default"
 
 handlers:
+  - url: /_ah/warmup
+    script: auto
+    secure: always
+
   - url: /robots.txt
     static_files: public/robots.txt
     upload: public/robots.txt
