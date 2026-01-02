@@ -2,6 +2,10 @@
 runtime: nodejs20
 service: demo
 
+automatic_scaling:
+  min_idle_instances: 0
+  max_idle_instances: 1
+
 env_variables:
   NEXT_PUBLIC_GAE_SERVICE: "demo"
 
