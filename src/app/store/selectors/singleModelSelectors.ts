@@ -31,15 +31,13 @@ export const selectSingleModelTimeSeriesData = createSelector(
     (state: RootState) => state.coreData.isLoaded,
     (state: RootState) => state.coreData.mainData?.predictionData,
     (state: RootState) => state.coreData.mainData?.groundTruthData,
-    (state: RootState) => state.evaluationsSingleModelSettings.evaluationsSingleModelViewSeasonId, // <-- Use seasonId
+    (state: RootState) => state.evaluationsSingleModelSettings.evaluationsSingleModelViewSeasonId,
     (state: RootState) => state.evaluationsSingleModelSettings.evaluationsSingleModelViewModel,
     (state: RootState) => state.evaluationsSingleModelSettings.evaluationsSingleModelViewSelectedStateCode,
     (state: RootState) => state.evaluationsSingleModelSettings.evaluationSingleModelViewHorizon,
   ],
   (isLoaded, predictionData, groundTruthData, seasonId, modelName, stateCode, horizon) => {
-    // <-- Use seasonId
     if (!isLoaded || !predictionData || !groundTruthData || !seasonId || !modelName) {
-      // <-- Use seasonId
       return {
         data: [],
         metadata: {
@@ -126,16 +124,14 @@ export const selectSingleModelScoreDataFromJSON = createSelector(
   [
     (state: RootState) => state.evaluationData.rawScores,
     (state: RootState) => state.coreData.mainData?.predictionData,
-    (state: RootState) => state.evaluationsSingleModelSettings.evaluationsSingleModelViewSeasonId, // <-- Use seasonId
+    (state: RootState) => state.evaluationsSingleModelSettings.evaluationsSingleModelViewSeasonId,
     (state: RootState) => state.evaluationsSingleModelSettings.evaluationsSingleModelViewModel,
     (state: RootState) => state.evaluationsSingleModelSettings.evaluationsSingleModelViewSelectedStateCode,
     (state: RootState) => state.evaluationsSingleModelSettings.evaluationSingleModelViewHorizon,
     (state: RootState) => state.evaluationsSingleModelSettings.evaluationSingleModelViewScoresOption,
   ],
   (rawScores, timeSeriesData, seasonId, modelName, stateCode, horizon, scoreOption) => {
-    // <-- Use seasonId
     if (!rawScores || !timeSeriesData || !seasonId || !modelName) {
-      // <-- Use seasonId
       console.debug("Missing required data for score selector");
       return [];
     }
