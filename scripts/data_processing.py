@@ -362,8 +362,6 @@ def main():
     full_range_seasons_info_for_processing = {}
     # 2. Dynamic periods - used ONLY for evaluation aggregation and metadata
     dynamic_periods = {}
-    # 3. All seasons combined - used ONLY for evaluation aggregation
-    all_seasons_for_evaluation = {}
 
     # Generate full range seasons (e.g., 2023-2024, 2022-2023, etc.)
     current_year = latest_date.year
@@ -399,9 +397,6 @@ def main():
         # Turn off the most current season marker after first run
         if most_current_season_tracker:
             most_current_season_tracker = False
-
-        # Also add to evaluation seasons
-        all_seasons_for_evaluation[season_id] = {"start": season_start, "end": season_end}
 
         # Create SeasonOption for metadata
         is_ongoing = latest_date <= season_end
@@ -448,16 +443,20 @@ def main():
     print(f"   - Generated {len(full_range_season_options)} full range seasons")
 
     # Generate dynamic time periods
+    # Latest valid reference date including prediction data (some predictions are made from dates where no GT data has been reported yet)
     last_valid_ref_date = all_preds_df["reference_date"].max()
-    print(f"   - Last valid reference date for dynamic periods: {last_valid_ref_date.strftime('%Y-%m-%d')}")
+
+    # Latest valid reference date with actual ground truth data
+    last_valid_ref_date_in_gt = all_gt_dates.max()
+    print(f"   - Last valid reference date for dynamic periods: {last_valid_ref_date_in_gt.strftime('%Y-%m-%d')}")
 
     # Put the latest valid reference date also into metadata, to become the default selected date
     default_selected_date = last_valid_ref_date
 
     dynamic_period_definitions = [
-        ("last-2-weeks", "Last 2 Weeks", 2),
-        ("last-4-weeks", "Last 4 Weeks", 4),
-        ("last-8-weeks", "Last 8 Weeks", 8),
+        ("last-2-weeks", "Last 2 Weeks", 1),
+        ("last-4-weeks", "Last 4 Weeks", 3),
+        ("last-8-weeks", "Last 8 Weeks", 7),
     ]
 
     # NOTE: We will compute first_valid_eval_ref_date AFTER loading evaluation data
@@ -466,20 +465,19 @@ def main():
     dynamic_season_options = []
     for i, (period_id, display_string, weeks_back) in enumerate(dynamic_period_definitions):
         # Real period: start is exactly N weeks before the latest reference date
-        start_date = last_valid_ref_date - timedelta(weeks=weeks_back)
+        start_date_for_dynamic_calculation = last_valid_ref_date_in_gt - timedelta(weeks=weeks_back)
 
         # Note: remember to use this as EXCLUSIVE right-bound of time when parsing evaluations data
-        end_date = last_valid_ref_date
+        end_date_for_dynamic_calculation = last_valid_ref_date_in_gt
 
-        # Start date should be a Saturday,
-        display_start_date = start_date + timedelta(days=1)
+        # Start date should be the Sunday of the week where `start_date_for_dynamic_calculation` belongs to
+        display_start_date = start_date_for_dynamic_calculation - timedelta(days=6)
 
         # Format for Season Overview display: (MM dd, YYYY - MM dd, YYYY)
-        sub_display_value = f"({display_start_date.strftime('%b %d, %Y')} - {end_date.strftime('%b %d, %Y')})"
+        sub_display_value = f"({display_start_date.strftime('%b %d, %Y')} - {end_date_for_dynamic_calculation.strftime('%b %d, %Y')})"
 
         # Store for evaluation aggregation only
-        dynamic_periods[period_id] = {"start": start_date, "end": end_date}
-        all_seasons_for_evaluation[period_id] = {"start": start_date, "end": end_date}
+        dynamic_periods[period_id] = {"start": start_date_for_dynamic_calculation, "end": end_date_for_dynamic_calculation}
 
         # Create DynamicSeasonOption for metadata (will validate later after loading evaluation data)
         dynamic_season_options.append(
@@ -489,8 +487,8 @@ def main():
                 "displayString": display_string,
                 "isDynamic": True,
                 "subDisplayValue": sub_display_value,
-                "startDate": start_date,
-                "endDate": end_date,
+                "startDate": start_date_for_dynamic_calculation,
+                "endDate": end_date_for_dynamic_calculation,
                 "isValid": True,  # Will be updated after checking evaluation data
                 "invalidReason": None,
             }
@@ -838,7 +836,7 @@ def main():
     # Track model availability for each time period (for frontend to disable unavailable models)
     model_availability_by_period = {}
 
-    # Process & Aggregate full-length season evaluations
+    # Process & Aggregate full-length and dynamic season evaluations
     for season_id, season_dates in all_seasons_combined.items():
         print(f"\n   - Processing evaluation data for season: {season_id}")
         print(f"     Date range: {season_dates['start'].strftime('%Y-%m-%d')} to {season_dates['end'].strftime('%Y-%m-%d')}")
