@@ -73,7 +73,7 @@ export interface AppDataEvaluationsPrecalculated {
       [metric: string]: {
         [model: string]: {
           [stateNum: string]: {
-            [horizon: string]: { sum: number; count: number };
+            [horizon: string]: { product: number; count: number };
           };
         };
       };
