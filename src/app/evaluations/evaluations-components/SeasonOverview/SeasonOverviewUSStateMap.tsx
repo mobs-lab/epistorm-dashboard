@@ -39,22 +39,24 @@ const SeasonOverviewUSStateMap: React.FC = () => {
       const stateMapData = (seasonOverviewData.stateMapData as any)[mapSelectedScoringOption] || {};
       const modelData = stateMapData[mapSelectedModel] || {};
 
-      // Calculate averages across selected horizons for each state
+      // Calculate geometric mean across selected horizons for each state
       Object.entries(modelData).forEach(([stateNum, horizonData]) => {
-        let totalScore = 0;
+        let combinedProduct = 1;
         let totalCount = 0;
 
         seasonOverviewData.horizons.forEach((horizon) => {
           const horizonStats = (horizonData as any)[horizon];
-          if (horizonStats && horizonStats.sum !== undefined && horizonStats.count > 0) {
-            totalScore += horizonStats.sum;
+          if (horizonStats && horizonStats.product !== undefined && horizonStats.count > 0) {
+            combinedProduct *= horizonStats.product;
             totalCount += horizonStats.count;
           }
         });
 
         if (totalCount > 0) {
           const stateId = stateNum.toString().padStart(2, "0");
-          statePerformanceMap.set(stateId, totalScore / totalCount);
+          // Geometric mean = (product of all values)^(1/count)
+          const geometricMean = Math.pow(combinedProduct, 1 / totalCount);
+          statePerformanceMap.set(stateId, geometricMean);
         }
       });
       return statePerformanceMap;
