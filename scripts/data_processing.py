@@ -883,12 +883,15 @@ def main():
 
         # State map aggregations
         if len(season_eval_df) > 0:
-            state_map_agg = season_eval_df.groupby(["metric", "model", "stateNum", "horizon"])["score"].agg(["sum", "count"]).reset_index()
+            # For geometric mean calculation: geometric_mean = (x1 * x2 * ... * xn)^(1/n)
+            # NOTE: Using direct product aggregation. Potential for numerical overflow with large datasets.
+            # If overflow occurs, maybe switch to log-space formulation: exp(mean(log(values)))?
+            state_map_agg = season_eval_df.groupby(["metric", "model", "stateNum", "horizon"])["score"].agg(["prod", "count"]).reset_index()
             for _, row in state_map_agg.iterrows():
                 horizon_int = int(row["horizon"])
                 state_map_data.setdefault(season_id, {}).setdefault(row["metric"], {}).setdefault(row["model"], {}).setdefault(row["stateNum"], {})[
                     horizon_int
-                ] = {"sum": float(row["sum"]), "count": int(row["count"])}
+                ] = {"product": float(row["prod"]), "count": int(row["count"])}
 
         # PI chart aggregations
         if len(season_coverage_df) > 0:
@@ -948,19 +951,21 @@ def main():
                                 if horizon in model_data[state_num]:
                                     all_states.add(state_num)
 
-                        # Calculate combined average for each state
+                        # Calculate combined geometric mean for each state
                         for state_num in all_states:
-                            total_sum = 0
+                            combined_product = 1
                             total_count = 0
 
                             for horizon in horizon_combo:
                                 if horizon in model_data[state_num]:
                                     agg_data = model_data[state_num][horizon]
-                                    total_sum += agg_data["sum"]
+                                    combined_product *= agg_data["product"]
                                     total_count += agg_data["count"]
 
                             if total_count > 0:
-                                state_averages.append(total_sum / total_count)
+                                # Geometric mean = (product of all values)^(1/count)
+                                geometric_mean = combined_product ** (1 / total_count)
+                                state_averages.append(geometric_mean)
 
                         # Calculate IQR stats if we have at least 1 state
                         if len(state_averages) >= 1:
