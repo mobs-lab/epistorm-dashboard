@@ -39,24 +39,50 @@ const SeasonOverviewUSStateMap: React.FC = () => {
       const stateMapData = (seasonOverviewData.stateMapData as any)[mapSelectedScoringOption] || {};
       const modelData = stateMapData[mapSelectedModel] || {};
 
-      // Calculate geometric mean across selected horizons for each state
+      // Calculate averages across selected horizons for each state
+      // Different metrics use different averaging methods:
+      // - WIS/Baseline & MAPE: Geometric mean (using product)
+      // - Coverage: Arithmetic mean (using sum)
       Object.entries(modelData).forEach(([stateNum, horizonData]) => {
-        let combinedProduct = 1;
-        let totalCount = 0;
+        const isCoverage = mapSelectedScoringOption === "Coverage";
+        
+        if (isCoverage) {
+          // Coverage: Arithmetic mean
+          let totalSum = 0;
+          let totalCount = 0;
 
-        seasonOverviewData.horizons.forEach((horizon) => {
-          const horizonStats = (horizonData as any)[horizon];
-          if (horizonStats && horizonStats.product !== undefined && horizonStats.count > 0) {
-            combinedProduct *= horizonStats.product;
-            totalCount += horizonStats.count;
+          seasonOverviewData.horizons.forEach((horizon) => {
+            const horizonStats = (horizonData as any)[horizon];
+            if (horizonStats && horizonStats.sum !== undefined && horizonStats.count > 0) {
+              totalSum += horizonStats.sum;
+              totalCount += horizonStats.count;
+            }
+          });
+
+          if (totalCount > 0) {
+            const stateId = stateNum.toString().padStart(2, "0");
+            const arithmeticMean = totalSum / totalCount;
+            statePerformanceMap.set(stateId, arithmeticMean);
           }
-        });
+        } else {
+          // WIS/Baseline & MAPE: Geometric mean
+          let combinedProduct = 1;
+          let totalCount = 0;
 
-        if (totalCount > 0) {
-          const stateId = stateNum.toString().padStart(2, "0");
-          // Geometric mean = (product of all values)^(1/count)
-          const geometricMean = Math.pow(combinedProduct, 1 / totalCount);
-          statePerformanceMap.set(stateId, geometricMean);
+          seasonOverviewData.horizons.forEach((horizon) => {
+            const horizonStats = (horizonData as any)[horizon];
+            if (horizonStats && horizonStats.product !== undefined && horizonStats.count > 0) {
+              combinedProduct *= horizonStats.product;
+              totalCount += horizonStats.count;
+            }
+          });
+
+          if (totalCount > 0) {
+            const stateId = stateNum.toString().padStart(2, "0");
+            // Geometric mean = (product of all values)^(1/count)
+            const geometricMean = Math.pow(combinedProduct, 1 / totalCount);
+            statePerformanceMap.set(stateId, geometricMean);
+          }
         }
       });
       return statePerformanceMap;
