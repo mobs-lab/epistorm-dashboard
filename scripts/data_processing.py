@@ -881,17 +881,44 @@ def main():
         if unavailable_models:
             print(f"     WARNING: Models with NO evaluation data in this period: {unavailable_models}")
 
-        # State map aggregations
+        # State map aggregations - different strategies per metric
         if len(season_eval_df) > 0:
-            # For geometric mean calculation: geometric_mean = (x1 * x2 * ... * xn)^(1/n)
+            # Split data by metric for different aggregation strategies
+            wis_df = season_eval_df[season_eval_df["metric"] == "WIS/Baseline"].copy()
+            mape_df_local = season_eval_df[season_eval_df["metric"] == "MAPE"].copy()
+            coverage_df_local = season_eval_df[season_eval_df["metric"] == "Coverage"].copy()
+            
+            # WIS/Baseline: Geometric mean (all values > 0, safe to use product)
             # NOTE: Using direct product aggregation. Potential for numerical overflow with large datasets.
             # If overflow occurs, maybe switch to log-space formulation: exp(mean(log(values)))?
-            state_map_agg = season_eval_df.groupby(["metric", "model", "stateNum", "horizon"])["score"].agg(["prod", "count"]).reset_index()
-            for _, row in state_map_agg.iterrows():
-                horizon_int = int(row["horizon"])
-                state_map_data.setdefault(season_id, {}).setdefault(row["metric"], {}).setdefault(row["model"], {}).setdefault(row["stateNum"], {})[
-                    horizon_int
-                ] = {"product": float(row["prod"]), "count": int(row["count"])}
+            if len(wis_df) > 0:
+                wis_agg = wis_df.groupby(["metric", "model", "stateNum", "horizon"])["score"].agg(["prod", "count"]).reset_index()
+                for _, row in wis_agg.iterrows():
+                    horizon_int = int(row["horizon"])
+                    state_map_data.setdefault(season_id, {}).setdefault(row["metric"], {}).setdefault(row["model"], {}).setdefault(row["stateNum"], {})[
+                        horizon_int
+                    ] = {"product": float(row["prod"]), "count": int(row["count"])}
+            
+            # MAPE: Geometric mean with zero handling (convert 0 to 0.5 before aggregation)
+            # 0 in MAPE indicates perfect prediction, but destroys geometric mean product
+            # Convert 0 to 0.5 to avoid zeros while keeping impact on average meaningful
+            if len(mape_df_local) > 0:
+                mape_df_local["score_adjusted"] = mape_df_local["score"].replace(0, 0.5)
+                mape_agg = mape_df_local.groupby(["metric", "model", "stateNum", "horizon"])["score_adjusted"].agg(["prod", "count"]).reset_index()
+                for _, row in mape_agg.iterrows():
+                    horizon_int = int(row["horizon"])
+                    state_map_data.setdefault(season_id, {}).setdefault(row["metric"], {}).setdefault(row["model"], {}).setdefault(row["stateNum"], {})[
+                        horizon_int
+                    ] = {"product": float(row["prod"]), "count": int(row["count"])}
+            
+            # Coverage: Arithmetic mean (standard averaging)
+            if len(coverage_df_local) > 0:
+                coverage_agg = coverage_df_local.groupby(["metric", "model", "stateNum", "horizon"])["score"].agg(["sum", "count"]).reset_index()
+                for _, row in coverage_agg.iterrows():
+                    horizon_int = int(row["horizon"])
+                    state_map_data.setdefault(season_id, {}).setdefault(row["metric"], {}).setdefault(row["model"], {}).setdefault(row["stateNum"], {})[
+                        horizon_int
+                    ] = {"sum": float(row["sum"]), "count": int(row["count"])}
 
         # PI chart aggregations
         if len(season_coverage_df) > 0:
@@ -930,10 +957,6 @@ def main():
             print(f"     Calculating IQR for {len(horizon_combinations)} horizon combinations: {horizon_combinations}")
 
             for metric, metric_data in state_map_data[season_id].items():
-                # Skip Coverage metric for IQR calculations
-                if metric == "Coverage":
-                    continue
-
                 for model, model_data in metric_data.items():
                     # Calculate IQR for each horizon combination
                     for horizon_combo in horizon_combinations:
@@ -951,21 +974,35 @@ def main():
                                 if horizon in model_data[state_num]:
                                     all_states.add(state_num)
 
-                        # Calculate combined geometric mean for each state
+                        # Calculate combined average for each state (method depends on metric)
                         for state_num in all_states:
-                            combined_product = 1
-                            total_count = 0
+                            if metric == "Coverage":
+                                # Coverage: Arithmetic mean
+                                total_sum = 0
+                                total_count = 0
+                                for horizon in horizon_combo:
+                                    if horizon in model_data[state_num]:
+                                        agg_data = model_data[state_num][horizon]
+                                        total_sum += agg_data["sum"]
+                                        total_count += agg_data["count"]
+                                
+                                if total_count > 0:
+                                    arithmetic_mean = total_sum / total_count
+                                    state_averages.append(arithmetic_mean)
+                            else:
+                                # WIS/Baseline and MAPE: Geometric mean
+                                combined_product = 1
+                                total_count = 0
+                                for horizon in horizon_combo:
+                                    if horizon in model_data[state_num]:
+                                        agg_data = model_data[state_num][horizon]
+                                        combined_product *= agg_data["product"]
+                                        total_count += agg_data["count"]
 
-                            for horizon in horizon_combo:
-                                if horizon in model_data[state_num]:
-                                    agg_data = model_data[state_num][horizon]
-                                    combined_product *= agg_data["product"]
-                                    total_count += agg_data["count"]
-
-                            if total_count > 0:
-                                # Geometric mean = (product of all values)^(1/count)
-                                geometric_mean = combined_product ** (1 / total_count)
-                                state_averages.append(geometric_mean)
+                                if total_count > 0:
+                                    # Geometric mean = (product of all values)^(1/count)
+                                    geometric_mean = combined_product ** (1 / total_count)
+                                    state_averages.append(geometric_mean)
 
                         # Calculate IQR stats if we have at least 1 state
                         if len(state_averages) >= 1:
