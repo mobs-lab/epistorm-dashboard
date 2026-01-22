@@ -73,7 +73,9 @@ export interface AppDataEvaluationsPrecalculated {
       [metric: string]: {
         [model: string]: {
           [stateNum: string]: {
-            [horizon: string]: { sum: number; count: number };
+            // WIS/Baseline and MAPE use geometric mean (product + count)
+            // Coverage uses arithmetic mean (sum + count)
+            [horizon: string]: { product?: number; sum?: number; count: number };
           };
         };
       };
